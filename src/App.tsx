@@ -156,9 +156,9 @@ export default function App() {
 
             <div className="anim-left" style={{ '--d': '0.15s' } as React.CSSProperties}>
               <h1 className="title-glitch font-display text-5xl leading-none tracking-wider md:text-7xl">
-                СТАЛЬНАЯ
+                ARMOR
                 <span className="block bg-gradient-to-r from-cyan-300 via-emerald-300 to-cyan-400 bg-clip-text text-transparent">
-                  АРЕНА
+                  STRIKE
                 </span>
               </h1>
             </div>
@@ -249,7 +249,7 @@ export default function App() {
               ТАНК УНИЧТОЖЕН
             </h2>
             <p className="anim-up mt-3 text-sm tracking-[0.3em] text-white/40" style={{ '--d': '0.25s' } as React.CSSProperties}>
-              АРЕНА НЕ ПРОЩАЕТ СЛАБОСТИ
+              ARMORSTRIKE НЕ ПРОЩАЕТ СЛАБОСТИ
             </p>
 
             <div className="anim-up mt-9 grid grid-cols-3 gap-4" style={{ '--d': '0.38s' } as React.CSSProperties}>

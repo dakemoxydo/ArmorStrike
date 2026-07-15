@@ -167,7 +167,7 @@ export class Arena {
 
     // ===== Вывески завода =====
     const signMat = new THREE.MeshStandardMaterial({
-      map: signTexture('ЗАВОД-51', 'ЛИТЕЙНЫЙ КОМПЛЕКС «СТАЛЬНАЯ АРЕНА»'),
+      map: signTexture('ЗАВОД-51', 'ЛИТЕЙНЫЙ КОМПЛЕКС «ARMORSTRIKE»'),
       emissive: 0x22333a, emissiveIntensity: 0.5, roughness: 0.6, metalness: 0.2,
     });
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(44, 11), signMat);
