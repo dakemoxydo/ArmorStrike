@@ -1,0 +1,601 @@
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&family=Exo+2:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --glow: 46, 230, 192;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #04060b;
+  font-family: 'Exo 2', system-ui, sans-serif;
+}
+
+.font-display { font-family: 'Russo One', 'Exo 2', sans-serif; }
+
+.ingame, .ingame * { cursor: none !important; }
+
+/* ============ СОЧНЫЕ КНОПКИ ============ */
+.btn-game {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Russo One', sans-serif;
+  letter-spacing: 0.16em;
+  border: none;
+  cursor: pointer;
+  isolation: isolate;
+  overflow: hidden;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  transition: transform 0.24s cubic-bezier(0.34, 1.8, 0.64, 1), box-shadow 0.24s ease, filter 0.24s ease;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-game:hover { transform: translateY(-3px) scale(1.045); }
+.btn-game:active { transform: translateY(1px) scale(0.945); transition-duration: 0.06s; }
+.btn-game:focus-visible { outline: 2px solid rgba(var(--glow), 0.8); outline-offset: 3px; }
+.btn-game > * { position: relative; z-index: 2; flex-shrink: 0; }
+
+/* блик, пробегающий по кнопке */
+.btn-game::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: -15%; bottom: -15%; left: -85%;
+  width: 42%;
+  background: linear-gradient(100deg, transparent 10%, rgba(255, 255, 255, 0.55) 50%, transparent 90%);
+  transform: skewX(-22deg);
+  opacity: 0;
+  pointer-events: none;
+}
+.btn-game:hover::before { animation: btn-shine 0.75s ease forwards; }
+@keyframes btn-shine {
+  0% { left: -85%; opacity: 0; }
+  15% { opacity: 0.9; }
+  100% { left: 135%; opacity: 0; }
+}
+
+.btn-primary {
+  color: #03222a;
+  background: linear-gradient(135deg, #3cf5d0, #22b8ff 55%, #3cf5d0);
+  background-size: 220% 220%;
+  box-shadow:
+    0 0 26px rgba(var(--glow), 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -3px 0 rgba(0, 30, 40, 0.22);
+  animation: gradient-drift 5s ease infinite;
+}
+.btn-primary:hover {
+  box-shadow:
+    0 0 52px rgba(var(--glow), 0.68),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  filter: brightness(1.08);
+}
+@keyframes gradient-drift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.btn-ghost {
+  color: #a9f0e8;
+  background: linear-gradient(135deg, rgba(18, 34, 46, 0.88), rgba(7, 15, 26, 0.85));
+  box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.26), 0 0 18px rgba(0, 0, 0, 0.45);
+}
+.btn-ghost:hover {
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.6), 0 0 30px rgba(var(--glow), 0.32);
+  background: linear-gradient(135deg, rgba(24, 46, 60, 0.92), rgba(10, 22, 34, 0.88));
+}
+
+.btn-danger {
+  color: #ffd9d2;
+  background: linear-gradient(135deg, rgba(64, 18, 14, 0.9), rgba(32, 8, 10, 0.88));
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 70, 0.32), 0 0 18px rgba(0, 0, 0, 0.45);
+}
+.btn-danger:hover {
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 70, 0.65), 0 0 32px rgba(255, 70, 50, 0.35);
+}
+
+/* иконка с пружиной при ховере */
+.btn-game .bicon { transition: transform 0.3s cubic-bezier(0.34, 2, 0.64, 1); }
+.btn-game:hover .bicon { transform: scale(1.25) rotate(-4deg); }
+.btn-game .bicon-spin { transition: transform 0.55s cubic-bezier(0.3, 1.4, 0.4, 1); }
+.btn-game:hover .bicon-spin { transform: rotate(-180deg); }
+
+/* ============ ВХОДНЫЕ АНИМАЦИИ ============ */
+.anim-up {
+  opacity: 0;
+  animation: enter-up 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes enter-up {
+  from { opacity: 0; transform: translateY(30px); filter: blur(7px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.anim-pop {
+  opacity: 0;
+  animation: enter-pop 0.5s cubic-bezier(0.34, 1.9, 0.64, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes enter-pop {
+  from { opacity: 0; transform: scale(0.65); }
+  to { opacity: 1; transform: scale(1); }
+}
+.anim-left {
+  opacity: 0;
+  animation: enter-left 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes enter-left {
+  from { opacity: 0; transform: translateX(-42px); filter: blur(5px); }
+  to { opacity: 1; transform: translateX(0); filter: blur(0); }
+}
+
+/* парение декора */
+.floaty { animation: floaty 4.5s ease-in-out infinite; }
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+/* пульсация красной иконки на экране поражения */
+.skull-pulse { animation: skull-pulse 1.6s ease-in-out infinite; }
+@keyframes skull-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px rgba(255, 77, 61, 0.6)); }
+  50% { transform: scale(1.14); filter: drop-shadow(0 0 30px rgba(255, 77, 61, 0.95)); }
+}
+
+/* пульсация иконки паузы */
+.pause-breathe { animation: pause-breathe 2s ease-in-out infinite; }
+@keyframes pause-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.75; }
+  50% { transform: scale(1.12); opacity: 1; }
+}
+
+/* подсказка, мигающая "нажмите ESC" */
+.esc-blink { animation: esc-blink 1.8s ease-in-out infinite; }
+@keyframes esc-blink { 0%, 100% { opacity: 0.75; } 50% { opacity: 0.25; } }
+
+/* ============ панели HUD ============ */
+.hud-panel {
+  position: relative;
+  background: linear-gradient(135deg, rgba(10, 20, 30, 0.78), rgba(6, 12, 20, 0.62));
+  border: 1px solid rgba(var(--glow), 0.22);
+  backdrop-filter: blur(6px);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  box-shadow: 0 0 26px rgba(0, 0, 0, 0.45), inset 0 0 22px rgba(var(--glow), 0.05);
+}
+
+.hud-label {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.5);
+  display: inline-flex;
+  align-items: center;
+}
+
+.hud-btn {
+  font-family: 'Russo One', sans-serif;
+  letter-spacing: 0.22em;
+  color: #06202a;
+  background: linear-gradient(135deg, #2ee6c0, #1fc3ff);
+  border: none;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  box-shadow: 0 0 30px rgba(var(--glow), 0.35);
+  transition: all 0.2s ease;
+}
+.hud-btn:hover {
+  box-shadow: 0 0 55px rgba(var(--glow), 0.65);
+  transform: translateY(-2px);
+}
+.hud-btn:active { transform: translateY(0) scale(0.98); }
+
+.menu-cta { font-size: 1.25rem; }
+
+/* ============ здоровье ============ */
+.hp-shell {
+  position: relative;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  overflow: hidden;
+}
+.hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0fbf9c, #2ee6c0 60%, #8fffe8);
+  box-shadow: 0 0 16px rgba(var(--glow), 0.7);
+  transition: width 0.18s ease-out;
+}
+.hp-fill.danger {
+  background: linear-gradient(90deg, #bf2f1f, #ff4d3d 60%, #ff9a8f);
+  box-shadow: 0 0 16px rgba(255, 77, 61, 0.8);
+  animation: hp-blink 0.7s infinite;
+}
+@keyframes hp-blink { 50% { opacity: 0.55; } }
+.hp-segments {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 15px, rgba(4, 10, 14, 0.85) 15px 17px);
+}
+
+/* ============ нитро (буст) ============ */
+.boost-shell {
+  position: relative;
+  height: 9px;
+  background: rgba(255, 255, 255, 0.06);
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  overflow: hidden;
+}
+.boost-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1f8fff, #3cf5d0 65%, #bff6ff);
+  box-shadow: 0 0 12px rgba(60, 200, 255, 0.7);
+  transition: width 0.1s linear;
+}
+.boost-fill.low {
+  background: linear-gradient(90deg, #7a5a10, #d99a1e 65%, #ffd27a);
+  box-shadow: 0 0 12px rgba(217, 154, 30, 0.7);
+}
+
+/* ============ оружие ============ */
+.reload-ring {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: conic-gradient(#2ee6c0 360deg, transparent 0deg);
+  position: relative;
+}
+.reload-ring::before {
+  content: ''; position: absolute; inset: 4px;
+  border-radius: 50%;
+  background: #08121c;
+}
+.reload-ring > * { position: relative; z-index: 1; }
+
+.ammo-pip {
+  width: 10px; height: 26px;
+  background: rgba(255, 255, 255, 0.07);
+  clip-path: polygon(0 6px, 100% 0, 100% 100%, 0 100%);
+  transition: all 0.15s;
+}
+.ammo-pip.full {
+  background: linear-gradient(180deg, #8fffe8, #2ee6c0);
+  box-shadow: 0 0 10px rgba(var(--glow), 0.7);
+}
+.ammo-pip.fire {
+  background: linear-gradient(180deg, #ffcc44, #ff5500);
+  box-shadow: 0 0 10px rgba(255, 85, 0, 0.8);
+}
+.ammo-pip.cannon {
+  background: linear-gradient(180deg, #ffe080, #ffb020);
+  box-shadow: 0 0 10px rgba(255, 176, 32, 0.7);
+}
+
+.bot-dot {
+  width: 9px; height: 9px;
+  background: #ff4d3d;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  box-shadow: 0 0 8px rgba(255, 77, 61, 0.8);
+}
+
+/* ============ счёт ============ */
+.score-panel { min-width: 230px; }
+.score-num {
+  font-family: 'Russo One', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 0.12em;
+  color: #eafffb;
+  text-shadow: 0 0 18px rgba(var(--glow), 0.55);
+  line-height: 1.1;
+}
+
+/* ============ миникарта ============ */
+.minimap-frame {
+  position: relative;
+  border: 1px solid rgba(var(--glow), 0.25);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.7);
+}
+.minimap-frame canvas { display: block; }
+.minimap-frame .corner {
+  position: absolute; width: 12px; height: 12px;
+  border-color: rgba(var(--glow), 0.9); border-style: solid;
+}
+.corner.tl { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
+.corner.tr { top: -2px; right: -2px; border-width: 2px 2px 0 0; }
+.corner.bl { bottom: -2px; left: -2px; border-width: 0 0 2px 2px; }
+.corner.br { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
+
+/* ============ лента убийств ============ */
+.feed-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(8, 14, 22, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 5px 10px;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  animation: feed-in 0.25s ease-out;
+}
+@keyframes feed-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ============ прицел ============ */
+.crosshair {
+  position: absolute;
+  left: 0; top: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+.cross-core {
+  position: relative;
+  width: 44px; height: 44px;
+  transform: translate(-50%, -50%);
+  animation: ch-spin 9s linear infinite;
+}
+@keyframes ch-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.cross-core .ch-dot {
+  position: absolute; left: 50%; top: 50%;
+  width: 4px; height: 4px;
+  transform: translate(-50%, -50%);
+  background: #2ee6c0;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(var(--glow), 0.9);
+}
+.cross-core .ch-ring {
+  position: absolute; inset: 8px;
+  border: 1px solid rgba(var(--glow), 0.55);
+  border-radius: 50%;
+}
+.cross-core .ch-tick {
+  position: absolute;
+  background: #2ee6c0;
+  box-shadow: 0 0 6px rgba(var(--glow), 0.8);
+}
+.ch-tick.t { left: 50%; top: 0; width: 2px; height: 8px; transform: translateX(-50%); }
+.ch-tick.b { left: 50%; bottom: 0; width: 2px; height: 8px; transform: translateX(-50%); }
+.ch-tick.l { left: 0; top: 50%; width: 8px; height: 2px; transform: translateY(-50%); }
+.ch-tick.r { right: 0; top: 50%; width: 8px; height: 2px; transform: translateY(-50%); }
+.shot-pulse { animation: ch-pulse 0.22s ease-out !important; }
+@keyframes ch-pulse {
+  0% { transform: translate(-50%, -50%) scale(1.45) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+}
+
+.hitmarker {
+  position: absolute;
+  left: 0; top: 0;
+  width: 30px; height: 30px;
+  transform: translate(-50%, -50%);
+  animation: hm-pop 0.3s ease-out forwards;
+}
+.hitmarker span {
+  position: absolute; left: 50%; top: 50%;
+  width: 3px; height: 11px;
+  background: #ffd24a;
+  box-shadow: 0 0 8px rgba(255, 210, 74, 0.9);
+}
+.hitmarker.kill span { background: #ff4d3d; box-shadow: 0 0 10px rgba(255, 77, 61, 1); }
+.hitmarker span:nth-child(1) { transform: translate(-50%, -50%) rotate(45deg) translateY(-10px); }
+.hitmarker span:nth-child(2) { transform: translate(-50%, -50%) rotate(-45deg) translateY(-10px); }
+.hitmarker span:nth-child(3) { transform: translate(-50%, -50%) rotate(45deg) translateY(10px) scaleY(-1); }
+.hitmarker span:nth-child(4) { transform: translate(-50%, -50%) rotate(-45deg) translateY(10px) scaleY(-1); }
+@keyframes hm-pop {
+  0% { transform: translate(-50%, -50%) scale(1.6); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
+}
+
+/* ============ виньетка урона ============ */
+.damage-vignette {
+  position: absolute; inset: 0;
+  z-index: 25;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 42%, rgba(255, 30, 16, 0.5) 100%);
+  animation: dmg-fade 0.6s ease-out forwards;
+}
+@keyframes dmg-fade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* направленный индикатор урона */
+.damage-arc {
+  position: absolute;
+  left: 50%; top: 50%;
+  z-index: 26;
+  pointer-events: none;
+  transform-origin: center;
+  animation: dmg-arc-fade 0.95s ease-out forwards;
+}
+@keyframes dmg-arc-fade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ============ баннер волны ============ */
+.wave-banner {
+  position: absolute;
+  left: 50%; top: 26%;
+  transform: translateX(-50%);
+  text-align: center;
+  animation: banner 2.6s ease-out forwards;
+  pointer-events: none;
+}
+.wave-banner-sub {
+  font-size: 11px;
+  letter-spacing: 0.5em;
+  color: rgba(255, 210, 74, 0.8);
+}
+.wave-banner-text {
+  font-family: 'Russo One', sans-serif;
+  font-size: 3.4rem;
+  letter-spacing: 0.3em;
+  color: #ffe9b0;
+  text-shadow: 0 0 34px rgba(255, 180, 60, 0.85);
+}
+@keyframes banner {
+  0% { opacity: 0; transform: translateX(-50%) scale(1.35); letter-spacing: 0.6em; }
+  12% { opacity: 1; transform: translateX(-50%) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-24px); }
+}
+
+/* ============ оверлеи ============ */
+.fx-scanlines {
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+}
+.fx-vignette {
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 4, 10, 0.55) 100%);
+}
+
+.menu-stripes {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(var(--glow), 0.55) 0 18px,
+    transparent 18px 36px
+  );
+  opacity: 0.5;
+  animation: stripes 1.6s linear infinite;
+}
+.menu-stripes.danger { background: repeating-linear-gradient(-45deg, rgba(255, 77, 61, 0.6) 0 18px, transparent 18px 36px); }
+@keyframes stripes { to { background-position: 51px 0; } }
+
+.title-glitch {
+  color: #eef7ff;
+  text-shadow: 0 0 40px rgba(var(--glow), 0.35);
+  animation: title-flicker 5s infinite;
+}
+@keyframes title-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.75; }
+  94% { opacity: 1; }
+  96% { opacity: 0.85; }
+  97% { opacity: 1; }
+}
+
+.hint-panel { animation: hint 11s forwards; }
+@keyframes hint {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+/* ============ ГАРАЖ: карточки деталей ============ */
+.garage-card {
+  transition: transform 0.28s cubic-bezier(0.34, 1.7, 0.64, 1), box-shadow 0.28s ease, border-color 0.28s ease, opacity 0.28s ease;
+}
+.garage-card:hover {
+  transform: translateY(-6px) scale(1.025);
+}
+.garage-card:active { transform: translateY(-1px) scale(0.98); }
+.garage-card .g-check { animation: check-pop 0.4s cubic-bezier(0.34, 2.2, 0.64, 1); }
+@keyframes check-pop {
+  0% { transform: scale(0) rotate(-90deg); }
+  70% { transform: scale(1.3) rotate(8deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.g-stat-bar { transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* разделитель под заголовком */
+.head-rule {
+  height: 2px;
+  background: linear-gradient(90deg, rgba(var(--glow), 0.9), rgba(var(--glow), 0.05));
+  transform-origin: left;
+  animation: rule-grow 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--d, 0s);
+  scale: 0 1;
+}
+@keyframes rule-grow {
+  to { scale: 1 1; }
+}
+
+/* ============ frag-popup «+ ФРАГ» ============ */
+.frag-popup {
+  position: absolute;
+  left: 50%; top: 38%;
+  transform: translateX(-50%);
+  z-index: 27;
+  text-align: center;
+  pointer-events: none;
+  animation: frag-pop 1.15s ease-out forwards;
+}
+.frag-plus {
+  display: block;
+  font-family: 'Russo One', sans-serif;
+  font-size: 2.2rem;
+  letter-spacing: 0.22em;
+  color: #6ef2c8;
+  text-shadow: 0 0 22px rgba(46, 230, 192, 0.9);
+}
+.frag-victim {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  letter-spacing: 0.3em;
+  color: rgba(255, 120, 110, 0.9);
+}
+@keyframes frag-pop {
+  0% { opacity: 0; transform: translateX(-50%) scale(1.4); }
+  15% { opacity: 1; transform: translateX(-50%) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-26px); }
+}
+
+/* ============ табло счёта (TAB) ============ */
+.scoreboard-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 7, 12, 0.55);
+  backdrop-filter: blur(3px);
+  animation: sb-fade 0.18s ease-out forwards;
+}
+@keyframes sb-fade { from { opacity: 0; } to { opacity: 1; } }
+.scoreboard-panel {
+  width: min(640px, 92vw);
+  padding: 20px 22px;
+}
+.scoreboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.78);
+}
+.scoreboard-table th {
+  text-align: left;
+  padding: 6px 10px;
+  font-weight: 600;
+  color: rgba(120, 200, 230, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.62rem;
+}
+.scoreboard-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.scoreboard-table tr.row-player td {
+  color: #6ef2c8;
+  background: rgba(46, 230, 192, 0.08);
+}
+.scoreboard-table td.dead { color: rgba(255, 90, 80, 0.55); text-decoration: line-through; }
+.sb-hp {
+  width: 96px; height: 7px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.sb-hp > div {
+  height: 100%;
+  background: linear-gradient(90deg, #ff5a4d, #46e6a0);
+  transition: width 0.25s ease;
+}
