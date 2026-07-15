@@ -1,7 +1,6 @@
 // ===== Ядро игры: рендер, гараж, предпросмотр, камера, интеграция всех оружий =====
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { COLORS, HULLS, SCORE, TURRETS } from './constants';
+import { COLORS, HULLS, TURRETS } from './constants';
 import type { HullId, TurretId } from './constants';
 import { Arena } from './Arena';
 import { TankSystem } from './systems/TankSystem';
@@ -20,8 +19,11 @@ import { AudioFX } from './audio';
 import { RailgunWeapon } from './weapons/RailgunWeapon';
 import { FlamethrowerWeapon } from './weapons/FlamethrowerWeapon';
 import { CannonWeapon } from './weapons/CannonWeapon';
-import type { DamageSystem, Weapon, WeaponDeps } from './weapons/types';
+import type { Weapon, WeaponDeps } from './weapons/types';
 import { CameraRig, PREVIEW_POS } from './CameraRig';
+import { CombatSystem } from './CombatSystem';
+import { HudModel } from './HudModel';
+import { RenderWorld } from './RenderWorld';
 import { RunState } from './RunState';
 import { WaveManager } from './WaveManager';
 
@@ -69,9 +71,8 @@ const tmpV = new THREE.Vector3();
 const tmpV2 = new THREE.Vector3();
 
 export class Game {
-  private renderer: THREE.WebGLRenderer;
-  private scene = new THREE.Scene();
-  private camera: THREE.PerspectiveCamera;
+  private renderWorld: RenderWorld;
+  private scene: THREE.Scene;
   private cameraRig: CameraRig;
   private arena: Arena;
   private effects: Effects;
@@ -80,25 +81,11 @@ export class Game {
   private audio = new AudioFX();
   private run = new RunState();
   private waves: WaveManager;
+  private combat: CombatSystem;
+  private hudModel: HudModel;
 
   private player: TankEntity | null = null;
   private tanks: TankEntity[] = [];
-
-  // Централизованная система урона
-  public damageSystem: DamageSystem = {
-    applyDamage: (target: TankEntity, dmg: number, source: TankEntity) => {
-      this.onTankHit(target, dmg, source);
-    },
-    applyKnockback: (target: TankEntity, dir: THREE.Vector3, force: number) => {
-      target.knockback.addScaledVector(dir, force);
-    },
-    damageBlock: (blockId: number, dmg: number, hitPos: THREE.Vector3) => {
-      const res = this.arena.damageBlock(blockId, dmg);
-      if (res === 'destroyed') {
-        this.onBlockDestroyed(hitPos, 1.4);
-      }
-    },
-  };
 
   private previewGroup: THREE.Group | null = null;
   private previewVisual: TankVisual | null = null;
@@ -109,78 +96,15 @@ export class Game {
 
   private listeners = new Set<(e: GameEvent) => void>();
   private hud: HudSnapshot;
-  private mmStatic: MinimapStatic[] = [];
-  private mmById = new Map<number, MinimapStatic>();
   private elapsed = 0;
   private raf = 0;
   private lastTs = 0;
   private disposed = false;
 
   constructor(private canvas: HTMLCanvasElement) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.08;
-
-    this.camera = new THREE.PerspectiveCamera(58, 1, 0.1, 500);
-    this.cameraRig = new CameraRig(this.camera);
-    this.scene.background = new THREE.Color(0x060a12);
-    this.scene.fog = new THREE.Fog(0x0a0f18, 75, 250);
-
-    // Sky-dome шейдер (градиент неба, солнце, облака) — адаптация из game1
-    const sky = new THREE.Mesh(
-      new THREE.SphereGeometry(480, 32, 20),
-      new THREE.ShaderMaterial({
-        side: THREE.BackSide,
-        depthWrite: false,
-        vertexShader: `
-          varying vec3 vPos;
-          void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-        fragmentShader: `
-          varying vec3 vPos;
-          void main() {
-            vec3 n = normalize(vPos);
-            float h = n.y;
-            vec3 zen = vec3(0.03, 0.05, 0.09);
-            vec3 hor = vec3(0.10, 0.17, 0.26);
-            vec3 col = mix(hor, zen, clamp(h * 1.6, 0.0, 1.0));
-            vec3 sunDir = normalize(vec3(0.5, 0.6, 0.4));
-            float sunDot = max(0.0, dot(n, sunDir));
-            float sunDisc = smoothstep(0.9975, 0.999, sunDot);
-            col += vec3(1.0, 0.85, 0.6) * sunDisc * 2.0;
-            col += vec3(0.5, 0.6, 0.8) * pow(sunDot, 16.0) * 0.4;
-            float cloud = sin(n.x * 10.0 + n.z * 16.0) * cos(n.z * 12.0 - n.x * 7.0);
-            float puff = smoothstep(0.25, 0.7, cloud);
-            if (h > 0.04) {
-              col = mix(col, vec3(0.16, 0.22, 0.30), puff * 0.25 * smoothstep(0.04, 0.2, h));
-            }
-            gl_FragColor = vec4(col, 1.0);
-          }`,
-      }),
-    );
-    this.scene.add(sky);
-
-    const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.06).texture;
-    pmrem.dispose();
-
-    const hemi = new THREE.HemisphereLight(0x8fb9d8, 0x0a0e14, 0.5);
-    this.scene.add(hemi);
-    const sun = new THREE.DirectionalLight(0xffe6c0, 2.4);
-    sun.position.set(58, 78, 32);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    const sc = sun.shadow.camera;
-    sc.left = -88; sc.right = 88; sc.top = 88; sc.bottom = -88;
-    sc.near = 10; sc.far = 220;
-    sun.shadow.bias = -0.0006;
-    sun.shadow.normalBias = 0.03;
-    this.scene.add(sun);
-    const rim = new THREE.DirectionalLight(0x2ee6c0, 0.5);
-    rim.position.set(-30, 20, -40);
-    this.scene.add(rim);
+    this.renderWorld = new RenderWorld(canvas);
+    this.scene = this.renderWorld.scene;
+    this.cameraRig = this.renderWorld.cameraRig;
 
     this.arena = new Arena(this.scene);
     this.effects = new Effects(this.scene);
@@ -191,15 +115,14 @@ export class Game {
     };
     this.run.load();
 
-    for (const c of this.arena.colliders) {
-      const entry: MinimapStatic = {
-        id: c.id, x: (c.minX + c.maxX) / 2, z: (c.minZ + c.maxZ) / 2,
-        w: c.maxX - c.minX, d: c.maxZ - c.minZ,
-        kind: c.kind, alive: c.kind !== 'block',
-      };
-      this.mmStatic.push(entry);
-      this.mmById.set(c.id, entry);
-    }
+    this.combat = new CombatSystem({
+      arena: this.arena,
+      effects: this.effects,
+      audio: this.audio,
+      run: this.run,
+      emit: (e) => this.emit(e),
+      onPlayerDeath: () => { this.input.releaseLock(); this.deathT = 0; },
+    });
 
     this.waves = new WaveManager({
       scene: this.scene,
@@ -211,7 +134,10 @@ export class Game {
       emit: (e) => this.emit(e),
     });
 
-    this.hud = this.makeHudSnapshot();
+    this.hudModel = new HudModel({ run: this.run, audio: this.audio, waves: this.waves, input: this.input });
+    this.hudModel.buildMinimap(this.arena);
+
+    this.hud = this.hudModel.getHud(this.player, this.tanks);
     this.update3DPreview();
 
     this.onResize();
@@ -230,7 +156,7 @@ export class Game {
       scene: this.scene,
       effects: this.effects,
       audio: this.audio,
-      damageSystem: this.damageSystem,
+      damageSystem: this.combat.damageSystem,
       projectiles: this.projectiles,
       onShotFired: () => this.emit({ type: 'shotFired' }),
     };
@@ -363,54 +289,10 @@ export class Game {
   }
 
   getHud(): HudSnapshot { return this.hud; }
-  getMinimapStatic(): MinimapStatic[] { return this.mmStatic; }
+  getMinimapStatic(): MinimapStatic[] { return this.hudModel.getStatic(); }
 
   fillMinimapDynamics(out: MinimapDynamic[]): MinimapDynamic[] {
-    out.length = 0;
-    for (const t of this.tanks) {
-      if (!t.alive) continue;
-      out.push({ x: t.position.x, z: t.position.z, yaw: t.yaw, turret: t.yaw + t.turretYaw, isPlayer: t.isPlayer });
-    }
-    return out;
-  }
-
-  private makeHudSnapshot(): HudSnapshot {
-    const p = this.player;
-
-    // Состояние боеприпасов делегируется оружию (единый интерфейс)
-    const ammoState = p?.weapon?.getAmmoState();
-    const ammo = ammoState?.ammo ?? 0;
-    const magazine = ammoState?.magazine ?? 0;
-    const reloading = ammoState?.reloading ?? false;
-    const reloadProgress = ammoState?.reloadProgress ?? 0;
-    const isCharging = ammoState?.isCharging ?? false;
-
-    const showScore = this.run.mode === 'playing' && this.input.scoreHeld && !this.run.paused;
-    const board: ScoreRow[] = this.tanks
-      .map((t) => ({
-        name: t.name,
-        hull: t.hullId ? HULLS[t.hullId].name : '-',
-        turret: t.turretId ? TURRETS[t.turretId].name : '-',
-        weapon: t.params.weaponType ?? '-',
-        hpFrac: t.maxHealth > 0 ? t.health / t.maxHealth : 0,
-        isPlayer: t.isPlayer,
-        alive: t.alive,
-      }))
-      .sort((a, b) => (b.isPlayer ? 1 : 0) - (a.isPlayer ? 1 : 0) || b.hpFrac - a.hpFrac);
-
-    return {
-      mode: this.run.mode, paused: this.run.paused,
-      health: p?.health ?? HULLS[this.run.currentHull].maxHealth,
-      maxHealth: p?.maxHealth ?? HULLS[this.run.currentHull].maxHealth,
-      ammo, magazine, reloading, reloadProgress, isCharging,
-      boost: p?.boostEnergy ?? 1,
-      score: this.run.score, kills: this.run.kills, wave: this.waves.wave,
-      botsAlive: this.waves.bots.filter((b) => b.tank.alive).length,
-      alive: p?.alive ?? false, timeSec: this.run.matchTime,
-      muted: this.audio.muted,
-      hullId: this.run.currentHull, turretId: this.run.currentTurret,
-      showScore, scoreboard: board,
-    };
+    return this.hudModel.fillDynamics(this.tanks, out);
   }
 
   private clearTanks() {
@@ -422,57 +304,6 @@ export class Game {
     this.waves.reset();
     this.player = null;
   }
-
-  private onTankHit(target: TankEntity, dmg: number, owner: TankEntity) {
-    target.takeDamage(dmg, owner.id);
-    if (target.isPlayer) {
-      this.audio.hitPlayer();
-      this.effects.addShake(0.3);
-      // направление на атакующего в системе координат экрана (0 = спереди, по часовой)
-      const dx = owner.position.x - target.position.x;
-      const dz = owner.position.z - target.position.z;
-      const fs = Math.sin(target.yaw);
-      const fc = Math.cos(target.yaw);
-      const dir = (dx * dx + dz * dz) > 0.01
-        ? Math.atan2(dx * fc - dz * fs, dx * fs + dz * fc)
-        : 0;
-      this.emit({ type: 'playerHit', dir });
-    } else {
-      this.audio.hitEnemy();
-      if (owner.isPlayer) this.emit({ type: 'enemyHit', killed: !target.alive });
-    }
-
-    // Сокращенный лог
-    if (!target.isPlayer) {
-
-    }
-
-    if (!target.alive) this.onTankDestroyed(target, owner);
-  }
-
-  private onTankDestroyed(target: TankEntity, owner: TankEntity | null) {
-    const p = target.position.clone().setY(1.4);
-    this.effects.explosion(p, target.isPlayer ? 0x2ee6c0 : 0xff7a3d, 1.9);
-    this.effects.debris(p, 0xffa050, 26);
-    this.audio.explosion();
-
-    if (target.isPlayer) {
-      this.audio.death();
-      this.audio.stopEngine();
-      this.input.releaseLock();
-      this.deathT = 0;
-    } else {
-      const byPlayer = owner?.isPlayer ?? false;
-      if (byPlayer) { this.run.score += SCORE.kill; this.run.kills += 1; }
-      this.emit({ type: 'kill', victim: target.name, byPlayer });
-    }
-  }
-
-  private onBlockDestroyed = (pos: THREE.Vector3, size: number) => {
-    this.effects.explosion(pos, 0xffb02e, size);
-    this.effects.debris(pos, 0x6b7688, 18);
-    this.audio.explosion();
-  };
 
   private step(dt: number) {
     const p = this.player;
@@ -525,8 +356,8 @@ export class Game {
       tanks: this.tanks,
       arena: this.arena,
       effects: this.effects,
-      onTankHit: (target, dmg, owner) => this.onTankHit(target, dmg, owner),
-      onBlockDestroyed: this.onBlockDestroyed,
+      onTankHit: (target, dmg, owner) => this.combat.onTankHit(target, dmg, owner),
+      onBlockDestroyed: this.combat.onBlockDestroyed,
     });
 
     // --- Переход к следующей волне ---
@@ -559,7 +390,7 @@ export class Game {
     );
 
     // Синхронизация состояния блоков на миникарте
-    MinimapSystem.sync(this.arena, this.mmById);
+    MinimapSystem.sync(this.arena, this.hudModel.getByIdMap());
   }
 
   private tick = (ts: number) => {
@@ -581,16 +412,14 @@ export class Game {
       colliders: this.arena.colliders, effects: this.effects,
     });
     if (this.run.paused) this.audio.setEngine(0);
-    Object.assign(this.hud, this.makeHudSnapshot());
-    this.renderer.render(this.scene, this.camera);
+    Object.assign(this.hud, this.hudModel.getHud(this.player, this.tanks));
+    this.renderWorld.render();
   };
 
   private onResize = () => {
     const w = this.canvas.clientWidth || window.innerWidth;
     const h = this.canvas.clientHeight || window.innerHeight;
-    this.renderer.setSize(w, h, false);
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
+    this.renderWorld.resize(w, h);
   };
 
   private onVisibility = () => {
@@ -609,6 +438,6 @@ export class Game {
     this.audio.stopEngine();
     this.clearTanks();
     if (this.previewGroup) this.scene.remove(this.previewGroup);
-    this.renderer.dispose();
+    this.renderWorld.dispose();
   }
 }
