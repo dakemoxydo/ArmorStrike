@@ -43,7 +43,6 @@ export function colliderFromCenter(
 
 export const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 export const wrapAngle = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
-export const lerpAngle = (a: number, b: number, t: number) => a + wrapAngle(b - a) * t;
 
 /** Выталкивание круга из набора AABB. Возвращает скорректированную позицию. */
 export function resolveCircle(
@@ -114,6 +113,34 @@ export function segmentHitsCollider(
     if (tmin > tmax) return false;
   }
   return tmax >= tmin;
+}
+
+/** Возвращает параметр t∈[0,1] первого пересечения сегмента с AABB (с отступом) или -1. */
+export function segmentHitT(
+  ax: number, az: number, bx: number, bz: number,
+  c: Collider, inflate = 0,
+): number {
+  const minX = c.minX - inflate, maxX = c.maxX + inflate;
+  const minZ = c.minZ - inflate, maxZ = c.maxZ + inflate;
+  const dx = bx - ax, dz = bz - az;
+  let tmin = 0, tmax = 1;
+  if (Math.abs(dx) < 1e-9) {
+    if (ax < minX || ax > maxX) return -1;
+  } else {
+    let t1 = (minX - ax) / dx, t2 = (maxX - ax) / dx;
+    if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; }
+    tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2);
+    if (tmin > tmax) return -1;
+  }
+  if (Math.abs(dz) < 1e-9) {
+    if (az < minZ || az > maxZ) return -1;
+  } else {
+    let t1 = (minZ - az) / dz, t2 = (maxZ - az) / dz;
+    if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; }
+    tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2);
+    if (tmin > tmax) return -1;
+  }
+  return tmin < 0 ? 0 : tmin;
 }
 
 /** Прямая видимость между двумя точками (учитываются только коллайдеры blocksSight). */

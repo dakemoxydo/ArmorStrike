@@ -3,9 +3,7 @@
 import * as THREE from 'three';
 import { FLAMETHROWER_CONFIG } from '../constants';
 import type { TankEntity } from '../Tank';
-import type { Effects } from '../effects';
-import type { AudioFX } from '../audio';
-import type { DamageSystem } from './RailgunWeapon';
+import type { Weapon, WeaponContext, WeaponDeps } from './types';
 
 interface FlameParticle {
   active: boolean;
@@ -26,7 +24,8 @@ const tmpScaleVec = new THREE.Vector3();
 const tmpColor = new THREE.Color();
 const localDir = new THREE.Vector3();
 
-export class FlamethrowerWeapon {
+export class FlamethrowerWeapon implements Weapon {
+  readonly owner: TankEntity;
   energy = FLAMETHROWER_CONFIG.energyMax;
   isFiring = false;
 
@@ -38,13 +37,11 @@ export class FlamethrowerWeapon {
   private particles: FlameParticle[] = [];
   private muzzleLight: THREE.PointLight;
 
-  constructor(
-    private owner: TankEntity,
-    private scene: THREE.Scene,
-    private effects: Effects,
-    private audio: AudioFX,
-    private damageSystem: DamageSystem,
-  ) {
+  private deps: WeaponDeps;
+
+  constructor(owner: TankEntity, deps: WeaponDeps) {
+    this.owner = owner;
+    this.deps = deps;
     const count = FLAMETHROWER_CONFIG.particleCount;
 
     // Геометрия частицы пламени
@@ -69,7 +66,7 @@ export class FlamethrowerWeapon {
     this.instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(colors, 3);
     this.instancedMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
 
-    this.scene.add(this.instancedMesh);
+    this.deps.scene.add(this.instancedMesh);
 
     // Инициализация пула частиц
     for (let i = 0; i < count; i++) {
@@ -90,16 +87,16 @@ export class FlamethrowerWeapon {
 
     // Одиночный мерцающий источник света на срезе ствола
     this.muzzleLight = new THREE.PointLight(0xff6600, 0, 22);
-    this.scene.add(this.muzzleLight);
+    this.deps.scene.add(this.muzzleLight);
   }
 
-  setTrigger(holding: boolean) {
-    if (holding && !this.isFiring && this.energy > 5 && this.owner.alive) {
+  setFire(active: boolean) {
+    if (active && !this.isFiring && this.energy > 5 && this.owner.alive) {
       this.isFiring = true;
-      this.audio.startFlameLoop();
-    } else if (!holding && this.isFiring) {
+      this.deps.audio.startFlameLoop();
+    } else if (!active && this.isFiring) {
       this.isFiring = false;
-      this.audio.stopFlameLoop();
+      this.deps.audio.stopFlameLoop();
     }
   }
 
@@ -107,7 +104,7 @@ export class FlamethrowerWeapon {
     return this.energy / FLAMETHROWER_CONFIG.energyMax;
   }
 
-  update(dt: number, tanks: TankEntity[]) {
+  update(dt: number, ctx: WeaponContext) {
     // Точная позиция, кватернион и направление ствола в мировых координатах
     this.owner.muzzleWorld(tmpMuzzle);
     this.owner.visual.muzzle.getWorldQuaternion(tmpMuzzleQuat);
@@ -119,7 +116,7 @@ export class FlamethrowerWeapon {
       if (this.energy <= 0) {
         this.energy = 0;
         this.isFiring = false;
-        this.audio.stopFlameLoop();
+        this.deps.audio.stopFlameLoop();
       }
     } else {
       this.energy = Math.min(
@@ -133,7 +130,7 @@ export class FlamethrowerWeapon {
       this.tickTimer += dt;
       if (this.tickTimer >= FLAMETHROWER_CONFIG.tickRate) {
         this.tickTimer -= FLAMETHROWER_CONFIG.tickRate;
-        this.processOverlapDamage(tanks);
+        this.processOverlapDamage(ctx.tanks);
       }
 
       // Мерцание дульного PointLight
@@ -251,25 +248,30 @@ export class FlamethrowerWeapon {
         if (angle <= halfCone) {
           // Цель внутри конуса поражения!
           const dmg = FLAMETHROWER_CONFIG.damagePerTick;
-          this.damageSystem.applyDamage(t, dmg, this.owner, 'Flamethrower');
-          this.damageSystem.applyKnockback(t, tmpTargetVec, FLAMETHROWER_CONFIG.knockback);
-
-          // Debug-лог
-          console.log(
-            `[DAMAGE] Target ${t.name} burned by ${this.owner.name} with Flamethrower! Damage: ${dmg}, HP remaining: ${t.health}/${t.maxHealth}`,
-          );
+          this.deps.damageSystem.applyDamage(t, dmg, this.owner);
+          this.deps.damageSystem.applyKnockback(t, tmpTargetVec, FLAMETHROWER_CONFIG.knockback);
 
           // Дым и искры на обгорающем танке
-          this.effects.spawnSmoke(t.position, 1, 1.0, false);
+          this.deps.effects.spawnSmoke(t.position, 1, 1.0, false);
         }
       }
     }
   }
 
+  getAmmoState() {
+    return {
+      ammo: Math.round(this.energy),
+      magazine: Math.round(FLAMETHROWER_CONFIG.energyMax),
+      reloading: this.energy < 10,
+      reloadProgress: this.energyRatio,
+      isCharging: false,
+    };
+  }
+
   dispose() {
-    this.audio.stopFlameLoop();
-    this.scene.remove(this.instancedMesh);
-    this.scene.remove(this.muzzleLight);
+    this.deps.audio.stopFlameLoop();
+    this.deps.scene.remove(this.instancedMesh);
+    this.deps.scene.remove(this.muzzleLight);
     this.instancedMesh.geometry.dispose();
   }
 }

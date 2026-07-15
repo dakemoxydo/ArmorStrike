@@ -2,24 +2,18 @@
 // Hitscan-оружие мгновенного действия с FSM (IDLE -> CHARGING -> FIRING -> COOLDOWN -> IDLE)
 import * as THREE from 'three';
 import { RAILGUN_CONFIG } from '../constants';
-import type { TankEntity } from '../Tank';
 import type { Arena } from '../Arena';
-import type { Effects } from '../effects';
-import type { AudioFX } from '../audio';
+import type { TankEntity } from '../Tank';
+import type { Weapon, WeaponContext, WeaponDeps } from './types';
 
 export type RailgunState = 'IDLE' | 'CHARGING' | 'FIRING' | 'COOLDOWN';
-
-export interface DamageSystem {
-  applyDamage: (target: TankEntity, dmg: number, source: TankEntity, weaponType: string) => void;
-  applyKnockback: (target: TankEntity, dir: THREE.Vector3, force: number) => void;
-  damageBlock: (blockId: number, dmg: number, hitPos: THREE.Vector3) => void;
-}
 
 const tmpMuzzle = new THREE.Vector3();
 const tmpDir = new THREE.Vector3();
 const tmpMid = new THREE.Vector3();
 
-export class RailgunWeapon {
+export class RailgunWeapon implements Weapon {
+  readonly owner: TankEntity;
   state: RailgunState = 'IDLE';
 
   // Таймеры управления
@@ -34,13 +28,13 @@ export class RailgunWeapon {
   private impactLight: THREE.PointLight;
   private raycaster = new THREE.Raycaster();
 
-  constructor(
-    private owner: TankEntity,
-    private scene: THREE.Scene,
-    private effects: Effects,
-    private audio: AudioFX,
-    private damageSystem: DamageSystem,
-  ) {
+  private deps: WeaponDeps;
+  private prevFire = false;
+
+  constructor(owner: TankEntity, deps: WeaponDeps) {
+    this.owner = owner;
+    this.deps = deps;
+
     // Геометрия и материал луча (переиспользуемые, создаются один раз)
     const beamGeo = new THREE.CylinderGeometry(0.18, 0.18, 1, 12);
     beamGeo.rotateX(Math.PI / 2); // ось Z вдоль луча
@@ -56,22 +50,23 @@ export class RailgunWeapon {
     this.beamMesh = new THREE.Mesh(beamGeo, this.beamMat);
     this.beamMesh.frustumCulled = false;
     this.beamMesh.visible = false;
-    this.scene.add(this.beamMesh);
+    this.deps.scene.add(this.beamMesh);
 
     // Точечные вспышки
     this.muzzleLight = new THREE.PointLight(0x2ee6c0, 0, 18);
     this.impactLight = new THREE.PointLight(0xfff0a0, 0, 15);
-    this.scene.add(this.muzzleLight);
-    this.scene.add(this.impactLight);
+    this.deps.scene.add(this.muzzleLight);
+    this.deps.scene.add(this.impactLight);
   }
 
-  /** Нажатие кнопки огня */
-  triggerFire() {
-    if (this.state === 'IDLE' && this.owner.alive) {
+  /** Установить состояние спуска. Стреляет по фронту нажатия (край). */
+  setFire(active: boolean) {
+    if (active && !this.prevFire && this.state === 'IDLE' && this.owner.alive) {
       this.state = 'CHARGING';
       this.chargeTimer = 0;
-      this.audio.chargeRailgun();
+      this.deps.audio.chargeRailgun();
     }
+    this.prevFire = active;
   }
 
   get reloadProgress(): number {
@@ -92,7 +87,7 @@ export class RailgunWeapon {
     return this.state === 'COOLDOWN';
   }
 
-  update(dt: number, tanks: TankEntity[], arena: Arena) {
+  update(dt: number, ctx: WeaponContext) {
     const visual = this.owner.visual;
 
     switch (this.state) {
@@ -125,7 +120,7 @@ export class RailgunWeapon {
         // По завершении времени заряда — автоматический переход в FIRING
         if (this.chargeTimer >= RAILGUN_CONFIG.chargeTime) {
           visual.barrelGroup.position.set(0, 0.5, 0.55);
-          this.executeFiring(tanks, arena);
+          this.executeFiring(ctx.tanks, ctx.arena);
           this.state = 'COOLDOWN';
           this.reloadTimer = RAILGUN_CONFIG.reloadTime;
         }
@@ -182,8 +177,8 @@ export class RailgunWeapon {
     this.owner.aimDir(tmpDir);
 
     // Звук и импульс отката
-    this.audio.shoot('railgun');
-    this.effects.muzzle(tmpMuzzle, 0x8fffe8);
+    this.deps.audio.shoot('railgun');
+    this.deps.effects.muzzle(tmpMuzzle, 0x8fffe8);
     this.owner.onFired(RAILGUN_CONFIG.knockback);
 
     // Настройка Raycaster
@@ -232,16 +227,11 @@ export class RailgunWeapon {
           hitTanksSet.add(hitTank.id);
 
           const dmg = Math.round(currentDamage);
-          this.damageSystem.applyDamage(hitTank, dmg, this.owner, 'Railgun');
-          this.damageSystem.applyKnockback(hitTank, tmpDir, RAILGUN_CONFIG.knockback * (currentDamage / RAILGUN_CONFIG.damage));
-
-          // Debug-лог урона
-          console.log(
-            `[DAMAGE] Target ${hitTank.name} hit by ${this.owner.name} with Railgun! Damage: ${dmg}, HP remaining: ${hitTank.health}/${hitTank.maxHealth}`,
-          );
+          this.deps.damageSystem.applyDamage(hitTank, dmg, this.owner);
+          this.deps.damageSystem.applyKnockback(hitTank, tmpDir, RAILGUN_CONFIG.knockback * (currentDamage / RAILGUN_CONFIG.damage));
 
           // Искры и вспышка на цели
-          this.effects.impact(hit.point, 0x8fffe8);
+          this.deps.effects.impact(hit.point, 0x8fffe8);
           this.impactLight.position.copy(hit.point);
 
           // Уменьшаем урон для следующей пробитой цели
@@ -251,9 +241,9 @@ export class RailgunWeapon {
         // Пересечение со стеной или блоком
         const blockId = (hit.object as unknown as { colliderId?: number }).colliderId;
         if (blockId) {
-          this.damageSystem.damageBlock(blockId, Math.round(currentDamage), hit.point);
+          this.deps.damageSystem.damageBlock(blockId, Math.round(currentDamage), hit.point);
         }
-        this.effects.impact(hit.point, 0xffa040);
+        this.deps.effects.impact(hit.point, 0xffa040);
         maxHitDist = hit.distance;
         break; // Непробиваемые стены останавливают луч
       }
@@ -275,10 +265,21 @@ export class RailgunWeapon {
     this.muzzleLight.intensity = 80;
   }
 
+  getAmmoState() {
+    const reloading = this.isCharging || this.isCooldown;
+    return {
+      ammo: reloading ? 0 : 1,
+      magazine: 1,
+      reloading,
+      reloadProgress: this.reloadProgress,
+      isCharging: this.isCharging,
+    };
+  }
+
   dispose() {
-    this.scene.remove(this.beamMesh);
-    this.scene.remove(this.muzzleLight);
-    this.scene.remove(this.impactLight);
+    this.deps.scene.remove(this.beamMesh);
+    this.deps.scene.remove(this.muzzleLight);
+    this.deps.scene.remove(this.impactLight);
     this.beamMat.dispose();
     this.beamMesh.geometry.dispose();
   }
