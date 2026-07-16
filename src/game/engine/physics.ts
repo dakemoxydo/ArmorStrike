@@ -1,4 +1,5 @@
 // ===== Базовая 2D-физика на плоскости XZ: AABB-коллайдеры, круги, сегменты =====
+import * as THREE from 'three';
 
 let nextColliderId = 1;
 
@@ -43,6 +44,16 @@ export function colliderFromCenter(
 
 export const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 export const wrapAngle = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+
+/** Плавное затухание значения к цели (обёртка THREE.MathUtils.damp). */
+export const dampTo = (current: number, target: number, lambda: number, dt: number): number =>
+  THREE.MathUtils.damp(current, target, lambda, dt);
+
+/** Точка позади сущности (по оси yaw + PI) на заданном смещении и высоте. */
+export function rearPoint(out: THREE.Vector3, x: number, z: number, yaw: number, offset: number, height: number): THREE.Vector3 {
+  const back = yaw + Math.PI;
+  return out.set(x + Math.sin(back) * offset, height, z + Math.cos(back) * offset);
+}
 
 /** Выталкивание круга из набора AABB. Возвращает скорректированную позицию. */
 export function resolveCircle(

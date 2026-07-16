@@ -6,16 +6,14 @@ import type { GameEvent } from './types';
 import type { Arena } from './Arena';
 import type { Effects } from './effects';
 import type { AudioFX } from './audio';
-import type { RunState } from './RunState';
 import type { TankLike } from '../core/types';
-import { SCORE } from './constants';
+import { COLORS } from '../core/constants';
 import { createDamageSystem } from '../core/DamageSystem';
 
 export interface CombatDeps {
   arena: Arena;
   effects: Effects;
   audio: AudioFX;
-  run: RunState;
   emit: (e: GameEvent) => void;
   /** Вызывается при гибели игрока (Game сбрасывает deathT и отпускает захват мыши). */
   onPlayerDeath: () => void;
@@ -59,7 +57,7 @@ export class CombatSystem {
 
   private onTankDestroyed(target: TankLike, owner: TankLike | null) {
     const p = target.position.clone().setY(1.4);
-    this.deps.effects.explosion(p, target.isPlayer ? 0x2ee6c0 : 0xff7a3d, 1.9);
+    this.deps.effects.explosion(p, target.isPlayer ? COLORS.player : 0xff7a3d, 1.9);
     this.deps.effects.debris(p, 0xffa050, 26);
     this.deps.audio.explosion();
 
@@ -69,7 +67,6 @@ export class CombatSystem {
       this.deps.onPlayerDeath();
     } else {
       const byPlayer = owner?.isPlayer ?? false;
-      if (byPlayer) { this.deps.run.score += SCORE.kill; this.deps.run.kills += 1; }
       this.deps.emit({ type: 'kill', victim: target.name, byPlayer });
     }
   }

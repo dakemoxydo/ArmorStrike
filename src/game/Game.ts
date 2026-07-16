@@ -1,248 +1,77 @@
 // ===== Ядро игры: координатор подсистем, рендер-цикл, гараж, камера =====
-import * as THREE from 'three';
-import { TURRETS } from '../core/catalog';
 import type { HullId, TurretId } from '../core/catalog';
-import { Arena } from './Arena';
 import type { TankVisual } from './Tank';
-import { GarageInput } from '../ui/GarageInput';
-import { ProjectileManager } from './engine/Projectile';
-import { PlayerController } from './PlayerController';
-import { Effects } from './effects';
-import { AudioFX } from './audio';
-import { CameraRig } from './CameraRig';
-import { CombatSystem } from './CombatSystem';
-import { HudModel } from './HudModel';
-import { RenderWorld } from './RenderWorld';
-import { RunState } from './RunState';
-import { WaveManager } from './WaveManager';
-import { GameSimulation } from './engine/GameSimulation';
-import { createWeapon, buildPlayerTank } from './PlayerFactory';
-import type { WeaponFactoryDeps } from './PlayerFactory';
+import { bootstrapGame, type GameContext } from './GameBootstrap';
+import { QualityController } from './QualityController';
+import { GameModeController } from './GameModeController';
+import { GarageBinding } from './GarageBinding';
 import type { GameEvent, GameMode, HudSnapshot, MinimapDynamic, MinimapStatic } from './types';
-import { GameLoop } from './GameLoop';
-import { PreviewController } from './PreviewController';
-import {
-  getQualityPreset, loadQuality, nextQuality, saveQuality, type QualityLevel,
-} from './graphicsQuality';
+import type { QualityLevel } from './graphicsQuality';
+import type { GameSimulation } from './engine/GameSimulation';
 
 export class Game {
   readonly sim: GameSimulation;
 
-  private renderWorld: RenderWorld;
-  private scene: THREE.Scene;
-  private cameraRig: CameraRig;
-  private previewController: PreviewController;
-  private gameLoop: GameLoop;
+  private ctx: GameContext;
+  private quality: QualityController;
+  private modes: GameModeController;
+  private garage: GarageBinding;
 
-  private listeners = new Set<(e: GameEvent) => void>();
-  private emitEvent: (e: GameEvent) => void;
   private hudCallback: ((hud: HudSnapshot) => void) | null = null;
-
   private hud: HudSnapshot;
 
-  private weaponDeps: WeaponFactoryDeps;
-  private garageInput!: GarageInput;
-
   constructor(private canvas: HTMLCanvasElement) {
-    this.renderWorld = new RenderWorld(canvas);
-    this.scene = this.renderWorld.scene;
-    this.cameraRig = this.renderWorld.cameraRig;
+    this.ctx = bootstrapGame(canvas);
+    this.sim = this.ctx.sim;
 
-    const arena = new Arena(this.scene);
-    const effects = new Effects(this.scene);
-    const projectiles = new ProjectileManager(this.scene);
-    const input = new PlayerController();
-    const audio = new AudioFX();
-    const run = new RunState();
-
-    input.attach(canvas);
-    input.onLockLost = () => {
-      if (run.mode === 'playing' && !run.paused) this.togglePause();
-    };
-    run.load();
-
-    this.emitEvent = (e: GameEvent) => {
-      for (const fn of this.listeners) fn(e);
-    };
-
-    // Holder: combat.onPlayerDeath замыкается до создания sim (избегаем let/reassign)
-    const simRef: { current: GameSimulation | null } = { current: null };
-
-    const combat = new CombatSystem({
-      arena, effects, audio, run,
-      emit: (e) => this.emitEvent(e),
-      onPlayerDeath: () => {
-        input.releaseLock();
-        if (simRef.current) simRef.current.deathT = 0;
-      },
-    });
-
-    this.weaponDeps = {
-      scene: this.scene,
-      effects,
-      audio,
-      damageSystem: combat.damageSystem,
-      projectiles,
-      onShotFired: () => this.emitEvent({ type: 'shotFired' }),
-    };
-
-    const sim = new GameSimulation(arena, effects, projectiles, input, audio, run);
-    simRef.current = sim;
-    this.sim = sim;
-
-    sim.combat = combat;
-
-    const waves = new WaveManager({
-      scene: this.scene, arena, effects, audio, run,
-      createWeapon: (tank, type) => createWeapon(tank, type, this.weaponDeps),
-      emit: (e) => this.emitEvent(e),
-    });
-    sim.waves = waves;
-
-    const hudModel = new HudModel({ run, audio, waves, input });
-    hudModel.buildMinimap(arena);
-    sim.init({ combat, waves, hudModel });
-
-    this.previewController = new PreviewController(this.scene, () => this.sim.run.mode);
-    this.hud = hudModel.getHud(null, []);
-    this.previewController.rebuild(this.sim.run.currentHull, this.sim.run.currentTurret);
-
-    // Применить сохранённый пресет (конструктор RenderWorld уже загрузил его)
-    this.renderWorld.applyQuality(getQualityPreset(loadQuality()));
-
-    this.onResize();
-    window.addEventListener('resize', this.onResize);
-    document.addEventListener('visibilitychange', this.onVisibility);
-
-    this.garageInput = new GarageInput({
+    this.quality = new QualityController(this.ctx.renderWorld, this.ctx.audio);
+    this.modes = new GameModeController({
+      sim: this.ctx.sim,
+      scene: this.ctx.scene,
+      cameraRig: this.ctx.cameraRig,
+      renderWorld: this.ctx.renderWorld,
+      previewController: this.ctx.previewController,
       canvas: this.canvas,
-      isInteractive: () => this.sim.run.mode === 'garage',
-      cameraRig: this.cameraRig,
+      weaponDeps: this.ctx.weaponDeps,
+      emit: this.ctx.emitEvent,
     });
-    this.garageInput.attach();
+    this.garage = new GarageBinding({
+      sim: this.ctx.sim,
+      previewController: this.ctx.previewController,
+      emit: this.ctx.emitEvent,
+    });
 
-    this.gameLoop = new GameLoop({
-      sim: this.sim,
-      cameraRig: this.cameraRig,
-      renderWorld: this.renderWorld,
-      hudModel,
-      hud: this.hud,
-      emit: this.emitEvent,
-      getPreviewVisual: () => this.previewController.previewVisual,
-      onHud: (hud) => this.hudCallback?.(hud),
-    });
-    this.gameLoop.start();
+    this.hud = this.ctx.sim.hudModel.getHud(null, []);
+    this.ctx.hudSink.current = (hud) => this.hudCallback?.(hud);
+    this.ctx.gameLoop.start();
   }
 
-  addListener(fn: (e: GameEvent) => void) { this.listeners.add(fn); }
-  removeListener(fn: (e: GameEvent) => void) { this.listeners.delete(fn); }
+  addListener(fn: (e: GameEvent) => void) { this.ctx.addListener(fn); }
+  removeListener(fn: (e: GameEvent) => void) { this.ctx.removeListener(fn); }
 
   /** Единый источник обновлений HUD: вызывается из игрового цикла (GameLoop). */
   setHudCallback(fn: ((hud: HudSnapshot) => void) | null) { this.hudCallback = fn; }
 
   get currentHull() { return this.sim.run.currentHull; }
   get currentTurret() { return this.sim.run.currentTurret; }
-  get previewVisual(): TankVisual | null { return this.previewController.previewVisual; }
+  get previewVisual(): TankVisual | null { return this.ctx.previewController.previewVisual; }
 
   setGarageSelection(hullId: HullId, turretId: TurretId) {
-    this.sim.run.currentHull = hullId;
-    this.sim.run.currentTurret = turretId;
-    this.previewController.rebuild(hullId, turretId);
-    this.sim.audio.click();
-    this.sim.run.save();
-    this.emitEvent({ type: 'garageChanged' });
+    this.garage.setSelection(hullId, turretId);
   }
 
-  setMode(mode: GameMode) {
-    const wasPlaying = this.sim.run.mode === 'playing' || this.sim.run.mode === 'over';
-    if (wasPlaying && (mode === 'menu' || mode === 'garage')) {
-      this.sim.clearTanks(this.scene);
-      this.sim.projectiles.clear();
-      this.sim.deathT = -1;
-      this.sim.run.paused = false;
-      this.sim.input.releaseLock();
-      this.sim.input.enabled = false;
-      this.cameraRig.resetFov();
-    }
-    this.sim.run.mode = mode;
-    this.sim.audio.click();
-    if (mode === 'garage') {
-      this.cameraRig.resetGarage();
-      this.canvas.style.cursor = 'grab';
-    } else {
-      this.canvas.style.cursor = '';
-    }
-    if (mode === 'menu' || mode === 'garage') {
-      this.previewController.setVisible(true);
-    } else {
-      this.previewController.setVisible(false);
-    }
-    this.emitEvent({ type: 'modeChanged', mode });
-  }
-
-  startRound() {
-    this.sim.audio.ensure();
-    this.sim.audio.stopEngine();
-    this.sim.clearTanks(this.scene);
-    this.sim.projectiles.clear();
-    this.previewController.setVisible(false);
-
-    this.sim.run.resetRun();
-    this.sim.deathT = -1;
-    this.sim.prevReloading = false;
-
-    const player = buildPlayerTank(this.sim.run.currentHull, this.sim.run.currentTurret);
-    player.weapon = createWeapon(player, TURRETS[this.sim.run.currentTurret].weaponType, this.weaponDeps);
-
-    this.sim.player = player;
-    this.sim.tanks.push(player);
-    this.scene.add(player.visual.group);
-
-    this.sim.run.mode = 'playing';
-    this.sim.run.paused = false;
-    this.sim.input.enabled = true;
-    this.sim.input.camYaw = player.yaw;
-    this.sim.input.camPitch = 0.34;
-    this.cameraRig.snap(player, this.sim.input.camYaw, this.sim.input.camPitch);
-    this.sim.waves.begin(this.sim.tanks, this.sim.nameplates);
-    this.sim.audio.startEngine();
-    this.sim.input.requestLock();
-    this.emitEvent({ type: 'modeChanged', mode: 'playing' });
-  }
-
-  togglePause() {
-    if (this.sim.run.mode !== 'playing' || this.sim.deathT >= 0) return;
-    this.sim.run.paused = !this.sim.run.paused;
-    if (!this.sim.run.paused) this.sim.input.requestLock();
-    this.emitEvent({ type: 'pauseChanged', value: this.sim.run.paused });
-  }
+  setMode(mode: GameMode) { this.modes.setMode(mode); }
+  startRound() { this.modes.startRound(); }
+  togglePause() { this.modes.togglePause(); }
 
   toggleMute(): boolean {
     this.sim.audio.setMuted(!this.sim.audio.muted);
     return this.sim.audio.muted;
   }
 
-  getQuality(): QualityLevel {
-    return this.renderWorld.getQuality();
-  }
-
-  /** Цикл low → medium → high, сохранение в localStorage. */
-  cycleQuality(): QualityLevel {
-    const next = nextQuality(this.renderWorld.getQuality());
-    const preset = getQualityPreset(next);
-    this.renderWorld.applyQuality(preset);
-    saveQuality(next);
-    this.sim.audio.click();
-    return next;
-  }
-
-  /** Явная установка качества (например, после load). */
-  setQuality(level: QualityLevel): QualityLevel {
-    const preset = getQualityPreset(level);
-    this.renderWorld.applyQuality(preset);
-    saveQuality(level);
-    return level;
-  }
+  getQuality(): QualityLevel { return this.quality.getQuality(); }
+  cycleQuality(): QualityLevel { return this.quality.cycleQuality(); }
+  setQuality(level: QualityLevel): QualityLevel { return this.quality.setQuality(level); }
 
   getHud(): HudSnapshot { return this.hud; }
   getMinimapStatic(): MinimapStatic[] { return this.sim.hudModel.getStatic(); }
@@ -251,28 +80,15 @@ export class Game {
     return this.sim.hudModel.fillDynamics(this.sim.tanks, out);
   }
 
-  private onResize = () => {
-    const w = this.canvas.clientWidth || window.innerWidth;
-    const h = this.canvas.clientHeight || window.innerHeight;
-    this.renderWorld.resize(w, h);
-  };
-
-  private onVisibility = () => {
-    if (document.hidden && this.sim.run.mode === 'playing' && !this.sim.run.paused) {
-      this.sim.run.paused = true;
-      this.emitEvent({ type: 'pauseChanged', value: true });
-    }
-  };
-
   dispose() {
-    this.gameLoop.stop();
-    window.removeEventListener('resize', this.onResize);
-    document.removeEventListener('visibilitychange', this.onVisibility);
-    this.garageInput.detach();
+    this.ctx.gameLoop.stop();
+    window.removeEventListener('resize', this.ctx.onResize);
+    document.removeEventListener('visibilitychange', this.ctx.onVisibility);
+    this.ctx.garageInput.detach();
     this.sim.input.detach();
     this.sim.audio.stopEngine();
-    this.sim.clearTanks(this.scene);
-    this.previewController.dispose();
-    this.renderWorld.dispose();
+    this.sim.clearTanks(this.ctx.scene);
+    this.ctx.previewController.dispose();
+    this.ctx.renderWorld.dispose();
   }
 }

@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
 import type { TankEntity } from '../Tank';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
+import { buildAmmoState } from './types';
 
 const tmpMuzzle = new THREE.Vector3();
 const tmpDir = new THREE.Vector3();
@@ -87,13 +88,12 @@ export class CannonWeapon implements Weapon {
   getAmmoState() {
     const reloading = this.fullReloading;
     const reloadProgress = reloading ? 1 - this.reloadTimer / this.fullReloadTime : 0;
-    return {
+    return buildAmmoState({
       ammo: reloading ? 0 : this.ammo,
       magazine: this.magazine,
       reloading,
       reloadProgress,
-      isCharging: false,
-    };
+    });
   }
 
   dispose(): void {

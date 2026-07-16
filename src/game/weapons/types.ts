@@ -17,6 +17,18 @@ export interface WeaponAmmoState {
   isCharging: boolean;
 }
 
+/** Дополняет неполные поля аммуниции значениями по умолчанию.
+ *  Устраняет дублирование формы возврата в каждом оружии. */
+export function buildAmmoState(partial: Partial<WeaponAmmoState> & { magazine: number }): WeaponAmmoState {
+  return {
+    ammo: 0,
+    reloading: false,
+    reloadProgress: 0,
+    isCharging: false,
+    ...partial,
+  };
+}
+
 /** Контекст кадра, доступный оружию при обновлении. */
 export interface WeaponContext {
   tanks: TankEntity[];

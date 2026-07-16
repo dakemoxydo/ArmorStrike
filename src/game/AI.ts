@@ -12,14 +12,13 @@ export interface AICtx {
   player: TankEntity;
   bots: TankEntity[];
   colliders: Collider[];
-  bounds: number; // половина арены минус отступ
+  bounds: number;
 }
 
-/** Индивидуальный «характер» бота — задаёт разнообразие поведения. */
 export interface AIPersona {
-  aggro: number;  // 0..1 — насколько близко держится и как рвётся в бой
-  react: number;  // сек задержки реакции при обнаружении цели
-  lead: number;   // множитель упреждения по движущейся цели (0..1.2)
+  aggro: number;
+  react: number;
+  lead: number;
 }
 
 export function randomPersona(wave: number): AIPersona {
@@ -34,23 +33,18 @@ const DEFAULT_PERSONA: AIPersona = { aggro: 0.5, react: 0.25, lead: 0.9 };
 
 type AIState = 'patrol' | 'engage';
 
-/** Чистые хелперы решений ИИ — без Three.js, покрываемы unit-тестами. */
-
-/** Предпочтительная дистанция боя (по оружию и агрессии 0..1). */
 export function preferredRange(weapon: WeaponType, aggro: number): number {
   if (weapon === 'flamethrower') return 7;
   if (weapon === 'railgun') return 34 + aggro * 10;
-  return 20 + aggro * 8; // пушка
+  return 20 + aggro * 8;
 }
 
-/** Допуск прицеливания (радианы) по типу оружия. */
 export function aimTolerance(weapon: WeaponType): number {
   if (weapon === 'flamethrower') return 0.3;
   if (weapon === 'railgun') return 0.1;
-  return 0.14; // пушка
+  return 0.14;
 }
 
-/** Рулёжка: steer из угла отклонения к цели (clamp к [-1, 1]). */
 export function steeringFromAngle(diff: number): number {
   return clamp(diff * 2.4, -1, 1);
 }
@@ -69,7 +63,7 @@ export class AIController {
   private strafeT = 0;
   private scanT = Math.random() * Math.PI * 2;
   private patrolN = 0;
-  private reactT = 0;          // обратный отсчёт задержки реакции
+  private reactT = 0;
   private persona: AIPersona;
 
   constructor(
@@ -83,14 +77,12 @@ export class AIController {
     this.pickWaypoint(44);
   }
 
-  /** Предпочтительная дистанция боя в зависимости от оружия и агрессии. */
   private prefRange(): number {
     return preferredRange(this.tank.params.weaponType ?? 'cannon', this.persona.aggro);
   }
 
   private pickWaypoint(bounds: number, huntTarget?: { x: number; z: number }) {
     this.patrolN += 1;
-    // каждый третий патрульный манёвр — разведка в сторону игрока
     if (huntTarget && this.patrolN % 3 === 0) {
       const ang = Math.random() * Math.PI * 2;
       const dist = 24 + Math.random() * 18;
@@ -106,40 +98,44 @@ export class AIController {
     );
   }
 
-  update(dt: number, ctx: AICtx) {
-    const t = this.tank;
-    this.wantsFire = false;
-    t.boosting = false;
-    if (!t.alive) return;
-
+  /** Шаг 1: восприятие — дистанция, LOS, видимость игрока. */
+  private perceive(ctx: AICtx) {
     const p = ctx.player;
-    const dx = p.position.x - t.position.x;
-    const dz = p.position.z - t.position.z;
+    const dx = p.position.x - this.tank.position.x;
+    const dz = p.position.z - this.tank.position.z;
     const dist = Math.hypot(dx, dz);
-    const canSee = p.alive && dist < this.sight && losClear(t.position.x, t.position.z, p.position.x, p.position.z, ctx.colliders);
+    const canSee = p.alive && dist < this.sight &&
+      losClear(this.tank.position.x, this.tank.position.z, p.position.x, p.position.z, ctx.colliders);
+    return { canSee, dist, dx, dz };
+  }
 
-    // ==== смена состояний ====
+  /** Шаг 2: конечный автомат смены состояния engage/patrol. */
+  private updateStateMachine(canSee: boolean, dt: number, player: TankEntity) {
     if (canSee) {
-      if (this.state !== 'engage') this.reactT = this.persona.react; // задержка реакции при захвате
+      if (this.state !== 'engage') this.reactT = this.persona.react;
       this.state = 'engage';
       this.loseT = 0;
-      this.lastSeen.set(p.position.x, p.position.z);
+      this.lastSeen.set(player.position.x, player.position.z);
     } else if (this.state === 'engage') {
       this.loseT += dt;
       if (this.loseT > 2.2) {
         this.state = 'patrol';
-        this.waypoint.copy(this.lastSeen); // идти проверить последнюю позицию
+        this.waypoint.copy(this.lastSeen);
       }
     }
     if (this.reactT > 0) this.reactT -= dt;
+  }
 
-    const pref = this.prefRange();
+  /** Шаг 3: расчёт целевой точки движения + базовая газ/рулёжка. */
+  private computeTargetPoint(
+    state: AIState, dist: number, dx: number, dz: number,
+    player: TankEntity, pref: number, dt: number, t: TankEntity,
+  ) {
     let tx = this.waypoint.x;
     let tz = this.waypoint.y;
     let throttleBase = 0.85;
 
-    if (this.state === 'engage' && p.alive) {
-      // движение: держать дистанцию под своё оружие + латеральный манёвр
+    if (state === 'engage' && player.alive) {
       this.strafeT -= dt;
       if (this.strafeT <= 0) {
         this.strafeDir = Math.random() > 0.5 ? 1 : -1;
@@ -149,107 +145,166 @@ export class AIController {
       const nz = dz / (dist || 1);
       const perpX = -nz * this.strafeDir;
       const perpZ = nx * this.strafeDir;
-      if (dist > pref + 8) { tx = p.position.x + perpX * 6; tz = p.position.z + perpZ * 6; throttleBase = 1; }
+      if (dist > pref + 8) { tx = player.position.x + perpX * 6; tz = player.position.z + perpZ * 6; throttleBase = 1; }
       else if (dist < pref - 5) { tx = t.position.x - nx * 10; tz = t.position.z - nz * 10; throttleBase = 0.7; }
       else { tx = t.position.x + perpX * 10; tz = t.position.z + perpZ * 10; throttleBase = 0.6; }
     }
 
-    // ==== рулевое управление ====
-    const desired = Math.atan2(tx - t.position.x, tz - t.position.z);
-    const diff = wrapAngle(desired - t.yaw);
-    let steer = steeringFromAngle(diff);
-    let throttle = Math.abs(diff) < 1.1 ? throttleBase : 0.18;
+    return { tx, tz, throttleBase };
+  }
 
-    // ==== избегание препятствий (зонд впереди) ====
+  /** Шаг 6 (выполняется в update): избегание препятствий. */
+  private computeObstacleAvoidance(
+    dt: number, t: TankEntity, colliders: Collider[],
+  ): { steerOverride: number | null; throttleOverride: number | null } {
     const fx = Math.sin(t.yaw);
     const fz = Math.cos(t.yaw);
     const probeX = t.position.x + fx * 4.2;
     const probeZ = t.position.z + fz * 4.2;
     let blocked = false;
-    for (const c of ctx.colliders) {
+    for (const c of colliders) {
       if (!c.active) continue;
       if (pointInCollider(probeX, probeZ, c, 1.4)) { blocked = true; break; }
     }
     if (this.avoidT > 0) {
       this.avoidT -= dt;
-      steer = this.avoidDir;
-      throttle = 0.7;
+      return { steerOverride: this.avoidDir, throttleOverride: 0.7 };
     } else if (blocked) {
-      // выбрать свободную сторону
       const la = t.yaw + Math.PI / 3;
       const ra = t.yaw - Math.PI / 3;
-      const lFree = this.dirFree(t, la, ctx.colliders);
-      const rFree = this.dirFree(t, ra, ctx.colliders);
+      const lFree = this.dirFree(t, la, colliders);
+      const rFree = this.dirFree(t, ra, colliders);
       this.avoidDir = lFree && !rFree ? 1 : !lFree && rFree ? -1 : Math.random() > 0.5 ? 1 : -1;
       this.avoidT = 0.6;
     }
+    return { steerOverride: null, throttleOverride: null };
+  }
 
-    // ==== антизастревание ====
-    if (Math.abs(throttle) > 0.3 && t.speed < 1 && this.avoidT <= 0) {
+  /** Шаг 8: антизастревание. */
+  private checkAntiStuck(
+    dt: number, throttle: number, tankSpeed: number,
+    bounds: number, playerAlive: boolean, playerPos?: { x: number; z: number },
+  ) {
+    if (Math.abs(throttle) > 0.3 && tankSpeed < 1 && this.avoidT <= 0) {
       this.stuckT += dt;
       if (this.stuckT > 1.1) {
-        this.pickWaypoint(ctx.bounds, p.alive ? p.position : undefined);
+        this.pickWaypoint(bounds, playerAlive ? playerPos : undefined);
         this.stuckT = 0;
       }
     } else {
       this.stuckT = Math.max(0, this.stuckT - dt * 2);
     }
+  }
 
-    // прибытие в точку патруля
-    if (this.state === 'patrol') {
-      const wd = Math.hypot(tx - t.position.x, tz - t.position.z);
-      if (wd < 3) {
-        throttle = 0;
-        this.idleT += dt;
-        if (this.idleT > 0.5 + Math.random()) {
-          this.pickWaypoint(ctx.bounds, p.alive ? p.position : undefined);
-          this.idleT = 0;
-        }
+  /** Шаг 9: бездействие по прибытии в точку патруля (возвращает true если газ = 0). */
+  private updatePatrolIdle(
+    dt: number, tx: number, tz: number,
+    tPos: THREE.Vector3, bounds: number, playerPos?: { x: number; z: number },
+  ): boolean {
+    const wd = Math.hypot(tx - tPos.x, tz - tPos.z);
+    if (wd < 3) {
+      this.idleT += dt;
+      if (this.idleT > 0.5 + Math.random()) {
+        this.pickWaypoint(bounds, playerPos);
+        this.idleT = 0;
       }
+      return true;
     }
+    return false;
+  }
 
-    t.throttle = throttle;
-    t.steer = steer;
-
-    // ==== нитро: агрессивные боты рвутся на дистанцию сближения ====
-    t.boosting =
-      this.avoidT <= 0 && Math.abs(diff) < 0.4 && this.persona.aggro > 0.5 &&
+  /** Шаг 11: нитро. */
+  private computeBoost(
+    diff: number, dist: number, pref: number,
+    tx: number, tz: number, tPos: THREE.Vector3,
+  ): boolean {
+    return this.avoidT <= 0 && Math.abs(diff) < 0.4 && this.persona.aggro > 0.5 &&
       ((this.state === 'engage' && dist > pref + 14) ||
-       (this.state === 'patrol' && Math.hypot(tx - t.position.x, tz - t.position.z) > 22));
+       (this.state === 'patrol' && Math.hypot(tx - tPos.x, tz - tPos.z) > 22));
+  }
 
-    // ==== башня ====
-    if (this.state === 'engage' && p.alive) {
+  /** Шаг 12: наведение башни и огонь. */
+  private updateTurretAndFire(
+    dt: number, canSee: boolean, dist: number,
+    player: TankEntity, bots: TankEntity[],
+  ) {
+    const t = this.tank;
+    if (this.state === 'engage' && player.alive) {
       const w = t.params.weaponType;
-      // упреждение только для снарядной пушки (hitscan бьёт точно)
       const lead = w === 'cannon'
         ? clamp(dist / PROJECTILE.speed, 0, 1.4) * this.persona.lead
         : 0;
-      const ax = p.position.x + p.vel.x * lead;
-      const az = p.position.z + p.vel.z * lead;
+      const ax = player.position.x + player.vel.x * lead;
+      const az = player.position.z + player.vel.z * lead;
       const err = (Math.random() - 0.5) * this.aimError * 2;
       t.aimYaw = Math.atan2(ax - t.position.x, az - t.position.z) + err;
 
-      // ==== огонь ====
       const aimTol = aimTolerance(w ?? 'cannon');
       if (canSee && this.reactT <= 0 && dist < this.fireRange && t.fireTimer <= 0) {
         const turretAbs = t.yaw + t.turretYaw;
         const aimed = Math.abs(wrapAngle(t.aimYaw - turretAbs)) < aimTol;
-        // не палить по своим
         let friendlyInLine = false;
-        for (const b of ctx.bots) {
+        for (const b of bots) {
           if (b === t || !b.alive) continue;
           if (segmentHitsCircle(
-            t.position.x, t.position.z, p.position.x, p.position.z,
+            t.position.x, t.position.z, player.position.x, player.position.z,
             b.position.x, b.position.z, b.radius + 0.6,
           )) { friendlyInLine = true; break; }
         }
         if (aimed && !friendlyInLine) this.wantsFire = true;
       }
     } else {
-      // патруль: башня медленно сканирует
       this.scanT += dt * 0.7;
       t.aimYaw = t.yaw + Math.sin(this.scanT) * 0.9;
     }
+  }
+
+  update(dt: number, ctx: AICtx) {
+    const t = this.tank;
+    this.wantsFire = false;
+    t.boosting = false;
+    if (!t.alive) return;
+
+    // Шаг 1-2: восприятие + конечный автомат
+    const { canSee, dist, dx, dz } = this.perceive(ctx);
+    this.updateStateMachine(canSee, dt, ctx.player);
+
+    // Шаг 3-4: целевая точка + предпочтительная дистанция
+    const pref = this.prefRange();
+    const { tx, tz, throttleBase } = this.computeTargetPoint(
+      this.state, dist, dx, dz, ctx.player, pref, dt, t,
+    );
+
+    // Шаг 5: рулевое управление
+    const desired = Math.atan2(tx - t.position.x, tz - t.position.z);
+    const diff = wrapAngle(desired - t.yaw);
+    let steer = steeringFromAngle(diff);
+    let throttle = Math.abs(diff) < 1.1 ? throttleBase : 0.18;
+
+    // Шаг 6-7: избегание препятствий (переопределяет steer/throttle)
+    const avoid = this.computeObstacleAvoidance(dt, t, ctx.colliders);
+    if (avoid.steerOverride !== null) steer = avoid.steerOverride;
+    if (avoid.throttleOverride !== null) throttle = avoid.throttleOverride;
+
+    // Шаг 8: антизастревание
+    this.checkAntiStuck(dt, throttle, t.speed, ctx.bounds, ctx.player.alive, ctx.player.position);
+
+    // Шаг 9: бездействие патруля
+    if (this.state === 'patrol' && this.updatePatrolIdle(
+      dt, tx, tz, t.position, ctx.bounds, ctx.player.alive ? ctx.player.position : undefined,
+    )) {
+      throttle = 0;
+    }
+
+    // Шаг 10: применение управления
+    t.throttle = throttle;
+    t.steer = steer;
+
+    // Шаг 11: нитро
+    t.boosting = this.computeBoost(diff, dist, pref, tx, tz, t.position);
+
+    // Шаг 12: башня + огонь
+    this.updateTurretAndFire(dt, canSee, dist, ctx.player, ctx.bots);
   }
 
   private dirFree(t: TankEntity, a: number, colliders: Collider[]): boolean {

@@ -2,12 +2,13 @@ import * as THREE from 'three';
 import { COLORS } from '../../core/constants';
 import type { Shot, HitContext } from './Projectile';
 import type { TankEntity } from '../Tank';
+import { applyHit } from './applyHit';
 
 export interface ProjectileBehavior {
   init(s: Shot, owner: TankEntity, damage: number, customRange?: number): void;
   onFlight(s: Shot, dt: number): void;
   onCollideWall(s: Shot, hitPos: THREE.Vector3, ctx: HitContext): void;
-  onHitTank(s: Shot, target: TankEntity, hitPos: THREE.Vector3, dir: THREE.Vector3, ctx: HitContext): void;
+  onHitTank(s: Shot, target: TankEntity, hitPos: THREE.Vector3, dir: THREE.Vector3, ctx: HitContext, owner: TankEntity | null): void;
   onExpire(s: Shot, pos: THREE.Vector3, ctx: HitContext): void;
   trailEffect(s: Shot, pos: THREE.Vector3, ctx: HitContext): void;
   trailInterval(s: Shot): number;
@@ -27,9 +28,9 @@ const railgun: ProjectileBehavior = {
   onCollideWall(_, hitPos, ctx) {
     ctx.effects.impact(hitPos, 0x8fffe8);
   },
-  onHitTank(_, target, hitPos, dir, ctx) {
-    ctx.effects.impact(hitPos, 0x8fffe8);
-    target.knockback.addScaledVector(dir, 2.8);
+  onHitTank(_, target, hitPos, dir, ctx, owner) {
+    applyHit(ctx.damageSystem, target, 0, owner ?? target, dir, 2.8,
+      (p) => ctx.effects.impact(p, 0x8fffe8), hitPos);
   },
   onExpire(_, pos, ctx) {
     ctx.effects.trailPuff(pos, new THREE.Color(0x8fffe8));
@@ -63,10 +64,12 @@ const flamethrower: ProjectileBehavior = {
     ctx.effects.spawnSmoke(hitPos, 3, 1.5, true);
     ctx.effects.impact(hitPos, 0xff6600);
   },
-  onHitTank(_, target, hitPos, dir, ctx) {
-    ctx.effects.spawnSmoke(hitPos, 2, 0.8, false);
-    ctx.effects.impact(hitPos, 0xff5500);
-    target.knockback.addScaledVector(dir, 0.5);
+  onHitTank(_, target, hitPos, dir, ctx, owner) {
+    applyHit(ctx.damageSystem, target, 0, owner ?? target, dir, 0.5,
+      (p) => {
+        ctx.effects.spawnSmoke(p, 2, 0.8, false);
+        ctx.effects.impact(p, 0xff5500);
+      }, hitPos);
   },
   onExpire(_, pos, ctx) {
     ctx.effects.spawnSmoke(pos, 1, 0.7, false);
@@ -92,10 +95,12 @@ const cannon: ProjectileBehavior = {
     ctx.effects.explosion(hitPos, 0xffb020, 1.2);
     ctx.effects.impact(hitPos, 0xffcc44);
   },
-  onHitTank(_, target, hitPos, dir, ctx) {
-    ctx.effects.explosion(hitPos, 0xffb020, 1.3);
-    ctx.effects.impact(hitPos, 0xffcc44);
-    target.knockback.addScaledVector(dir, 4.0);
+  onHitTank(_, target, hitPos, dir, ctx, owner) {
+    applyHit(ctx.damageSystem, target, 0, owner ?? target, dir, 4.0,
+      (p) => {
+        ctx.effects.explosion(p, 0xffb020, 1.3);
+        ctx.effects.impact(p, 0xffcc44);
+      }, hitPos);
   },
   onExpire(_, pos, ctx) {
     ctx.effects.explosion(pos, 0xffb020, 0.8);

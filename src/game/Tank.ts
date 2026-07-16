@@ -5,7 +5,7 @@ import type { HullId, TurretId } from '../core/catalog';
 import type { Weapon } from './weapons/types';
 import { disposeObject3D } from './resources/disposeObject3D';
 import type { TankLike } from '../core/types';
-import type { TankParams, TankVisual } from './tank/types';
+import type { TankParams, TankVisual, TankFxState } from './tank/types';
 
 export type { TankParams, TankVisual } from './tank/types';
 /** Удобный re-export сборки меша (импорт типов — из tank/types, цикл разорван). */
@@ -31,9 +31,8 @@ export class TankEntity implements TankLike {
   boostEnergy = 1;
   knockback = new THREE.Vector3();
 
-  timeSinceHit = 0;
-  smokeAcc = 0;
-  dustAcc = 0;
+  /** Представленческое/визуальное состояние (только FX), вне симуляции. */
+  fx: TankFxState = { hitFlash: 0, barrelKick: 0, smokeAcc: 0, dustAcc: 0, timeSinceHit: 0 };
   hullId?: HullId;
   turretId?: TurretId;
   weapon?: Weapon;
@@ -45,8 +44,6 @@ export class TankEntity implements TankLike {
 
   fireTimer = 0;
 
-  hitFlash = 0;
-  barrelKick = 0;
   lastAttackerId = -1;
   vel = new THREE.Vector3();
 
@@ -78,7 +75,7 @@ export class TankEntity implements TankLike {
 
   onFired(recoil: number) {
     this.fireTimer = this.params.shotCooldown;
-    this.barrelKick = 1;
+    this.fx.barrelKick = 1;
     this.aimDir(this._v);
     this.knockback.addScaledVector(this._v, -recoil);
   }
@@ -86,9 +83,9 @@ export class TankEntity implements TankLike {
   takeDamage(dmg: number, attackerId: number) {
     if (!this.alive || dmg <= 0) return;
     this.health -= dmg;
-    this.hitFlash = 1;
+    this.fx.hitFlash = 1;
     this.lastAttackerId = attackerId;
-    this.timeSinceHit = 0;
+    this.fx.timeSinceHit = 0;
     if (this.health <= 0) {
       this.health = 0;
       this.alive = false;

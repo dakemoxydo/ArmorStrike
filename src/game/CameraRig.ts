@@ -2,11 +2,16 @@
 import * as THREE from 'three';
 import type { GameMode } from './types';
 import type { Collider } from './engine/physics';
-import { segmentHitT } from './engine/physics';
+import { segmentHitT, dampTo } from './engine/physics';
 import type { Effects } from './effects';
 import type { PlayerController } from './PlayerController';
 import type { TankEntity } from './Tank';
 import type { TankVisual } from './Tank';
+import { CameraMode } from './camera/CameraMode';
+import { MenuCameraMode } from './camera/MenuCameraMode';
+import { GarageCameraMode } from './camera/GarageCameraMode';
+import { PlayingCameraMode } from './camera/PlayingCameraMode';
+import { OverCameraMode } from './camera/OverCameraMode';
 
 export const PREVIEW_POS = new THREE.Vector3(0, 21, 0);
 
@@ -21,22 +26,30 @@ export interface CameraUpdateParams {
 }
 
 export class CameraRig {
-  private camera: THREE.PerspectiveCamera;
-  private camPos = new THREE.Vector3(0, 20, 12);
-  private camLook = new THREE.Vector3(0, 16, 0);
-  private camFov = 58;
-  private menuAngle = 0.6;
-  private shakeV = new THREE.Vector3();
+  camera: THREE.PerspectiveCamera;
+  camPos = new THREE.Vector3(0, 20, 12);
+  camLook = new THREE.Vector3(0, 16, 0);
+  camFov = 58;
+  menuAngle = 0.6;
+  shakeV = new THREE.Vector3();
 
   // Ручное управление предпросмотром в гараже (мышь)
-  private garageYaw = Math.PI * 0.25;
-  private garagePitch = 0.32;
-  private garageDist = 9.5;
-  private garageAutoSpin = true;
-  private garageTargetY = PREVIEW_POS.y + 0.8;
+  garageYaw = Math.PI * 0.25;
+  garagePitch = 0.32;
+  garageDist = 9.5;
+  garageAutoSpin = true;
+  garageTargetY = PREVIEW_POS.y + 0.8;
+
+  private modes: Record<GameMode, CameraMode>;
 
   constructor(camera: THREE.PerspectiveCamera) {
     this.camera = camera;
+    this.modes = {
+      menu: new MenuCameraMode(),
+      garage: new GarageCameraMode(),
+      playing: new PlayingCameraMode(),
+      over: new OverCameraMode(),
+    };
   }
 
   /** Сброс ручного управления гаражом при входе/выходе. */
@@ -84,103 +97,40 @@ export class CameraRig {
   }
 
   update(dt: number, p: CameraUpdateParams) {
-    const tmpV = new THREE.Vector3();
-    const tmpV2 = new THREE.Vector3();
-
-    if (p.mode === 'menu') {
-      this.menuAngle += dt * 0.3;
-      const r = 17;
-      tmpV.set(
-        Math.sin(this.menuAngle) * r,
-        PREVIEW_POS.y + 3.2 + Math.sin(p.elapsed * 0.4) * 0.6,
-        Math.cos(this.menuAngle) * r,
-      );
-      this.camPos.lerp(tmpV, 1 - Math.exp(-3 * dt));
-      this.camLook.lerp(tmpV2.set(PREVIEW_POS.x + 6, PREVIEW_POS.y + 1.2, PREVIEW_POS.z), 1 - Math.exp(-5 * dt));
-
-      if (p.previewVisual) {
-        p.previewVisual.group.rotation.y = this.menuAngle * 0.35;
-        p.previewVisual.turret.rotation.y = Math.sin(p.elapsed * 0.8) * 0.45;
-      }
-
-    } else if (p.mode === 'garage') {
-      // Авто-вращение, пока пользователь не взял управление мышью
-      if (this.garageAutoSpin) this.garageYaw += dt * 0.45;
-
-      const horiz = Math.cos(this.garagePitch) * this.garageDist;
-      const vert = Math.sin(this.garagePitch) * this.garageDist;
-      tmpV.set(
-        PREVIEW_POS.x + Math.sin(this.garageYaw) * horiz,
-        this.garageTargetY + 1.6 + vert,
-        PREVIEW_POS.z + Math.cos(this.garageYaw) * horiz,
-      );
-      this.camPos.lerp(tmpV, 1 - Math.exp(-9 * dt));
-      this.camLook.lerp(tmpV2.set(PREVIEW_POS.x, this.garageTargetY, PREVIEW_POS.z), 1 - Math.exp(-9 * dt));
-
-      if (p.previewVisual) {
-        // Танк стоит неподвижно, а камера облетает вокруг него; башня слёгка поворачивается
-        p.previewVisual.turret.rotation.y = Math.sin(p.elapsed * 1.1) * 0.35;
-      }
-
-    } else if (p.mode === 'playing' && p.player) {
-      const pl = p.player;
-      const yaw = p.input.camYaw;
-      const pitch = p.input.camPitch;
-      const dist = 9.6;
-      const horiz = Math.cos(pitch) * dist;
-      const vert = Math.sin(pitch) * dist + 1.6;
-      const fx = Math.sin(yaw);
-      const fz = Math.cos(yaw);
-      const headX = pl.position.x, headZ = pl.position.z;
-      const headY = pl.alive ? 1.8 : 1.2;
-
-      let dx = -fx * horiz, dz = -fz * horiz, dy = vert;
-
-      // Обход препятствий: не давать камере уйти сквозь стену
-      for (const c of p.colliders) {
-        if (c.height < 2.5) continue;
-        const t = segmentHitT(headX, headZ, headX + dx, headZ + dz, c, 0.7);
-        if (t >= 0 && t < 1) {
-          const tt = Math.max(t * 0.92, 0.18);
-          dx *= tt; dz *= tt; dy *= Math.max(tt, 0.5);
-          break;
-        }
-      }
-
-      const targetX = headX + dx;
-      const targetY = Math.max(headY + dy, 0.7);
-      const targetZ = headZ + dz;
-      const lam = pl.alive ? 14 : 4;
-      this.camPos.x = THREE.MathUtils.damp(this.camPos.x, targetX, lam, dt);
-      this.camPos.y = THREE.MathUtils.damp(this.camPos.y, targetY, lam, dt);
-      this.camPos.z = THREE.MathUtils.damp(this.camPos.z, targetZ, lam, dt);
-
-      const lookX = headX + fx * 6;
-      const lookY = headY - Math.sin(pitch) * 5.4;
-      const lookZ = headZ + fz * 6;
-      this.camLook.x = THREE.MathUtils.damp(this.camLook.x, lookX, lam, dt);
-      this.camLook.y = THREE.MathUtils.damp(this.camLook.y, lookY, lam, dt);
-      this.camLook.z = THREE.MathUtils.damp(this.camLook.z, lookZ, lam, dt);
-
-      // Плавное расширение FOV при скорости/бусте
-      const speed01 = Math.min(1, Math.abs(pl.speed) / pl.params.speed);
-      const targetFov = 58 + speed01 * 5 + (pl.boostActive && pl.speed > pl.params.speed * 0.9 ? 4 : 0);
-      this.camFov = THREE.MathUtils.damp(this.camFov, targetFov, 5, dt);
-      if (Math.abs(this.camFov - this.camera.fov) > 0.05) {
-        this.camera.fov = this.camFov;
-        this.camera.updateProjectionMatrix();
-      }
-
-    } else if (p.mode === 'over' && p.player) {
-      const pos = p.player.position;
-      tmpV.set(pos.x - 14, 16, pos.z - 14);
-      this.camPos.lerp(tmpV, 1 - Math.exp(-1.5 * dt));
-      this.camLook.lerp(tmpV2.set(pos.x, 1, pos.z), 1 - Math.exp(-3 * dt));
+    if (p.mode === 'playing' || p.mode === 'over') {
+      if (p.player) this.modes[p.mode].update(dt, p, this);
+    } else {
+      this.modes[p.mode].update(dt, p, this);
     }
 
     const roll = p.effects.getShake(this.shakeV, p.elapsed);
     this.camera.position.copy(this.camPos).add(this.shakeV);
     this.camera.up.set(Math.sin(roll), 1, 0).normalize();
     this.camera.lookAt(this.camLook);
+  }
+
+  /** Обход препятствий: возвращает скорректированный сдвиг камеры. */
+  avoidObstacles(
+    headX: number, headZ: number, dx: number, dz: number, dy: number, colliders: Collider[],
+  ): { dx: number; dz: number; dy: number } {
+    for (const c of colliders) {
+      if (c.height < 2.5) continue;
+      const t = segmentHitT(headX, headZ, headX + dx, headZ + dz, c, 0.7);
+      if (t >= 0 && t < 1) {
+        const tt = Math.max(t * 0.92, 0.18);
+        dx *= tt; dz *= tt; dy *= Math.max(tt, 0.5);
+        break;
+      }
+    }
+    return { dx, dz, dy };
+  }
+
+  /** Плавный переход FOV с обновлением проекционной матрицы. */
+  applyFov(targetFov: number, dt: number) {
+    this.camFov = dampTo(this.camFov, targetFov, 5, dt);
+    if (Math.abs(this.camFov - this.camera.fov) > 0.05) {
+      this.camera.fov = this.camFov;
+      this.camera.updateProjectionMatrix();
+    }
   }
 }

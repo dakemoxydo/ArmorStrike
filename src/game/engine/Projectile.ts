@@ -9,6 +9,7 @@ import type { DamageSystem } from '../weapons/types';
 import type { WeaponType } from '../../core/catalog';
 import { glowTexture } from '../textures';
 import { BEHAVIORS } from './ProjectileBehavior';
+import { applySplashHit } from './applyHit';
 
 export interface HitContext {
   colliders: Collider[];
@@ -54,11 +55,8 @@ function doSplash(hitPos: THREE.Vector3, ctx: HitContext, s: Shot, exclude?: Tan
     const dmg = Math.round(s.splashDmg * falloff);
     if (dmg > 0) {
       ctx.onTankHit(t, dmg, s.owner);
-      if (dist > 0.1) {
-        const push = 2.5 * falloff;
-        t.knockback.x += (dx / dist) * push;
-        t.knockback.z += (dz / dist) * push;
-      }
+      applySplashHit(ctx.damageSystem, t, 0, s.owner, hitPos, 2.5 * falloff,
+        (p) => ctx.effects.impact(p, 0xffcc44));
     }
   }
 }
@@ -171,7 +169,7 @@ export class ProjectileManager {
           if (!segmentHitsCircle(px, pz, pos.x, pos.z, t.position.x, t.position.z, t.radius + PROJECTILE.radius)) continue;
 
           const hitPos = tmp.set(pos.x, 1.6, pos.z).clone();
-          beh.onHitTank(s, t, hitPos, s.dir, ctx);
+          beh.onHitTank(s, t, hitPos, s.dir, ctx, s.owner);
           if (s.splashRadius > 0) doSplash(hitPos, ctx, s, t);
 
           ctx.onTankHit(t, s.damage, s.owner!);

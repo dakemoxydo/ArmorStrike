@@ -34,28 +34,24 @@ export class Arena {
     const meshWrap = new THREE.Group();
     meshWrap.position.set(x, 0, z);
     meshWrap.add(buildMesh());
-    meshWrap.traverse((o) => {
-      if (o instanceof THREE.Mesh) o.userData.colliderId = undefined;
-    });
     this.group.add(meshWrap);
     const col = colliderFromCenter(x, z, w, d, h, kind, { destructible, blocksSight });
-    if (destructible) {
-      meshWrap.traverse((o) => {
-        if (o instanceof THREE.Mesh) o.userData.colliderId = col.id;
-      });
-    }
     this.colliders.push(col);
     if (destructible) {
       const mats: THREE.MeshStandardMaterial[] = [];
       meshWrap.traverse((o) => {
-        if (o instanceof THREE.Mesh) {
-          const ms = Array.isArray(o.material) ? o.material : [o.material];
-          for (const m of ms) if (m instanceof THREE.MeshStandardMaterial) mats.push(m);
-        }
+        if (!(o instanceof THREE.Mesh)) return;
+        o.userData.colliderId = col.id;
+        const ms = Array.isArray(o.material) ? o.material : [o.material];
+        for (const m of ms) if (m instanceof THREE.MeshStandardMaterial) mats.push(m);
       });
       this.blocks.set(col.id, {
         id: col.id, group: meshWrap, collider: col,
         hp, maxHp: hp, mats, flash: 0, size: Math.max(w, d),
+      });
+    } else {
+      meshWrap.traverse((o) => {
+        if (o instanceof THREE.Mesh) o.userData.colliderId = undefined;
       });
     }
     return col;

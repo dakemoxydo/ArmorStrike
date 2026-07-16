@@ -26,3 +26,13 @@ export interface TankParams {
   weaponType?: WeaponType;
   range?: number;
 }
+
+/** Представленческое/визуальное состояние танка (только FX), не входит в
+ *  симуляционный контракт TankLike. Читается/пишется системами анимации и FX. */
+export interface TankFxState {
+  hitFlash: number;
+  barrelKick: number;
+  smokeAcc: number;
+  dustAcc: number;
+  timeSinceHit: number;
+}

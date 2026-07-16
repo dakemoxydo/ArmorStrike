@@ -5,6 +5,8 @@ import { WEAPON_TUNING } from '../../core/catalog';
 import type { Arena } from '../Arena';
 import type { TankEntity } from '../Tank';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
+import { buildAmmoState } from './types';
+import { applyHit } from '../engine/applyHit';
 
 export type RailgunState = 'IDLE' | 'CHARGING' | 'FIRING' | 'COOLDOWN';
 
@@ -30,6 +32,7 @@ export class RailgunWeapon implements Weapon {
 
   private deps: WeaponDeps;
   private prevFire = false;
+  private _tankMap = new Map<THREE.Object3D, TankEntity>();
 
   constructor(owner: TankEntity, deps: WeaponDeps) {
     this.owner = owner;
@@ -181,11 +184,16 @@ export class RailgunWeapon implements Weapon {
     this.deps.effects.muzzle(tmpMuzzle, 0x8fffe8);
     this.owner.onFired(WEAPON_TUNING.railgun.knockback);
 
-    // Настройка Raycaster
+    const hits = this.castHitscan(tanks, arena);
+    const maxHitDist = this.resolveHits(hits);
+    this.renderBeam(maxHitDist);
+  }
+
+  /** Raycast: собирает меши танков/арены и возвращает отсортированные пересечения. */
+  private castHitscan(tanks: TankEntity[], arena: Arena): THREE.Intersection[] {
     this.raycaster.set(tmpMuzzle, tmpDir);
     this.raycaster.far = WEAPON_TUNING.railgun.range;
 
-    // Сбор объектов для пересечения (танки + препятствия)
     const targetObjects: THREE.Object3D[] = [];
     const tankMap = new Map<THREE.Object3D, TankEntity>();
 
@@ -198,22 +206,25 @@ export class RailgunWeapon implements Weapon {
       }
     }
 
-    // Блоки арены
     arena.group.traverse((o) => {
       if (o instanceof THREE.Mesh) {
         targetObjects.push(o);
       }
     });
 
-    // Получаем ВСЕ отсортированные по дистанции пересечения
-    const hits = this.raycaster.intersectObjects(targetObjects, false);
+    // Кладём tankMap в замыкание для resolveHits
+    this._tankMap = tankMap;
+    return this.raycaster.intersectObjects(targetObjects, false);
+  }
 
+  /** Проход по попаданиям: пенетрация, урон, толчок, эффекты. Возвращает дистанцию луча. */
+  private resolveHits(hits: THREE.Intersection[]): number {
+    const tankMap = this._tankMap;
     let maxHitDist = WEAPON_TUNING.railgun.range;
     let currentDamage = WEAPON_TUNING.railgun.damage;
     const hitTanksSet = new Set<number>();
 
     for (const hit of hits) {
-      // Находим танк, которому принадлежит меш
       let obj: THREE.Object3D | null = hit.object;
       let hitTank: TankEntity | undefined;
 
@@ -227,30 +238,33 @@ export class RailgunWeapon implements Weapon {
           hitTanksSet.add(hitTank.id);
 
           const dmg = Math.round(currentDamage);
-          this.deps.damageSystem.applyDamage(hitTank, dmg, this.owner);
-          this.deps.damageSystem.applyKnockback(hitTank, tmpDir, WEAPON_TUNING.railgun.knockback * (currentDamage / WEAPON_TUNING.railgun.damage));
+          const force = WEAPON_TUNING.railgun.knockback * (currentDamage / WEAPON_TUNING.railgun.damage);
+          applyHit(
+            this.deps.damageSystem, hitTank, dmg, this.owner, tmpDir, force,
+            (p) => {
+              this.deps.effects.impact(p, 0x8fffe8);
+              this.impactLight.position.copy(p);
+            },
+            hit.point,
+          );
 
-          // Искры и вспышка на цели
-          this.deps.effects.impact(hit.point, 0x8fffe8);
-          this.impactLight.position.copy(hit.point);
-
-          // Уменьшаем урон для следующей пробитой цели
           currentDamage *= WEAPON_TUNING.railgun.penetrationFactor;
         }
       } else {
-        // Пересечение со стеной или блоком
         const blockId = hit.object.userData?.colliderId as number | undefined;
         if (blockId) {
           this.deps.damageSystem.damageBlock(blockId, Math.round(currentDamage), hit.point);
         }
         this.deps.effects.impact(hit.point, 0xffa040);
         maxHitDist = hit.distance;
-        break; // Непробиваемые стены останавливают луч
+        break;
       }
     }
+    return maxHitDist;
+  }
 
-    // Рендеринг визуального луча (растягиваем CylinderGeometry вдоль Z)
-    const rayLength = maxHitDist;
+  /** Рендеринг визуального луча (растягиваем CylinderGeometry вдоль Z) + свет. */
+  private renderBeam(rayLength: number) {
     tmpMid.copy(tmpMuzzle).addScaledVector(tmpDir, rayLength * 0.5);
 
     this.beamMesh.position.copy(tmpMid);
@@ -271,13 +285,13 @@ export class RailgunWeapon implements Weapon {
 
   getAmmoState() {
     const reloading = this.isCharging || this.isCooldown;
-    return {
+    return buildAmmoState({
       ammo: reloading ? 0 : 1,
       magazine: 1,
       reloading,
       reloadProgress: this.reloadProgress,
       isCharging: this.isCharging,
-    };
+    });
   }
 
   dispose() {

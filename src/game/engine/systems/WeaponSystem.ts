@@ -4,6 +4,9 @@ import type { Arena } from '../../Arena';
 
 export const WeaponSystem = {
   update(tanks: TankEntity[], arena: Arena, dt: number) {
-    for (const t of tanks) t.weapon?.update(dt, { tanks, arena });
+    for (const t of tanks) {
+      if (!t.alive) continue;
+      t.weapon?.update(dt, { tanks, arena });
+    }
   },
 };

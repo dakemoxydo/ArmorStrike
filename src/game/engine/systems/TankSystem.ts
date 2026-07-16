@@ -14,8 +14,8 @@ export const TankSystem = {
       const wantBoost = t.boosting && t.boostEnergy > BOOST.minActivate && t.throttle > 0.15;
       t.boostActive = wantBoost;
 
-      t.timeSinceHit += dt;
-      if (t.timeSinceHit > HEAL_DELAY && t.health < t.maxHealth) {
+      t.fx.timeSinceHit += dt;
+      if (t.fx.timeSinceHit > HEAL_DELAY && t.health < t.maxHealth) {
         t.health = Math.min(t.maxHealth, t.health + HEAL_PER_SEC * dt);
       }
       t.boostEnergy = clamp(

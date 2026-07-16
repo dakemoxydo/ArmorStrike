@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { TankEntity } from '../../Tank';
-import { clamp } from '../physics';
+import { clamp, dampTo } from '../physics';
 
 export const TankAnimationSystem = {
   update(tanks: TankEntity[], dt: number) {
@@ -8,9 +8,7 @@ export const TankAnimationSystem = {
       if (!t.alive) {
         t.boostActive = false;
         t.deathT += dt;
-        t.visual.barrelGroup.rotation.x = THREE.MathUtils.damp(
-          t.visual.barrelGroup.rotation.x, 0.3, 4, dt,
-        );
+        t.visual.barrelGroup.rotation.x = dampTo(t.visual.barrelGroup.rotation.x, 0.3, 4, dt);
         t.visual.turret.rotation.y += dt * 0.15;
         const k = clamp(1 - t.deathT * 0.5, 0.15, 1);
         for (const m of t.visual.bodyMats) {
@@ -21,14 +19,14 @@ export const TankAnimationSystem = {
         continue;
       }
 
-      t.barrelKick = THREE.MathUtils.damp(t.barrelKick, 0, 9, dt);
-      t.visual.barrelGroup.position.z = 0.55 - t.barrelKick * 0.4;
+      t.fx.barrelKick = dampTo(t.fx.barrelKick, 0, 9, dt);
+      t.visual.barrelGroup.position.z = 0.55 - t.fx.barrelKick * 0.4;
 
       t.visual.trackTex.offset.y -= t.speed * dt * 0.22;
 
-      if (t.hitFlash > 0) {
-        t.hitFlash = Math.max(0, t.hitFlash - dt * 6);
-        for (const m of t.visual.bodyMats) m.emissive.setScalar(t.hitFlash * 0.85);
+      if (t.fx.hitFlash > 0) {
+        t.fx.hitFlash = Math.max(0, t.fx.hitFlash - dt * 6);
+        for (const m of t.visual.bodyMats) m.emissive.setScalar(t.fx.hitFlash * 0.85);
       }
 
       const ringMat = t.visual.ring.material as THREE.MeshBasicMaterial;

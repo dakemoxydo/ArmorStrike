@@ -55,6 +55,8 @@ export class GameLoop {
     if (sim.run.mode === 'playing' && !sim.run.paused) {
       sim.step(dt, emit);
     } else if (sim.tanks.length > 0) {
+      // Анимация гибели/затухания мёртвых танков вне боевого шага
+      // (step уже обновляет их во время playing — без дубля).
       TankAnimationSystem.update(sim.tanks.filter((t) => !t.alive), dt);
     }
 

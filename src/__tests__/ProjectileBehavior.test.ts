@@ -77,8 +77,11 @@ describe('ProjectileBehavior.init', () => {
     };
     BEHAVIORS.cannon.onHitTank(s, target, hitPos, dir, {
       colliders: [], tanks: [], arena: {} as any, effects: effects as any,
-      damageSystem: {} as any, onTankHit: vi.fn(),
-    });
+      damageSystem: {
+        applyDamage: vi.fn(),
+        applyKnockback: (t: any, d: any, f: number) => t.knockback.addScaledVector(d, f),
+      } as any, onTankHit: vi.fn(),
+    }, makeOwner(true));
     expect(effects.explosion).toHaveBeenCalled();
     expect(effects.impact).toHaveBeenCalled();
     expect(target.knockback.z).toBeCloseTo(4, 5);
