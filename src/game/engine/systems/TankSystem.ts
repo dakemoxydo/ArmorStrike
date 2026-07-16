@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import type { TankEntity } from '../Tank';
-import { BOOST } from '../constants';
+import type { TankEntity } from '../../Tank';
+import { BOOST } from '../../constants';
 import { clamp, wrapAngle } from '../physics';
+import { HEAL_DELAY, HEAL_PER_SEC, KNOCKBACK_DECAY, SPEED_DAMP } from '../../tuning';
 
 export const TankSystem = {
   update(tanks: TankEntity[], dt: number) {
@@ -14,8 +15,8 @@ export const TankSystem = {
       t.boostActive = wantBoost;
 
       t.timeSinceHit += dt;
-      if (t.timeSinceHit > 5 && t.health < t.maxHealth) {
-        t.health = Math.min(t.maxHealth, t.health + 7 * dt);
+      if (t.timeSinceHit > HEAL_DELAY && t.health < t.maxHealth) {
+        t.health = Math.min(t.maxHealth, t.health + HEAL_PER_SEC * dt);
       }
       t.boostEnergy = clamp(
         t.boostEnergy + (wantBoost ? -BOOST.drainPerSec : BOOST.rechargePerSec) * dt,
@@ -26,7 +27,9 @@ export const TankSystem = {
       const targetSpeed = t.throttle >= 0
         ? t.throttle * maxFwd
         : t.throttle * p.reverseSpeed;
-      t.speed = THREE.MathUtils.damp(t.speed, targetSpeed, wantBoost ? 6 : 4.5, dt);
+      t.speed = THREE.MathUtils.damp(
+        t.speed, targetSpeed, wantBoost ? SPEED_DAMP.boost : SPEED_DAMP.normal, dt,
+      );
 
       const agility = 0.55 + 0.45 * Math.min(Math.abs(t.speed) / p.speed, 1);
       t.yaw += t.steer * p.turnSpeed * agility * dt;
@@ -37,22 +40,12 @@ export const TankSystem = {
       const pz = t.position.z;
       t.position.x += (fx * t.speed + t.knockback.x) * dt;
       t.position.z += (fz * t.speed + t.knockback.z) * dt;
-      t.knockback.multiplyScalar(Math.exp(-5.5 * dt));
+      t.knockback.multiplyScalar(Math.exp(-KNOCKBACK_DECAY * dt));
       t.vel.set((t.position.x - px) / dt, 0, (t.position.z - pz) / dt);
 
       t.fireTimer = Math.max(0, t.fireTimer - dt);
 
-      if (t.isPlayer) {
-        if (t.fullReloading) {
-          t.reloadTimer -= dt;
-          if (t.reloadTimer <= 0) {
-            t.fullReloading = false;
-            t.ammo = t.magazine;
-          }
-        } else if (t.ammo === 0) {
-          t.startFullReload();
-        }
-      }
+      if (t.isPlayer) t.updateReload(dt);
 
       const rel = wrapAngle(t.aimYaw - t.yaw);
       const diff = wrapAngle(rel - t.turretYaw);

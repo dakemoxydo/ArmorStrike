@@ -1,71 +1,26 @@
-// ===== Ядро игры: рендер, гараж, предпросмотр, камера, интеграция всех оружий =====
+// ===== Ядро игры: координатор подсистем, рендер-цикл, гараж, камера =====
 import * as THREE from 'three';
-import { TURRETS } from './constants';
-import type { HullId, TurretId } from './constants';
+import { TURRETS } from '../core/catalog';
+import type { HullId, TurretId } from '../core/catalog';
 import { Arena } from './Arena';
-import { TankAnimationSystem } from './systems/TankAnimationSystem';
-import { buildTankMesh } from './Tank';
 import type { TankVisual } from './Tank';
-import { buildPlayerStyle } from '../core/TankCatalog';
-import { disposeObject3D } from './resources/disposeObject3D';
 import { GarageInput } from '../ui/GarageInput';
-import { ProjectileManager } from './Projectile';
+import { ProjectileManager } from './engine/Projectile';
 import { PlayerController } from './PlayerController';
 import { Effects } from './effects';
 import { AudioFX } from './audio';
-import { CameraRig, PREVIEW_POS } from './CameraRig';
+import { CameraRig } from './CameraRig';
 import { CombatSystem } from './CombatSystem';
 import { HudModel } from './HudModel';
 import { RenderWorld } from './RenderWorld';
 import { RunState } from './RunState';
 import { WaveManager } from './WaveManager';
-import { GameSimulation } from './GameSimulation';
+import { GameSimulation } from './engine/GameSimulation';
 import { createWeapon, buildPlayerTank } from './PlayerFactory';
 import type { WeaponFactoryDeps } from './PlayerFactory';
-
-export type GameMode = 'menu' | 'garage' | 'playing' | 'over';
-
-export interface HudSnapshot {
-  mode: GameMode;
-  paused: boolean;
-  health: number;
-  maxHealth: number;
-  ammo: number;
-  magazine: number;
-  reloading: boolean;
-  reloadProgress: number;
-  isCharging?: boolean;
-  boost: number;
-  score: number;
-  kills: number;
-  wave: number;
-  botsAlive: number;
-  alive: boolean;
-  timeSec: number;
-  muted: boolean;
-  hullId: HullId;
-  turretId: TurretId;
-  weaponName: string;
-  weaponLabel: string;
-  weaponColor: string;
-  weaponAccentClass: string;
-  showScore: boolean;
-  scoreboard: ScoreRow[];
-}
-
-export type GameEvent =
-  | { type: 'playerHit'; dir: number }
-  | { type: 'enemyHit'; killed: boolean }
-  | { type: 'kill'; victim: string; byPlayer: boolean }
-  | { type: 'wave'; n: number }
-  | { type: 'shotFired' }
-  | { type: 'gameOver'; score: number; kills: number; wave: number }
-  | { type: 'pauseChanged'; value: boolean }
-  | { type: 'garageChanged' };
-
-export interface MinimapStatic { id: number; x: number; z: number; w: number; d: number; kind: string; alive: boolean }
-export interface MinimapDynamic { x: number; z: number; yaw: number; turret: number; isPlayer: boolean }
-export interface ScoreRow { name: string; hull: string; turret: string; weapon: string; weaponName: string; hpFrac: number; isPlayer: boolean; alive: boolean }
+import type { GameEvent, GameMode, HudSnapshot, MinimapDynamic, MinimapStatic } from './types';
+import { GameLoop } from './GameLoop';
+import { PreviewController } from './PreviewController';
 
 export class Game {
   readonly sim: GameSimulation;
@@ -73,18 +28,14 @@ export class Game {
   private renderWorld: RenderWorld;
   private scene: THREE.Scene;
   private cameraRig: CameraRig;
-
-  private previewGroup: THREE.Group | null = null;
-  private previewVisual: TankVisual | null = null;
+  private previewController: PreviewController;
+  private gameLoop: GameLoop;
 
   private listeners = new Set<(e: GameEvent) => void>();
   private emitEvent: (e: GameEvent) => void;
+  private hudCallback: ((hud: HudSnapshot) => void) | null = null;
 
   private hud: HudSnapshot;
-  private elapsed = 0;
-  private raf = 0;
-  private lastTs = 0;
-  private disposed = false;
 
   private weaponDeps: WeaponFactoryDeps;
   private garageInput!: GarageInput;
@@ -111,25 +62,27 @@ export class Game {
       for (const fn of this.listeners) fn(e);
     };
 
-    this.weaponDeps = {
-      scene: this.scene,
-      effects,
-      audio,
-      damageSystem: null as unknown as WeaponFactoryDeps['damageSystem'],
-      projectiles,
-      onShotFired: () => this.emitEvent({ type: 'shotFired' }),
-    };
-
-    const sim = new GameSimulation(arena, effects, projectiles, input, audio, run);
-    this.sim = sim;
+    let sim: GameSimulation;
 
     const combat = new CombatSystem({
       arena, effects, audio, run,
       emit: (e) => this.emitEvent(e),
       onPlayerDeath: () => { input.releaseLock(); sim.deathT = 0; },
     });
+
+    this.weaponDeps = {
+      scene: this.scene,
+      effects,
+      audio,
+      damageSystem: combat.damageSystem,
+      projectiles,
+      onShotFired: () => this.emitEvent({ type: 'shotFired' }),
+    };
+
+    sim = new GameSimulation(arena, effects, projectiles, input, audio, run);
+    this.sim = sim;
+
     sim.combat = combat;
-    this.weaponDeps.damageSystem = combat.damageSystem;
 
     const waves = new WaveManager({
       scene: this.scene, arena, effects, audio, run,
@@ -140,10 +93,11 @@ export class Game {
 
     const hudModel = new HudModel({ run, audio, waves, input });
     hudModel.buildMinimap(arena);
-    sim.hudModel = hudModel;
+    sim.init({ combat, waves, hudModel });
 
+    this.previewController = new PreviewController(this.scene, () => this.sim.run.mode);
     this.hud = hudModel.getHud(null, []);
-    this.update3DPreview();
+    this.previewController.rebuild(this.sim.run.currentHull, this.sim.run.currentTurret);
 
     this.onResize();
     window.addEventListener('resize', this.onResize);
@@ -156,19 +110,33 @@ export class Game {
     });
     this.garageInput.attach();
 
-    this.raf = requestAnimationFrame(this.tick);
+    this.gameLoop = new GameLoop({
+      sim: this.sim,
+      cameraRig: this.cameraRig,
+      renderWorld: this.renderWorld,
+      hudModel,
+      hud: this.hud,
+      emit: this.emitEvent,
+      getPreviewVisual: () => this.previewController.previewVisual,
+      onHud: (hud) => this.hudCallback?.(hud),
+    });
+    this.gameLoop.start();
   }
 
   addListener(fn: (e: GameEvent) => void) { this.listeners.add(fn); }
   removeListener(fn: (e: GameEvent) => void) { this.listeners.delete(fn); }
 
+  /** Единый источник обновлений HUD: вызывается из игрового цикла (GameLoop). */
+  setHudCallback(fn: ((hud: HudSnapshot) => void) | null) { this.hudCallback = fn; }
+
   get currentHull() { return this.sim.run.currentHull; }
   get currentTurret() { return this.sim.run.currentTurret; }
+  get previewVisual(): TankVisual | null { return this.previewController.previewVisual; }
 
   setGarageSelection(hullId: HullId, turretId: TurretId) {
     this.sim.run.currentHull = hullId;
     this.sim.run.currentTurret = turretId;
-    this.update3DPreview();
+    this.previewController.rebuild(hullId, turretId);
     this.sim.audio.click();
     this.sim.run.save();
     this.emitEvent({ type: 'garageChanged' });
@@ -194,28 +162,10 @@ export class Game {
       this.canvas.style.cursor = '';
     }
     if (mode === 'menu' || mode === 'garage') {
-      if (!this.previewGroup) this.update3DPreview();
-      if (this.previewGroup) this.previewGroup.visible = true;
+      this.previewController.setVisible(true);
     } else {
-      if (this.previewGroup) this.previewGroup.visible = false;
+      this.previewController.setVisible(false);
     }
-  }
-
-  private update3DPreview() {
-    if (this.previewGroup) {
-      this.scene.remove(this.previewGroup);
-      disposeObject3D(this.previewGroup);
-      this.previewGroup = null;
-      this.previewVisual = null;
-    }
-
-    const style = buildPlayerStyle();
-    const visual = buildTankMesh(style, this.sim.run.currentHull, this.sim.run.currentTurret);
-    visual.group.position.copy(PREVIEW_POS);
-    this.scene.add(visual.group);
-    this.previewGroup = visual.group;
-    this.previewVisual = visual;
-    this.previewGroup.visible = (this.sim.run.mode === 'menu' || this.sim.run.mode === 'garage');
   }
 
   startRound() {
@@ -223,7 +173,7 @@ export class Game {
     this.sim.audio.stopEngine();
     this.sim.clearTanks(this.scene);
     this.sim.projectiles.clear();
-    if (this.previewGroup) this.previewGroup.visible = false;
+    this.previewController.setVisible(false);
 
     this.sim.run.resetRun();
     this.sim.deathT = -1;
@@ -266,33 +216,6 @@ export class Game {
     return this.sim.hudModel.fillDynamics(this.sim.tanks, out);
   }
 
-  private tick = (ts: number) => {
-    if (this.disposed) return;
-    this.raf = requestAnimationFrame(this.tick);
-    const dt = Math.min(0.05, this.lastTs ? (ts - this.lastTs) / 1000 : 0.016);
-    this.lastTs = ts;
-    this.elapsed += dt;
-
-    if (this.sim.run.mode === 'playing' && !this.sim.run.paused) {
-      this.sim.step(dt, this.emitEvent);
-    } else if (this.sim.tanks.length > 0) {
-      TankAnimationSystem.update(this.sim.tanks.filter((t) => !t.alive), dt);
-    }
-
-    this.sim.arena.update(dt, this.elapsed);
-    this.sim.effects.update(dt);
-    this.cameraRig.update(dt, {
-      mode: this.sim.run.mode, elapsed: this.elapsed, input: this.sim.input,
-      player: this.sim.player, previewVisual: this.previewVisual,
-      colliders: this.sim.arena.colliders, effects: this.sim.effects,
-    });
-
-    if (this.sim.run.paused) this.sim.audio.setEngine(0);
-    const showScoreboard = this.sim.run.mode === 'playing' && this.sim.input.scoreHeld && !this.sim.run.paused;
-    Object.assign(this.hud, this.sim.hudModel.getHud(this.sim.player, this.sim.tanks, showScoreboard));
-    this.renderWorld.render();
-  };
-
   private onResize = () => {
     const w = this.canvas.clientWidth || window.innerWidth;
     const h = this.canvas.clientHeight || window.innerHeight;
@@ -307,15 +230,14 @@ export class Game {
   };
 
   dispose() {
-    this.disposed = true;
-    cancelAnimationFrame(this.raf);
+    this.gameLoop.stop();
     window.removeEventListener('resize', this.onResize);
     document.removeEventListener('visibilitychange', this.onVisibility);
     this.garageInput.detach();
     this.sim.input.detach();
     this.sim.audio.stopEngine();
     this.sim.clearTanks(this.scene);
-    if (this.previewGroup) this.scene.remove(this.previewGroup);
+    this.previewController.dispose();
     this.renderWorld.dispose();
   }
 }

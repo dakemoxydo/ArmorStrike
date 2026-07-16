@@ -1,7 +1,7 @@
 // ===== ИИ противников: патруль, обнаружение, преследование, огонь =====
 import * as THREE from 'three';
-import { clamp, losClear, pointInCollider, segmentHitsCircle, wrapAngle } from './physics';
-import type { Collider } from './physics';
+import { clamp, losClear, pointInCollider, segmentHitsCircle, wrapAngle } from './engine/physics';
+import type { Collider } from './engine/physics';
 import type { TankEntity } from './Tank';
 import { PROJECTILE } from './constants';
 
@@ -30,6 +30,29 @@ export function randomPersona(wave: number): AIPersona {
 const DEFAULT_PERSONA: AIPersona = { aggro: 0.5, react: 0.25, lead: 0.9 };
 
 type AIState = 'patrol' | 'engage';
+
+export type WeaponType = 'railgun' | 'flamethrower' | 'cannon';
+
+/** Чистые хелперы решений ИИ — без Three.js, покрываемы unit-тестами. */
+
+/** Предпочтительная дистанция боя (по оружию и агрессии 0..1). */
+export function preferredRange(weapon: WeaponType, aggro: number): number {
+  if (weapon === 'flamethrower') return 7;
+  if (weapon === 'railgun') return 34 + aggro * 10;
+  return 20 + aggro * 8; // пушка
+}
+
+/** Допуск прицеливания (радианы) по типу оружия. */
+export function aimTolerance(weapon: WeaponType): number {
+  if (weapon === 'flamethrower') return 0.3;
+  if (weapon === 'railgun') return 0.1;
+  return 0.14; // пушка
+}
+
+/** Рулёжка: steer из угла отклонения к цели (clamp к [-1, 1]). */
+export function steeringFromAngle(diff: number): number {
+  return clamp(diff * 2.4, -1, 1);
+}
 
 export class AIController {
   wantsFire = false;
@@ -61,10 +84,7 @@ export class AIController {
 
   /** Предпочтительная дистанция боя в зависимости от оружия и агрессии. */
   private prefRange(): number {
-    const w = this.tank.params.weaponType;
-    if (w === 'flamethrower') return 7;
-    if (w === 'railgun') return 34 + this.persona.aggro * 10;
-    return 20 + this.persona.aggro * 8; // пушка
+    return preferredRange(this.tank.params.weaponType ?? 'cannon', this.persona.aggro);
   }
 
   private pickWaypoint(bounds: number, huntTarget?: { x: number; z: number }) {
@@ -136,7 +156,7 @@ export class AIController {
     // ==== рулевое управление ====
     const desired = Math.atan2(tx - t.position.x, tz - t.position.z);
     const diff = wrapAngle(desired - t.yaw);
-    let steer = clamp(diff * 2.4, -1, 1);
+    let steer = steeringFromAngle(diff);
     let throttle = Math.abs(diff) < 1.1 ? throttleBase : 0.18;
 
     // ==== избегание препятствий (зонд впереди) ====
@@ -209,7 +229,7 @@ export class AIController {
       t.aimYaw = Math.atan2(ax - t.position.x, az - t.position.z) + err;
 
       // ==== огонь ====
-      const aimTol = w === 'flamethrower' ? 0.3 : w === 'railgun' ? 0.1 : 0.14;
+      const aimTol = aimTolerance(w ?? 'cannon');
       if (canSee && this.reactT <= 0 && dist < this.fireRange && t.fireTimer <= 0) {
         const turretAbs = t.yaw + t.turretYaw;
         const aimed = Math.abs(wrapAngle(t.aimYaw - turretAbs)) < aimTol;

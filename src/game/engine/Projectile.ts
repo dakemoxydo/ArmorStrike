@@ -1,11 +1,13 @@
 import * as THREE from 'three';
-import { PROJECTILE } from './constants';
+import { PROJECTILE } from '../constants';
 import type { Collider } from './physics';
 import { pointInCollider, segmentHitsCircle } from './physics';
-import type { Arena } from './Arena';
-import type { TankEntity } from './Tank';
-import type { Effects } from './effects';
-import { glowTexture } from './textures';
+import type { Arena } from '../Arena';
+import type { TankEntity } from '../Tank';
+import type { Effects } from '../effects';
+import type { DamageSystem } from '../weapons/types';
+import type { WeaponType } from '../../core/catalog';
+import { glowTexture } from '../textures';
 import { BEHAVIORS } from './ProjectileBehavior';
 
 export interface HitContext {
@@ -13,11 +15,9 @@ export interface HitContext {
   tanks: TankEntity[];
   arena: Arena;
   effects: Effects;
+  damageSystem: DamageSystem;
   onTankHit: (target: TankEntity, dmg: number, owner: TankEntity) => void;
-  onBlockDestroyed: (pos: THREE.Vector3, size: number) => void;
 }
-
-export type WeaponType = 'railgun' | 'flamethrower' | 'cannon';
 
 export interface Shot {
   group: THREE.Group;
@@ -157,11 +157,8 @@ export class ProjectileManager {
           if (s.splashRadius > 0) doSplash(hitPos, ctx, s);
 
           if (c.destructible) {
-            const res = ctx.arena.damageBlock(c.id, s.damage);
-            if (res === 'destroyed') {
-              hitPos.y = Math.min(c.height * 0.5, 2);
-              ctx.onBlockDestroyed(hitPos, 1.4);
-            }
+            hitPos.y = Math.min(c.height * 0.5, 2);
+            ctx.damageSystem.damageBlock(c.id, s.damage, hitPos);
           }
           despawn(s);
           dead = true;

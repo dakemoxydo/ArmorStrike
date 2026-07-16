@@ -1,6 +1,6 @@
 // ===== Система обновления именных табличек ботов =====
-import type { TankEntity } from '../Tank';
-import type { Nameplate } from '../nameplate';
+import type { TankEntity } from '../../Tank';
+import type { Nameplate } from '../../nameplate';
 
 type NameplateEntry = { plate: Nameplate; color: number };
 

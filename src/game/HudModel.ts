@@ -5,9 +5,9 @@ import type { PlayerController } from './PlayerController';
 import type { RunState } from './RunState';
 import type { TankEntity } from './Tank';
 import type { WaveManager } from './WaveManager';
-import { HULLS, TURRETS } from './constants';
+import { HULLS, TURRETS } from '../core/catalog';
 
-import type { HudSnapshot, MinimapDynamic, MinimapStatic, ScoreRow } from './Game';
+import type { HudSnapshot, MinimapDynamic, MinimapStatic, ScoreRow } from './types';
 import { getWeaponMeta } from '../core/WeaponCatalog';
 
 export class HudModel {

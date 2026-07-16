@@ -1,0 +1,19 @@
+{
+  "0": "Game.ts",
+  "1": "ArenaBuilder.ts",
+  "2": "AI.ts",
+  "3": "CameraRig.ts",
+  "4": "GameSimulation.ts",
+  "5": "devDependencies",
+  "6": "Effects",
+  "7": "compilerOptions",
+  "8": "Projectile.ts",
+  "9": "TankEntity",
+  "10": "AudioFX",
+  "11": "Tank.ts",
+  "12": "WeaponDeps",
+  "13": "CombatSystem",
+  "14": "buildMesh.ts",
+  "18": "vite.config.ts",
+  "19": "cn.ts"
+}

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ARENA } from './constants';
-import type { Collider } from './physics';
-import { colliderFromCenter } from './physics';
+import type { Collider } from './engine/physics';
+import { colliderFromCenter } from './engine/physics';
 import { ArenaEffects } from './ArenaEffects';
 import { buildArena } from './ArenaBuilder';
 import { disposeObject3D } from './resources/disposeObject3D';
@@ -42,8 +42,16 @@ export class Arena {
     const meshWrap = new THREE.Group();
     meshWrap.position.set(x, 0, z);
     meshWrap.add(buildMesh());
+    meshWrap.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.userData.colliderId = undefined;
+    });
     this.group.add(meshWrap);
     const col = colliderFromCenter(x, z, w, d, h, kind, { destructible, blocksSight });
+    if (destructible) {
+      meshWrap.traverse((o) => {
+        if (o instanceof THREE.Mesh) o.userData.colliderId = col.id;
+      });
+    }
     this.colliders.push(col);
     if (destructible) {
       const mats: THREE.MeshStandardMaterial[] = [];

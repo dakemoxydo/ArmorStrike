@@ -12,33 +12,40 @@
 - **Звук**: процедурный `WebAudio` (без ассетов), динамический компрессор.
 - **Стейт**: собственный класс `RunState` (в `localStorage`), без сторонних стейт-менеджеров.
 
-Точка входа `main.tsx` → `App.tsx` (корневой layout, меню/гараж/HUD/экран поражения) → `Game` (всё ядро симуляции).
+Точка входа `main.tsx` → `App.tsx` (корневой layout, меню/гараж/HUD/экран поражения) → `Game` (презентация/рендер/цикл) → `GameSimulation` (ядро симуляции).
 
 ---
 
-## 2. Архитектура: `Game` как ядро
+## 2. Архитектура: `Game` (презентация/рендер) + `GameSimulation` (симуляция)
 
-Класс `Game` (`src/game/Game.ts:71`) — единый агрегатор. Он владеет рендерером, сценой, камерой (`CameraRig`), ареной (`Arena`), эффектами (`Effects`), пулом снарядов (`ProjectileManager`), вводом (`PlayerController`), звуком (`AudioFX`), состоянием забега (`RunState`) и менеджером волн (`WaveManager`).
+Код разделён на два слоя:
+
+- **`Game`** (`src/game/Game.ts:27`) — презентационный агрегатор. Владеет `RenderWorld` (renderer/сцена/камера), ареной, эффектами, пулом снарядов, вводом, звуком, `RunState`. Собирает подсистемы, связывает их через `GameSimulation.init(...)`, крутит `tick` (главный RAF-цикл, `Game.ts:230`), рисует кадр и пушит HUD-снапшот в React.
+- **`GameSimulation`** (`src/game/engine/GameSimulation.ts:27`) — чистое ядро симуляции. Получает `arena/effects/projectiles/input/audio/run` в конструкторе, а `combat/waves/hudModel` — через `init()` (`GameSimulation.ts:48`). Его `step(dt, emit)` (`GameSimulation.ts:54`) реализует весь боевой конвейер.
 
 **Режимы** `GameMode = 'menu' | 'garage' | 'playing' | 'over'` — состояние хранится в `RunState.mode`.
 
-**Событийная шина**: `Game.addListener` / `emit(GameEvent)` — `GameEvent` (`Game.ts:54`) покрывает `playerHit` (с направлением удара), `enemyHit`, `kill`, `wave`, `shotFired`, `gameOver`, `pauseChanged`, `garageChanged`. Через неё React-HUD и `App` узнают о событиях боя.
+**Событийная шина**: `Game.addListener` / `emit(GameEvent)` — `GameEvent` (`game/types.ts:34`) покрывает `playerHit` (с направлением удара), `enemyHit`, `kill`, `wave`, `shotFired`, `gameOver`, `pauseChanged`, `garageChanged`. Через неё React-HUD и `App` узнают о событиях боя.
 
-**Единая фабрика оружия** `createWeapon()` (`Game.ts:228`) — единственная точка создания `RailgunWeapon`/`FlamethrowerWeapon`/`CannonWeapon` и для игрока, и для ботов (контракт `Weapon` из `weapons/types.ts`).
+**Единая фабрика оружия** `createWeapon()` (`PlayerFactory.ts:27`) — единственная точка создания `RailgunWeapon`/`FlamethrowerWeapon`/`CannonWeapon` и для игрока, и для ботов (контракт `Weapon` из `weapons/types.ts`).
 
-**Централизованная система урона** `damageSystem` (`Game.ts:88`): `applyDamage`, `applyKnockback`, `damageBlock` — все повреждения (танкам, блокам арены) идут через неё, что устраняет разветвления по `weaponType` в ядре.
+**Единая фабрика танков** `createTankEntity()` (`PlayerFactory.ts`) — строит `TankParams` + `TankEntity` + меш из корпуса/башни. Используется и `buildPlayerTank`, и `WaveManager.spawnWave` (параметры wave-scaling передаются через `healthScale`/`damageScale`/`shotCooldownScale`).
+
+**Централизованная система урона** `DamageSystem` (`core/DamageSystem.ts`): `applyDamage` сначала чисто применяет урон через `TankLike.takeDamage(dmg, sourceId)`, затем дёргает хук `onTankDamaged` для эффектов/звука/скоринга (в `CombatSystem`). `applyKnockback`/`damageBlock` — тоже через неё, что устраняет разветвления по `weaponType` в ядре.
+
+> **Слой `core/` не зависит от `game/`** — `core/catalog.ts` (HULLS/TURRETS), `core/types.ts` (TankStyle/TankLike/DamageSystem), `core/DamageSystem.ts`, `core/TankCatalog.ts` содержат чистые доменные данные и контракты без импортов из `game/*`. Это разрывает былой цикл `core → game`.
 
 ---
 
 ## 3. Главный цикл и порядок обновления
 
-`requestAnimationFrame` → `tick(ts)` (`Game.ts:565`):
+`requestAnimationFrame` → `tick(ts)` (`Game.ts:230`):
 - `dt = min(0.05, …)` — кламп дельты от просадок.
-- Если `playing && !paused` → `step(dt)`.
-- Иначе (пауза/меню) обновляются только мёртвые танки (`t.update`) для анимации гибели.
-- Всегда: `arena.update`, `effects.update`, `cameraRig.update`, рендер кадра, синхронизация миникарты (`MinimapSystem.sync`).
+- Если `playing && !paused` → `sim.step(dt, emit)`.
+- Иначе (пауза/меню) обновляются только мёртвые танки (`TankAnimationSystem.update` для `!alive`) для анимации гибели.
+- Всегда: `arena.update`, `effects.update`, `cameraRig.update`, рендер кадра, обновление HUD-снапшота, синхронизация миникарты.
 
-`step(dt)` (`Game.ts:477`) — строгий порядок (важен для детерминизма):
+`step(dt, emit)` (`GameSimulation.ts:54`) — строгий порядок (важен для детерминизма):
 1. Ввод игрока (`PlayerController.update` → `wantsFire` → `weapon.setFire`) + звук ручной перезарядки.
 2. Обновление ИИ ботов (`AIController.update` для каждого из `waves.bots`) + `weapon.setFire` бота.
 3. `WeaponSystem.update` — заряд/луч/частицы спец. оружий.
@@ -60,21 +67,21 @@
 - `resetRun()` — обнуление счёта/волн/времени при старте нового матча.
 
 **Смена режимов** (`Game.setMode`, `startRound`):
-- `startRound()` (`Game.ts:301`): `audio.ensure()` (разблок WebAudio по жесту), очистка танков/снарядов, `run.resetRun()`, сборка игрока из `HULLS[hull]`+`TURRETS[turret]` (`buildTankMesh`), спавн в `(0,0,-58)`, привязка оружия, `waves.begin()`, старт двигателя, `requestLock()` (pointer-lock).
-- Выход в меню/гараж (`Game.ts:254`): очистка боевых объектов, сброс паузы, показ 3D-предпросмотра.
+- `startRound()` (`Game.ts:182`): `audio.ensure()` (разблок WebAudio по жесту), очистка танков/снарядов, `run.resetRun()`, сборка игрока через `buildPlayerTank` (→ `createTankEntity`), спавн в `(0,0,-58)`, привязка оружия, `waves.begin()`, старт двигателя, `requestLock()` (pointer-lock).
+- Выход в меню/гараж (`Game.ts:138`): очистка боевых объектов, сброс паузы, показ 3D-предпросмотра.
 
 ---
 
 ## 5. Рендер и сцена
 
-В конструкторе `Game` (`Game.ts:119`):
+В конструкторе `Game` (`Game.ts:50`):
 - `WebGLRenderer` с `antialias`, `powerPreference:'high-performance'`, `shadowMap` = `PCFSoftShadowMap`, ACES tone-mapping (exposure 1.08).
 - `PerspectiveCamera(58°, 1, 0.1, 500)`.
 - **Sky-dome**: сфера r=480 с кастомным `ShaderMaterial` (градиент неба, солнце `smoothstep`, облака через `sin/cos`, адаптация из предыдущей версии).
 - **Освещение**: `HemisphereLight`, `DirectionalLight` (солнце, тени 2048², ortho-камера ±88, bias), холодный `rim`-свет, IBL от `RoomEnvironment` через `PMREMGenerator`.
 - `scene.fog = Fog(0x0a0f18, 75, 250)` — дальний туман для глубины.
 - `scene.background = 0x060a12`.
-- Обработчики `resize` (обновление aspect/renderer) и `visibilitychange` (авто-пауза при сворачивании вкладки, `Game.ts:596`).
+- Обработчики `resize` (обновление aspect/renderer) и `visibilitychange` (авто-пауза при сворачивании вкладки, `Game.ts:264`).
 
 ---
 
@@ -260,6 +267,19 @@ Hitscan с FSM: `IDLE → CHARING → FIRING → COOLDOWN` (`RailgunState`).
 
 ---
 
+## 20. Проведённый рефакторинг (актуальное состояние)
+
+Кодовая база прошла точечный рефакторинг (низкий риск, без изменения поведения). Что изменилось относительно ранних версий разбора:
+
+- **Разделение `Game` / `GameSimulation`**. `Game` (`src/game/Game.ts`) — презентация, рендер, RAF-цикл `tick`, интеграция React-HUD. `GameSimulation` (`src/game/engine/GameSimulation.ts`) — чистое ядро; подсистемы `combat`/`waves`/`hudModel` инъецируются через `init()`.
+- **Устранение дублирования типов/данных**. `TankStyle` определён единожды в `core/types.ts`. Каталог `HULLS`/`TURRETS`/`HULL_IDS`/`TURRET_IDS` и типы `HullId`/`TurretId` вынесены в чистый `core/catalog.ts`; `game/constants.ts` и `core/TankCatalog.ts` их реэкспортируют.
+- **Единая фабрика танков** `createTankEntity()` (`PlayerFactory.ts`) — общая сборка для игрока (`buildPlayerTank`) и ботов (`WaveManager.spawnWave`, wave-scaling через параметры).
+- **Чистая система урона**. `DamageSystem.applyDamage` применяет урон через `TankLike.takeDamage`, эффекты/звук/скоринг — в хуке `onTankDamaged` (`CombatSystem`). Урон тестируем без WebGL.
+- **Чистые хелперы ИИ** `preferredRange` / `aimTolerance` / `steeringFromAngle` (`AI.ts`) — без Three.js, под unit-тесты.
+- **Слой `core/` не зависит от `game/`** — разорван цикл импортов `core → game`.
+
+---
+
 ## Итог
 
 ArmorStrike — модульный 3D-экшен, где `Game` агрегирует ECS-подобный конвейер систем (`AI → Weapon → Tank → Fx → Nameplate → Physics → Projectile → Waves`), единые контракты `Weapon`/`DamageSystem` устраняют разветвления по типу оружия, а весь визуал/звук генерируется процедурно (canvas-текстуры, шейдеры, WebAudio). Ключевые фишки: разрушаемая арена, 3×3 сборка танков, 3 принципиально разных оружия, FSM-ИИ с «характером» и упреждением, динамические волны, кастомная физика/камера/эффекты.
@@ -271,7 +291,7 @@ ArmorStrike — модульный 3D-экшен, где `Game` агрегиру
 > (Полный разбор из отдельного запроса — сохранён здесь для полноты документа.)
 
 ### Архитектура
-ИИ вынесен в отдельный модуль `src/game/AI.ts`. Каждый бот управляется экземпляром `AIController`, который пишет в танк команды (`throttle`, `steer`, `aimYaw`, `boosting`), а флаг `wantsFire` читается оружейной системой. Главный цикл в `Game.ts:497` обновляет всех ботов и передаёт им контекст: игрок, список ботов, коллайдеры арены и границы.
+ИИ вынесен в отдельный модуль `src/game/AI.ts`. Каждый бот управляется экземпляром `AIController`, который пишет в танк команды (`throttle`, `steer`, `aimYaw`, `boosting`), а флаг `wantsFire` читается оружейной системой. Главный цикл в `GameSimulation.step` (`src/game/engine/GameSimulation.ts:54`) обновляет всех ботов и передаёт им контекст: игрок, список ботов, коллайдеры арены и границы. Чистые хелперы решений (`preferredRange`, `aimTolerance`, `steeringFromAngle`) вынесены как экспортируемые функции без Three.js — покрываемы unit-тестами.
 
 ### Состояния (конечный автомат)
 У бота два состояния (`AI.ts:32`):

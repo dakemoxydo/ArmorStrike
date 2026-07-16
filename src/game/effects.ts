@@ -1,7 +1,7 @@
 // ===== Эффекты: искры, дым, вспышки, взрывы, тряска камеры =====
 import * as THREE from 'three';
 import { glowTexture, scorchTexture, smokeTexture } from './textures';
-import { clamp } from './physics';
+import { clamp } from './engine/physics';
 
 const SPARK_COUNT = 800;
 

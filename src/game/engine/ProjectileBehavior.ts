@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { COLORS } from './constants';
+import { COLORS } from '../../core/constants';
 import type { Shot, HitContext } from './Projectile';
-import type { TankEntity } from './Tank';
+import type { TankEntity } from '../Tank';
 
 export interface ProjectileBehavior {
   init(s: Shot, owner: TankEntity, damage: number, customRange?: number): void;

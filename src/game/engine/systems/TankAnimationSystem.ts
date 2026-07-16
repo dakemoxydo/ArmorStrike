@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { TankEntity } from '../Tank';
+import type { TankEntity } from '../../Tank';
 import { clamp } from '../physics';
 
 export const TankAnimationSystem = {

@@ -1,10 +1,11 @@
 // ===== UI-хуки для доступа к метаданным каталогов =====
 import { useMemo } from 'react';
-import { getWeaponMeta, type WeaponId } from '../core/WeaponCatalog';
-import { HULLS, TURRETS, type HullId, type TurretId } from '../core/TankCatalog';
+import { getWeaponMeta } from '../core/WeaponCatalog';
+import { HULLS, TURRETS } from '../core/catalog';
+import type { WeaponType, HullId, TurretId } from '../core/catalog';
 
 /** Метаданные оружия по id (лейбл/название/цвет). */
-export function useWeaponMeta(id: WeaponId) {
+export function useWeaponMeta(id: WeaponType) {
   return useMemo(() => getWeaponMeta(id), [id]);
 }
 

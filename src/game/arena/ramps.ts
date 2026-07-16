@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { colliderFromCenter } from '../physics';
+import { colliderFromCenter } from '../engine/physics';
 import type { ArenaBuildContext } from './context';
 
 export function buildRamps(ctx: ArenaBuildContext) {

@@ -1,8 +1,8 @@
 // ===== Управление камерой: режимы menu/garage/playing/over, обход препятствий, FOV =====
 import * as THREE from 'three';
-import type { GameMode } from './Game';
-import type { Collider } from './physics';
-import { segmentHitT } from './physics';
+import type { GameMode } from './types';
+import type { Collider } from './engine/physics';
+import { segmentHitT } from './engine/physics';
 import type { Effects } from './effects';
 import type { PlayerController } from './PlayerController';
 import type { TankEntity } from './Tank';

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { TankStyle } from '../Tank';
+import type { TankStyle } from '../../core/types';
 
 export interface TankBuildContext {
   style: TankStyle;

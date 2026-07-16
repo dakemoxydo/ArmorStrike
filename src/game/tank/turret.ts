@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { TurretId } from '../constants';
+import type { TurretId } from '../../core/catalog';
 import type { TankBuildContext } from './context';
 
 export function buildTurret(ctx: TankBuildContext, turretId: TurretId) {

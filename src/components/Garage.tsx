@@ -4,8 +4,8 @@ import {
   ArrowLeft, Check, Gauge, HardDrive, MoveUp,
   Play, Shield, Target, Zap,
 } from 'lucide-react';
-import { HULLS, TURRETS } from '../game/constants';
-import type { HullId, TurretId } from '../game/constants';
+import { HULLS, TURRETS } from '../core/catalog';
+import type { HullId, TurretId } from '../core/catalog';
 import { getWeaponMeta } from '../core/WeaponCatalog';
 import type { Game } from '../game/Game';
 

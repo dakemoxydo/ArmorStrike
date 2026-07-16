@@ -2,13 +2,12 @@
 // Владеет damageSystem (через core/createDamageSystem) и надстраивает поверх
 // него визуальные эффекты, звук, скоринг и эмит событий для HUD.
 import * as THREE from 'three';
-import type { GameEvent } from './Game';
+import type { GameEvent } from './types';
 import type { Arena } from './Arena';
 import type { Effects } from './effects';
 import type { AudioFX } from './audio';
 import type { RunState } from './RunState';
-import type { TankEntity } from './Tank';
-import type { DamageSystem } from './weapons/types';
+import type { TankLike } from '../core/types';
 import { SCORE } from './constants';
 import { createDamageSystem } from '../core/DamageSystem';
 
@@ -23,17 +22,21 @@ export interface CombatDeps {
 }
 
 export class CombatSystem {
-  damageSystem: DamageSystem;
+  damageSystem: ReturnType<typeof createDamageSystem>;
 
   constructor(private deps: CombatDeps) {
     this.damageSystem = createDamageSystem(deps.arena, {
-      onTankHit: (target, dmg, source) => this.onTankHit(target, dmg, source),
+      onTankDamaged: (target, dmg, source) =>
+        this.onTankDamaged(target, dmg, source),
       onBlockDestroyed: (pos, size) => this.onBlockDestroyed(pos, size),
     });
   }
 
-  onTankHit(target: TankEntity, dmg: number, owner: TankEntity) {
-    target.takeDamage(dmg, owner.id);
+  /**
+   * Эффекты/звук/события после применения чистого урона.
+   * target.takeDamage(dmg, source.id) уже вызван в DamageSystem.applyDamage.
+   */
+  onTankDamaged(target: TankLike, _dmg: number, owner: TankLike) {
     if (target.isPlayer) {
       this.deps.audio.hitPlayer();
       this.deps.effects.addShake(0.3);
@@ -54,7 +57,7 @@ export class CombatSystem {
     if (!target.alive) this.onTankDestroyed(target, owner);
   }
 
-  private onTankDestroyed(target: TankEntity, owner: TankEntity | null) {
+  private onTankDestroyed(target: TankLike, owner: TankLike | null) {
     const p = target.position.clone().setY(1.4);
     this.deps.effects.explosion(p, target.isPlayer ? 0x2ee6c0 : 0xff7a3d, 1.9);
     this.deps.effects.debris(p, 0xffa050, 26);

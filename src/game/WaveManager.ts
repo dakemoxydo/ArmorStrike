@@ -1,19 +1,20 @@
 // ===== Менеджер волн: композиция и спавн ботов, таймер следующей волны =====
 import * as THREE from 'three';
-import { botStatsForWave, botsForWave, COLORS, HULLS, SCORE, TURRETS } from './constants';
-import type { HullId, TurretId } from './constants';
+import { botStatsForWave, botsForWave, SCORE } from './constants';
+import { COLORS } from '../core/constants';
+import { HULL_IDS, TURRET_IDS, TURRETS } from '../core/catalog';
+import type { HullId, TurretId, WeaponType } from '../core/catalog';
 import type { Arena } from './Arena';
 import type { Effects } from './effects';
 import type { AudioFX } from './audio';
-import { TankEntity, buildTankMesh } from './Tank';
-import type { TankParams } from './Tank';
+import { TankEntity } from './Tank';
 import { AIController, randomPersona } from './AI';
 import { Nameplate } from './nameplate';
 import type { RunState } from './RunState';
-import type { GameEvent } from './Game';
+import type { GameEvent } from './types';
 import type { Weapon } from './weapons/types';
-import type { WeaponType } from './Projectile';
 import { buildBotStyle } from '../core/TankCatalog';
+import { createTankEntity } from './PlayerFactory';
 
 const SPAWN_POINTS: [number, number][] = [
   [64, 64], [-64, 64], [64, -64], [-64, -64],
@@ -62,9 +63,9 @@ export class WaveManager {
     const stats = botStatsForWave(this.wave);
     const count = botsForWave(this.wave);
     const used = new Set<number>();
-    const botHulls: HullId[] = ['hunter', 'viking', 'mammoth'];
-    const botTurrets: TurretId[] = ['railgun', 'flamethrower', 'cannon'];
-    const botColors = COLORS.bots.map((h) => new THREE.Color(h));
+    const botHulls: HullId[] = HULL_IDS;
+    const botTurrets: TurretId[] = TURRET_IDS;
+    const botColors = COLORS.bots.map((h: number) => new THREE.Color(h));
 
     for (let i = 0; i < count; i++) {
       let idx = Math.floor(Math.random() * SPAWN_POINTS.length);
@@ -77,23 +78,16 @@ export class WaveManager {
 
       const bHull = botHulls[i % botHulls.length];
       const bTurret = botTurrets[(i + this.wave) % botTurrets.length];
-      const hDef = HULLS[bHull];
-      const tDef = TURRETS[bTurret];
 
       const style = buildBotStyle(c);
 
-      const params: TankParams = {
-        maxHealth: Math.round(hDef.maxHealth * (0.8 + this.wave * 0.1)),
-        speed: stats.speed, reverseSpeed: stats.reverseSpeed,
-        turnSpeed: stats.turnSpeed, turretSpeed: stats.turretSpeed,
-        damage: Math.round(tDef.damage * (0.7 + this.wave * 0.08)),
-        shotCooldown: tDef.shotCooldown * 1.3,
-        weaponType: tDef.weaponType, range: tDef.range,
-      };
-
-      const bot = new TankEntity(`БОТ-${this.wave}${i + 1}`, false, params, buildTankMesh(style, bHull, bTurret));
-      bot.hullId = bHull;
-      bot.turretId = bTurret;
+      const bot = createTankEntity({
+        name: `БОТ-${this.wave}${i + 1}`, isPlayer: false,
+        hullId: bHull, turretId: bTurret, style,
+        healthScale: 0.8 + this.wave * 0.1,
+        damageScale: 0.7 + this.wave * 0.08,
+        shotCooldownScale: 1.3,
+      });
       bot.visual.group.position.set(x, 0, z);
       const plate = new Nameplate(bot.name, c.getHex());
       this.ctx.scene.add(plate.sprite);
@@ -103,9 +97,9 @@ export class WaveManager {
       this.ctx.scene.add(bot.visual.group);
       tanks.push(bot);
 
-      bot.weapon = this.ctx.createWeapon(bot, tDef.weaponType);
+      bot.weapon = this.ctx.createWeapon(bot, TURRETS[bTurret].weaponType);
 
-      this.bots.push({ tank: bot, ai: new AIController(bot, stats.sightRange, tDef.range, stats.aimError, randomPersona(this.wave)) });
+      this.bots.push({ tank: bot, ai: new AIController(bot, stats.sightRange, TURRETS[bTurret].range, stats.aimError, randomPersona(this.wave)) });
     }
   }
 

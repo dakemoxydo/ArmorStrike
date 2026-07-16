@@ -1,7 +1,8 @@
 // ===== Система визуальных эффектов танков: дым повреждений и пыль из-под гусениц =====
 import * as THREE from 'three';
-import type { TankEntity } from '../Tank';
-import type { Effects } from '../effects';
+import type { TankEntity } from '../../Tank';
+import type { Effects } from '../../effects';
+import { BOOST_JET_OFFSET, DUST_HEIGHT, DUST_SPREAD, SMOKE_HEALTH_FRAC } from '../../tuning';
 
 const tmpV = new THREE.Vector3();
 
@@ -11,7 +12,7 @@ export const TankFxSystem = {
       if (!t.alive) continue;
 
       // Дым повреждений при низком здоровье
-      if (t.health < t.maxHealth * 0.32) {
+      if (t.health < t.maxHealth * SMOKE_HEALTH_FRAC) {
         t.smokeAcc += dt;
         if (t.smokeAcc > 0.11) {
           t.smokeAcc = 0;
@@ -26,9 +27,9 @@ export const TankFxSystem = {
           t.dustAcc = 0;
           const back = t.yaw + Math.PI;
           tmpV.set(
-            t.position.x + Math.sin(back) * 2.4 + (Math.random() - 0.5) * 1.2,
-            0.35,
-            t.position.z + Math.cos(back) * 2.4 + (Math.random() - 0.5) * 1.2,
+            t.position.x + Math.sin(back) * BOOST_JET_OFFSET + (Math.random() - 0.5) * DUST_SPREAD,
+            DUST_HEIGHT,
+            t.position.z + Math.cos(back) * BOOST_JET_OFFSET + (Math.random() - 0.5) * DUST_SPREAD,
           );
           effects.tankDust(tmpV);
         }

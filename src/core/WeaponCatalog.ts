@@ -1,8 +1,9 @@
 // ===== Единый каталог оружия: метаданные, метки и цвета =====
 // Единственный источник истины для названий/цветов оружия.
 // Ранее метки дублировались в HUD.tsx, App.tsx, Garage.tsx, AI.ts.
+import type { WeaponType } from './catalog';
 
-export type WeaponId = 'railgun' | 'flamethrower' | 'cannon';
+export type WeaponId = WeaponType;
 
 export interface WeaponMeta {
   id: WeaponId;

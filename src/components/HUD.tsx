@@ -4,7 +4,8 @@ import {
   Crosshair, Gauge, Heart, Radio, Shield, Skull,
   Trophy, Volume2, VolumeX, Zap,
 } from 'lucide-react';
-import type { Game, GameEvent, HudSnapshot, MinimapDynamic } from '../game/Game';
+import type { Game } from '../game/Game';
+import type { GameEvent, HudSnapshot, MinimapDynamic } from '../game/types';
 
 interface HudProps {
   game: Game | null;
@@ -80,13 +81,10 @@ export default function HUD({ game, active }: HudProps) {
     return () => clearTimeout(t);
   }, [active]);
 
-  // ---- главный цикл HUD ----
+  // ---- обновление HUD из единого игрового цикла (Game.tick) ----
   useEffect(() => {
     if (!game) return;
-    let raf = 0;
-    const loop = () => {
-      raf = requestAnimationFrame(loop);
-      const s = game.getHud();
+    const onHud = (s: HudSnapshot) => {
       const c = snap.current;
 
       // быстрые элементы — через refs
@@ -121,10 +119,11 @@ export default function HUD({ game, active }: HudProps) {
       ) {
         force();
       }
-      snap.current = s;
+      // сохраняем копию, т.к. s — это мутируемый объект this.hud из Game.tick
+      snap.current = { ...s };
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    game.setHudCallback(onHud);
+    return () => game.setHudCallback(null);
   }, [game]);
 
   if (!game) return null;

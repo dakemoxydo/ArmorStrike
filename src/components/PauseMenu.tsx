@@ -3,7 +3,7 @@ import {
   ArrowLeft, Home, Pause, Play, RefreshCcw, Shield,
   Skull, Trophy, Volume2, VolumeX, Waves, Wrench,
 } from 'lucide-react';
-import { HULLS, TURRETS } from '../game/constants';
+import { HULLS, TURRETS } from '../core/catalog';
 import type { Game } from '../game/Game';
 
 interface PauseMenuProps {

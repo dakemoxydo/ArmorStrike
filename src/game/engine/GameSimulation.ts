@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import type { TankEntity } from './Tank';
-import { Nameplate } from './nameplate';
-import { COLORS } from './constants';
+import type { TankEntity } from '../Tank';
+import { Nameplate } from '../nameplate';
+import { COLORS } from '../../core/constants';
 import { WeaponSystem } from './systems/WeaponSystem';
 import { TankSystem } from './systems/TankSystem';
 import { TankAnimationSystem } from './systems/TankAnimationSystem';
@@ -9,16 +9,17 @@ import { TankFxSystem } from './systems/TankFxSystem';
 import { NameplateSystem } from './systems/NameplateSystem';
 import { PhysicsSystem } from './systems/PhysicsSystem';
 import { MinimapSystem } from './systems/MinimapSystem';
-import type { Arena } from './Arena';
-import type { Effects } from './effects';
+import type { Arena } from '../Arena';
+import type { Effects } from '../effects';
 import type { ProjectileManager } from './Projectile';
-import type { PlayerController } from './PlayerController';
-import type { AudioFX } from './audio';
-import type { RunState } from './RunState';
-import type { WaveManager } from './WaveManager';
-import type { CombatSystem } from './CombatSystem';
-import type { HudModel } from './HudModel';
-import type { GameEvent } from './Game';
+import type { PlayerController } from '../PlayerController';
+import type { AudioFX } from '../audio';
+import type { RunState } from '../RunState';
+import type { WaveManager } from '../WaveManager';
+import type { CombatSystem } from '../CombatSystem';
+import type { HudModel } from '../HudModel';
+import type { GameEvent } from '../types';
+import { BOOST_JET_HEIGHT, BOOST_JET_OFFSET } from '../tuning';
 
 const _bv = new THREE.Vector3();
 const _bd = new THREE.Vector3();
@@ -43,6 +44,13 @@ export class GameSimulation {
     readonly run: RunState,
   ) {}
 
+  /** Инъекция подсистем, зависящих от Game (устраняет `!`-поля). */
+  init(deps: { combat: CombatSystem; waves: WaveManager; hudModel: HudModel }) {
+    this.combat = deps.combat;
+    this.waves = deps.waves;
+    this.hudModel = deps.hudModel;
+  }
+
   step(dt: number, emit: (e: GameEvent) => void) {
     const p = this.player;
     if (!p) return;
@@ -58,7 +66,7 @@ export class GameSimulation {
     }
 
     const bounds = this.arena.half - 6;
-    const others = this.tanks.filter((t) => !t.isPlayer);
+    const others = this.waves.bots.map((b) => b.tank);
     for (const b of this.waves.bots) {
       b.ai.update(dt, {
         player: p, bots: others,
@@ -81,8 +89,8 @@ export class GameSimulation {
       tanks: this.tanks,
       arena: this.arena,
       effects: this.effects,
-      onTankHit: (target, dmg, owner) => this.combat.onTankHit(target, dmg, owner),
-      onBlockDestroyed: this.combat.onBlockDestroyed,
+      damageSystem: this.combat.damageSystem,
+      onTankHit: (target, dmg, owner) => this.combat.onTankDamaged(target, dmg, owner),
     });
 
     this.waves.update(dt, this.tanks, this.nameplates);
@@ -98,10 +106,10 @@ export class GameSimulation {
     }
 
     const boostBack = p.yaw + Math.PI;
-    const bx = p.position.x + Math.sin(boostBack) * 2.4;
-    const bz = p.position.z + Math.cos(boostBack) * 2.4;
+    const bx = p.position.x + Math.sin(boostBack) * BOOST_JET_OFFSET;
+    const bz = p.position.z + Math.cos(boostBack) * BOOST_JET_OFFSET;
     if (p.alive && p.boostActive) {
-      _bv.set(bx, 0.75, bz);
+      _bv.set(bx, BOOST_JET_HEIGHT, bz);
       _bd.set(Math.sin(boostBack), 0.05, Math.cos(boostBack)).normalize();
       this.effects.boostJet(_bv, _bd, COLORS.player);
     }

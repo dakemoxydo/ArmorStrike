@@ -1,7 +1,7 @@
 // ===== FIREBIRD (Огнемёт) =====
 // Оружие ближнего боя с геометрическим Overlap-check и InstancedMesh системой пламени
 import * as THREE from 'three';
-import { FLAMETHROWER_CONFIG } from '../constants';
+import { WEAPON_TUNING } from '../../core/catalog';
 import type { TankEntity } from '../Tank';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
 
@@ -26,7 +26,7 @@ const localDir = new THREE.Vector3();
 
 export class FlamethrowerWeapon implements Weapon {
   readonly owner: TankEntity;
-  energy = FLAMETHROWER_CONFIG.energyMax;
+  energy = WEAPON_TUNING.flamethrower.energyMax;
   isFiring = false;
 
   private tickTimer = 0;
@@ -34,6 +34,7 @@ export class FlamethrowerWeapon implements Weapon {
 
   // InstancedMesh пул частиц пламени
   private instancedMesh: THREE.InstancedMesh;
+  private particleMat: THREE.MeshBasicMaterial;
   private particles: FlameParticle[] = [];
   private muzzleLight: THREE.PointLight;
 
@@ -42,7 +43,7 @@ export class FlamethrowerWeapon implements Weapon {
   constructor(owner: TankEntity, deps: WeaponDeps) {
     this.owner = owner;
     this.deps = deps;
-    const count = FLAMETHROWER_CONFIG.particleCount;
+    const count = WEAPON_TUNING.flamethrower.particleCount;
 
     // Геометрия частицы пламени
     const particleGeo = new THREE.IcosahedronGeometry(0.35, 1);
@@ -54,6 +55,7 @@ export class FlamethrowerWeapon implements Weapon {
     });
 
     this.instancedMesh = new THREE.InstancedMesh(particleGeo, particleMat, count);
+    this.particleMat = particleMat;
     this.instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
     // ВАЖНО: Отключаем Frustum Culling для динамического InstancedMesh!
@@ -101,7 +103,7 @@ export class FlamethrowerWeapon implements Weapon {
   }
 
   get energyRatio(): number {
-    return this.energy / FLAMETHROWER_CONFIG.energyMax;
+    return this.energy / WEAPON_TUNING.flamethrower.energyMax;
   }
 
   update(dt: number, ctx: WeaponContext) {
@@ -112,7 +114,7 @@ export class FlamethrowerWeapon implements Weapon {
 
     // Расход / Восстановление энергии
     if (this.isFiring && this.owner.alive) {
-      this.energy -= FLAMETHROWER_CONFIG.consumptionRate * dt;
+      this.energy -= WEAPON_TUNING.flamethrower.consumptionRate * dt;
       if (this.energy <= 0) {
         this.energy = 0;
         this.isFiring = false;
@@ -120,16 +122,16 @@ export class FlamethrowerWeapon implements Weapon {
       }
     } else {
       this.energy = Math.min(
-        FLAMETHROWER_CONFIG.energyMax,
-        this.energy + FLAMETHROWER_CONFIG.rechargeRate * dt,
+        WEAPON_TUNING.flamethrower.energyMax,
+        this.energy + WEAPON_TUNING.flamethrower.rechargeRate * dt,
       );
     }
 
     // --- Overlap-check урона с throttling по tickRate ---
     if (this.isFiring) {
       this.tickTimer += dt;
-      if (this.tickTimer >= FLAMETHROWER_CONFIG.tickRate) {
-        this.tickTimer -= FLAMETHROWER_CONFIG.tickRate;
+      if (this.tickTimer >= WEAPON_TUNING.flamethrower.tickRate) {
+        this.tickTimer -= WEAPON_TUNING.flamethrower.tickRate;
         this.processOverlapDamage(ctx.tanks);
       }
 
@@ -143,7 +145,7 @@ export class FlamethrowerWeapon implements Weapon {
 
     // --- Спавн новых частиц из пула пока кнопка зажата ---
     if (this.isFiring) {
-      this.spawnAcc += dt * FLAMETHROWER_CONFIG.spawnRate;
+      this.spawnAcc += dt * WEAPON_TUNING.flamethrower.spawnRate;
       const toSpawn = Math.floor(this.spawnAcc);
       if (toSpawn > 0) {
         this.spawnAcc -= toSpawn;
@@ -217,7 +219,7 @@ export class FlamethrowerWeapon implements Weapon {
     p.pos.copy(tmpMuzzle);
 
     // Разброс вектора скорости в ЛОКАЛЬНОЙ системе координат ствола
-    const halfCone = FLAMETHROWER_CONFIG.coneAngle * 0.5;
+    const halfCone = WEAPON_TUNING.flamethrower.coneAngle * 0.5;
     const tanHalf = Math.tan(halfCone);
     const spreadX = (Math.random() - 0.5) * 2 * tanHalf;
     const spreadY = (Math.random() - 0.5) * tanHalf;
@@ -233,7 +235,7 @@ export class FlamethrowerWeapon implements Weapon {
 
   /** Геометрический Overlap-check поражения целей в конусе пламени */
   private processOverlapDamage(tanks: TankEntity[]) {
-    const halfCone = FLAMETHROWER_CONFIG.coneAngle * 0.5;
+    const halfCone = WEAPON_TUNING.flamethrower.coneAngle * 0.5;
 
     for (const t of tanks) {
       if (t === this.owner || !t.alive) continue;
@@ -241,15 +243,15 @@ export class FlamethrowerWeapon implements Weapon {
       tmpTargetVec.subVectors(t.position, tmpMuzzle);
       const dist = tmpTargetVec.length();
 
-      if (dist <= FLAMETHROWER_CONFIG.range) {
+      if (dist <= WEAPON_TUNING.flamethrower.range) {
         tmpTargetVec.normalize();
         const angle = tmpDir.angleTo(tmpTargetVec);
 
         if (angle <= halfCone) {
           // Цель внутри конуса поражения!
-          const dmg = FLAMETHROWER_CONFIG.damagePerTick;
+          const dmg = WEAPON_TUNING.flamethrower.damagePerTick;
           this.deps.damageSystem.applyDamage(t, dmg, this.owner);
-          this.deps.damageSystem.applyKnockback(t, tmpTargetVec, FLAMETHROWER_CONFIG.knockback);
+          this.deps.damageSystem.applyKnockback(t, tmpTargetVec, WEAPON_TUNING.flamethrower.knockback);
 
           // Дым и искры на обгорающем танке
           this.deps.effects.spawnSmoke(t.position, 1, 1.0, false);
@@ -261,7 +263,7 @@ export class FlamethrowerWeapon implements Weapon {
   getAmmoState() {
     return {
       ammo: Math.round(this.energy),
-      magazine: Math.round(FLAMETHROWER_CONFIG.energyMax),
+      magazine: Math.round(WEAPON_TUNING.flamethrower.energyMax),
       reloading: this.energy < 10,
       reloadProgress: this.energyRatio,
       isCharging: false,
@@ -273,5 +275,7 @@ export class FlamethrowerWeapon implements Weapon {
     this.deps.scene.remove(this.instancedMesh);
     this.deps.scene.remove(this.muzzleLight);
     this.instancedMesh.geometry.dispose();
+    this.instancedMesh.dispose();
+    this.particleMat.dispose();
   }
 }

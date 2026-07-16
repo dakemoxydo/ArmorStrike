@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { HullId } from '../constants';
+import type { HullId } from '../../core/catalog';
 import type { TankBuildContext } from './context';
 
 export function buildHull(ctx: TankBuildContext, hullId: HullId) {

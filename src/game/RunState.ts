@@ -1,7 +1,7 @@
 // ===== Состояние забега: режим, очки, выбор корпуса/башни, сохранение прогресса =====
-import type { GameMode } from './Game';
-import { HULLS, TURRETS } from './constants';
-import type { HullId, TurretId } from './constants';
+import type { GameMode } from './types';
+import { HULLS, TURRETS } from '../core/catalog';
+import type { HullId, TurretId } from '../core/catalog';
 
 const LS_KEY = 'as2_loadout';
 

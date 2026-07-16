@@ -1,7 +1,7 @@
 // ===== Физическая система: выталкивание танков из стен и разведение танков друг от друга =====
 import { resolveCircle } from '../physics';
 import type { Collider } from '../physics';
-import type { TankEntity } from '../Tank';
+import type { TankEntity } from '../../Tank';
 
 export const PhysicsSystem = {
   resolveCollisions(tanks: TankEntity[], colliders: Collider[]) {

@@ -1,28 +1,25 @@
 // ===== Централизованная система урона =====
-// Чистая реализация контракта DamageSystem (определён в weapons/types.ts).
-// Инкапсулирует применение урона, отброс и разрушение блоков арены,
-// вызывая колбэки для эффектов/событий, которые остаются в CombatSystem.
+// Чистая реализация контракта DamageSystem (определён в core/types.ts).
+// applyDamage применяет урон к цели (чисто, через TankLike.takeDamage),
+// а колбэки-хуки отвечают только за эффекты/звук/события (в CombatSystem).
 import * as THREE from 'three';
-import type { Arena } from '../game/Arena';
-import type { TankEntity } from '../game/Tank';
-import type { DamageSystem } from '../game/weapons/types';
-
-export interface DamageSystemHooks {
-  /** Полная обработка урона по танку: takeDamage + эффекты/звук/события. */
-  onTankHit: (target: TankEntity, dmg: number, source: TankEntity) => void;
-  /** Вызывается при уничтожении блока арены (для взрыва/дебриса). */
-  onBlockDestroyed: (pos: THREE.Vector3, size: number) => void;
-}
+import type { ArenaLike, DamageSystem, DamageSystemHooks, TankLike } from './types';
 
 export function createDamageSystem(
-  arena: Arena,
+  arena: ArenaLike,
   hooks: DamageSystemHooks,
 ): DamageSystem {
   return {
-    applyDamage: (target: TankEntity, dmg: number, source: TankEntity) => {
-      hooks.onTankHit(target, dmg, source);
+    applyDamage: (target: TankLike, dmg: number, source: TankLike) => {
+      // Не бить мёртвых: устраняет повторные эффекты/звук по трупу и
+      // делает скоринг устойчивым к источникам урона без фильтра !alive.
+      if (!target.alive) return;
+      // Чистая логика урона: помечаем цель, не трогая представление.
+      target.takeDamage(dmg, source.id);
+      // Эффекты/звук/скоринг — в хуке, зависящем от game-слоя.
+      hooks.onTankDamaged(target, dmg, source);
     },
-    applyKnockback: (target: TankEntity, dir: THREE.Vector3, force: number) => {
+    applyKnockback: (target: TankLike, dir: THREE.Vector3, force: number) => {
       target.knockback.addScaledVector(dir, force);
     },
     damageBlock: (blockId: number, dmg: number, hitPos: THREE.Vector3) => {

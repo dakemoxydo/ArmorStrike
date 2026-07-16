@@ -1,7 +1,7 @@
 // ===== RAILGUN (Рельсотрон) =====
 // Hitscan-оружие мгновенного действия с FSM (IDLE -> CHARGING -> FIRING -> COOLDOWN -> IDLE)
 import * as THREE from 'three';
-import { RAILGUN_CONFIG } from '../constants';
+import { WEAPON_TUNING } from '../../core/catalog';
 import type { Arena } from '../Arena';
 import type { TankEntity } from '../Tank';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
@@ -71,10 +71,10 @@ export class RailgunWeapon implements Weapon {
 
   get reloadProgress(): number {
     if (this.state === 'COOLDOWN') {
-      return 1 - this.reloadTimer / RAILGUN_CONFIG.reloadTime;
+      return 1 - this.reloadTimer / WEAPON_TUNING.railgun.reloadTime;
     }
     if (this.state === 'CHARGING') {
-      return this.chargeTimer / RAILGUN_CONFIG.chargeTime;
+      return this.chargeTimer / WEAPON_TUNING.railgun.chargeTime;
     }
     return 1;
   }
@@ -94,20 +94,20 @@ export class RailgunWeapon implements Weapon {
       case 'IDLE': {
         // Базовое тусклое свечение в дуле
         if (visual.railGlowMat) {
-          visual.railGlowMat.emissiveIntensity = RAILGUN_CONFIG.emissiveIdle;
+          visual.railGlowMat.emissiveIntensity = WEAPON_TUNING.railgun.emissiveIdle;
         }
         break;
       }
 
       case 'CHARGING': {
         this.chargeTimer += dt;
-        const progress = Math.min(1, this.chargeTimer / RAILGUN_CONFIG.chargeTime);
+        const progress = Math.min(1, this.chargeTimer / WEAPON_TUNING.railgun.chargeTime);
 
         // Нарастание свечения рельсотрона через useFrame dt
         if (visual.railGlowMat) {
           visual.railGlowMat.emissiveIntensity = THREE.MathUtils.lerp(
-            RAILGUN_CONFIG.emissiveIdle,
-            RAILGUN_CONFIG.emissiveCharged,
+            WEAPON_TUNING.railgun.emissiveIdle,
+            WEAPON_TUNING.railgun.emissiveCharged,
             progress * progress, // экспоненциальный прирост свечения
           );
         }
@@ -118,11 +118,11 @@ export class RailgunWeapon implements Weapon {
         visual.barrelGroup.position.y = 0.5 + (Math.random() - 0.5) * jitter;
 
         // По завершении времени заряда — автоматический переход в FIRING
-        if (this.chargeTimer >= RAILGUN_CONFIG.chargeTime) {
+        if (this.chargeTimer >= WEAPON_TUNING.railgun.chargeTime) {
           visual.barrelGroup.position.set(0, 0.5, 0.55);
           this.executeFiring(ctx.tanks, ctx.arena);
           this.state = 'COOLDOWN';
-          this.reloadTimer = RAILGUN_CONFIG.reloadTime;
+          this.reloadTimer = WEAPON_TUNING.railgun.reloadTime;
         }
         break;
       }
@@ -130,7 +130,7 @@ export class RailgunWeapon implements Weapon {
       case 'FIRING': {
         // Кадр выстрела обработан при переходе
         this.state = 'COOLDOWN';
-        this.reloadTimer = RAILGUN_CONFIG.reloadTime;
+        this.reloadTimer = WEAPON_TUNING.railgun.reloadTime;
         break;
       }
 
@@ -141,7 +141,7 @@ export class RailgunWeapon implements Weapon {
         if (visual.railGlowMat) {
           visual.railGlowMat.emissiveIntensity = THREE.MathUtils.damp(
             visual.railGlowMat.emissiveIntensity,
-            RAILGUN_CONFIG.emissiveIdle,
+            WEAPON_TUNING.railgun.emissiveIdle,
             6,
             dt,
           );
@@ -158,7 +158,7 @@ export class RailgunWeapon implements Weapon {
     // Затухание визуального луча от 1 -> 0 через useFrame delta
     if (this.beamFadeTimer > 0) {
       this.beamFadeTimer -= dt;
-      const opacity = Math.max(0, this.beamFadeTimer / RAILGUN_CONFIG.beamDuration);
+      const opacity = Math.max(0, this.beamFadeTimer / WEAPON_TUNING.railgun.beamDuration);
       this.beamMat.opacity = opacity;
       this.muzzleLight.intensity = opacity * 60;
       this.impactLight.intensity = opacity * 40;
@@ -179,11 +179,11 @@ export class RailgunWeapon implements Weapon {
     // Звук и импульс отката
     this.deps.audio.shoot('railgun');
     this.deps.effects.muzzle(tmpMuzzle, 0x8fffe8);
-    this.owner.onFired(RAILGUN_CONFIG.knockback);
+    this.owner.onFired(WEAPON_TUNING.railgun.knockback);
 
     // Настройка Raycaster
     this.raycaster.set(tmpMuzzle, tmpDir);
-    this.raycaster.far = RAILGUN_CONFIG.range;
+    this.raycaster.far = WEAPON_TUNING.railgun.range;
 
     // Сбор объектов для пересечения (танки + препятствия)
     const targetObjects: THREE.Object3D[] = [];
@@ -208,8 +208,8 @@ export class RailgunWeapon implements Weapon {
     // Получаем ВСЕ отсортированные по дистанции пересечения
     const hits = this.raycaster.intersectObjects(targetObjects, false);
 
-    let maxHitDist = RAILGUN_CONFIG.range;
-    let currentDamage = RAILGUN_CONFIG.damage;
+    let maxHitDist = WEAPON_TUNING.railgun.range;
+    let currentDamage = WEAPON_TUNING.railgun.damage;
     const hitTanksSet = new Set<number>();
 
     for (const hit of hits) {
@@ -228,18 +228,18 @@ export class RailgunWeapon implements Weapon {
 
           const dmg = Math.round(currentDamage);
           this.deps.damageSystem.applyDamage(hitTank, dmg, this.owner);
-          this.deps.damageSystem.applyKnockback(hitTank, tmpDir, RAILGUN_CONFIG.knockback * (currentDamage / RAILGUN_CONFIG.damage));
+          this.deps.damageSystem.applyKnockback(hitTank, tmpDir, WEAPON_TUNING.railgun.knockback * (currentDamage / WEAPON_TUNING.railgun.damage));
 
           // Искры и вспышка на цели
           this.deps.effects.impact(hit.point, 0x8fffe8);
           this.impactLight.position.copy(hit.point);
 
           // Уменьшаем урон для следующей пробитой цели
-          currentDamage *= RAILGUN_CONFIG.penetrationFactor;
+          currentDamage *= WEAPON_TUNING.railgun.penetrationFactor;
         }
       } else {
         // Пересечение со стеной или блоком
-        const blockId = (hit.object as unknown as { colliderId?: number }).colliderId;
+        const blockId = hit.object.userData?.colliderId as number | undefined;
         if (blockId) {
           this.deps.damageSystem.damageBlock(blockId, Math.round(currentDamage), hit.point);
         }
@@ -259,7 +259,7 @@ export class RailgunWeapon implements Weapon {
     this.beamMesh.visible = true;
 
     this.beamMat.opacity = 1.0;
-    this.beamFadeTimer = RAILGUN_CONFIG.beamDuration;
+    this.beamFadeTimer = WEAPON_TUNING.railgun.beamDuration;
 
     this.muzzleLight.position.copy(tmpMuzzle);
     this.muzzleLight.intensity = 80;

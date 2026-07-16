@@ -1,5 +1,5 @@
 // ===== Система синхронизации состояния блоков арены с миникартой =====
-import type { Arena } from '../Arena';
+import type { Arena } from '../../Arena';
 
 export const MinimapSystem = {
   /** Помечает разрушенные блоки неживыми на миникарте за O(n) по id. */

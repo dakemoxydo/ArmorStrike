@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ARENA } from './constants';
 import type { Arena } from './Arena';
-import { colliderFromCenter } from './physics';
+import { colliderFromCenter } from './engine/physics';
 import {
   factoryGroundTexture, signTexture, structureTexture, wallTexture,
 } from './textures';

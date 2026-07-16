@@ -1,6 +1,6 @@
 // ===== Контекст построения арены: общие ресурсы и хелперы, доступные билдерам =====
 import type * as THREE from 'three';
-import type { Collider } from '../physics';
+import type { Collider } from '../engine/physics';
 import type { BlockInfo } from '../Arena';
 
 export interface ArenaBuildContext {

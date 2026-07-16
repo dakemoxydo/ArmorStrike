@@ -1,5 +1,5 @@
 // ===== Процедурный звук на WebAudio =====
-import type { WeaponType } from './Projectile';
+import type { WeaponType } from '../core/catalog';
 
 export class AudioFX {
   private ctx: AudioContext | null = null;

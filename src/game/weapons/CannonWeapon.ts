@@ -2,7 +2,7 @@
 // Ранее логика выстрела была размазана по Game.tryFire + ProjectileManager.
 // Теперь это обычное оружие с единым интерфейсом Weapon.
 import * as THREE from 'three';
-import { TURRETS } from '../constants';
+import { WEAPON_TUNING } from '../../core/catalog';
 import type { TankEntity } from '../Tank';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
 
@@ -27,8 +27,8 @@ export class CannonWeapon implements Weapon {
     if (!t.canFire()) return;
     const muzzle = t.muzzleWorld(tmpMuzzle);
     const dir = t.aimDir(tmpDir);
-    const recoil = t.isPlayer ? (TURRETS[t.turretId ?? 'cannon']?.recoil ?? 8) : 4;
-    const range = t.params.range ?? 75;
+    const recoil = t.isPlayer ? WEAPON_TUNING.cannon.knockback : 4;
+    const range = t.params.range ?? WEAPON_TUNING.cannon.range;
 
     t.onFired(recoil);
     this.deps.projectiles.fire(t, muzzle, dir, t.params.damage, 'cannon', range);

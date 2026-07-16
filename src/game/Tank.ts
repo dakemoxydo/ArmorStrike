@@ -1,9 +1,10 @@
 // ===== Танк: сущность танка (данные) + типы =====
 import * as THREE from 'three';
 import { TANK } from './constants';
-import type { HullId, TurretId } from './constants';
+import type { HullId, TurretId, WeaponType } from '../core/catalog';
 import type { Weapon } from './weapons/types';
 import { disposeObject3D } from './resources/disposeObject3D';
+import type { TankLike } from '../core/types';
 
 export { buildTankMesh } from './tank/buildMesh';
 
@@ -19,15 +20,6 @@ export interface TankVisual {
   railGlowMat?: THREE.MeshStandardMaterial;
 }
 
-export interface TankStyle {
-  body: string;
-  dark: string;
-  light: string;
-  glow: number;
-  accent: number;
-  antenna: boolean;
-}
-
 export interface TankParams {
   maxHealth: number;
   speed: number;
@@ -36,13 +28,13 @@ export interface TankParams {
   turretSpeed: number;
   damage: number;
   shotCooldown: number;
-  weaponType?: 'railgun' | 'flamethrower' | 'cannon';
+  weaponType?: WeaponType;
   range?: number;
 }
 
 let nextTankId = 1;
 
-export class TankEntity {
+export class TankEntity implements TankLike {
   id = nextTankId++;
   name: string;
   isPlayer: boolean;
@@ -124,8 +116,21 @@ export class TankEntity {
     this.reloadTimer = this.fullReloadTime;
   }
 
+  /** Тик перезарядки магазина (используется только для игрока с пушкой). */
+  updateReload(dt: number) {
+    if (this.fullReloading) {
+      this.reloadTimer -= dt;
+      if (this.reloadTimer <= 0) {
+        this.fullReloading = false;
+        this.ammo = this.magazine;
+      }
+    } else if (this.ammo === 0) {
+      this.startFullReload();
+    }
+  }
+
   takeDamage(dmg: number, attackerId: number) {
-    if (!this.alive) return;
+    if (!this.alive || dmg <= 0) return;
     this.health -= dmg;
     this.hitFlash = 1;
     this.lastAttackerId = attackerId;

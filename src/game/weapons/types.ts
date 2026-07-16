@@ -4,14 +4,10 @@ import type { TankEntity } from '../Tank';
 import type { Arena } from '../Arena';
 import type { Effects } from '../effects';
 import type { AudioFX } from '../audio';
-import type { ProjectileManager } from '../Projectile';
+import type { ProjectileManager } from '../engine/Projectile';
+import type { DamageSystem } from '../../core/types';
 
-/** Централизованная система урона (реализуется в Game). */
-export interface DamageSystem {
-  applyDamage: (target: TankEntity, dmg: number, source: TankEntity) => void;
-  applyKnockback: (target: TankEntity, dir: THREE.Vector3, force: number) => void;
-  damageBlock: (blockId: number, dmg: number, hitPos: THREE.Vector3) => void;
-}
+export type { DamageSystem } from '../../core/types';
 
 export interface WeaponAmmoState {
   ammo: number;

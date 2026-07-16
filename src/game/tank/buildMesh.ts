@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import type { HullId, TurretId } from '../constants';
+import type { HullId, TurretId } from '../../core/catalog';
 import { camoTexture, trackTexture } from '../textures';
-import type { TankStyle, TankVisual } from '../Tank';
+import type { TankStyle } from '../../core/types';
+import type { TankVisual } from '../Tank';
 import type { TankBuildContext } from './context';
 import { buildHull } from './hull';
 import { buildTurret } from './turret';

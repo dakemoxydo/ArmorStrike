@@ -4,8 +4,8 @@ import {
   Shield, Skull, Target, Trophy, Waves, Zap,
 } from 'lucide-react';
 import { Game } from './game/Game';
-import type { HudSnapshot } from './game/Game';
-import { HULLS, TURRETS } from './game/constants';
+import type { HudSnapshot } from './game/types';
+import { HULLS, TURRETS } from './core/catalog';
 import HUD from './components/HUD';
 import Garage from './components/Garage';
 import PauseMenu from './components/PauseMenu';

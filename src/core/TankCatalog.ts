@@ -2,11 +2,11 @@
 // Единое место для определений HULLS/TURRETS и построения TankStyle,
 // чтобы игрок (PlayerFactory) и боты (WaveManager) не дублировали литералы.
 import type { Color } from 'three';
-import { COLORS } from '../game/constants';
-import type { TankStyle } from '../game/Tank';
+import { COLORS } from './constants';
+import type { TankStyle } from './types';
+import type { HullId, TurretId, HullDef, TurretDef } from './catalog';
 
-export { HULLS, TURRETS } from '../game/constants';
-export type { HullId, TurretId } from '../game/constants';
+export type { HullId, TurretId, HullDef, TurretDef };
 
 /** Стиль окраски игрока (фиксированная палитра). */
 export function buildPlayerStyle(): TankStyle {
