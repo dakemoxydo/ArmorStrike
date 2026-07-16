@@ -28,8 +28,36 @@ export class CameraRig {
   private menuAngle = 0.6;
   private shakeV = new THREE.Vector3();
 
+  // Ручное управление предпросмотром в гараже (мышь)
+  private garageYaw = Math.PI * 0.25;
+  private garagePitch = 0.32;
+  private garageDist = 9.5;
+  private garageAutoSpin = true;
+  private garageTargetY = PREVIEW_POS.y + 0.8;
+
   constructor(camera: THREE.PerspectiveCamera) {
     this.camera = camera;
+  }
+
+  /** Сброс ручного управления гаражом при входе/выходе. */
+  resetGarage() {
+    this.garageYaw = Math.PI * 0.25;
+    this.garagePitch = 0.32;
+    this.garageDist = 9.5;
+    this.garageAutoSpin = true;
+    this.garageTargetY = PREVIEW_POS.y + 0.8;
+  }
+
+  /** Перетаскивание мыши — вращение камеры вокруг танка. */
+  garageDrag(dx: number, dy: number) {
+    this.garageAutoSpin = false;
+    this.garageYaw -= dx * 0.008;
+    this.garagePitch = THREE.MathUtils.clamp(this.garagePitch - dy * 0.006, 0.05, 1.35);
+  }
+
+  /** Колесо мыши — приближение/отдаление. */
+  garageZoom(delta: number) {
+    this.garageDist = THREE.MathUtils.clamp(this.garageDist + delta * 0.01, 4.5, 18);
   }
 
   resetFov() {
@@ -76,18 +104,21 @@ export class CameraRig {
       }
 
     } else if (p.mode === 'garage') {
-      this.menuAngle += dt * 0.4;
-      const r = 8.5;
+      // Авто-вращение, пока пользователь не взял управление мышью
+      if (this.garageAutoSpin) this.garageYaw += dt * 0.45;
+
+      const horiz = Math.cos(this.garagePitch) * this.garageDist;
+      const vert = Math.sin(this.garagePitch) * this.garageDist;
       tmpV.set(
-        Math.sin(this.menuAngle) * r,
-        PREVIEW_POS.y + 1.6 + Math.sin(p.elapsed * 0.6) * 0.3,
-        Math.cos(this.menuAngle) * r,
+        PREVIEW_POS.x + Math.sin(this.garageYaw) * horiz,
+        this.garageTargetY + 1.6 + vert,
+        PREVIEW_POS.z + Math.cos(this.garageYaw) * horiz,
       );
-      this.camPos.lerp(tmpV, 1 - Math.exp(-5 * dt));
-      this.camLook.lerp(tmpV2.set(PREVIEW_POS.x, PREVIEW_POS.y + 0.8, PREVIEW_POS.z), 1 - Math.exp(-6 * dt));
+      this.camPos.lerp(tmpV, 1 - Math.exp(-9 * dt));
+      this.camLook.lerp(tmpV2.set(PREVIEW_POS.x, this.garageTargetY, PREVIEW_POS.z), 1 - Math.exp(-9 * dt));
 
       if (p.previewVisual) {
-        p.previewVisual.group.rotation.y = this.menuAngle * 0.15;
+        // Танк стоит неподвижно, а камера облетает вокруг него; башня слёгка поворачивается
         p.previewVisual.turret.rotation.y = Math.sin(p.elapsed * 1.1) * 0.35;
       }
 

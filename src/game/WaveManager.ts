@@ -6,13 +6,14 @@ import type { Arena } from './Arena';
 import type { Effects } from './effects';
 import type { AudioFX } from './audio';
 import { TankEntity, buildTankMesh } from './Tank';
-import type { TankParams, TankStyle } from './Tank';
+import type { TankParams } from './Tank';
 import { AIController, randomPersona } from './AI';
 import { Nameplate } from './nameplate';
 import type { RunState } from './RunState';
 import type { GameEvent } from './Game';
 import type { Weapon } from './weapons/types';
 import type { WeaponType } from './Projectile';
+import { buildBotStyle } from '../core/TankCatalog';
 
 const SPAWN_POINTS: [number, number][] = [
   [64, 64], [-64, 64], [64, -64], [-64, -64],
@@ -63,6 +64,7 @@ export class WaveManager {
     const used = new Set<number>();
     const botHulls: HullId[] = ['hunter', 'viking', 'mammoth'];
     const botTurrets: TurretId[] = ['railgun', 'flamethrower', 'cannon'];
+    const botColors = COLORS.bots.map((h) => new THREE.Color(h));
 
     for (let i = 0; i < count; i++) {
       let idx = Math.floor(Math.random() * SPAWN_POINTS.length);
@@ -71,20 +73,14 @@ export class WaveManager {
       used.add(idx);
       const [x, z] = SPAWN_POINTS[idx];
       const yaw = Math.atan2(-x, -z);
-      const colorHex = COLORS.bots[i % COLORS.bots.length];
-      const c = new THREE.Color(colorHex);
+      const c = botColors[i % botColors.length];
 
       const bHull = botHulls[i % botHulls.length];
       const bTurret = botTurrets[(i + this.wave) % botTurrets.length];
       const hDef = HULLS[bHull];
       const tDef = TURRETS[bTurret];
 
-      const style: TankStyle = {
-        body: `#${c.clone().multiplyScalar(0.55).getHexString()}`,
-        dark: '#3a1512',
-        light: `#${c.clone().multiplyScalar(0.8).getHexString()}`,
-        glow: colorHex, accent: 0x2b2f36, antenna: false,
-      };
+      const style = buildBotStyle(c);
 
       const params: TankParams = {
         maxHealth: Math.round(hDef.maxHealth * (0.8 + this.wave * 0.1)),
@@ -99,9 +95,9 @@ export class WaveManager {
       bot.hullId = bHull;
       bot.turretId = bTurret;
       bot.visual.group.position.set(x, 0, z);
-      const plate = new Nameplate(bot.name, colorHex);
+      const plate = new Nameplate(bot.name, c.getHex());
       this.ctx.scene.add(plate.sprite);
-      nameplates.set(bot.id, { plate, color: colorHex });
+      nameplates.set(bot.id, { plate, color: c.getHex() });
       bot.yaw = yaw;
       bot.aimYaw = yaw;
       this.ctx.scene.add(bot.visual.group);

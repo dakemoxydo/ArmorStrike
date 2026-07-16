@@ -4,7 +4,7 @@ import {
   Crosshair, Gauge, Heart, Radio, Shield, Skull,
   Trophy, Volume2, VolumeX, Zap,
 } from 'lucide-react';
-import type { Game, GameEvent, MinimapDynamic } from '../game/Game';
+import type { Game, GameEvent, HudSnapshot, MinimapDynamic } from '../game/Game';
 
 interface HudProps {
   game: Game | null;
@@ -18,7 +18,13 @@ const MAP_HALF = 80;
 
 export default function HUD({ game, active }: HudProps) {
   const [, force] = useReducer((x: number) => x + 1, 0);
-  const snap = useRef({ ammo: -1, reloading: false, isCharging: false, score: -1, wave: -1, bots: -1, alive: true, sec: -1, paused: false, muted: false, healthId: -1, hudMode: '', turretId: 'railgun' as string, showScore: false });
+  const snap = useRef<HudSnapshot>({
+    mode: 'menu', paused: false, health: 100, maxHealth: 100, ammo: 0, magazine: 0,
+    reloading: false, reloadProgress: 0, boost: 1, score: 0, kills: 0, wave: 0, botsAlive: 0,
+    alive: false, timeSec: 0, muted: false, hullId: 'hunter', turretId: 'railgun',
+    weaponName: 'РЕЛЬСОТРОН', weaponLabel: 'RAILGUN', weaponColor: '#2ee6c0', weaponAccentClass: 'text-cyan-300/80',
+    showScore: false, scoreboard: [],
+  });
   const [feed, setFeed] = useState<FeedEntry[]>([]);
   const [banner, setBanner] = useState<{ n: number; key: number } | null>(null);
   const [vignette, setVignette] = useState(0);
@@ -105,32 +111,26 @@ export default function HUD({ game, active }: HudProps) {
       // миникарта
       drawMinimap(game, mapRef.current, mmBuf.current);
 
-      // дискретное состояние
+      // дискретное состояние — обновляем React только при значимых изменениях
       if (
         c.ammo !== s.ammo || c.reloading !== s.reloading || c.isCharging !== s.isCharging ||
-        c.score !== s.score || c.wave !== s.wave || c.bots !== s.botsAlive || c.alive !== s.alive ||
-        c.paused !== s.paused || c.muted !== s.muted || c.hudMode !== s.mode ||
+        c.score !== s.score || c.wave !== s.wave || c.botsAlive !== s.botsAlive || c.alive !== s.alive ||
+        c.paused !== s.paused || c.muted !== s.muted || c.mode !== s.mode ||
         c.showScore !== s.showScore ||
-        Math.floor(s.timeSec) !== c.sec
+        Math.floor(s.timeSec) !== Math.floor(c.timeSec)
       ) {
-        snap.current = {
-          ammo: s.ammo, reloading: s.reloading, isCharging: s.isCharging ?? false, score: s.score, wave: s.wave,
-          bots: s.botsAlive, alive: s.alive, sec: Math.floor(s.timeSec),
-          paused: s.paused, muted: s.muted, healthId: 0, hudMode: s.mode,
-          turretId: s.turretId, showScore: s.showScore,
-        };
         force();
       }
+      snap.current = s;
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [game]);
 
   if (!game) return null;
-  const s = game.getHud();
   const st = snap.current;
-  const time = `${String(Math.floor(st.sec / 60)).padStart(2, '0')}:${String(st.sec % 60).padStart(2, '0')}`;
-  const inGame = st.hudMode === 'playing';
+  const time = `${String(Math.floor(st.timeSec / 60)).padStart(2, '0')}:${String(Math.floor(st.timeSec) % 60).padStart(2, '0')}`;
+  const inGame = st.mode === 'playing';
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 select-none overflow-hidden">
@@ -191,10 +191,10 @@ export default function HUD({ game, active }: HudProps) {
             <div className="mt-2 flex items-center justify-between px-1">
               <span className="hud-label flex items-center gap-1.5"><Skull size={12} /> ЦЕЛИ</span>
               <div className="flex gap-1">
-                {Array.from({ length: Math.max(0, st.bots) }).map((_, i) => (
+                {Array.from({ length: Math.max(0, st.botsAlive) }).map((_, i) => (
                   <span key={i} className="bot-dot" />
                 ))}
-                {st.bots === 0 && <span className="hud-label text-emerald-300">ЧИСТО</span>}
+                {st.botsAlive === 0 && <span className="hud-label text-emerald-300">ЧИСТО</span>}
               </div>
             </div>
           </div>
@@ -207,7 +207,7 @@ export default function HUD({ game, active }: HudProps) {
               </div>
               <div className="score-num">{String(st.score).padStart(6, '0')}</div>
               <div className="mt-0.5 text-[10px] tracking-[0.3em] text-white/40">
-                {time} · ФРАГИ {game.getHud().kills}
+                {time} · ФРАГИ {st.kills}
               </div>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function HUD({ game, active }: HudProps) {
                 <span className="flex items-center gap-1 font-display text-lg text-cyan-100">
                   <Heart size={14} className="text-cyan-300" />
                   <span ref={healthNumRef}>100</span>
-                  <span className="text-xs text-white/30">/ {s.maxHealth}</span>
+                  <span className="text-xs text-white/30">/ {st.maxHealth}</span>
                 </span>
               </div>
               <div className="hp-shell">
@@ -280,8 +280,8 @@ export default function HUD({ game, active }: HudProps) {
                 ) : null}
               </div>
               <div>
-                <div className={`hud-label mb-1.5 ${st.turretId === 'flamethrower' ? 'text-orange-300/80' : st.turretId === 'cannon' ? 'text-amber-300/80' : 'text-cyan-300/80'}`}>
-                  {st.turretId === 'flamethrower' ? 'FIREBIRD · ОГНЕМЁТ' : st.turretId === 'cannon' ? 'СМОКИ · ПУШКА' : 'RAILGUN · РЕЛЬСОТРОН'}
+                <div className={`hud-label mb-1.5 ${st.weaponAccentClass}`}>
+                  {`${st.weaponLabel} · ${st.weaponName}`}
                 </div>
                 {st.turretId === 'flamethrower' ? (
                   <div className="w-36 h-3.5 bg-white/10 rounded-sm overflow-hidden border border-amber-500/40 relative">
@@ -292,7 +292,7 @@ export default function HUD({ game, active }: HudProps) {
                   </div>
                 ) : (
                   <div className="flex gap-1">
-                    {Array.from({ length: s.magazine }).map((_, i) => (
+                    {Array.from({ length: st.magazine }).map((_, i) => (
                       <span key={i} className={`ammo-pip ${i < st.ammo ? st.turretId === 'cannon' ? 'cannon' : 'full' : ''}`} />
                     ))}
                   </div>
@@ -341,12 +341,12 @@ export default function HUD({ game, active }: HudProps) {
                     <tr><th>ИМЯ</th><th>КОРПУС</th><th>БАШНЯ</th><th>ОРУЖИЕ</th><th>БРОНЯ</th></tr>
                   </thead>
                   <tbody>
-                    {s.scoreboard.map((r, i) => (
+                     {st.scoreboard.map((r, i) => (
                       <tr key={i} className={r.isPlayer ? 'row-player' : ''}>
                         <td className={r.alive ? '' : 'dead'}>{r.name}</td>
                         <td>{r.hull}</td>
                         <td>{r.turret}</td>
-                        <td>{r.weapon === 'railgun' ? 'РЕЛЬСОТРОН' : r.weapon === 'flamethrower' ? 'ОГНЕМЁТ' : 'ПУШКА'}</td>
+                        <td>{r.weaponName}</td>
                         <td>
                           <div className="sb-hp">
                             <div style={{ width: `${Math.round(Math.max(0, Math.min(1, r.hpFrac)) * 100)}%` }} />

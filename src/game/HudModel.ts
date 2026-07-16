@@ -8,10 +8,12 @@ import type { WaveManager } from './WaveManager';
 import { HULLS, TURRETS } from './constants';
 
 import type { HudSnapshot, MinimapDynamic, MinimapStatic, ScoreRow } from './Game';
+import { getWeaponMeta } from '../core/WeaponCatalog';
 
 export class HudModel {
   private _static: MinimapStatic[] = [];
   private _byId = new Map<number, MinimapStatic>();
+  private _emptyBoard: ScoreRow[] = [];
 
   constructor(private deps: { run: RunState; audio: AudioFX; waves: WaveManager; input: PlayerController }) {}
 
@@ -39,7 +41,7 @@ export class HudModel {
     return out;
   }
 
-  getHud(player: TankEntity | null, tanks: TankEntity[]): HudSnapshot {
+  getHud(player: TankEntity | null, tanks: TankEntity[], includeScoreboard = false): HudSnapshot {
     const { run, audio, waves, input } = this.deps;
 
     const ammoState = player?.weapon?.getAmmoState();
@@ -50,17 +52,22 @@ export class HudModel {
     const isCharging = ammoState?.isCharging ?? false;
 
     const showScore = run.mode === 'playing' && input.scoreHeld && !run.paused;
-    const board: ScoreRow[] = tanks
-      .map((t) => ({
-        name: t.name,
-        hull: t.hullId ? HULLS[t.hullId].name : '-',
-        turret: t.turretId ? TURRETS[t.turretId].name : '-',
-        weapon: t.params.weaponType ?? '-',
-        hpFrac: t.maxHealth > 0 ? t.health / t.maxHealth : 0,
-        isPlayer: t.isPlayer,
-        alive: t.alive,
-      }))
-      .sort((a, b) => (b.isPlayer ? 1 : 0) - (a.isPlayer ? 1 : 0) || b.hpFrac - a.hpFrac);
+    const board: ScoreRow[] = includeScoreboard
+      ? tanks
+        .map((t) => ({
+          name: t.name,
+          hull: t.hullId ? HULLS[t.hullId].name : '-',
+          turret: t.turretId ? TURRETS[t.turretId].name : '-',
+          weapon: t.params.weaponType ?? '-',
+          weaponName: t.turretId ? getWeaponMeta(t.turretId).name : '-',
+          hpFrac: t.maxHealth > 0 ? t.health / t.maxHealth : 0,
+          isPlayer: t.isPlayer,
+          alive: t.alive,
+        }))
+        .sort((a, b) => (b.isPlayer ? 1 : 0) - (a.isPlayer ? 1 : 0) || b.hpFrac - a.hpFrac)
+      : this._emptyBoard;
+
+    const wmeta = getWeaponMeta(run.currentTurret);
 
     return {
       mode: run.mode, paused: run.paused,
@@ -73,6 +80,8 @@ export class HudModel {
       alive: player?.alive ?? false, timeSec: run.matchTime,
       muted: audio.muted,
       hullId: run.currentHull, turretId: run.currentTurret,
+      weaponName: wmeta.name, weaponLabel: wmeta.label,
+      weaponColor: wmeta.color, weaponAccentClass: wmeta.accentClass,
       showScore, scoreboard: board,
     };
   }

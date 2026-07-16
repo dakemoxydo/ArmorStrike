@@ -1,4 +1,6 @@
-// ===== Централизованная система урона: применение урона, разрушение танков и блоков =====
+// ===== Боевая система: гибель танков, скоринг, эффекты и события боя =====
+// Владеет damageSystem (через core/createDamageSystem) и надстраивает поверх
+// него визуальные эффекты, звук, скоринг и эмит событий для HUD.
 import * as THREE from 'three';
 import type { GameEvent } from './Game';
 import type { Arena } from './Arena';
@@ -8,6 +10,7 @@ import type { RunState } from './RunState';
 import type { TankEntity } from './Tank';
 import type { DamageSystem } from './weapons/types';
 import { SCORE } from './constants';
+import { createDamageSystem } from '../core/DamageSystem';
 
 export interface CombatDeps {
   arena: Arena;
@@ -23,20 +26,10 @@ export class CombatSystem {
   damageSystem: DamageSystem;
 
   constructor(private deps: CombatDeps) {
-    this.damageSystem = {
-      applyDamage: (target: TankEntity, dmg: number, source: TankEntity) => {
-        this.onTankHit(target, dmg, source);
-      },
-      applyKnockback: (target: TankEntity, dir: THREE.Vector3, force: number) => {
-        target.knockback.addScaledVector(dir, force);
-      },
-      damageBlock: (blockId: number, dmg: number, hitPos: THREE.Vector3) => {
-        const res = this.deps.arena.damageBlock(blockId, dmg);
-        if (res === 'destroyed') {
-          this.onBlockDestroyed(hitPos, 1.4);
-        }
-      },
-    };
+    this.damageSystem = createDamageSystem(deps.arena, {
+      onTankHit: (target, dmg, source) => this.onTankHit(target, dmg, source),
+      onBlockDestroyed: (pos, size) => this.onBlockDestroyed(pos, size),
+    });
   }
 
   onTankHit(target: TankEntity, dmg: number, owner: TankEntity) {
@@ -56,11 +49,6 @@ export class CombatSystem {
     } else {
       this.deps.audio.hitEnemy();
       if (owner.isPlayer) this.deps.emit({ type: 'enemyHit', killed: !target.alive });
-    }
-
-    // Сокращенный лог
-    if (!target.isPlayer) {
-
     }
 
     if (!target.alive) this.onTankDestroyed(target, owner);

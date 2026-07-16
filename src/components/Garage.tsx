@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { HULLS, TURRETS } from '../game/constants';
 import type { HullId, TurretId } from '../game/constants';
+import { getWeaponMeta } from '../core/WeaponCatalog';
 import type { Game } from '../game/Game';
 
 interface GarageProps {
@@ -83,10 +84,10 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
         </div>
       </div>
 
-      {/* Нижняя панель: выбор + паспорт */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pointer-events-auto items-end">
+      {/* Нижняя панель: выбор (слева, не заходит под паспорт справа) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 lg:pr-[320px] gap-4 pointer-events-auto items-end">
         {/* Карточки выбора */}
-        <div className="lg:col-span-8 flex flex-col gap-3">
+        <div className="lg:col-span-12 flex flex-col gap-3">
           <div className="anim-up hud-label text-cyan-300/80 mb-1 flex items-center gap-2" style={{ '--d': '0.1s' } as React.CSSProperties}>
             <MoveUp size={12} />
             {activeTab === 'hulls' ? 'ВЫБЕРИТЕ КОРПУС — ОПРЕДЕЛЯЕТ ЗДОРОВЬЕ И СКОРОСТЬ' : 'ВЫБЕРИТЕ БАШНЮ — ОПРЕДЕЛЯЕТ ТИП ОРУЖИЯ И УРОН'}
@@ -140,7 +141,7 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
                 })
               : Object.values(TURRETS).map((t, i) => {
                   const isSelected = t.id === selectedTurretId;
-                  const weaponLabel = t.weaponType === 'railgun' ? 'ЭНЕРГЕТИЧЕСКИЙ ЛУЧ' : t.weaponType === 'flamethrower' ? 'ОГНЕННАЯ СТРУЯ' : 'ФУГАСНЫЙ СНАРЯД';
+                  const weaponLabel = getWeaponMeta(t.weaponType).kind;
                   return (
                     <div
                       key={t.id}
@@ -190,8 +191,17 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
           </div>
         </div>
 
-        {/* Паспорт сборки */}
-        <div className="lg:col-span-4 anim-up hud-panel p-5" style={{ '--d': '0.3s' } as React.CSSProperties}>
+        {/* Подсказка управления предпросмотром — под карточками */}
+        <div className="anim-up flex pointer-events-none" style={{ '--d': '0.25s' } as React.CSSProperties}>
+          <span className="text-[10px] tracking-wider text-white/40 border border-white/10 rounded px-2 py-1 bg-white/5">
+            ЗАЖМИТЕ ЛКМ — ВРАЩЕНИЕ · КОЛЕСО — ПРИБЛИЖЕНИЕ
+          </span>
+        </div>
+      </div>
+
+      {/* Паспорт сборки — закреплён справа по вертикали */}
+      <div className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-[300px] max-w-[42vw] pointer-events-auto">
+        <div className="anim-up hud-panel p-5" style={{ '--d': '0.3s' } as React.CSSProperties}>
           <div className="hud-label text-cyan-300/90 mb-3 flex items-center gap-1.5">
             <HardDrive size={14} /> СБОРОЧНЫЙ ПАСПОРТ
           </div>
