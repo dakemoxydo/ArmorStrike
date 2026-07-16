@@ -110,7 +110,7 @@ export class AudioFX {
     this.flameGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.05);
     this.flameSource = null;
     this.flameGain = null;
-    setTimeout(() => { try { src.stop(); } catch {} }, 100);
+    setTimeout(() => { try { src.stop(); } catch { /* already stopped */ } }, 100);
   }
 
   shoot(weaponType: WeaponType = 'railgun') {

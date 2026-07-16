@@ -39,6 +39,7 @@ export type GameEvent =
   | { type: 'shotFired' }
   | { type: 'gameOver'; score: number; kills: number; wave: number }
   | { type: 'pauseChanged'; value: boolean }
+  | { type: 'modeChanged'; mode: GameMode }
   | { type: 'garageChanged' };
 
 export interface MinimapStatic { id: number; x: number; z: number; w: number; d: number; kind: string; alive: boolean }

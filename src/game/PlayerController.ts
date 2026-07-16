@@ -115,7 +115,7 @@ export class PlayerController {
     tank.aimYaw = this.camYaw;
 
     if (this.reloadRequested) {
-      tank.startFullReload();
+      tank.weapon?.requestReload();
       this.reloadRequested = false;
     }
 

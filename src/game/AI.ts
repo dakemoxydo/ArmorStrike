@@ -4,6 +4,9 @@ import { clamp, losClear, pointInCollider, segmentHitsCircle, wrapAngle } from '
 import type { Collider } from './engine/physics';
 import type { TankEntity } from './Tank';
 import { PROJECTILE } from './constants';
+import type { WeaponType } from '../core/catalog';
+
+export type { WeaponType };
 
 export interface AICtx {
   player: TankEntity;
@@ -30,8 +33,6 @@ export function randomPersona(wave: number): AIPersona {
 const DEFAULT_PERSONA: AIPersona = { aggro: 0.5, react: 0.25, lead: 0.9 };
 
 type AIState = 'patrol' | 'engage';
-
-export type WeaponType = 'railgun' | 'flamethrower' | 'cannon';
 
 /** Чистые хелперы решений ИИ — без Three.js, покрываемы unit-тестами. */
 

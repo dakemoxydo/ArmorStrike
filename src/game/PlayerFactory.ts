@@ -64,9 +64,6 @@ export function createTankEntity(input: TankBuildInput): TankEntity {
   const entity = new TankEntity(input.name, input.isPlayer, params, visual);
   entity.hullId = input.hullId;
   entity.turretId = input.turretId;
-  entity.ammo = turret.magazine;
-  entity.magazine = turret.magazine;
-  entity.fullReloadTime = turret.fullReload;
   return entity;
 }
 

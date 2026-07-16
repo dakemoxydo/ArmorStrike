@@ -5,17 +5,9 @@ import { colliderFromCenter } from './engine/physics';
 import { ArenaEffects } from './ArenaEffects';
 import { buildArena } from './ArenaBuilder';
 import { disposeObject3D } from './resources/disposeObject3D';
+import type { BlockInfo } from './arena/types';
 
-export interface BlockInfo {
-  id: number;
-  group: THREE.Group;
-  collider: Collider;
-  hp: number;
-  maxHp: number;
-  mats: THREE.MeshStandardMaterial[];
-  flash: number;
-  size: number;
-}
+export type { BlockInfo } from './arena/types';
 
 export class Arena {
   group = new THREE.Group();

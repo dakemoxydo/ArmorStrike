@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { CameraRig } from './CameraRig';
+import { getQualityPreset, type QualityLevel, type QualityPreset } from './graphicsQuality';
 
 export class RenderWorld {
   readonly renderer: THREE.WebGLRenderer;
@@ -9,10 +10,20 @@ export class RenderWorld {
   readonly camera: THREE.PerspectiveCamera;
   readonly cameraRig: CameraRig;
 
+  private sun: THREE.DirectionalLight;
+  private quality: QualityLevel;
+
   constructor(canvas: HTMLCanvasElement) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.shadowMap.enabled = true;
+    const preset = getQualityPreset();
+    this.quality = preset.id;
+
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: preset.id !== 'low',
+      powerPreference: 'high-performance',
+    });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, preset.pixelRatioMax));
+    this.renderer.shadowMap.enabled = preset.shadows;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
@@ -22,7 +33,6 @@ export class RenderWorld {
     this.scene.background = new THREE.Color(0x060a12);
     this.scene.fog = new THREE.Fog(0x0a0f18, 75, 250);
 
-    // Sky-dome шейдер (градиент неба, солнце, облака) — адаптация из game1
     const sky = new THREE.Mesh(
       new THREE.SphereGeometry(480, 32, 20),
       new THREE.ShaderMaterial({
@@ -61,19 +71,37 @@ export class RenderWorld {
 
     const hemi = new THREE.HemisphereLight(0x8fb9d8, 0x0a0e14, 0.5);
     this.scene.add(hemi);
-    const sun = new THREE.DirectionalLight(0xffe6c0, 2.4);
-    sun.position.set(58, 78, 32);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    const sc = sun.shadow.camera;
+    this.sun = new THREE.DirectionalLight(0xffe6c0, 2.4);
+    this.sun.position.set(58, 78, 32);
+    this.sun.castShadow = true;
+    this.sun.shadow.mapSize.set(preset.shadowMapSize, preset.shadowMapSize);
+    const sc = this.sun.shadow.camera;
     sc.left = -88; sc.right = 88; sc.top = 88; sc.bottom = -88;
     sc.near = 10; sc.far = 220;
-    sun.shadow.bias = -0.0006;
-    sun.shadow.normalBias = 0.03;
-    this.scene.add(sun);
+    this.sun.shadow.bias = -0.0006;
+    this.sun.shadow.normalBias = 0.03;
+    this.scene.add(this.sun);
     const rim = new THREE.DirectionalLight(0x2ee6c0, 0.5);
     rim.position.set(-30, 20, -40);
     this.scene.add(rim);
+  }
+
+  getQuality(): QualityLevel {
+    return this.quality;
+  }
+
+  /** Применить пресет (pixel ratio + shadow map). Antialias не меняется runtime. */
+  applyQuality(preset: QualityPreset) {
+    this.quality = preset.id;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, preset.pixelRatioMax));
+    this.renderer.shadowMap.enabled = preset.shadows;
+    this.sun.castShadow = preset.shadows;
+    const size = preset.shadowMapSize;
+    if (this.sun.shadow.mapSize.x !== size) {
+      this.sun.shadow.mapSize.set(size, size);
+      this.sun.shadow.map?.dispose();
+      this.sun.shadow.map = null;
+    }
   }
 
   resize(w: number, h: number) {

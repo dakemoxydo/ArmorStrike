@@ -56,7 +56,7 @@ export type TurretId = 'railgun' | 'flamethrower' | 'cannon';
 export interface TurretDef {
   id: TurretId;
   name: string;
-  weaponType: 'railgun' | 'flamethrower' | 'cannon';
+  weaponType: WeaponType;
   damage: number;
   shotCooldown: number;
   magazine: number;
@@ -68,59 +68,9 @@ export interface TurretDef {
   badge: string;
 }
 
-export const TURRETS: Record<TurretId, TurretDef> = {
-  railgun: {
-    id: 'railgun',
-    name: 'Рельсотрон',
-    weaponType: 'railgun',
-    damage: 85,
-    shotCooldown: 0, // управляется FSM заряда
-    magazine: 1,
-    fullReload: 4.8,
-    turretSpeed: 9.0,
-    recoil: 18,
-    range: 120.0,
-    desc: 'Hitscan-орудие с накоплением заряда и сквозным пробитием нескольких целей.',
-    badge: 'Снайперское',
-  },
-  flamethrower: {
-    id: 'flamethrower',
-    name: 'Огнемёт «Firebird»',
-    weaponType: 'flamethrower',
-    damage: 12,
-    shotCooldown: 0, // непрерывное удерживание
-    magazine: 100,
-    fullReload: 0, // непрерывная регенерация энергии
-    turretSpeed: 11.5,
-    recoil: 1.2,
-    range: 22.0,
-    desc: 'Выпускает раскалённый конус пламени. Непрерывный тиковый урон по геометрии конуса.',
-    badge: 'Пламенный конус',
-  },
-  cannon: {
-    id: 'cannon',
-    name: 'Пушка «Смоки»',
-    weaponType: 'cannon',
-    damage: 32,
-    shotCooldown: 0.28,
-    magazine: 10,
-    fullReload: 1.8,
-    turretSpeed: 10.5,
-    recoil: 5.5,
-    range: 75.0,
-    desc: 'Скорострельная крупнокалиберная автопушка с фугасным поражением площади.',
-    badge: 'Скорострельная',
-  },
-};
-
-/** Идентификаторы корпусов/башен как массивы (для итерации и спавна ботов). */
-export const HULL_IDS = Object.keys(HULLS) as HullId[];
-export const TURRET_IDS = Object.keys(TURRETS) as TurretId[];
-
 /**
- * Единый источник боевого баланса оружия (раньше дублировался в
- * game/constants.ts как RAILGUN_CONFIG / FLAMETHROWER_CONFIG / CANNON_CONFIG
- * и частично в TURRETS выше). Оружейные классы читают отсюда.
+ * Единый источник боевого баланса оружия.
+ * Оружейные классы и UI-каталог TURRETS читают отсюда.
  */
 export const WEAPON_TUNING = {
   railgun: {
@@ -133,6 +83,7 @@ export const WEAPON_TUNING = {
     emissiveIdle: 0.15,
     emissiveCharged: 4.5,
     beamDuration: 0.25,
+    magazine: 1,
   },
   flamethrower: {
     damagePerTick: 12,
@@ -157,3 +108,53 @@ export const WEAPON_TUNING = {
     splashDmg: 16,
   },
 };
+
+/** UI/сборка: боевые поля выводятся из WEAPON_TUNING, чтобы не разъезжался баланс. */
+export const TURRETS: Record<TurretId, TurretDef> = {
+  railgun: {
+    id: 'railgun',
+    name: 'Рельсотрон',
+    weaponType: 'railgun',
+    damage: WEAPON_TUNING.railgun.damage,
+    shotCooldown: 0, // управляется FSM заряда
+    magazine: WEAPON_TUNING.railgun.magazine,
+    fullReload: WEAPON_TUNING.railgun.reloadTime,
+    turretSpeed: 9.0,
+    recoil: WEAPON_TUNING.railgun.knockback,
+    range: WEAPON_TUNING.railgun.range,
+    desc: 'Hitscan-орудие с накоплением заряда и сквозным пробитием нескольких целей.',
+    badge: 'Снайперское',
+  },
+  flamethrower: {
+    id: 'flamethrower',
+    name: 'Огнемёт «Firebird»',
+    weaponType: 'flamethrower',
+    damage: WEAPON_TUNING.flamethrower.damagePerTick,
+    shotCooldown: 0, // непрерывное удерживание
+    magazine: WEAPON_TUNING.flamethrower.energyMax,
+    fullReload: 0, // непрерывная регенерация энергии
+    turretSpeed: 11.5,
+    recoil: WEAPON_TUNING.flamethrower.knockback,
+    range: WEAPON_TUNING.flamethrower.range,
+    desc: 'Выпускает раскалённый конус пламени. Непрерывный тиковый урон по геометрии конуса.',
+    badge: 'Пламенный конус',
+  },
+  cannon: {
+    id: 'cannon',
+    name: 'Пушка «Смоки»',
+    weaponType: 'cannon',
+    damage: WEAPON_TUNING.cannon.damage,
+    shotCooldown: WEAPON_TUNING.cannon.shotCooldown,
+    magazine: WEAPON_TUNING.cannon.magazine,
+    fullReload: WEAPON_TUNING.cannon.reloadTime,
+    turretSpeed: 10.5,
+    recoil: WEAPON_TUNING.cannon.knockback,
+    range: WEAPON_TUNING.cannon.range,
+    desc: 'Скорострельная крупнокалиберная автопушка с фугасным поражением площади.',
+    badge: 'Скорострельная',
+  },
+};
+
+/** Идентификаторы корпусов/башен как массивы (для итерации и спавна ботов). */
+export const HULL_IDS = Object.keys(HULLS) as HullId[];
+export const TURRET_IDS = Object.keys(TURRETS) as TurretId[];

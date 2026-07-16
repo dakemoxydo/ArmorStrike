@@ -1,36 +1,15 @@
-// ===== Танк: сущность танка (данные) + типы =====
+// ===== Танк: сущность танка (данные) =====
 import * as THREE from 'three';
 import { TANK } from './constants';
-import type { HullId, TurretId, WeaponType } from '../core/catalog';
+import type { HullId, TurretId } from '../core/catalog';
 import type { Weapon } from './weapons/types';
 import { disposeObject3D } from './resources/disposeObject3D';
 import type { TankLike } from '../core/types';
+import type { TankParams, TankVisual } from './tank/types';
 
+export type { TankParams, TankVisual } from './tank/types';
+/** Удобный re-export сборки меша (импорт типов — из tank/types, цикл разорван). */
 export { buildTankMesh } from './tank/buildMesh';
-
-export interface TankVisual {
-  group: THREE.Group;
-  hull: THREE.Group;
-  turret: THREE.Group;
-  barrelGroup: THREE.Group;
-  muzzle: THREE.Object3D;
-  ring: THREE.Mesh;
-  bodyMats: THREE.MeshStandardMaterial[];
-  trackTex: THREE.CanvasTexture;
-  railGlowMat?: THREE.MeshStandardMaterial;
-}
-
-export interface TankParams {
-  maxHealth: number;
-  speed: number;
-  reverseSpeed: number;
-  turnSpeed: number;
-  turretSpeed: number;
-  damage: number;
-  shotCooldown: number;
-  weaponType?: WeaponType;
-  range?: number;
-}
 
 let nextTankId = 1;
 
@@ -65,11 +44,6 @@ export class TankEntity implements TankLike {
   deathT = 0;
 
   fireTimer = 0;
-  ammo = 0;
-  magazine = 0;
-  fullReloading = false;
-  reloadTimer = 0;
-  fullReloadTime = 2.3;
 
   hitFlash = 0;
   barrelKick = 0;
@@ -96,10 +70,10 @@ export class TankEntity implements TankLike {
     return out;
   }
 
+  /** Готовность к выстрелу по базовым условиям (fireTimer). Контракт
+   *  оружия (наличие патронов/заряда) проверяется самим оружием. */
   canFire(): boolean {
-    if (!this.alive || this.fireTimer > 0) return false;
-    if (this.isPlayer) return this.ammo > 0 && !this.fullReloading;
-    return true;
+    return this.alive && this.fireTimer <= 0;
   }
 
   onFired(recoil: number) {
@@ -107,26 +81,6 @@ export class TankEntity implements TankLike {
     this.barrelKick = 1;
     this.aimDir(this._v);
     this.knockback.addScaledVector(this._v, -recoil);
-    if (this.isPlayer) this.ammo = Math.max(0, this.ammo - 1);
-  }
-
-  startFullReload() {
-    if (this.fullReloading || !this.alive) return;
-    this.fullReloading = true;
-    this.reloadTimer = this.fullReloadTime;
-  }
-
-  /** Тик перезарядки магазина (используется только для игрока с пушкой). */
-  updateReload(dt: number) {
-    if (this.fullReloading) {
-      this.reloadTimer -= dt;
-      if (this.reloadTimer <= 0) {
-        this.fullReloading = false;
-        this.ammo = this.magazine;
-      }
-    } else if (this.ammo === 0) {
-      this.startFullReload();
-    }
   }
 
   takeDamage(dmg: number, attackerId: number) {
@@ -147,6 +101,7 @@ export class TankEntity implements TankLike {
   private _v = new THREE.Vector3();
 
   dispose(scene: THREE.Scene) {
+    this.weapon?.dispose();
     scene.remove(this.visual.group);
     disposeObject3D(this.visual.group);
   }

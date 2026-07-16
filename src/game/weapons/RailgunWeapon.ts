@@ -265,6 +265,10 @@ export class RailgunWeapon implements Weapon {
     this.muzzleLight.intensity = 80;
   }
 
+  updateReload(_dt: number): void {}
+
+  requestReload(): void {}
+
   getAmmoState() {
     const reloading = this.isCharging || this.isCooldown;
     return {

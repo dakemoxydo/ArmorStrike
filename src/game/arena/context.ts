@@ -1,7 +1,7 @@
 // ===== Контекст построения арены: общие ресурсы и хелперы, доступные билдерам =====
 import type * as THREE from 'three';
 import type { Collider } from '../engine/physics';
-import type { BlockInfo } from '../Arena';
+import type { BlockInfo } from './types';
 
 export interface ArenaBuildContext {
   group: THREE.Group;

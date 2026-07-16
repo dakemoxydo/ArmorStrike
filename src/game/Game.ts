@@ -21,6 +21,9 @@ import type { WeaponFactoryDeps } from './PlayerFactory';
 import type { GameEvent, GameMode, HudSnapshot, MinimapDynamic, MinimapStatic } from './types';
 import { GameLoop } from './GameLoop';
 import { PreviewController } from './PreviewController';
+import {
+  getQualityPreset, loadQuality, nextQuality, saveQuality, type QualityLevel,
+} from './graphicsQuality';
 
 export class Game {
   readonly sim: GameSimulation;
@@ -62,12 +65,16 @@ export class Game {
       for (const fn of this.listeners) fn(e);
     };
 
-    let sim: GameSimulation;
+    // Holder: combat.onPlayerDeath замыкается до создания sim (избегаем let/reassign)
+    const simRef: { current: GameSimulation | null } = { current: null };
 
     const combat = new CombatSystem({
       arena, effects, audio, run,
       emit: (e) => this.emitEvent(e),
-      onPlayerDeath: () => { input.releaseLock(); sim.deathT = 0; },
+      onPlayerDeath: () => {
+        input.releaseLock();
+        if (simRef.current) simRef.current.deathT = 0;
+      },
     });
 
     this.weaponDeps = {
@@ -79,7 +86,8 @@ export class Game {
       onShotFired: () => this.emitEvent({ type: 'shotFired' }),
     };
 
-    sim = new GameSimulation(arena, effects, projectiles, input, audio, run);
+    const sim = new GameSimulation(arena, effects, projectiles, input, audio, run);
+    simRef.current = sim;
     this.sim = sim;
 
     sim.combat = combat;
@@ -98,6 +106,9 @@ export class Game {
     this.previewController = new PreviewController(this.scene, () => this.sim.run.mode);
     this.hud = hudModel.getHud(null, []);
     this.previewController.rebuild(this.sim.run.currentHull, this.sim.run.currentTurret);
+
+    // Применить сохранённый пресет (конструктор RenderWorld уже загрузил его)
+    this.renderWorld.applyQuality(getQualityPreset(loadQuality()));
 
     this.onResize();
     window.addEventListener('resize', this.onResize);
@@ -166,6 +177,7 @@ export class Game {
     } else {
       this.previewController.setVisible(false);
     }
+    this.emitEvent({ type: 'modeChanged', mode });
   }
 
   startRound() {
@@ -195,6 +207,7 @@ export class Game {
     this.sim.waves.begin(this.sim.tanks, this.sim.nameplates);
     this.sim.audio.startEngine();
     this.sim.input.requestLock();
+    this.emitEvent({ type: 'modeChanged', mode: 'playing' });
   }
 
   togglePause() {
@@ -207,6 +220,28 @@ export class Game {
   toggleMute(): boolean {
     this.sim.audio.setMuted(!this.sim.audio.muted);
     return this.sim.audio.muted;
+  }
+
+  getQuality(): QualityLevel {
+    return this.renderWorld.getQuality();
+  }
+
+  /** Цикл low → medium → high, сохранение в localStorage. */
+  cycleQuality(): QualityLevel {
+    const next = nextQuality(this.renderWorld.getQuality());
+    const preset = getQualityPreset(next);
+    this.renderWorld.applyQuality(preset);
+    saveQuality(next);
+    this.sim.audio.click();
+    return next;
+  }
+
+  /** Явная установка качества (например, после load). */
+  setQuality(level: QualityLevel): QualityLevel {
+    const preset = getQualityPreset(level);
+    this.renderWorld.applyQuality(preset);
+    saveQuality(level);
+    return level;
   }
 
   getHud(): HudSnapshot { return this.hud; }

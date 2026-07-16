@@ -45,7 +45,8 @@ export const TankSystem = {
 
       t.fireTimer = Math.max(0, t.fireTimer - dt);
 
-      if (t.isPlayer) t.updateReload(dt);
+      // Перезарядка магазина для всех (игрок и боты с пушкой)
+      t.weapon?.updateReload(dt);
 
       const rel = wrapAngle(t.aimYaw - t.yaw);
       const diff = wrapAngle(rel - t.turretYaw);

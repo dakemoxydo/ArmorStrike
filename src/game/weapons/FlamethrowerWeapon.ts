@@ -260,6 +260,10 @@ export class FlamethrowerWeapon implements Weapon {
     }
   }
 
+  updateReload(_dt: number): void {}
+
+  requestReload(): void {}
+
   getAmmoState() {
     return {
       ammo: Math.round(this.energy),

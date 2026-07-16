@@ -111,7 +111,6 @@ export class WaveManager {
       if (this.nextWaveT <= 0) {
         this.nextWaveT = -1;
         for (const b of this.bots) {
-          b.tank.weapon?.dispose();
           const np = nameplates.get(b.tank.id);
           if (np) { np.plate.dispose(this.ctx.scene); nameplates.delete(b.tank.id); }
           b.tank.dispose(this.ctx.scene);

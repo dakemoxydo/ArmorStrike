@@ -59,8 +59,9 @@ export class GameSimulation {
     if (p.alive) {
       const wantsFire = this.input.update(p);
       p.weapon?.setFire(wantsFire);
-      if (p.fullReloading && !this.prevReloading) this.audio.reload();
-      this.prevReloading = p.fullReloading;
+      const reloading = p.weapon?.getAmmoState().reloading ?? false;
+      if (reloading && !this.prevReloading) this.audio.reload();
+      this.prevReloading = reloading;
     } else {
       this.prevReloading = false;
     }
@@ -101,6 +102,7 @@ export class GameSimulation {
       if (this.deathT > 2.0) {
         this.deathT = -1;
         this.run.mode = 'over';
+        emit({ type: 'modeChanged', mode: 'over' });
         emit({ type: 'gameOver', score: this.run.score, kills: this.run.kills, wave: this.waves.wave });
       }
     }
@@ -121,7 +123,6 @@ export class GameSimulation {
   }
 
   clearTanks(scene: THREE.Scene) {
-    for (const t of this.tanks) t.weapon?.dispose();
     for (const np of this.nameplates.values()) np.plate.dispose(scene);
     this.nameplates.clear();
     for (const t of this.tanks) t.dispose(scene);

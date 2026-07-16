@@ -40,6 +40,10 @@ export interface Weapon {
   /** Установить состояние спуска (зажат/отпущен). Каждое оружие интерпретирует по-своему. */
   setFire(active: boolean): void;
   update(dt: number, ctx: WeaponContext): void;
+  /** Тик перезарядки магазина (для оружия с боеукладкой). По умолчанию нет. */
+  updateReload(dt: number): void;
+  /** Запрос ручной перезарядки (клавиша R). По умолчанию нет. */
+  requestReload(): void;
   dispose(): void;
   getAmmoState(): WeaponAmmoState;
 }
