@@ -1,0 +1,39 @@
+.fx-scanlines {
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+}
+.fx-vignette {
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 4, 10, 0.55) 100%);
+}
+
+.menu-stripes {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(var(--glow), 0.55) 0 18px,
+    transparent 18px 36px
+  );
+  opacity: 0.5;
+  animation: stripes 1.6s linear infinite;
+}
+.menu-stripes.danger { background: repeating-linear-gradient(-45deg, rgba(255, 77, 61, 0.6) 0 18px, transparent 18px 36px); }
+@keyframes stripes { to { background-position: 51px 0; } }
+
+.title-glitch {
+  color: #eef7ff;
+  text-shadow: 0 0 40px rgba(var(--glow), 0.35);
+  animation: title-flicker 5s infinite;
+}
+@keyframes title-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.75; }
+  94% { opacity: 1; }
+  96% { opacity: 0.85; }
+  97% { opacity: 1; }
+}
+
+.hint-panel { animation: hint 11s forwards; }
+@keyframes hint {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}

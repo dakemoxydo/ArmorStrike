@@ -3,9 +3,8 @@ import { PROJECTILE } from '../constants';
 import type { Collider } from './physics';
 import { pointInCollider, segmentHitsCircle } from './physics';
 import type { Arena } from '../Arena';
-import type { TankEntity } from '../Tank';
 import type { Effects } from '../effects';
-import type { DamageSystem } from '../weapons/types';
+import type { DamageSystem, TankLike } from '../../core/types';
 import type { WeaponType } from '../../core/catalog';
 import { glowTexture } from '../textures';
 import { BEHAVIORS } from './ProjectileBehavior';
@@ -13,11 +12,11 @@ import { applySplashHit } from './applyHit';
 
 export interface HitContext {
   colliders: Collider[];
-  tanks: TankEntity[];
+  tanks: TankLike[];
   arena: Arena;
   effects: Effects;
   damageSystem: DamageSystem;
-  onTankHit: (target: TankEntity, dmg: number, owner: TankEntity) => void;
+  onTankHit: (target: TankLike, dmg: number, owner: TankLike) => void;
 }
 
 export interface Shot {
@@ -32,7 +31,7 @@ export interface Shot {
   maxRange: number;
   speed: number;
   weaponType: WeaponType;
-  owner: TankEntity | null;
+  owner: TankLike | null;
   damage: number;
   trailT: number;
   color: THREE.Color;
@@ -43,7 +42,7 @@ export interface Shot {
 const POOL_SIZE = 42;
 const tmp = new THREE.Vector3();
 
-function doSplash(hitPos: THREE.Vector3, ctx: HitContext, s: Shot, exclude?: TankEntity) {
+function doSplash(hitPos: THREE.Vector3, ctx: HitContext, s: Shot, exclude?: TankLike) {
   if (s.splashRadius <= 0 || !s.owner) return;
   for (const t of ctx.tanks) {
     if (!t.alive || t === s.owner || t === exclude) continue;
@@ -97,18 +96,21 @@ export class ProjectileManager {
         group, coreMesh, glow, mat, glowMat,
         dir: new THREE.Vector3(), alive: false, traveled: 0,
         maxRange: PROJECTILE.range, speed: PROJECTILE.speed,
-        weaponType: 'railgun', owner: null, damage: 0, trailT: 0,
+        weaponType: 'cannon', owner: null, damage: 0, trailT: 0,
         color: new THREE.Color(), splashRadius: 0, splashDmg: 0,
       });
     }
   }
 
   fire(
-    owner: TankEntity, origin: THREE.Vector3, dir: THREE.Vector3,
-    damage: number, weaponType: WeaponType = 'railgun', customRange?: number,
+    owner: TankLike, origin: THREE.Vector3, dir: THREE.Vector3,
+    damage: number, weaponType: WeaponType = 'cannon', customRange?: number,
   ) {
     const s = this.shots.find((x) => !x.alive);
     if (!s) return;
+    const beh = BEHAVIORS[weaponType];
+    if (!beh) return;
+
     s.alive = true;
     s.owner = owner;
     s.damage = damage;
@@ -116,7 +118,7 @@ export class ProjectileManager {
     s.weaponType = weaponType;
     s.dir.copy(dir).normalize();
 
-    BEHAVIORS[weaponType].init(s, owner, damage, customRange);
+    beh.init(s, owner, damage, customRange);
 
     s.group.position.copy(origin).addScaledVector(s.dir, 0.5);
     s.group.lookAt(tmp.copy(s.group.position).add(s.dir));
@@ -131,6 +133,10 @@ export class ProjectileManager {
       if (!s.alive) continue;
 
       const beh = BEHAVIORS[s.weaponType];
+      if (!beh) {
+        despawn(s);
+        continue;
+      }
       const speed = s.speed * dt;
       const steps = Math.max(1, Math.ceil(speed / 0.6));
       const stepLen = speed / steps;

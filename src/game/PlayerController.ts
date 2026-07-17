@@ -1,13 +1,8 @@
 // ===== Управление игроком: WASD — корпус, мышь (pointer-lock) — башня/камера, ЛКМ/Пробел — огонь =====
-// Схема управления перенесена из game1: камера следует за мышью (camYaw/camPitch),
+// Схема управления: камера следует за мышью (CameraLookState),
 // а башня целится туда же, куда смотрит камера. Прицел — по центру экрана.
-import * as THREE from 'three';
 import type { TankEntity } from './Tank';
-
-const AIM_SENS_X = 0.0021;
-const AIM_SENS_Y = 0.0016;
-const PITCH_MIN = -0.18;
-const PITCH_MAX = 0.85;
+import { CameraLookState } from './camera/CameraLookState';
 
 export class PlayerController {
   wantsFire = false;
@@ -15,8 +10,7 @@ export class PlayerController {
   scoreHeld = false;
 
   /** Направление взгляда камеры (абсолютный мировой yaw) — задаёт и прицел. */
-  camYaw = 0;
-  camPitch = 0.34;
+  readonly look = new CameraLookState();
 
   /** Активно только в режиме боя. */
   enabled = false;
@@ -41,8 +35,7 @@ export class PlayerController {
   };
   private onMouseMove = (e: MouseEvent) => {
     if (!this.locked || !this.enabled) return;
-    this.camYaw -= e.movementX * AIM_SENS_X;
-    this.camPitch = THREE.MathUtils.clamp(this.camPitch + e.movementY * AIM_SENS_Y, PITCH_MIN, PITCH_MAX);
+    this.look.applyPointerDelta(e.movementX, e.movementY);
   };
   private onMouseDown = (e: MouseEvent) => {
     if (e.button === 0) this.wantsFire = true;
@@ -112,7 +105,7 @@ export class PlayerController {
     tank.boosting = k.has('ShiftLeft') || k.has('ShiftRight');
 
     // Башня целится туда же, куда смотрит камера (как в game1)
-    tank.aimYaw = this.camYaw;
+    tank.aimYaw = this.look.yaw;
 
     if (this.reloadRequested) {
       tank.weapon?.requestReload();

@@ -5,7 +5,7 @@ import type { ArenaLike, TankLike } from '../core/types';
 
 function makeTank(over: Partial<TankLike> = {}): TankLike & { health: number; alive: boolean } {
   return {
-    id: 1, name: 'T', isPlayer: false, health: 100, alive: true,
+    id: 1, name: 'T', isPlayer: false, health: 100, alive: true, radius: 1.5,
     knockback: new THREE.Vector3(), position: new THREE.Vector3(),
     yaw: 0, takeDamage: vi.fn(function (this: any, d: number) { this.health -= d; if (this.health <= 0) this.alive = false; }) as any,
     ...over,

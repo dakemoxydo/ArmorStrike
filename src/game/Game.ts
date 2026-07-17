@@ -8,9 +8,11 @@ import { GarageBinding } from './GarageBinding';
 import type { GameEvent, GameMode, HudSnapshot, MinimapDynamic, MinimapStatic } from './types';
 import type { QualityLevel } from './graphicsQuality';
 import type { GameSimulation } from './engine/GameSimulation';
+import type { GameApi } from './GameApi';
 
-export class Game {
-  readonly sim: GameSimulation;
+export class Game implements GameApi {
+  /** Внутренний доступ к симуляции — не часть GameApi (UI не видит). */
+  private readonly sim: GameSimulation;
 
   private ctx: GameContext;
   private quality: QualityController;

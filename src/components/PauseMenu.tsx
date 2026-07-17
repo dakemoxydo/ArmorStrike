@@ -5,11 +5,11 @@ import {
   Skull, Trophy, Volume2, VolumeX, Waves, Wrench,
 } from 'lucide-react';
 import { HULLS, TURRETS } from '../core/catalog';
-import type { Game } from '../game/Game';
+import type { GameApi } from '../game/GameApi';
 import { QUALITY_PRESETS, type QualityLevel } from '../game/graphicsQuality';
 
 interface PauseMenuProps {
-  game: Game;
+  game: GameApi;
   muted: boolean;
   stats: { score: number; kills: number; wave: number; timeSec: number };
   onResume: () => void;

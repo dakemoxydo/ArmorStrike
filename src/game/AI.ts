@@ -2,15 +2,37 @@
 import * as THREE from 'three';
 import { clamp, losClear, pointInCollider, segmentHitsCircle, wrapAngle } from './engine/physics';
 import type { Collider } from './engine/physics';
-import type { TankEntity } from './Tank';
 import { PROJECTILE } from './constants';
 import type { WeaponType } from '../core/catalog';
 
 export type { WeaponType };
 
+/** Цель ИИ (игрок): позиция, жив, скорость для lead. */
+export interface AITarget {
+  position: THREE.Vector3;
+  alive: boolean;
+  vel: THREE.Vector3;
+}
+
+/** Управляемое тело бота: drive/aim поля без mesh/weapon. */
+export interface AIBody {
+  position: THREE.Vector3;
+  yaw: number;
+  aimYaw: number;
+  turretYaw: number;
+  fireTimer: number;
+  throttle: number;
+  steer: number;
+  boosting: boolean;
+  speed: number;
+  alive: boolean;
+  radius: number;
+  params: { weaponType?: WeaponType };
+}
+
 export interface AICtx {
-  player: TankEntity;
-  bots: TankEntity[];
+  player: AITarget;
+  bots: AIBody[];
   colliders: Collider[];
   bounds: number;
 }
@@ -67,7 +89,7 @@ export class AIController {
   private persona: AIPersona;
 
   constructor(
-    private tank: TankEntity,
+    private tank: AIBody,
     private sight: number,
     private fireRange: number,
     private aimError: number,
@@ -110,7 +132,7 @@ export class AIController {
   }
 
   /** Шаг 2: конечный автомат смены состояния engage/patrol. */
-  private updateStateMachine(canSee: boolean, dt: number, player: TankEntity) {
+  private updateStateMachine(canSee: boolean, dt: number, player: AITarget) {
     if (canSee) {
       if (this.state !== 'engage') this.reactT = this.persona.react;
       this.state = 'engage';
@@ -129,7 +151,7 @@ export class AIController {
   /** Шаг 3: расчёт целевой точки движения + базовая газ/рулёжка. */
   private computeTargetPoint(
     state: AIState, dist: number, dx: number, dz: number,
-    player: TankEntity, pref: number, dt: number, t: TankEntity,
+    player: AITarget, pref: number, dt: number, t: AIBody,
   ) {
     let tx = this.waypoint.x;
     let tz = this.waypoint.y;
@@ -155,7 +177,7 @@ export class AIController {
 
   /** Шаг 6 (выполняется в update): избегание препятствий. */
   private computeObstacleAvoidance(
-    dt: number, t: TankEntity, colliders: Collider[],
+    dt: number, t: AIBody, colliders: Collider[],
   ): { steerOverride: number | null; throttleOverride: number | null } {
     const fx = Math.sin(t.yaw);
     const fz = Math.cos(t.yaw);
@@ -226,7 +248,7 @@ export class AIController {
   /** Шаг 12: наведение башни и огонь. */
   private updateTurretAndFire(
     dt: number, canSee: boolean, dist: number,
-    player: TankEntity, bots: TankEntity[],
+    player: AITarget, bots: AIBody[],
   ) {
     const t = this.tank;
     if (this.state === 'engage' && player.alive) {
@@ -307,7 +329,7 @@ export class AIController {
     this.updateTurretAndFire(dt, canSee, dist, ctx.player, ctx.bots);
   }
 
-  private dirFree(t: TankEntity, a: number, colliders: Collider[]): boolean {
+  private dirFree(t: AIBody, a: number, colliders: Collider[]): boolean {
     const px = t.position.x + Math.sin(a) * 5;
     const pz = t.position.z + Math.cos(a) * 5;
     for (const c of colliders) {

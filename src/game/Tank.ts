@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { TANK } from './constants';
 import type { HullId, TurretId } from '../core/catalog';
-import type { Weapon } from './weapons/types';
+import type { Weapon, WeaponOwner } from './weapons/types';
 import { disposeObject3D } from './resources/disposeObject3D';
 import type { TankLike } from '../core/types';
 import type { TankParams, TankVisual, TankFxState } from './tank/types';
@@ -13,7 +13,7 @@ export { buildTankMesh } from './tank/buildMesh';
 
 let nextTankId = 1;
 
-export class TankEntity implements TankLike {
+export class TankEntity implements TankLike, WeaponOwner {
   id = nextTankId++;
   name: string;
   isPlayer: boolean;

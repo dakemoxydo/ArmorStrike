@@ -8,8 +8,8 @@ import { dampTo } from '../engine/physics';
 export class PlayingCameraMode implements CameraMode {
   update(dt: number, p: CameraUpdateParams, rig: CameraRig): void {
     const pl = p.player as TankEntity;
-    const yaw = p.input.camYaw;
-    const pitch = p.input.camPitch;
+    const yaw = p.look.yaw;
+    const pitch = p.look.pitch;
     const dist = 9.6;
     const horiz = Math.cos(pitch) * dist;
     const vert = Math.sin(pitch) * dist + 1.6;

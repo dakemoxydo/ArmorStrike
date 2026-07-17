@@ -1,0 +1,49 @@
+/* --- входные анимации --- */
+.anim-up {
+  opacity: 0;
+  animation: enter-up 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes enter-up {
+  from { opacity: 0; transform: translateY(30px); filter: blur(7px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.anim-pop {
+  opacity: 0;
+  animation: enter-pop 0.5s cubic-bezier(0.34, 1.9, 0.64, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes enter-pop {
+  from { opacity: 0; transform: scale(0.65); }
+  to { opacity: 1; transform: scale(1); }
+}
+.anim-left {
+  opacity: 0;
+  animation: enter-left 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes enter-left {
+  from { opacity: 0; transform: translateX(-42px); filter: blur(5px); }
+  to { opacity: 1; transform: translateX(0); filter: blur(0); }
+}
+
+.floaty { animation: floaty 4.5s ease-in-out infinite; }
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+.skull-pulse { animation: skull-pulse 1.6s ease-in-out infinite; }
+@keyframes skull-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px rgba(255, 77, 61, 0.6)); }
+  50% { transform: scale(1.14); filter: drop-shadow(0 0 30px rgba(255, 77, 61, 0.95)); }
+}
+
+.pause-breathe { animation: pause-breathe 2s ease-in-out infinite; }
+@keyframes pause-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.75; }
+  50% { transform: scale(1.12); opacity: 1; }
+}
+
+.esc-blink { animation: esc-blink 1.8s ease-in-out infinite; }
+@keyframes esc-blink { 0%, 100% { opacity: 0.75; } 50% { opacity: 0.25; } }

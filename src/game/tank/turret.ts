@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { TurretId } from '../../core/catalog';
 import type { TankBuildContext } from './context';
+import { BARREL_REST_Y, BARREL_REST_Z } from '../tuning';
 
 export function buildTurret(ctx: TankBuildContext, turretId: TurretId) {
   const { turret, turretMat, metalMat, barrelGroup, muzzle } = ctx;
@@ -76,7 +77,7 @@ export function buildTurret(ctx: TankBuildContext, turretId: TurretId) {
     hatch.position.set(-0.3, 0.9, -0.5);
     turret.add(hatch);
 
-    barrelGroup.position.set(0, 0.5, 0.55);
+    barrelGroup.position.set(0, BARREL_REST_Y, BARREL_REST_Z);
     turret.add(barrelGroup);
     const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 2.9, 10), metalMat);
     barrel.rotation.x = Math.PI / 2;

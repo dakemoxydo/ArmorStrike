@@ -3,15 +3,15 @@
 // Теперь это обычное оружие с единым интерфейсом Weapon.
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
-import type { TankEntity } from '../Tank';
-import type { Weapon, WeaponContext, WeaponDeps } from './types';
+import type { Weapon, WeaponContext, WeaponDeps, WeaponOwner } from './types';
 import { buildAmmoState } from './types';
+import { fillMuzzleAndAim } from './muzzle';
 
 const tmpMuzzle = new THREE.Vector3();
 const tmpDir = new THREE.Vector3();
 
 export class CannonWeapon implements Weapon {
-  readonly owner: TankEntity;
+  readonly owner: WeaponOwner;
   private deps: WeaponDeps;
 
   // Состояние магазина — инкапсулировано в оружии (ранее жило в TankEntity).
@@ -21,7 +21,7 @@ export class CannonWeapon implements Weapon {
   private reloadTimer = 0;
   private fullReloadTime: number;
 
-  constructor(owner: TankEntity, deps: WeaponDeps) {
+  constructor(owner: WeaponOwner, deps: WeaponDeps) {
     this.owner = owner;
     this.deps = deps;
     this.magazine = WEAPON_TUNING.cannon.magazine;
@@ -36,8 +36,9 @@ export class CannonWeapon implements Weapon {
   private fire() {
     const t = this.owner;
     if (!this.canFire()) return;
-    const muzzle = t.muzzleWorld(tmpMuzzle);
-    const dir = t.aimDir(tmpDir);
+    fillMuzzleAndAim(t, tmpMuzzle, tmpDir);
+    const muzzle = tmpMuzzle;
+    const dir = tmpDir;
     const recoil = t.isPlayer ? WEAPON_TUNING.cannon.knockback : 4;
     const range = t.params.range ?? WEAPON_TUNING.cannon.range;
 

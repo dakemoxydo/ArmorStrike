@@ -39,62 +39,93 @@ export interface GameContext {
   hudSink: { current: ((hud: import('./types').HudSnapshot) => void) | null };
 }
 
-/** Строит и связывает все подсистемы, возвращая готовый контекст. */
-export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
+// ---- Builder: рендер и сцена ----
+function buildRenderWorld(canvas: HTMLCanvasElement): {
+  renderWorld: RenderWorld;
+  scene: THREE.Scene;
+  cameraRig: RenderWorld['cameraRig'];
+} {
   const renderWorld = new RenderWorld(canvas);
-  const scene = renderWorld.scene;
-  const cameraRig = renderWorld.cameraRig;
+  return { renderWorld, scene: renderWorld.scene, cameraRig: renderWorld.cameraRig };
+}
 
+// ---- Builder: шина событий ----
+function buildEventBus(): {
+  emitEvent: (e: GameEvent) => void;
+  addListener: (fn: (e: GameEvent) => void) => void;
+  removeListener: (fn: (e: GameEvent) => void) => void;
+} {
+  const listeners = new Set<(e: GameEvent) => void>();
+  const emitEvent = (e: GameEvent) => { for (const fn of listeners) fn(e); };
+  return {
+    emitEvent,
+    addListener: (fn) => listeners.add(fn),
+    removeListener: (fn) => listeners.delete(fn),
+  };
+}
+
+// ---- Builder: базовые подсистемы ----
+function buildCoreSubsystems(scene: THREE.Scene, canvas: HTMLCanvasElement): {
+  arena: Arena;
+  effects: Effects;
+  projectiles: ProjectileManager;
+  input: PlayerController;
+  audio: AudioFX;
+  run: RunState;
+} {
   const arena = new Arena(scene);
   const effects = new Effects(scene);
   const projectiles = new ProjectileManager(scene);
   const input = new PlayerController();
   const audio = new AudioFX();
   const run = new RunState();
-
   input.attach(canvas);
+  return { arena, effects, projectiles, input, audio, run };
+}
 
-  const listeners = new Set<(e: GameEvent) => void>();
-  const emitEvent = (e: GameEvent) => {
-    for (const fn of listeners) fn(e);
-  };
-
-  const combat = new CombatSystem({
-    arena, effects, audio,
-    emit: (e) => emitEvent(e),
-    onPlayerDeath: () => sim?.onPlayerDeath?.(),
-  });
-
+// ---- Builder: производные системы (зависят от combat) ----
+function buildDerivedSystems(
+  scene: THREE.Scene,
+  arena: Arena,
+  effects: Effects,
+  audio: AudioFX,
+  projectiles: ProjectileManager,
+  input: PlayerController,
+  run: RunState,
+  emitEvent: (e: GameEvent) => void,
+  combat: CombatSystem,
+): {
+  weaponDeps: WeaponFactoryDeps;
+  waves: WaveManager;
+  hudModel: HudModel;
+} {
   const weaponDeps: WeaponFactoryDeps = {
-    scene,
-    effects,
-    audio,
+    scene, effects, audio,
     damageSystem: combat.damageSystem,
     projectiles,
     onShotFired: () => emitEvent({ type: 'shotFired' }),
   };
-
   const waves = new WaveManager({
-    scene, arena, effects, audio, run,
+    scene, audio, run,
     createWeapon: (tank, type) => createWeapon(tank, type, weaponDeps),
     emit: (e) => emitEvent(e),
   });
-
   const hudModel = new HudModel({ run, audio, waves, input });
   hudModel.buildMinimap(arena);
+  return { weaponDeps, waves, hudModel };
+}
 
-  const sim = new GameSimulation(arena, effects, projectiles, input, audio, run, combat, waves, hudModel);
-  sim.onPlayerDeath = () => {
-    input.releaseLock();
-    sim.deathT = 0;
-  };
-
-  const previewController = new PreviewController(scene, () => sim.run.mode);
-  previewController.rebuild(sim.run.currentHull, sim.run.currentTurret);
-
-  // Применить сохранённый пресет (конструктор RenderWorld уже загрузил его)
-  renderWorld.applyQuality(getQualityPreset(loadQuality()));
-
+// ---- Builder: оконные обработчики ----
+function registerWindowHandlers(
+  canvas: HTMLCanvasElement,
+  renderWorld: RenderWorld,
+  sim: GameSimulation,
+  input: PlayerController,
+  emitEvent: (e: GameEvent) => void,
+): {
+  onResize: () => void;
+  onVisibility: () => void;
+} {
   const onResize = () => {
     const w = canvas.clientWidth || window.innerWidth;
     const h = canvas.clientHeight || window.innerHeight;
@@ -102,6 +133,7 @@ export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
   };
   onResize();
   window.addEventListener('resize', onResize);
+
   const onVisibility = () => {
     if (document.hidden && sim.run.mode === 'playing' && !sim.run.paused) {
       sim.run.paused = true;
@@ -117,15 +149,37 @@ export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
     }
   };
 
+  return { onResize, onVisibility };
+}
+
+// ---- Builder: гаражный ввод ----
+function buildGarageInput(
+  canvas: HTMLCanvasElement,
+  sim: GameSimulation,
+  cameraRig: RenderWorld['cameraRig'],
+): GarageInput {
   const garageInput = new GarageInput({
     canvas,
     isInteractive: () => sim.run.mode === 'garage',
     cameraRig,
   });
   garageInput.attach();
+  return garageInput;
+}
 
+// ---- Builder: игровой цикл ----
+function buildGameLoop(
+  sim: GameSimulation,
+  cameraRig: RenderWorld['cameraRig'],
+  renderWorld: RenderWorld,
+  hudModel: HudModel,
+  emitEvent: (e: GameEvent) => void,
+  previewController: PreviewController,
+): {
+  gameLoop: GameLoop;
+  hudSink: { current: ((hud: import('./types').HudSnapshot) => void) | null };
+} {
   const hudSink: { current: ((hud: import('./types').HudSnapshot) => void) | null } = { current: null };
-
   const gameLoop = new GameLoop({
     sim,
     cameraRig,
@@ -136,6 +190,38 @@ export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
     getPreviewVisual: () => previewController.previewVisual,
     onHud: (hud) => hudSink.current?.(hud),
   });
+  return { gameLoop, hudSink };
+}
+
+/** Строит и связывает все подсистемы, возвращая готовый контекст. */
+export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
+  const { renderWorld, scene, cameraRig } = buildRenderWorld(canvas);
+  const { emitEvent, addListener, removeListener } = buildEventBus();
+  const { arena, effects, projectiles, input, audio, run } = buildCoreSubsystems(scene, canvas);
+
+  const combat = new CombatSystem({
+    arena, effects, audio,
+    emit: (e) => emitEvent(e),
+    onPlayerDeath: () => sim?.onPlayerDeath?.(),
+  });
+
+  const { weaponDeps, waves, hudModel } = buildDerivedSystems(
+    scene, arena, effects, audio, projectiles, input, run, emitEvent, combat,
+  );
+
+  const sim = new GameSimulation(arena, effects, projectiles, input, audio, run, combat, waves, hudModel);
+  sim.onPlayerDeath = () => {
+    input.releaseLock();
+    sim.deathT = 0;
+  };
+
+  const previewController = new PreviewController(scene, () => sim.run.mode);
+  previewController.rebuild(sim.run.currentHull, sim.run.currentTurret);
+  renderWorld.applyQuality(getQualityPreset(loadQuality()));
+
+  const { onResize, onVisibility } = registerWindowHandlers(canvas, renderWorld, sim, input, emitEvent);
+  const garageInput = buildGarageInput(canvas, sim, cameraRig);
+  const { gameLoop, hudSink } = buildGameLoop(sim, cameraRig, renderWorld, hudModel, emitEvent, previewController);
 
   return {
     canvas,
@@ -149,8 +235,8 @@ export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
     garageInput,
     audio,
     emitEvent,
-    addListener: (fn) => listeners.add(fn),
-    removeListener: (fn) => listeners.delete(fn),
+    addListener,
+    removeListener,
     onResize,
     onVisibility,
     hudSink,

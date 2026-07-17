@@ -11,13 +11,15 @@ export interface TankStyle {
   antenna: boolean;
 }
 
-/** Минимальный контракт танка, нужный системе урона. */
+/** Минимальный контракт танка для урона и hit-testing снарядов (не полный TankEntity). */
 export interface TankLike {
   id: number;
   name: string;
   isPlayer: boolean;
   health: number;
   alive: boolean;
+  /** Радиус коллизии (projectile hit-test). */
+  radius: number;
   knockback: THREE.Vector3;
   position: THREE.Vector3;
   yaw: number;

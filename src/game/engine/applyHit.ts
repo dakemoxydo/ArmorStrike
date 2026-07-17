@@ -4,8 +4,7 @@
 // Чистая структура: поведение (направление/сила толчка, формула урона)
 // остаётся за вызывающим — helper лишь объединяет шаги.
 import * as THREE from 'three';
-import type { DamageSystem } from '../weapons/types';
-import type { TankEntity } from '../Tank';
+import type { DamageSystem, TankLike } from '../../core/types';
 
 export interface HitEffect {
   (hitPoint: THREE.Vector3): void;
@@ -19,9 +18,9 @@ export interface HitEffect {
  */
 export function applyHit(
   damageSystem: DamageSystem,
-  target: TankEntity,
+  target: TankLike,
   dmg: number,
-  source: TankEntity,
+  source: TankLike,
   knockDir: THREE.Vector3,
   knockForce: number,
   effect: HitEffect,
@@ -38,9 +37,9 @@ export function applyHit(
  */
 export function applySplashHit(
   damageSystem: DamageSystem,
-  target: TankEntity,
+  target: TankLike,
   dmg: number,
-  source: TankEntity,
+  source: TankLike,
   center: THREE.Vector3,
   knockForce: number,
   effect: HitEffect,

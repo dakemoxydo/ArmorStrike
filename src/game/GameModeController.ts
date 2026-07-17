@@ -77,9 +77,8 @@ export class GameModeController {
     sim.run.mode = 'playing';
     sim.run.paused = false;
     sim.input.enabled = true;
-    sim.input.camYaw = player.yaw;
-    sim.input.camPitch = 0.34;
-    cameraRig.snap(player, sim.input.camYaw, sim.input.camPitch);
+    sim.input.look.reset(player.yaw);
+    cameraRig.snap(player, sim.input.look.yaw, sim.input.look.pitch);
     sim.waves.begin(sim.tanks, sim.nameplates);
     sim.audio.startEngine();
     sim.input.requestLock();

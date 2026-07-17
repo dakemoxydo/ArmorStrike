@@ -1,8 +1,19 @@
 // ===== Единый конвейер стадий симуляции =====
 // Каждая стадия оборачивает часть логики GameSimulation.step в равномерный
 // интерфейс, чтобы step стал чистым циклом по упорядоченному списку.
+// Стадии зависят только от плоского SimContext (не от типа GameSimulation).
 import * as THREE from 'three';
-import type { GameSimulation } from './GameSimulation';
+import type { TankEntity } from '../Tank';
+import type { Arena } from '../Arena';
+import type { Effects } from '../effects';
+import type { ProjectileManager } from './Projectile';
+import type { PlayerController } from '../PlayerController';
+import type { AudioFX } from '../audio';
+import type { RunState } from '../RunState';
+import type { WaveManager } from '../WaveManager';
+import type { CombatSystem } from '../CombatSystem';
+import type { HudModel } from '../HudModel';
+import type { Nameplate } from '../nameplate';
 import type { GameEvent } from '../types';
 import { WeaponSystem } from './systems/WeaponSystem';
 import { TankSystem } from './systems/TankSystem';
@@ -15,10 +26,30 @@ import { COLORS } from '../../core/constants';
 import { BOOST_JET_HEIGHT, BOOST_JET_OFFSET } from '../tuning';
 import { rearPoint } from './physics';
 
+/** Shared mutable scalar (same object as GameSimulation cell — mid-step external writes stay visible). */
+export type ScalarCell<T> = { value: T };
+
 export interface SimContext {
-  sim: GameSimulation;
   dt: number;
   emit: (e: GameEvent) => void;
+  player: TankEntity;
+  tanks: TankEntity[];
+  nameplates: Map<number, { plate: Nameplate; color: number }>;
+  arena: Arena;
+  effects: Effects;
+  projectiles: ProjectileManager;
+  input: PlayerController;
+  audio: AudioFX;
+  run: RunState;
+  combat: CombatSystem;
+  waves: WaveManager;
+  hudModel: HudModel;
+  /** Shared cell with GameSimulation.deathT. */
+  deathT: ScalarCell<number>;
+  /** Shared cell with GameSimulation.prevReloading. */
+  prevReloading: ScalarCell<boolean>;
+  /** Единый переход в game over (mode + events). */
+  requestGameOver(): void;
 }
 
 export interface SimSystem {
@@ -33,16 +64,15 @@ const _bd = new THREE.Vector3();
 export class PlayerInputStage implements SimSystem {
   readonly name = 'playerInput';
   update(ctx: SimContext): void {
-    const { sim } = ctx;
-    const p = sim.player!;
+    const p = ctx.player;
     if (p.alive) {
-      const wantsFire = sim.input.update(p);
+      const wantsFire = ctx.input.update(p);
       p.weapon?.setFire(wantsFire);
       const reloading = p.weapon?.getAmmoState().reloading ?? false;
-      if (reloading && !sim.prevReloading) sim.audio.reload();
-      sim.prevReloading = reloading;
+      if (reloading && !ctx.prevReloading.value) ctx.audio.reload();
+      ctx.prevReloading.value = reloading;
     } else {
-      sim.prevReloading = false;
+      ctx.prevReloading.value = false;
     }
   }
 }
@@ -51,14 +81,13 @@ export class PlayerInputStage implements SimSystem {
 export class BotAiStage implements SimSystem {
   readonly name = 'botAi';
   update(ctx: SimContext): void {
-    const { sim, dt } = ctx;
-    const p = sim.player!;
-    const bounds = sim.arena.half - 6;
-    const others = sim.waves.bots.map((b) => b.tank);
-    for (const b of sim.waves.bots) {
-      b.ai.update(dt, {
+    const p = ctx.player;
+    const bounds = ctx.arena.half - 6;
+    const others = ctx.waves.bots.map((b) => b.tank);
+    for (const b of ctx.waves.bots) {
+      b.ai.update(ctx.dt, {
         player: p, bots: others,
-        colliders: sim.arena.colliders, bounds,
+        colliders: ctx.arena.colliders, bounds,
       });
       b.tank.weapon?.setFire(b.ai.wantsFire);
     }
@@ -68,65 +97,64 @@ export class BotAiStage implements SimSystem {
 export class WeaponSystemStage implements SimSystem {
   readonly name = 'weapon';
   update(ctx: SimContext): void {
-    WeaponSystem.update(ctx.sim.tanks, ctx.sim.arena, ctx.dt);
+    WeaponSystem.update(ctx.tanks, ctx.arena, ctx.dt);
   }
 }
 
 export class TankSystemStage implements SimSystem {
   readonly name = 'tank';
   update(ctx: SimContext): void {
-    TankSystem.update(ctx.sim.tanks, ctx.dt);
+    TankSystem.update(ctx.tanks, ctx.dt);
   }
 }
 
 export class TankAnimationSystemStage implements SimSystem {
   readonly name = 'tankAnim';
   update(ctx: SimContext): void {
-    TankAnimationSystem.update(ctx.sim.tanks, ctx.dt);
+    TankAnimationSystem.update(ctx.tanks, ctx.dt);
   }
 }
 
 export class TankFxSystemStage implements SimSystem {
   readonly name = 'tankFx';
   update(ctx: SimContext): void {
-    TankFxSystem.update(ctx.sim.tanks, ctx.sim.effects, ctx.dt);
+    TankFxSystem.update(ctx.tanks, ctx.effects, ctx.dt);
   }
 }
 
 export class AmbientStage implements SimSystem {
   readonly name = 'ambient';
   update(ctx: SimContext): void {
-    const p = ctx.sim.player!;
-    ctx.sim.effects.setAmbientCenter(p.position.x, p.position.z);
+    const p = ctx.player;
+    ctx.effects.setAmbientCenter(p.position.x, p.position.z);
   }
 }
 
 export class NameplateSystemStage implements SimSystem {
   readonly name = 'nameplate';
   update(ctx: SimContext): void {
-    NameplateSystem.update(ctx.sim.waves.bots, ctx.sim.nameplates);
+    NameplateSystem.update(ctx.waves.bots, ctx.nameplates);
   }
 }
 
 export class PhysicsSystemStage implements SimSystem {
   readonly name = 'physics';
   update(ctx: SimContext): void {
-    PhysicsSystem.resolveCollisions(ctx.sim.tanks, ctx.sim.arena.colliders);
+    PhysicsSystem.resolveCollisions(ctx.tanks, ctx.arena.colliders);
   }
 }
 
 export class ProjectileStage implements SimSystem {
   readonly name = 'projectile';
   update(ctx: SimContext): void {
-    const { sim } = ctx;
-    sim.projectiles.update(ctx.dt, {
-      colliders: sim.arena.colliders,
-      tanks: sim.tanks,
-      arena: sim.arena,
-      effects: sim.effects,
-      damageSystem: sim.combat.damageSystem,
+    ctx.projectiles.update(ctx.dt, {
+      colliders: ctx.arena.colliders,
+      tanks: ctx.tanks,
+      arena: ctx.arena,
+      effects: ctx.effects,
+      damageSystem: ctx.combat.damageSystem,
       onTankHit: (target, dmg, owner) => {
-        sim.combat.onTankDamaged(target, dmg, owner);
+        ctx.combat.onTankDamaged(target, dmg, owner);
       },
     });
   }
@@ -135,28 +163,25 @@ export class ProjectileStage implements SimSystem {
 export class WavesStage implements SimSystem {
   readonly name = 'waves';
   update(ctx: SimContext): void {
-    ctx.sim.waves.update(ctx.dt, ctx.sim.tanks, ctx.sim.nameplates);
+    ctx.waves.update(ctx.dt, ctx.tanks, ctx.nameplates);
   }
 }
 
 export class MinimapStage implements SimSystem {
   readonly name = 'minimap';
   update(ctx: SimContext): void {
-    MinimapSystem.sync(ctx.sim.arena, ctx.sim.hudModel.getByIdMap());
+    MinimapSystem.sync(ctx.arena, ctx.hudModel.getByIdMap());
   }
 }
 
 export class DeathTimerStage implements SimSystem {
   readonly name = 'deathTimer';
   update(ctx: SimContext): void {
-    const { sim, emit } = ctx;
-    if (sim.deathT >= 0) {
-      sim.deathT += ctx.dt;
-      if (sim.deathT > 2.0) {
-        sim.deathT = -1;
-        sim.run.mode = 'over';
-        emit({ type: 'modeChanged', mode: 'over' });
-        emit({ type: 'gameOver', score: sim.run.score, kills: sim.run.kills, wave: sim.waves.wave });
+    if (ctx.deathT.value >= 0) {
+      ctx.deathT.value += ctx.dt;
+      if (ctx.deathT.value > 2.0) {
+        // Единая точка перехода playing → over (mode ownership).
+        ctx.requestGameOver();
       }
     }
   }
@@ -165,13 +190,12 @@ export class DeathTimerStage implements SimSystem {
 export class BoostStage implements SimSystem {
   readonly name = 'boost';
   update(ctx: SimContext): void {
-    const { sim } = ctx;
-    const p = sim.player!;
+    const p = ctx.player;
     const boostBack = p.yaw + Math.PI;
     if (p.alive && p.boostActive) {
       rearPoint(_bv, p.position.x, p.position.z, p.yaw, BOOST_JET_OFFSET, BOOST_JET_HEIGHT);
       _bd.set(Math.sin(boostBack), 0.05, Math.cos(boostBack)).normalize();
-      sim.effects.boostJet(_bv, _bd, COLORS.player);
+      ctx.effects.boostJet(_bv, _bd, COLORS.player);
     }
   }
 }
@@ -179,9 +203,8 @@ export class BoostStage implements SimSystem {
 export class EngineAudioStage implements SimSystem {
   readonly name = 'engineAudio';
   update(ctx: SimContext): void {
-    const { sim } = ctx;
-    const p = sim.player!;
-    sim.audio.setEngine(
+    const p = ctx.player;
+    ctx.audio.setEngine(
       p.alive ? Math.min(1, Math.abs(p.speed) / p.params.speed) : 0,
       p.alive && p.boostActive,
     );

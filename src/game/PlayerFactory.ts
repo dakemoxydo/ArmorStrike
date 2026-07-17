@@ -7,7 +7,7 @@ import type { TankStyle } from '../core/types';
 import { RailgunWeapon } from './weapons/RailgunWeapon';
 import { FlamethrowerWeapon } from './weapons/FlamethrowerWeapon';
 import { CannonWeapon } from './weapons/CannonWeapon';
-import type { Weapon, WeaponDeps, DamageSystem } from './weapons/types';
+import type { Weapon, WeaponDeps, WeaponOwner, DamageSystem } from './weapons/types';
 import type { Effects } from './effects';
 import type { AudioFX } from './audio';
 import type { ProjectileManager } from './engine/Projectile';
@@ -22,7 +22,7 @@ export interface WeaponFactoryDeps {
   onShotFired: () => void;
 }
 
-export function createWeapon(tank: TankEntity, type: WeaponType, deps: WeaponFactoryDeps): Weapon {
+export function createWeapon(owner: WeaponOwner, type: WeaponType, deps: WeaponFactoryDeps): Weapon {
   const wdeps: WeaponDeps = {
     scene: deps.scene,
     effects: deps.effects,
@@ -31,9 +31,9 @@ export function createWeapon(tank: TankEntity, type: WeaponType, deps: WeaponFac
     projectiles: deps.projectiles,
     onShotFired: deps.onShotFired,
   };
-  if (type === 'railgun') return new RailgunWeapon(tank, wdeps);
-  if (type === 'flamethrower') return new FlamethrowerWeapon(tank, wdeps);
-  return new CannonWeapon(tank, wdeps);
+  if (type === 'railgun') return new RailgunWeapon(owner, wdeps);
+  if (type === 'flamethrower') return new FlamethrowerWeapon(owner, wdeps);
+  return new CannonWeapon(owner, wdeps);
 }
 
 export interface TankBuildInput {

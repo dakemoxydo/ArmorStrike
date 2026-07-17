@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Game } from './game/Game';
+import type { GameApi } from './game/GameApi';
 import type { HudSnapshot } from './game/types';
 import type { GameMode } from './game/types';
 import { HULLS, TURRETS } from './core/catalog';
@@ -12,7 +13,7 @@ import BootError from './components/BootError';
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [game, setGame] = useState<Game | null>(null);
+  const [game, setGame] = useState<GameApi | null>(null);
   const [bootError, setBootError] = useState<{ message: string; detail?: string } | null>(null);
   const [uiMode, setUiMode] = useState<GameMode>('menu');
   const [paused, setPaused] = useState(false);
@@ -21,7 +22,7 @@ export default function App() {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    let g: Game | null = null;
+    let g: GameApi | null = null;
     try {
       g = new Game(canvasRef.current);
     } catch (err) {

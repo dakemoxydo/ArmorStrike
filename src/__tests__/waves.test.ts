@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { botStatsForWave, botsForWave, SCORE } from '../game/constants';
+import { botAiForWave, botsForWave, SCORE } from '../game/constants';
 
 describe('wave scaling', () => {
   it('botsForWave растёт и капится на 5', () => {
@@ -9,14 +9,13 @@ describe('wave scaling', () => {
     expect(botsForWave(10)).toBe(5);
   });
 
-  it('botStatsForWave усиливает HP/урон и сужает aimError', () => {
-    const w1 = botStatsForWave(1);
-    const w5 = botStatsForWave(5);
-    expect(w5.maxHealth).toBeGreaterThan(w1.maxHealth);
-    expect(w5.damage).toBeGreaterThan(w1.damage);
+  it('botAiForWave: aimError сужается, sightRange стабилен', () => {
+    const w1 = botAiForWave(1);
+    const w5 = botAiForWave(5);
+    expect(w1.sightRange).toBe(46);
+    expect(w5.sightRange).toBe(46);
     expect(w5.aimError).toBeLessThan(w1.aimError);
-    expect(w5.shotCooldown).toBeLessThanOrEqual(w1.shotCooldown);
-    expect(w5.speed).toBeLessThanOrEqual(13.5);
+    expect(w5.aimError).toBeGreaterThanOrEqual(0.05);
   });
 
   it('SCORE.waveBonus растёт с номером волны', () => {

@@ -17,18 +17,17 @@ export const BOOST = {
   minActivate: 0.1,      // минимум энергии для активации
 };
 
-export const botStatsForWave = (wave: number) => ({
-  maxHealth: 55 + (wave - 1) * 12,
-  damage: 10 + wave,
-  speed: Math.min(13.5, 10.5 + wave * 0.5),
-  reverseSpeed: 7,
-  turnSpeed: 2.3,
-  turretSpeed: 3.4 + wave * 0.25,
-  shotCooldown: Math.max(1.0, 1.65 - wave * 0.08),
+/**
+ * AI-only knobs per wave. Combat HP/damage/speed come from createTankEntity
+ * healthScale/damageScale (WaveManager) — not from this helper.
+ */
+export const botAiForWave = (wave: number) => ({
   sightRange: 46,
-  fireRange: 40,
   aimError: Math.max(0.05, 0.14 - wave * 0.012),
 });
+
+/** @deprecated alias — use botAiForWave (only sightRange/aimError are consumed). */
+export const botStatsForWave = botAiForWave;
 
 export const botsForWave = (wave: number) => Math.min(2 + wave, 5);
 

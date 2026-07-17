@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { TankEntity } from '../../Tank';
 import { clamp, dampTo } from '../physics';
+import { BARREL_REST_Z } from '../../tuning';
 
 export const TankAnimationSystem = {
   update(tanks: TankEntity[], dt: number) {
@@ -20,7 +21,7 @@ export const TankAnimationSystem = {
       }
 
       t.fx.barrelKick = dampTo(t.fx.barrelKick, 0, 9, dt);
-      t.visual.barrelGroup.position.z = 0.55 - t.fx.barrelKick * 0.4;
+      t.visual.barrelGroup.position.z = BARREL_REST_Z - t.fx.barrelKick * 0.4;
 
       t.visual.trackTex.offset.y -= t.speed * dt * 0.22;
 

@@ -21,3 +21,11 @@ export const HEAL_PER_SEC = 7;
 export const SMOKE_HEALTH_FRAC = 0.32;
 /** Время до начала регенерации после получения урона (сек). */
 export const HEAL_DELAY = 5;
+
+/**
+ * Базовый rest Z ствола для recoil-анимации и сброса джиттера рельсы.
+ * (Отдельные turret mesh builders могут ставить свой rest при сборке.)
+ */
+export const BARREL_REST_Z = 0.55;
+/** Rest Y ствола для railgun charge jitter reset. */
+export const BARREL_REST_Y = 0.5;

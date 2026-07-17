@@ -1,11 +1,11 @@
 // ===== Отрисовка миникарты на canvas (без React) =====
-import type { Game } from '../../game/Game';
+import type { GameApi } from '../../game/GameApi';
 import type { MinimapDynamic } from '../../game/types';
 
 export const MAP_SIZE = 172;
 export const MAP_HALF = 80;
 
-export function drawMinimap(game: Game, cv: HTMLCanvasElement | null, buf: MinimapDynamic[]) {
+export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: MinimapDynamic[]) {
   if (!cv) return;
   const ctx = cv.getContext('2d');
   if (!ctx) return;

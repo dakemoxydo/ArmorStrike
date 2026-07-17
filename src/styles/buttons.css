@@ -1,0 +1,86 @@
+.btn-game {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Russo One', sans-serif;
+  letter-spacing: 0.16em;
+  border: none;
+  cursor: pointer;
+  isolation: isolate;
+  overflow: hidden;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  transition: transform 0.24s cubic-bezier(0.34, 1.8, 0.64, 1), box-shadow 0.24s ease, filter 0.24s ease;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-game:hover { transform: translateY(-3px) scale(1.045); }
+.btn-game:active { transform: translateY(1px) scale(0.945); transition-duration: 0.06s; }
+.btn-game:focus-visible { outline: 2px solid rgba(var(--glow), 0.8); outline-offset: 3px; }
+.btn-game > * { position: relative; z-index: 2; flex-shrink: 0; }
+
+.btn-game::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: -15%; bottom: -15%; left: -85%;
+  width: 42%;
+  background: linear-gradient(100deg, transparent 10%, rgba(255, 255, 255, 0.55) 50%, transparent 90%);
+  transform: skewX(-22deg);
+  opacity: 0;
+  pointer-events: none;
+}
+.btn-game:hover::before { animation: btn-shine 0.75s ease forwards; }
+@keyframes btn-shine {
+  0% { left: -85%; opacity: 0; }
+  15% { opacity: 0.9; }
+  100% { left: 135%; opacity: 0; }
+}
+
+.btn-primary {
+  color: #03222a;
+  background: linear-gradient(135deg, #3cf5d0, #22b8ff 55%, #3cf5d0);
+  background-size: 220% 220%;
+  box-shadow:
+    0 0 26px rgba(var(--glow), 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -3px 0 rgba(0, 30, 40, 0.22);
+  animation: gradient-drift 5s ease infinite;
+}
+.btn-primary:hover {
+  box-shadow:
+    0 0 52px rgba(var(--glow), 0.68),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  filter: brightness(1.08);
+}
+@keyframes gradient-drift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.btn-ghost {
+  color: #a9f0e8;
+  background: linear-gradient(135deg, rgba(18, 34, 46, 0.88), rgba(7, 15, 26, 0.85));
+  box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.26), 0 0 18px rgba(0, 0, 0, 0.45);
+}
+.btn-ghost:hover {
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.6), 0 0 30px rgba(var(--glow), 0.32);
+  background: linear-gradient(135deg, rgba(24, 46, 60, 0.92), rgba(10, 22, 34, 0.88));
+}
+
+.btn-danger {
+  color: #ffd9d2;
+  background: linear-gradient(135deg, rgba(64, 18, 14, 0.9), rgba(32, 8, 10, 0.88));
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 70, 0.32), 0 0 18px rgba(0, 0, 0, 0.45);
+}
+.btn-danger:hover {
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 70, 0.65), 0 0 32px rgba(255, 70, 50, 0.35);
+}
+
+.btn-game .bicon { transition: transform 0.3s cubic-bezier(0.34, 2, 0.64, 1); }
+.btn-game:hover .bicon { transform: scale(1.25) rotate(-4deg); }
+.btn-game .bicon-spin { transition: transform 0.55s cubic-bezier(0.3, 1.4, 0.4, 1); }
+.btn-game:hover .bicon-spin { transform: rotate(-180deg); }

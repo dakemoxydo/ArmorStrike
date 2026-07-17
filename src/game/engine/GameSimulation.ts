@@ -11,14 +11,22 @@ import type { WaveManager } from '../WaveManager';
 import type { CombatSystem } from '../CombatSystem';
 import type { HudModel } from '../HudModel';
 import type { GameEvent } from '../types';
-import { buildSimulationStages, type SimSystem } from './stages';
+import { buildSimulationStages, type SimSystem, type SimContext, type ScalarCell } from './stages';
 
 export class GameSimulation {
   player: TankEntity | null = null;
   tanks: TankEntity[] = [];
   nameplates = new Map<number, { plate: Nameplate; color: number }>();
-  deathT = -1;
-  prevReloading = false;
+
+  /** Internal cells projected into SimContext by reference. */
+  private readonly deathCell: ScalarCell<number> = { value: -1 };
+  private readonly prevReloadingCell: ScalarCell<boolean> = { value: false };
+
+  /** Public API for bootstrap / mode controller (same field names as before). */
+  get deathT(): number { return this.deathCell.value; }
+  set deathT(v: number) { this.deathCell.value = v; }
+  get prevReloading(): boolean { return this.prevReloadingCell.value; }
+  set prevReloading(v: boolean) { this.prevReloadingCell.value = v; }
 
   private systems: SimSystem[] = buildSimulationStages();
 
@@ -42,8 +50,36 @@ export class GameSimulation {
     if (!p) return;
     this.run.matchTime += dt;
 
-    const ctx = { sim: this, dt, emit };
+    // Плоский контекст: стадии не зависят от типа GameSimulation.
+    // Скаляры — shared cells (mid-step sim.deathT = 0 видно DeathTimerStage в том же кадре).
+    const ctx: SimContext = {
+      dt,
+      emit,
+      player: p,
+      tanks: this.tanks,
+      nameplates: this.nameplates,
+      arena: this.arena,
+      effects: this.effects,
+      projectiles: this.projectiles,
+      input: this.input,
+      audio: this.audio,
+      run: this.run,
+      combat: this.combat,
+      waves: this.waves,
+      hudModel: this.hudModel,
+      deathT: this.deathCell,
+      prevReloading: this.prevReloadingCell,
+      requestGameOver: () => this.requestGameOver(emit),
+    };
     for (const s of this.systems) s.update(ctx);
+  }
+
+  /** Единая точка перехода playing → over (DeathTimerStage и любые будущие call-sites). */
+  requestGameOver(emit: (e: GameEvent) => void) {
+    this.deathT = -1;
+    this.run.mode = 'over';
+    emit({ type: 'modeChanged', mode: 'over' });
+    emit({ type: 'gameOver', score: this.run.score, kills: this.run.kills, wave: this.waves.wave });
   }
 
   clearTanks(scene: THREE.Scene) {

@@ -4,9 +4,9 @@ import type { GameMode } from './types';
 import type { Collider } from './engine/physics';
 import { segmentHitT, dampTo } from './engine/physics';
 import type { Effects } from './effects';
-import type { PlayerController } from './PlayerController';
 import type { TankEntity } from './Tank';
 import type { TankVisual } from './Tank';
+import type { CameraLookState } from './camera/CameraLookState';
 import { CameraMode } from './camera/CameraMode';
 import { MenuCameraMode } from './camera/MenuCameraMode';
 import { GarageCameraMode } from './camera/GarageCameraMode';
@@ -18,7 +18,8 @@ export const PREVIEW_POS = new THREE.Vector3(0, 21, 0);
 export interface CameraUpdateParams {
   mode: GameMode;
   elapsed: number;
-  input: PlayerController;
+  /** Углы взгляда (playing); menu/garage/over игнорируют. */
+  look: CameraLookState;
   player: TankEntity | null;
   previewVisual: TankVisual | null;
   colliders: Collider[];

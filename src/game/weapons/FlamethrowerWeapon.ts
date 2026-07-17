@@ -3,7 +3,8 @@
 // вынесен в FlameParticlePool.
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
-import type { TankEntity } from '../Tank';
+import type { TankLike } from '../../core/types';
+import type { WeaponOwner } from './types';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
 import { applyHit } from '../engine/applyHit';
 import { buildAmmoState } from './types';
@@ -15,7 +16,7 @@ const tmpDir = new THREE.Vector3();
 const tmpTargetVec = new THREE.Vector3();
 
 export class FlamethrowerWeapon implements Weapon {
-  readonly owner: TankEntity;
+  readonly owner: WeaponOwner;
   energy = WEAPON_TUNING.flamethrower.energyMax;
   isFiring = false;
 
@@ -24,7 +25,7 @@ export class FlamethrowerWeapon implements Weapon {
 
   private deps: WeaponDeps;
 
-  constructor(owner: TankEntity, deps: WeaponDeps) {
+  constructor(owner: WeaponOwner, deps: WeaponDeps) {
     this.owner = owner;
     this.deps = deps;
     this.flamePool = new FlameParticlePool(deps.scene, WEAPON_TUNING.flamethrower.particleCount);
@@ -86,11 +87,11 @@ export class FlamethrowerWeapon implements Weapon {
   }
 
   /** Геометрический Overlap-check поражения целей в конусе пламени */
-  private processOverlapDamage(tanks: TankEntity[]) {
+  private processOverlapDamage(tanks: TankLike[]) {
     const halfCone = WEAPON_TUNING.flamethrower.coneAngle * 0.5;
 
     for (const t of tanks) {
-      if (t === this.owner || !t.alive) continue;
+      if (t.id === this.owner.id || !t.alive) continue;
 
       tmpTargetVec.subVectors(t.position, tmpMuzzle);
       const dist = tmpTargetVec.length();

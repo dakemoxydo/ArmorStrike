@@ -1,65 +1,41 @@
 // ===== RAILGUN (Рельсотрон) =====
 // Hitscan-оружие мгновенного действия с FSM (IDLE -> CHARGING -> FIRING -> COOLDOWN -> IDLE)
+// Визуальный луч вынесен в RailgunBeamFx.
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
 import type { Arena } from '../Arena';
-import type { TankEntity } from '../Tank';
+import type { CombatPeer, WeaponOwner } from './types';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
 import { buildAmmoState } from './types';
 import { applyHit } from '../engine/applyHit';
+import { BARREL_REST_Y, BARREL_REST_Z } from '../tuning';
+import { fillMuzzleAndAim } from './muzzle';
+import { RailgunBeamFx } from './RailgunBeamFx';
 
 export type RailgunState = 'IDLE' | 'CHARGING' | 'FIRING' | 'COOLDOWN';
 
 const tmpMuzzle = new THREE.Vector3();
 const tmpDir = new THREE.Vector3();
-const tmpMid = new THREE.Vector3();
 
 export class RailgunWeapon implements Weapon {
-  readonly owner: TankEntity;
+  readonly owner: WeaponOwner;
   state: RailgunState = 'IDLE';
 
   // Таймеры управления
   chargeTimer = 0;
   reloadTimer = 0;
-  beamFadeTimer = 0;
 
-  // Визуальные объекты (переиспользуемые)
-  private beamMesh: THREE.Mesh;
-  private beamMat: THREE.MeshBasicMaterial;
-  private muzzleLight: THREE.PointLight;
-  private impactLight: THREE.PointLight;
+  private beamFx: RailgunBeamFx;
   private raycaster = new THREE.Raycaster();
 
   private deps: WeaponDeps;
   private prevFire = false;
-  private _tankMap = new Map<THREE.Object3D, TankEntity>();
+  private _tankMap = new Map<THREE.Object3D, CombatPeer>();
 
-  constructor(owner: TankEntity, deps: WeaponDeps) {
+  constructor(owner: WeaponOwner, deps: WeaponDeps) {
     this.owner = owner;
     this.deps = deps;
-
-    // Геометрия и материал луча (переиспользуемые, создаются один раз)
-    const beamGeo = new THREE.CylinderGeometry(0.18, 0.18, 1, 12);
-    beamGeo.rotateX(Math.PI / 2); // ось Z вдоль луча
-
-    this.beamMat = new THREE.MeshBasicMaterial({
-      color: 0x8fffe8,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-
-    this.beamMesh = new THREE.Mesh(beamGeo, this.beamMat);
-    this.beamMesh.frustumCulled = false;
-    this.beamMesh.visible = false;
-    this.deps.scene.add(this.beamMesh);
-
-    // Точечные вспышки
-    this.muzzleLight = new THREE.PointLight(0x2ee6c0, 0, 18);
-    this.impactLight = new THREE.PointLight(0xfff0a0, 0, 15);
-    this.deps.scene.add(this.muzzleLight);
-    this.deps.scene.add(this.impactLight);
+    this.beamFx = new RailgunBeamFx(deps.scene);
   }
 
   /** Установить состояние спуска. Стреляет по фронту нажатия (край). */
@@ -118,11 +94,11 @@ export class RailgunWeapon implements Weapon {
         // Лёгкая вибрация ствола перед выстрелом
         const jitter = Math.pow(progress, 2.5) * 0.08;
         visual.barrelGroup.position.x = (Math.random() - 0.5) * jitter;
-        visual.barrelGroup.position.y = 0.5 + (Math.random() - 0.5) * jitter;
+        visual.barrelGroup.position.y = BARREL_REST_Y + (Math.random() - 0.5) * jitter;
 
         // По завершении времени заряда — автоматический переход в FIRING
         if (this.chargeTimer >= WEAPON_TUNING.railgun.chargeTime) {
-          visual.barrelGroup.position.set(0, 0.5, 0.55);
+          visual.barrelGroup.position.set(0, BARREL_REST_Y, BARREL_REST_Z);
           this.executeFiring(ctx.tanks, ctx.arena);
           this.state = 'COOLDOWN';
           this.reloadTimer = WEAPON_TUNING.railgun.reloadTime;
@@ -158,26 +134,12 @@ export class RailgunWeapon implements Weapon {
       }
     }
 
-    // Затухание визуального луча от 1 -> 0 через useFrame delta
-    if (this.beamFadeTimer > 0) {
-      this.beamFadeTimer -= dt;
-      const opacity = Math.max(0, this.beamFadeTimer / WEAPON_TUNING.railgun.beamDuration);
-      this.beamMat.opacity = opacity;
-      this.muzzleLight.intensity = opacity * 60;
-      this.impactLight.intensity = opacity * 40;
-
-      if (this.beamFadeTimer <= 0) {
-        this.beamMesh.visible = false;
-        this.muzzleLight.intensity = 0;
-        this.impactLight.intensity = 0;
-      }
-    }
+    this.beamFx.update(dt);
   }
 
   /** Выполнение Hitscan-выстрела с помощью Raycast */
-  private executeFiring(tanks: TankEntity[], arena: Arena) {
-    this.owner.muzzleWorld(tmpMuzzle);
-    this.owner.aimDir(tmpDir);
+  private executeFiring(tanks: CombatPeer[], arena: Arena) {
+    fillMuzzleAndAim(this.owner, tmpMuzzle, tmpDir);
 
     // Звук и импульс отката
     this.deps.audio.shoot('railgun');
@@ -186,19 +148,20 @@ export class RailgunWeapon implements Weapon {
 
     const hits = this.castHitscan(tanks, arena);
     const maxHitDist = this.resolveHits(hits);
-    this.renderBeam(maxHitDist);
+    this.beamFx.show(tmpMuzzle, tmpDir, maxHitDist);
   }
 
   /** Raycast: собирает меши танков/арены и возвращает отсортированные пересечения. */
-  private castHitscan(tanks: TankEntity[], arena: Arena): THREE.Intersection[] {
+  private castHitscan(tanks: CombatPeer[], arena: Arena): THREE.Intersection[] {
     this.raycaster.set(tmpMuzzle, tmpDir);
     this.raycaster.far = WEAPON_TUNING.railgun.range;
 
     const targetObjects: THREE.Object3D[] = [];
-    const tankMap = new Map<THREE.Object3D, TankEntity>();
+    const tankMap = new Map<THREE.Object3D, CombatPeer>();
 
     for (const t of tanks) {
-      if (t !== this.owner && t.alive) {
+      // Compare by id: CombatPeer and WeaponOwner are distinct ports on same runtime entity
+      if (t.id !== this.owner.id && t.alive) {
         t.visual.group.traverse((o) => {
           targetObjects.push(o);
           tankMap.set(o, t);
@@ -226,7 +189,7 @@ export class RailgunWeapon implements Weapon {
 
     for (const hit of hits) {
       let obj: THREE.Object3D | null = hit.object;
-      let hitTank: TankEntity | undefined;
+      let hitTank: CombatPeer | undefined;
 
       while (obj && !hitTank) {
         hitTank = tankMap.get(obj);
@@ -243,7 +206,7 @@ export class RailgunWeapon implements Weapon {
             this.deps.damageSystem, hitTank, dmg, this.owner, tmpDir, force,
             (p) => {
               this.deps.effects.impact(p, 0x8fffe8);
-              this.impactLight.position.copy(p);
+              this.beamFx.setImpactPosition(p);
             },
             hit.point,
           );
@@ -263,22 +226,6 @@ export class RailgunWeapon implements Weapon {
     return maxHitDist;
   }
 
-  /** Рендеринг визуального луча (растягиваем CylinderGeometry вдоль Z) + свет. */
-  private renderBeam(rayLength: number) {
-    tmpMid.copy(tmpMuzzle).addScaledVector(tmpDir, rayLength * 0.5);
-
-    this.beamMesh.position.copy(tmpMid);
-    this.beamMesh.scale.set(1, 1, rayLength);
-    this.beamMesh.lookAt(tmpMuzzle.clone().addScaledVector(tmpDir, rayLength + 1));
-    this.beamMesh.visible = true;
-
-    this.beamMat.opacity = 1.0;
-    this.beamFadeTimer = WEAPON_TUNING.railgun.beamDuration;
-
-    this.muzzleLight.position.copy(tmpMuzzle);
-    this.muzzleLight.intensity = 80;
-  }
-
   updateReload(_dt: number): void {}
 
   requestReload(): void {}
@@ -295,10 +242,6 @@ export class RailgunWeapon implements Weapon {
   }
 
   dispose() {
-    this.deps.scene.remove(this.beamMesh);
-    this.deps.scene.remove(this.muzzleLight);
-    this.deps.scene.remove(this.impactLight);
-    this.beamMat.dispose();
-    this.beamMesh.geometry.dispose();
+    this.beamFx.dispose();
   }
 }

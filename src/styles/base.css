@@ -1,0 +1,11 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #04060b;
+  font-family: 'Exo 2', system-ui, sans-serif;
+}
+
+.font-display { font-family: 'Russo One', 'Exo 2', sans-serif; }
+
+.ingame, .ingame * { cursor: none !important; }

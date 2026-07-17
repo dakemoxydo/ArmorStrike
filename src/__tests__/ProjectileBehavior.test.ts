@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import { BEHAVIORS } from '../game/engine/ProjectileBehavior';
 import type { Shot } from '../game/engine/Projectile';
-import type { TankEntity } from '../game/Tank';
+import type { TankLike } from '../core/types';
 
 function makeShot(): Shot {
   return {
@@ -26,38 +26,31 @@ function makeShot(): Shot {
   };
 }
 
-function makeOwner(isPlayer = true): TankEntity {
+function makeOwner(isPlayer = true): TankLike {
   return {
+    id: 1,
+    name: 'T',
     isPlayer,
+    health: 100,
+    alive: true,
+    radius: 1.5,
     position: new THREE.Vector3(),
     knockback: new THREE.Vector3(),
-  } as unknown as TankEntity;
+    yaw: 0,
+    takeDamage: () => {},
+  };
 }
 
-describe('ProjectileBehavior.init', () => {
-  it('railgun: hitscan-like speed, no splash', () => {
-    const s = makeShot();
-    BEHAVIORS.railgun.init(s, makeOwner(true), 85, 120);
-    expect(s.speed).toBe(72);
-    expect(s.maxRange).toBe(120);
-    expect(s.splashRadius).toBe(0);
-    expect(s.splashDmg).toBe(0);
-  });
-
-  it('flamethrower: короткая дистанция и разброс направления', () => {
-    const s = makeShot();
-    const before = s.dir.clone();
-    BEHAVIORS.flamethrower.init(s, makeOwner(), 12);
-    expect(s.maxRange).toBe(22);
-    expect(s.speed).toBe(30);
-    expect(s.dir.length()).toBeCloseTo(1, 5);
-    // с высокой вероятностью dir чуть смещён (не гарантируем ≠, только normalize)
-    void before;
+describe('ProjectileBehavior (cannon pool only)', () => {
+  it('only cannon is registered (railgun/flamethrower are not projectile weapons)', () => {
+    expect(BEHAVIORS.cannon).toBeDefined();
+    expect(BEHAVIORS.railgun).toBeUndefined();
+    expect(BEHAVIORS.flamethrower).toBeUndefined();
   });
 
   it('cannon: splash = half damage rounded', () => {
     const s = makeShot();
-    BEHAVIORS.cannon.init(s, makeOwner(), 32, 75);
+    BEHAVIORS.cannon!.init(s, makeOwner(), 32, 75);
     expect(s.speed).toBe(48);
     expect(s.maxRange).toBe(75);
     expect(s.splashRadius).toBe(5);
@@ -75,7 +68,7 @@ describe('ProjectileBehavior.init', () => {
       trailPuff: vi.fn(),
       spawnSmoke: vi.fn(),
     };
-    BEHAVIORS.cannon.onHitTank(s, target, hitPos, dir, {
+    BEHAVIORS.cannon!.onHitTank(s, target, hitPos, dir, {
       colliders: [], tanks: [], arena: {} as any, effects: effects as any,
       damageSystem: {
         applyDamage: vi.fn(),
@@ -87,8 +80,8 @@ describe('ProjectileBehavior.init', () => {
     expect(target.knockback.z).toBeCloseTo(4, 5);
   });
 
-  it('trailInterval различается по типу', () => {
+  it('cannon trailInterval is 0.04', () => {
     const s = makeShot();
-    expect(BEHAVIORS.railgun.trailInterval(s)).toBeLessThan(BEHAVIORS.cannon.trailInterval(s));
+    expect(BEHAVIORS.cannon!.trailInterval(s)).toBe(0.04);
   });
 });

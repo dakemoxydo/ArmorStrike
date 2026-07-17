@@ -1,23 +1,23 @@
 // ===== ГАРАЖ: сборка танка из корпуса и башни с 3D предпросмотром =====
 import { useReducer, useState } from 'react';
 import {
-  ArrowLeft, Check, Gauge, HardDrive, MoveUp,
-  Play, Shield, Target, Zap,
+  ArrowLeft, HardDrive, MoveUp,
+  Play, Shield, Target,
 } from 'lucide-react';
 import { HULLS, TURRETS } from '../core/catalog';
 import type { HullId, TurretId } from '../core/catalog';
-import { getWeaponMeta } from '../core/WeaponCatalog';
-import type { Game } from '../game/Game';
+import type { GameApi } from '../game/GameApi';
+import HullCard from './HullCard';
+import TurretCard from './TurretCard';
 
 interface GarageProps {
-  game: Game | null;
+  game: GameApi | null;
   onStart: () => void;
   onBack: () => void;
 }
 
 export default function Garage({ game, onStart, onBack }: GarageProps) {
   const [activeTab, setActiveTab] = useState<'hulls' | 'turrets'>('hulls');
-  // Принудительный ререндер при смене выбора в Game
   const [, bump] = useReducer((x: number) => x + 1, 0);
 
   const selectedHullId = game?.currentHull ?? 'hunter';
@@ -95,99 +95,24 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" key={activeTab}>
             {activeTab === 'hulls'
-              ? Object.values(HULLS).map((h, i) => {
-                  const isSelected = h.id === selectedHullId;
-                  return (
-                    <div
-                      key={h.id}
-                      onClick={() => selectHull(h.id)}
-                      className={`hud-panel garage-card anim-up cursor-pointer p-4 ${
-                        isSelected
-                          ? 'border-cyan-300/70 shadow-[0_0_26px_rgba(46,230,192,0.4)]'
-                          : 'opacity-75 hover:opacity-100 border-white/10'
-                      }`}
-                      style={{ '--d': `${0.15 + i * 0.09}s` } as React.CSSProperties}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-display text-lg tracking-wide text-white">{h.name}</span>
-                        {isSelected && <Check size={18} className="g-check text-cyan-300" />}
-                      </div>
-                      <div className="inline-block px-2 py-0.5 mb-3 text-[9px] tracking-widest uppercase bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 rounded-sm">
-                        {h.badge}
-                      </div>
-                      <p className="text-[11px] text-white/55 leading-relaxed mb-4 min-h-[34px]">{h.desc}</p>
-                      <div className="space-y-2 text-[10px]">
-                        <div>
-                          <div className="flex justify-between text-white/70 mb-1">
-                            <span className="flex items-center gap-1"><Shield size={10} /> БРОНЯ</span>
-                            <span className="font-display text-emerald-300">{h.maxHealth} HP</span>
-                          </div>
-                          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                            <div className="g-stat-bar bg-emerald-400 h-full rounded-full" style={{ width: `${(h.maxHealth / 160) * 100}%` }} />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-white/70 mb-1">
-                            <span className="flex items-center gap-1"><Gauge size={10} /> СКОРОСТЬ</span>
-                            <span className="font-display text-cyan-300">{h.speed}</span>
-                          </div>
-                          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                            <div className="g-stat-bar bg-cyan-400 h-full rounded-full" style={{ width: `${(h.speed / 20) * 100}%` }} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              : Object.values(TURRETS).map((t, i) => {
-                  const isSelected = t.id === selectedTurretId;
-                  const weaponLabel = getWeaponMeta(t.weaponType).kind;
-                  return (
-                    <div
-                      key={t.id}
-                      onClick={() => selectTurret(t.id)}
-                      className={`hud-panel garage-card anim-up cursor-pointer p-4 ${
-                        isSelected
-                          ? 'border-amber-300/70 shadow-[0_0_26px_rgba(255,176,32,0.4)]'
-                          : 'opacity-75 hover:opacity-100 border-white/10'
-                      }`}
-                      style={{ '--d': `${0.15 + i * 0.09}s` } as React.CSSProperties}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-display text-lg tracking-wide text-white">{t.name}</span>
-                        {isSelected && <Check size={18} className="g-check text-amber-300" />}
-                      </div>
-                      <div className="inline-block px-2 py-0.5 mb-3 text-[9px] tracking-widest uppercase bg-amber-500/20 text-amber-200 border border-amber-500/40 rounded-sm">
-                        {t.badge}
-                      </div>
-                      <p className="text-[11px] text-white/55 leading-relaxed mb-4 min-h-[34px]">{t.desc}</p>
-                      <div className="space-y-2 text-[10px]">
-                        <div>
-                          <div className="flex justify-between text-white/70 mb-1">
-                            <span className="flex items-center gap-1"><Zap size={10} /> УРОН</span>
-                            <span className="font-display text-amber-300">{t.damage}</span>
-                          </div>
-                          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                            <div className="g-stat-bar bg-amber-400 h-full rounded-full" style={{ width: `${(t.damage / 50) * 100}%` }} />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-white/70 mb-1">
-                            <span className="flex items-center gap-1"><Target size={10} /> ДАЛЬНОСТЬ</span>
-                            <span className="font-display text-cyan-300">{t.range} м</span>
-                          </div>
-                          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                            <div className="g-stat-bar bg-cyan-400 h-full rounded-full" style={{ width: `${(t.range / 85) * 100}%` }} />
-                          </div>
-                        </div>
-                        <div className="flex justify-between text-white/60 pt-1 border-t border-white/10">
-                          <span className="text-[9px] tracking-wider">{weaponLabel}</span>
-                          <span className="text-[9px] tracking-wider">МАГАЗИН: {t.magazine}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+              ? Object.values(HULLS).map((h, i) => (
+                  <HullCard
+                    key={h.id}
+                    hull={h}
+                    isSelected={h.id === selectedHullId}
+                    delay={`${0.15 + i * 0.09}s`}
+                    onSelect={selectHull}
+                  />
+                ))
+              : Object.values(TURRETS).map((t, i) => (
+                  <TurretCard
+                    key={t.id}
+                    turret={t}
+                    isSelected={t.id === selectedTurretId}
+                    delay={`${0.15 + i * 0.09}s`}
+                    onSelect={selectTurret}
+                  />
+                ))}
           </div>
         </div>
 

@@ -63,7 +63,7 @@ export class GameLoop {
     sim.arena.update(dt, this.elapsed);
     sim.effects.update(dt);
     cameraRig.update(dt, {
-      mode: sim.run.mode, elapsed: this.elapsed, input: sim.input,
+      mode: sim.run.mode, elapsed: this.elapsed, look: sim.input.look,
       player: sim.player, previewVisual: getPreviewVisual(),
       colliders: sim.arena.colliders, effects: sim.effects,
     });
