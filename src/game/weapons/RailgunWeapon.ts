@@ -11,6 +11,9 @@ import { applyHit } from '../engine/applyHit';
 import { BARREL_REST_Y, BARREL_REST_Z } from '../tuning';
 import { fillMuzzleAndAim } from './muzzle';
 import { RailgunBeamFx } from './RailgunBeamFx';
+import { railgunShouldStartCharge } from './railgunFireLogic';
+import { nearestShotBlockerDist } from './railgunBlockers';
+import { resolveWeaponDamage } from './weaponDamage';
 
 export type RailgunState = 'IDLE' | 'CHARGING' | 'FIRING' | 'COOLDOWN';
 
@@ -38,12 +41,20 @@ export class RailgunWeapon implements Weapon {
     this.beamFx = new RailgunBeamFx(deps.scene);
   }
 
-  /** Установить состояние спуска. Стреляет по фронту нажатия (край). */
+  /**
+   * Спуск: заряд стартует в IDLE при удержании/нажатии (level-trigger).
+   * C3 root: rising-edge only + AI holds wantsFire every frame → after first shot
+   * prevFire stays true through COOLDOWN, so no second charge ever started.
+   */
   setFire(active: boolean) {
-    if (active && !this.prevFire && this.state === 'IDLE' && this.owner.alive) {
+    if (railgunShouldStartCharge(active, this.state, this.owner.alive)) {
       this.state = 'CHARGING';
       this.chargeTimer = 0;
       this.deps.audio.chargeRailgun();
+      // TEMP DEBUG [BUGFIX-C3]
+      console.debug('[BUGFIX-C3] railgun charge start', {
+        ownerId: this.owner.id, wasEdge: !this.prevFire, prevFire: this.prevFire,
+      });
     }
     this.prevFire = active;
   }
@@ -147,20 +158,23 @@ export class RailgunWeapon implements Weapon {
     this.owner.onFired(WEAPON_TUNING.railgun.knockback);
 
     const hits = this.castHitscan(tanks, arena);
-    const maxHitDist = this.resolveHits(hits);
+    const maxHitDist = this.resolveHits(hits, arena);
     this.beamFx.show(tmpMuzzle, tmpDir, maxHitDist);
   }
 
-  /** Raycast: собирает меши танков/арены и возвращает отсортированные пересечения. */
-  private castHitscan(tanks: CombatPeer[], arena: Arena): THREE.Intersection[] {
+  /**
+   * M9: tank meshes via raycast; walls/blocks via collider slab (blocksShots),
+   * same parity as projectiles — decorative arena meshes never stop the beam.
+   * Non-destructible solids clear mesh colliderId, so mesh-only filtering was wrong.
+   */
+  private castHitscan(tanks: CombatPeer[], _arena: Arena): THREE.Intersection[] {
     this.raycaster.set(tmpMuzzle, tmpDir);
-    this.raycaster.far = WEAPON_TUNING.railgun.range;
+    this.raycaster.far = this.owner.params.range ?? WEAPON_TUNING.railgun.range;
 
     const targetObjects: THREE.Object3D[] = [];
     const tankMap = new Map<THREE.Object3D, CombatPeer>();
 
     for (const t of tanks) {
-      // Compare by id: CombatPeer and WeaponOwner are distinct ports on same runtime entity
       if (t.id !== this.owner.id && t.alive) {
         t.visual.group.traverse((o) => {
           targetObjects.push(o);
@@ -169,59 +183,75 @@ export class RailgunWeapon implements Weapon {
       }
     }
 
-    arena.group.traverse((o) => {
-      if (o instanceof THREE.Mesh) {
-        targetObjects.push(o);
-      }
-    });
-
-    // Кладём tankMap в замыкание для resolveHits
     this._tankMap = tankMap;
     return this.raycaster.intersectObjects(targetObjects, false);
   }
 
+  /** Nearest shot-blocking collider along aim ray; builds world hit point for FX/damage. */
+  private nearestShotBlocker(
+    arena: Arena,
+    range: number,
+  ): { dist: number; id: number; point: THREE.Vector3 } | null {
+    const hit = nearestShotBlockerDist(
+      tmpMuzzle.x, tmpMuzzle.z, tmpDir.x, tmpDir.z, range, arena.colliders, tmpMuzzle.y,
+    );
+    if (!hit) return null;
+    const col = arena.colliders.find((c) => c.id === hit.id);
+    const point = tmpMuzzle.clone().addScaledVector(tmpDir, hit.dist);
+    point.y = col ? Math.min(col.height * 0.5, 2) : 1.6;
+    return { dist: hit.dist, id: hit.id, point };
+  }
+
   /** Проход по попаданиям: пенетрация, урон, толчок, эффекты. Возвращает дистанцию луча. */
-  private resolveHits(hits: THREE.Intersection[]): number {
+  private resolveHits(hits: THREE.Intersection[], arena: Arena): number {
     const tankMap = this._tankMap;
-    let maxHitDist = WEAPON_TUNING.railgun.range;
-    let currentDamage = WEAPON_TUNING.railgun.damage;
+    const range = this.owner.params.range ?? WEAPON_TUNING.railgun.range;
+    let maxHitDist = range;
+    // M6: use owner.params.damage (wave damageScale) as base, not hardcoded tuning.
+    const baseDamage = resolveWeaponDamage(this.owner.params.damage, WEAPON_TUNING.railgun.damage);
+    let currentDamage = baseDamage;
+    // TEMP DEBUG [BUGFIX-M6]
+    console.debug('[BUGFIX-M6] railgun baseDamage', {
+      paramsDamage: this.owner.params.damage,
+      baseDamage,
+      tuning: WEAPON_TUNING.railgun.damage,
+    });
     const hitTanksSet = new Set<number>();
 
+    const wall = this.nearestShotBlocker(arena, range);
+    const wallDist = wall?.dist ?? Infinity;
+
     for (const hit of hits) {
+      if (hit.distance >= wallDist) break;
+
       let obj: THREE.Object3D | null = hit.object;
       let hitTank: CombatPeer | undefined;
-
       while (obj && !hitTank) {
         hitTank = tankMap.get(obj);
         obj = obj.parent;
       }
+      if (!hitTank || hitTanksSet.has(hitTank.id)) continue;
 
-      if (hitTank) {
-        if (!hitTanksSet.has(hitTank.id)) {
-          hitTanksSet.add(hitTank.id);
+      hitTanksSet.add(hitTank.id);
+      const dmg = Math.round(currentDamage);
+      const force = WEAPON_TUNING.railgun.knockback * (currentDamage / baseDamage);
+      applyHit(
+        this.deps.damageSystem, hitTank, dmg, this.owner, tmpDir, force,
+        (p) => {
+          this.deps.effects.impact(p, 0x8fffe8);
+          this.beamFx.setImpactPosition(p);
+        },
+        hit.point,
+      );
+      currentDamage *= WEAPON_TUNING.railgun.penetrationFactor;
+    }
 
-          const dmg = Math.round(currentDamage);
-          const force = WEAPON_TUNING.railgun.knockback * (currentDamage / WEAPON_TUNING.railgun.damage);
-          applyHit(
-            this.deps.damageSystem, hitTank, dmg, this.owner, tmpDir, force,
-            (p) => {
-              this.deps.effects.impact(p, 0x8fffe8);
-              this.beamFx.setImpactPosition(p);
-            },
-            hit.point,
-          );
-
-          currentDamage *= WEAPON_TUNING.railgun.penetrationFactor;
-        }
-      } else {
-        const blockId = hit.object.userData?.colliderId as number | undefined;
-        if (blockId) {
-          this.deps.damageSystem.damageBlock(blockId, Math.round(currentDamage), hit.point);
-        }
-        this.deps.effects.impact(hit.point, 0xffa040);
-        maxHitDist = hit.distance;
-        break;
-      }
+    if (wall) {
+      // TEMP DEBUG [BUGFIX-M9]
+      console.debug('[BUGFIX-M9] railgun stopped by collider', { id: wall.id, dist: wall.dist });
+      this.deps.damageSystem.damageBlock(wall.id, Math.round(currentDamage), wall.point);
+      this.deps.effects.impact(wall.point, 0xffa040);
+      maxHitDist = wall.dist;
     }
     return maxHitDist;
   }

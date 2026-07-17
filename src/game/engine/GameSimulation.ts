@@ -12,6 +12,7 @@ import type { CombatSystem } from '../CombatSystem';
 import type { HudModel } from '../HudModel';
 import type { GameEvent } from '../types';
 import { buildSimulationStages, type SimSystem, type SimContext, type ScalarCell } from './stages';
+import { applyGameOverInputState } from '../deathLifecycle';
 
 export class GameSimulation {
   player: TankEntity | null = null;
@@ -78,6 +79,16 @@ export class GameSimulation {
   requestGameOver(emit: (e: GameEvent) => void) {
     this.deathT = -1;
     this.run.mode = 'over';
+    const st = { paused: this.run.paused, inputEnabled: this.input.enabled };
+    applyGameOverInputState(st);
+    this.run.paused = st.paused;
+    this.input.enabled = st.inputEnabled;
+    this.input.releaseLock();
+    // TEMP DEBUG [BUGFIX-C1] / [BUGFIX-M4]
+    console.debug('[BUGFIX-C1][BUGFIX-M4] requestGameOver', {
+      score: this.run.score, kills: this.run.kills, wave: this.waves.wave,
+      inputEnabled: this.input.enabled, paused: this.run.paused,
+    });
     emit({ type: 'modeChanged', mode: 'over' });
     emit({ type: 'gameOver', score: this.run.score, kills: this.run.kills, wave: this.waves.wave });
   }

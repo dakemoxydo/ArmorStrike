@@ -47,6 +47,17 @@ describe('createDamageSystem', () => {
     expect(onTankDamaged).not.toHaveBeenCalled();
   });
 
+  it('C2/M2: dmg<=0 не вызывает takeDamage и onTankDamaged (knockback-only path)', () => {
+    const target = makeTank();
+    const onTankDamaged = vi.fn();
+    const ds = createDamageSystem({} as any, { onTankDamaged, onBlockDestroyed: vi.fn() });
+    ds.applyDamage(target, 0, makeTank());
+    ds.applyDamage(target, -5, makeTank());
+    expect(target.takeDamage).not.toHaveBeenCalled();
+    expect(onTankDamaged).not.toHaveBeenCalled();
+    expect(target.health).toBe(100);
+  });
+
   it("при разрушении блока возвращает 'destroyed' и вызывает onBlockDestroyed", () => {
     const { arena, blocks } = makeArena(10);
     const onBlockDestroyed = vi.fn();

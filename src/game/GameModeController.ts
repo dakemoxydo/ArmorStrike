@@ -35,8 +35,9 @@ export class GameModeController {
       sim.projectiles.clear();
       sim.deathT = -1;
       sim.run.paused = false;
-      sim.input.releaseLock();
+      // Disable input before releaseLock so onLockLost cannot re-pause (same class as C1).
       sim.input.enabled = false;
+      sim.input.releaseLock();
       cameraRig.resetFov();
     }
     sim.run.mode = mode;
@@ -89,7 +90,14 @@ export class GameModeController {
     const { sim, emit } = this.d;
     if (sim.run.mode !== 'playing' || sim.deathT >= 0) return;
     sim.run.paused = !sim.run.paused;
-    if (!sim.run.paused) sim.input.requestLock();
+    if (sim.run.paused) {
+      // M3: release lock so pause UI is clickable; onLockLost is no-op when already paused.
+      sim.input.releaseLock();
+    } else {
+      sim.input.requestLock();
+    }
+    // TEMP DEBUG [BUGFIX-M3]
+    console.debug('[BUGFIX-M3] togglePause', { paused: sim.run.paused });
     emit({ type: 'pauseChanged', value: sim.run.paused });
   }
 }

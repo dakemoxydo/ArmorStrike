@@ -14,6 +14,12 @@ export function createDamageSystem(
       // Не бить мёртвых: устраняет повторные эффекты/звук по трупу и
       // делает скоринг устойчивым к источникам урона без фильтра !alive.
       if (!target.alive) return;
+      // dmg<=0: knockback/VFX helpers call applyHit/applySplashHit with 0 damage;
+      // must not fire combat hooks (double SFX / false hitmarks). TEMP DEBUG [BUGFIX-C2]
+      if (dmg <= 0) {
+        console.debug('[BUGFIX-C2] applyDamage skipped non-positive dmg', { dmg, targetId: target.id });
+        return;
+      }
       // Чистая логика урона: помечаем цель, не трогая представление.
       target.takeDamage(dmg, source.id);
       // Эффекты/звук/скоринг — в хуке, зависящем от game-слоя.

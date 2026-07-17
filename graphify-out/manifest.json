@@ -10,18 +10,18 @@
     "semantic_hash": ""
   },
   "src/components/Garage.tsx": {
-    "mtime": 1784256869.2899785,
-    "ast_hash": "8ffbfcb3738aab4de4ea0359049166db",
+    "mtime": 1784259678.9473872,
+    "ast_hash": "b41114d52a9fbdf106f4c46c188e1ef4",
     "semantic_hash": ""
   },
   "src/components/HUD.tsx": {
-    "mtime": 1784256869.2899785,
-    "ast_hash": "4be0e74c268ecc190d60304606e79fa1",
+    "mtime": 1784259743.8376336,
+    "ast_hash": "a7c47c15fdad9b7171ca07e50c32bbd9",
     "semantic_hash": ""
   },
   "src/components/PauseMenu.tsx": {
-    "mtime": 1784256875.2728028,
-    "ast_hash": "61ab1e91152d8c610ea220873d821c30",
+    "mtime": 1784259973.6752844,
+    "ast_hash": "60627844365bca5aad885c7f92b280ff",
     "semantic_hash": ""
   },
   "src/core/DamageSystem.ts": {
@@ -355,9 +355,9 @@
     "semantic_hash": "2ae197243ce8bb3a3f1fe6474ec7bd68"
   },
   ".opencode/opencode.json": {
-    "mtime": 1784220303.7415242,
-    "ast_hash": "f2ae21510d07365eb2bce8159272c7a0",
-    "semantic_hash": "f2ae21510d07365eb2bce8159272c7a0"
+    "mtime": 1784259285.9726865,
+    "ast_hash": "1efe24ecf938911d4f23e4b1c6ec91f7",
+    "semantic_hash": ""
   },
   ".opencode/plugins/graphify.js": {
     "mtime": 1784220314.3445237,
@@ -430,14 +430,14 @@
     "semantic_hash": "0725e60d45952158360f9183609e5c3d"
   },
   "src/components/GameOverScreen.tsx": {
-    "mtime": 1784226073.8642807,
-    "ast_hash": "463ce80221ebb3629132e508d23f1112",
-    "semantic_hash": "463ce80221ebb3629132e508d23f1112"
+    "mtime": 1784259973.6752844,
+    "ast_hash": "bc1bb3fab7e84937eb9bfdfa7d6b80ed",
+    "semantic_hash": ""
   },
   "src/components/MainMenu.tsx": {
-    "mtime": 1784226073.8642807,
-    "ast_hash": "85d7c170746b7f2f2b96bb3f8cd54b75",
-    "semantic_hash": "85d7c170746b7f2f2b96bb3f8cd54b75"
+    "mtime": 1784259752.0152478,
+    "ast_hash": "a0f361b04a831a002b3198d6dc87f806",
+    "semantic_hash": ""
   },
   "src/game/arena/types.ts": {
     "mtime": 1784225616.3087304,
@@ -485,19 +485,19 @@
     "semantic_hash": "fdd351fe6fcb40a630f88d2f98d9a099"
   },
   "src/components/hud/HudScoreboard.tsx": {
-    "mtime": 1784225983.9875457,
-    "ast_hash": "058355ab7abceb5b0e0eed119e31de93",
-    "semantic_hash": "058355ab7abceb5b0e0eed119e31de93"
+    "mtime": 1784259779.3407414,
+    "ast_hash": "f10a217dd8bbc45507fb959a84886cf3",
+    "semantic_hash": ""
   },
   "src/components/hud/HudVitals.tsx": {
-    "mtime": 1784225983.9865615,
-    "ast_hash": "2959a22a31bbd6fae9ed9a42df4cb6a4",
-    "semantic_hash": "2959a22a31bbd6fae9ed9a42df4cb6a4"
+    "mtime": 1784259743.839587,
+    "ast_hash": "5ef3d0f6a9a48d3965f0608fd60e2408",
+    "semantic_hash": ""
   },
   "src/components/hud/HudWeapon.tsx": {
-    "mtime": 1784225983.9875457,
-    "ast_hash": "14050aa9e2d3f047717b399a39dd7b34",
-    "semantic_hash": "14050aa9e2d3f047717b399a39dd7b34"
+    "mtime": 1784259973.6752844,
+    "ast_hash": "f4de7f5a4386e4f4ee21dc775d55e41a",
+    "semantic_hash": ""
   },
   "src/components/hud/minimapDraw.ts": {
     "mtime": 1784256882.3375046,
@@ -510,14 +510,14 @@
     "semantic_hash": "e935e8bd48374e3d3b6d515c0e42b8d0"
   },
   "src/components/HullCard.tsx": {
-    "mtime": 1784244848.9579992,
-    "ast_hash": "38d59d674e8987d8d6a901e601088667",
-    "semantic_hash": "38d59d674e8987d8d6a901e601088667"
+    "mtime": 1784259659.0836298,
+    "ast_hash": "edb689bac17818a480e851d6c9a865cd",
+    "semantic_hash": ""
   },
   "src/components/TurretCard.tsx": {
-    "mtime": 1784244853.2811751,
-    "ast_hash": "cf397df28b5859e156d129a84c824b27",
-    "semantic_hash": "cf397df28b5859e156d129a84c824b27"
+    "mtime": 1784259659.0843022,
+    "ast_hash": "3905f3758452c1e07907cea22f567c98",
+    "semantic_hash": ""
   },
   "src/core/catalogData.ts": {
     "mtime": 1784244810.113497,
@@ -690,8 +690,8 @@
     "semantic_hash": "a5ad36fbe3a59d98c61d293c5cc5df9b"
   },
   "src/hooks/useGameHud.ts": {
-    "mtime": 1784257361.444519,
-    "ast_hash": "78b24f91df1c149ef6e66ddcf58912a7",
+    "mtime": 1784259779.3407414,
+    "ast_hash": "249ceafaeb100083f167f8250007763c",
     "semantic_hash": ""
   },
   "skills-lock.json": {
@@ -782,6 +782,21 @@
   "src/game/weapons/RailgunBeamFx.ts": {
     "mtime": 1784258163.6586318,
     "ast_hash": "5c392affe474e0c4bc24b6971cd631ac",
+    "semantic_hash": ""
+  },
+  "src/__tests__/uiUxPresentation.test.ts": {
+    "mtime": 1784259973.6752844,
+    "ast_hash": "69aaf12e0db93c0eab8d4857dd0fdbde",
+    "semantic_hash": ""
+  },
+  "src/hooks/useFocusTrap.ts": {
+    "mtime": 1784259712.713212,
+    "ast_hash": "0cdae93907321c38b9627229c5e29973",
+    "semantic_hash": ""
+  },
+  "src/ui/hudPresentation.ts": {
+    "mtime": 1784259779.3230498,
+    "ast_hash": "1cd47d1406ac39044c77009498d5900e",
     "semantic_hash": ""
   }
 }

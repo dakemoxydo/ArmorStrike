@@ -86,6 +86,9 @@ export class AIController {
   private scanT = Math.random() * Math.PI * 2;
   private patrolN = 0;
   private reactT = 0;
+  /** M11: hold aim noise so turret can settle within aimTol (was re-rolled every frame). */
+  private aimNoise = 0;
+  private aimNoiseT = 0;
   private persona: AIPersona;
 
   constructor(
@@ -185,7 +188,7 @@ export class AIController {
     const probeZ = t.position.z + fz * 4.2;
     let blocked = false;
     for (const c of colliders) {
-      if (!c.active) continue;
+      if (!c.active || c.kind === 'ramp') continue; // M12: ramps not solid for hull/AI
       if (pointInCollider(probeX, probeZ, c, 1.4)) { blocked = true; break; }
     }
     if (this.avoidT > 0) {
@@ -207,11 +210,13 @@ export class AIController {
     dt: number, throttle: number, tankSpeed: number,
     bounds: number, playerAlive: boolean, playerPos?: { x: number; z: number },
   ) {
-    if (Math.abs(throttle) > 0.3 && tankSpeed < 1 && this.avoidT <= 0) {
+    // Allow stuck accumulation during avoidance (was mutually exclusive → corner traps).
+    if (Math.abs(throttle) > 0.3 && tankSpeed < 1) {
       this.stuckT += dt;
       if (this.stuckT > 1.1) {
         this.pickWaypoint(bounds, playerAlive ? playerPos : undefined);
         this.stuckT = 0;
+        this.avoidT = 0;
       }
     } else {
       this.stuckT = Math.max(0, this.stuckT - dt * 2);
@@ -258,8 +263,17 @@ export class AIController {
         : 0;
       const ax = player.position.x + player.vel.x * lead;
       const az = player.position.z + player.vel.z * lead;
-      const err = (Math.random() - 0.5) * this.aimError * 2;
-      t.aimYaw = Math.atan2(ax - t.position.x, az - t.position.z) + err;
+      // M11: re-roll aim noise on a short timer, not every frame (servo could never settle).
+      this.aimNoiseT -= dt;
+      if (this.aimNoiseT <= 0) {
+        this.aimNoise = (Math.random() - 0.5) * this.aimError * 2;
+        this.aimNoiseT = 0.35 + Math.random() * 0.25;
+        // TEMP DEBUG [BUGFIX-M11]
+        console.debug('[BUGFIX-M11] aim noise re-roll', {
+          aimNoise: this.aimNoise, holdSec: this.aimNoiseT,
+        });
+      }
+      t.aimYaw = Math.atan2(ax - t.position.x, az - t.position.z) + this.aimNoise;
 
       const aimTol = aimTolerance(w ?? 'cannon');
       if (canSee && this.reactT <= 0 && dist < this.fireRange && t.fireTimer <= 0) {
@@ -333,7 +347,7 @@ export class AIController {
     const px = t.position.x + Math.sin(a) * 5;
     const pz = t.position.z + Math.cos(a) * 5;
     for (const c of colliders) {
-      if (c.active && pointInCollider(px, pz, c, 1.4)) return false;
+      if (c.active && c.kind !== 'ramp' && pointInCollider(px, pz, c, 1.4)) return false;
     }
     return true;
   }

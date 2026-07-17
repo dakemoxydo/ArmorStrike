@@ -9,6 +9,8 @@ import type { Weapon, WeaponContext, WeaponDeps } from './types';
 import { applyHit } from '../engine/applyHit';
 import { buildAmmoState } from './types';
 import { FlameParticlePool } from './FlameParticlePool';
+import { inFlameConeXZ } from './flameCone';
+import { resolveWeaponDamage } from './weaponDamage';
 
 const tmpMuzzle = new THREE.Vector3();
 const tmpMuzzleQuat = new THREE.Quaternion();
@@ -89,27 +91,39 @@ export class FlamethrowerWeapon implements Weapon {
   /** Геометрический Overlap-check поражения целей в конусе пламени */
   private processOverlapDamage(tanks: TankLike[]) {
     const halfCone = WEAPON_TUNING.flamethrower.coneAngle * 0.5;
+    // M6: wave-scaled damage from tank params (player = catalog; bots = damageScale).
+    const dmg = resolveWeaponDamage(
+      this.owner.params.damage,
+      WEAPON_TUNING.flamethrower.damagePerTick,
+    );
+    // TEMP DEBUG [BUGFIX-M6]
+    console.debug('[BUGFIX-M6] flamethrower tick dmg', {
+      paramsDamage: this.owner.params.damage, dmg,
+      tuning: WEAPON_TUNING.flamethrower.damagePerTick,
+    });
+    const dirX = tmpDir.x;
+    const dirZ = tmpDir.z;
 
     for (const t of tanks) {
       if (t.id === this.owner.id || !t.alive) continue;
 
-      tmpTargetVec.subVectors(t.position, tmpMuzzle);
-      const dist = tmpTargetVec.length();
+      if (!inFlameConeXZ(
+        tmpMuzzle.x, tmpMuzzle.z, dirX, dirZ,
+        t.position.x, t.position.z,
+        WEAPON_TUNING.flamethrower.range, halfCone,
+      )) continue;
 
-      if (dist <= WEAPON_TUNING.flamethrower.range) {
-        tmpTargetVec.normalize();
-        const angle = tmpDir.angleTo(tmpTargetVec);
-
-         if (angle <= halfCone) {
-          // Цель внутри конуса поражения!
-          const dmg = WEAPON_TUNING.flamethrower.damagePerTick;
-          applyHit(
-            this.deps.damageSystem, t, dmg, this.owner, tmpTargetVec, WEAPON_TUNING.flamethrower.knockback,
-            (p) => this.deps.effects.spawnSmoke(p, 1, 1.0, false),
-            t.position,
-          );
-        }
-      }
+      const dx = t.position.x - tmpMuzzle.x;
+      const dz = t.position.z - tmpMuzzle.z;
+      const dist = Math.hypot(dx, dz) || 1;
+      tmpTargetVec.set(dx / dist, 0, dz / dist);
+      applyHit(
+        this.deps.damageSystem, t, dmg, this.owner, tmpTargetVec, WEAPON_TUNING.flamethrower.knockback,
+        (p) => this.deps.effects.spawnSmoke(p, 1, 1.0, false),
+        t.position,
+      );
+      // TEMP DEBUG [BUGFIX-M7]
+      console.debug('[BUGFIX-M7] flame cone hit', { dist, dmg, targetId: t.id });
     }
   }
 

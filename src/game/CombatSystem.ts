@@ -9,12 +9,16 @@ import type { AudioFX } from './audio';
 import type { TankLike } from '../core/types';
 import { COLORS } from '../core/constants';
 import { createDamageSystem } from '../core/DamageSystem';
+import type { RunState } from './RunState';
+import { applyPlayerKillScore } from './scoring';
 
 export interface CombatDeps {
   arena: Arena;
   effects: Effects;
   audio: AudioFX;
   emit: (e: GameEvent) => void;
+  /** Run stats (kills/score) updated on player frags. */
+  run: RunState;
   /** Вызывается при гибели игрока (Game сбрасывает deathT и отпускает захват мыши). */
   onPlayerDeath: () => void;
 }
@@ -67,6 +71,19 @@ export class CombatSystem {
       this.deps.onPlayerDeath();
     } else {
       const byPlayer = owner?.isPlayer ?? false;
+      // M1 root: kill event was emitted but run.kills/score never mutated (SCORE.kill unused).
+      const next = applyPlayerKillScore(
+        { kills: this.deps.run.kills, score: this.deps.run.score },
+        byPlayer,
+      );
+      this.deps.run.kills = next.kills;
+      this.deps.run.score = next.score;
+      // TEMP DEBUG [BUGFIX-M1]
+      if (byPlayer) {
+        console.debug('[BUGFIX-M1] player kill scored', {
+          victim: target.name, kills: this.deps.run.kills, score: this.deps.run.score,
+        });
+      }
       this.deps.emit({ type: 'kill', victim: target.name, byPlayer });
     }
   }

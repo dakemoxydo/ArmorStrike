@@ -66,7 +66,6 @@
   "64": "Caveman Help",
   "65": "AIController",
   "66": "effects.ts",
-  "67": "SimSystem",
   "68": "PlayerFactory.ts",
   "69": "Caveman Compress",
   "70": "SKILL.md",
@@ -97,6 +96,5 @@
   "95": "__init__.py",
   "96": "ACTIVE.md",
   "97": "botStatsForWave",
-  "98": "HudVitals.tsx",
   "99": "globals"
 }

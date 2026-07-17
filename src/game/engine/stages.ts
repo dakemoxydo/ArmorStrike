@@ -72,6 +72,10 @@ export class PlayerInputStage implements SimSystem {
       if (reloading && !ctx.prevReloading.value) ctx.audio.reload();
       ctx.prevReloading.value = reloading;
     } else {
+      // M8: cut flamethrower/weapon fire on death so audio/state do not leak.
+      p.weapon?.setFire(false);
+      // TEMP DEBUG [BUGFIX-M8]
+      console.debug('[BUGFIX-M8] player dead → setFire(false)');
       ctx.prevReloading.value = false;
     }
   }
@@ -153,8 +157,14 @@ export class ProjectileStage implements SimSystem {
       arena: ctx.arena,
       effects: ctx.effects,
       damageSystem: ctx.combat.damageSystem,
+      // C2 root fix: real HP must go through applyDamage (takeDamage + hooks),
+      // not onTankDamaged alone (presentation hook assumes damage already applied).
       onTankHit: (target, dmg, owner) => {
-        ctx.combat.onTankDamaged(target, dmg, owner);
+        // TEMP DEBUG [BUGFIX-C2]
+        console.debug('[BUGFIX-C2] projectile onTankHit → applyDamage', {
+          dmg, targetId: target.id, ownerId: owner.id, hpBefore: target.health,
+        });
+        ctx.combat.damageSystem.applyDamage(target, dmg, owner);
       },
     });
   }
@@ -163,6 +173,14 @@ export class ProjectileStage implements SimSystem {
 export class WavesStage implements SimSystem {
   readonly name = 'waves';
   update(ctx: SimContext): void {
+    // M5: do not advance waves / award waveBonus during death cam or after player death.
+    if (!ctx.player.alive || ctx.deathT.value >= 0) {
+      // TEMP DEBUG [BUGFIX-M5]
+      console.debug('[BUGFIX-M5] waves skipped during death', {
+        alive: ctx.player.alive, deathT: ctx.deathT.value,
+      });
+      return;
+    }
     ctx.waves.update(ctx.dt, ctx.tanks, ctx.nameplates);
   }
 }
