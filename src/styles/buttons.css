@@ -84,3 +84,24 @@
 .btn-game:hover .bicon { transform: scale(1.25) rotate(-4deg); }
 .btn-game .bicon-spin { transition: transform 0.55s cubic-bezier(0.3, 1.4, 0.4, 1); }
 .btn-game:hover .bicon-spin { transform: rotate(-180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-game {
+    transition: none;
+    will-change: auto;
+  }
+  .btn-game:hover,
+  .btn-game:active {
+    transform: none;
+  }
+  .btn-game:hover::before {
+    animation: none;
+  }
+  .btn-primary {
+    animation: none;
+  }
+  .btn-game:hover .bicon,
+  .btn-game:hover .bicon-spin {
+    transform: none;
+  }
+}

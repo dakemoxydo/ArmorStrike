@@ -1,3 +1,23 @@
 :root {
+  /* Core palette — ArmorStrike tactical HUD */
   --glow: 46, 230, 192;
+  --glow-hex: #2ee6c0;
+  --accent: #2ee6c0;
+  --accent-soft: #7ef0d8;
+  --accent-deep: #0fbf9c;
+  --warn: #ffd24a;
+  --warn-soft: #ffd27a;
+  --danger: #ff4d3d;
+  --danger-deep: #bf2f1f;
+  --boost: #3cf5d0;
+  --bg-root: #04060b;
+  --bg-panel: 10, 20, 30;
+  --text-primary: #eafffb;
+  --text-muted: rgba(255, 255, 255, 0.62);
+  --text-faint: rgba(255, 255, 255, 0.55);
+  --hud-inset: 1.5rem;
+  --z-hud: 20;
+  --z-fx: 30;
+  --z-menu: 40;
+  --z-modal: 50;
 }

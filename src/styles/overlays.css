@@ -37,3 +37,16 @@
   0%, 85% { opacity: 1; }
   100% { opacity: 0; visibility: hidden; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-stripes {
+    animation: none;
+    opacity: 0.35;
+  }
+  .title-glitch {
+    animation: none;
+  }
+  .hint-panel {
+    animation: none;
+  }
+}

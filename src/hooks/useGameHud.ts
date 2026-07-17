@@ -4,6 +4,7 @@ import type { GameEvent, HudSnapshot, MinimapDynamic } from '../game/types';
 import { drawMinimap } from '../components/hud/minimapDraw';
 import type { FeedEntry } from '../components/hud/HudFeed';
 import { WEAPONS } from '../core/WeaponCatalog';
+import { isLowHealth } from '../ui/hudPresentation';
 
 const _defaultWeapon = WEAPONS.railgun;
 const SNAP_INIT: HudSnapshot = {
@@ -32,8 +33,10 @@ export function useGameHud(game: GameApi | null, active: boolean) {
   const reloadRef = useRef<HTMLDivElement>(null);
   const crossRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLCanvasElement>(null);
+  const liveRef = useRef<HTMLDivElement>(null);
   const mmBuf = useRef<MinimapDynamic[]>([]);
   const feedId = useRef(0);
+  const lastLiveKey = useRef('');
 
   useEffect(() => {
     if (!game) return;
@@ -75,12 +78,17 @@ export function useGameHud(game: GameApi | null, active: boolean) {
     const onHud = (s: HudSnapshot) => {
       const c = snap.current;
 
+      const pct = Math.max(0, (s.health / s.maxHealth) * 100);
+      const lowHp = isLowHealth(s.health, s.maxHealth);
       if (healthRef.current) {
-        const pct = Math.max(0, (s.health / s.maxHealth) * 100);
         healthRef.current.style.width = `${pct}%`;
-        healthRef.current.classList.toggle('danger', pct < 32);
+        healthRef.current.classList.toggle('danger', lowHp);
       }
-      if (healthNumRef.current) healthNumRef.current.textContent = `${Math.ceil(s.health)}`;
+      if (healthNumRef.current) {
+        healthNumRef.current.textContent = `${Math.ceil(s.health)}`;
+        const numWrap = healthNumRef.current.parentElement;
+        numWrap?.classList.toggle('danger', lowHp);
+      }
       if (boostRef.current) {
         const b = Math.max(0, Math.min(100, s.boost * 100));
         boostRef.current.style.width = `${b}%`;
@@ -90,10 +98,33 @@ export function useGameHud(game: GameApi | null, active: boolean) {
         const p = s.reloading ? Math.round(s.reloadProgress * 360) : 360;
         reloadRef.current.style.background =
           s.reloading
-            ? `conic-gradient(#ffd24a ${p}deg, rgba(255,255,255,0.07) ${p}deg)`
-            : `conic-gradient(#2ee6c0 360deg, rgba(0,0,0,0) 0deg)`;
+            ? `conic-gradient(var(--warn, #ffd24a) ${p}deg, rgba(255,255,255,0.07) ${p}deg)`
+            : `conic-gradient(var(--accent, #2ee6c0) 360deg, rgba(0,0,0,0) 0deg)`;
       }
       if (game) drawMinimap(game, mapRef.current, mmBuf.current);
+
+      // Threshold live region (M15) — announce only on discrete state crosses
+      if (liveRef.current) {
+        const emptyMag =
+          !s.reloading &&
+          !s.isCharging &&
+          s.turretId !== 'flamethrower' &&
+          s.magazine > 0 &&
+          s.ammo <= 0;
+        const key = [
+          lowHp ? 'low' : 'ok',
+          s.reloading ? 'reload' : '',
+          emptyMag ? 'empty' : '',
+        ].join('|');
+        if (key !== lastLiveKey.current) {
+          lastLiveKey.current = key;
+          const parts: string[] = [];
+          if (lowHp) parts.push(`Броня критична: ${Math.ceil(s.health)}`);
+          if (s.reloading) parts.push('Перезарядка');
+          if (emptyMag) parts.push('Магазин пуст');
+          liveRef.current.textContent = parts.join('. ');
+        }
+      }
 
       if (
         c.ammo !== s.ammo || c.reloading !== s.reloading || c.isCharging !== s.isCharging ||
@@ -114,6 +145,6 @@ export function useGameHud(game: GameApi | null, active: boolean) {
     snap,
     feed, banner, vignette, dmgArc, hitmark, showHint, frag,
     setFeed, setBanner, setVignette, setDmgArc, setHitmark, setShowHint, setFrag,
-    healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, mmBuf, feedId,
+    healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef, mmBuf, feedId,
   };
 }

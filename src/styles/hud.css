@@ -9,9 +9,9 @@
 }
 
 .hud-label {
-  font-size: 10px;
-  letter-spacing: 0.3em;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--text-faint, rgba(255, 255, 255, 0.55));
   display: inline-flex;
   align-items: center;
 }
@@ -79,12 +79,52 @@
 }
 
 /* --- оружие --- */
+.weapon-ring-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  /* reserve width for longest status label (ПЕРЕЗАРЯДКА / ⚡ ЗАРЯДКА / ПУСТО · R) */
+  min-width: 7.5rem;
+}
+.weapon-status {
+  display: block;
+  min-height: 1em;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  color: transparent;
+  /* reserved slot prevents panel height jump; text only when active */
+}
+.weapon-status.is-charging {
+  color: var(--accent-soft, #7ef0d8);
+  animation: weapon-status-pulse 1s ease-in-out infinite;
+}
+.weapon-status.is-reloading {
+  color: var(--warn-soft, #ffd27a);
+}
+.weapon-status.is-empty {
+  color: var(--danger, #ff4d3d);
+}
+@keyframes weapon-status-pulse {
+  50% { opacity: 0.55; }
+}
+.weapon-panel.is-empty .reload-ring {
+  filter: saturate(0.35) brightness(0.85);
+}
+.ammo-pip.is-empty-mag {
+  background: rgba(255, 77, 61, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 77, 61, 0.35);
+}
 .reload-ring {
   width: 52px; height: 52px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   background: conic-gradient(#2ee6c0 360deg, transparent 0deg);
   position: relative;
+  flex-shrink: 0;
 }
 .reload-ring::before {
   content: ''; position: absolute; inset: 4px;
@@ -117,6 +157,32 @@
   background: #ff4d3d;
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   box-shadow: 0 0 8px rgba(255, 77, 61, 0.8);
+}
+
+/* --- подсказка управления (над нижними панелями, не пересекает vitals/weapon) --- */
+.hud-hint-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: calc(1.5rem + 9rem); /* clears bottom-6 vitals/weapon stack incl. status line */
+  transform: translateX(-50%);
+  z-index: 22;
+  max-width: min(92vw, 720px);
+  pointer-events: none;
+}
+.hint-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem 1.1rem;
+  padding: 0.45rem 1rem;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.62);
+}
+.hint-panel b {
+  color: #7ef0d8;
+  font-weight: 600;
 }
 
 /* --- счёт --- */
@@ -173,9 +239,8 @@
   position: relative;
   width: 44px; height: 44px;
   transform: translate(-50%, -50%);
-  animation: ch-spin 9s linear infinite;
+  /* static reticle — motion only on shot-pulse (M5) */
 }
-@keyframes ch-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
 .cross-core .ch-dot {
   position: absolute; left: 50%; top: 50%;
   width: 4px; height: 4px;
@@ -362,6 +427,65 @@
 }
 .sb-hp > div {
   height: 100%;
-  background: linear-gradient(90deg, #ff5a4d, #46e6a0);
-  transition: width 0.25s ease;
+  background: var(--accent, #2ee6c0);
+  transition: width 0.25s ease, background-color 0.25s ease;
+}
+.sb-hp > div.hp-high { background: var(--accent, #2ee6c0); }
+.sb-hp > div.hp-mid { background: var(--warn, #ffd24a); }
+.sb-hp > div.hp-low { background: var(--danger, #ff4d3d); }
+
+/* center combat toasts: keep wave above frag, both below score (M13) */
+.wave-banner {
+  top: 22%;
+}
+.frag-popup {
+  top: 34%;
+}
+
+/* low HP number chrome (M4) */
+.hp-num.danger {
+  color: #ffb4ac;
+  text-shadow: 0 0 12px rgba(255, 77, 61, 0.85);
+}
+.hp-num.danger .hp-heart {
+  color: var(--danger, #ff4d3d);
+}
+
+/* HUD muted meta */
+.hud-meta {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--text-muted, rgba(255, 255, 255, 0.62));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-fill.danger {
+    animation: none;
+  }
+  .weapon-status.is-charging {
+    animation: none;
+  }
+  .feed-item {
+    animation: none;
+  }
+  .shot-pulse {
+    animation: none !important;
+  }
+  .hitmarker,
+  .damage-vignette,
+  .damage-arc,
+  .wave-banner,
+  .frag-popup,
+  .scoreboard-overlay {
+    animation: none;
+  }
+  .wave-banner,
+  .frag-popup {
+    opacity: 1;
+  }
+  .damage-vignette,
+  .damage-arc,
+  .hitmarker {
+    opacity: 0.85;
+  }
 }

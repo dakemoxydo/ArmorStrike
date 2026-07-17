@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RefreshCcw, Skull, Target, Trophy, Waves, Wrench } from 'lucide-react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface GameOverScreenProps {
   score: number;
@@ -30,8 +31,11 @@ function CountUp({ value, duration = 1300 }: { value: number; duration?: number 
 export default function GameOverScreen({
   score, kills, wave, onRestart, onGarage, onMenu,
 }: GameOverScreenProps) {
+  const trapRef = useFocusTrap(true);
+
   return (
     <div
+      ref={trapRef}
       className="absolute inset-0 z-40 flex items-center justify-center bg-[#04060bd9] backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
@@ -47,7 +51,7 @@ export default function GameOverScreen({
         <h2 id="gameover-title" className="anim-up font-display text-5xl tracking-[0.2em] text-red-400 md:text-6xl" style={{ '--d': '0.15s' } as React.CSSProperties}>
           ТАНК УНИЧТОЖЕН
         </h2>
-        <p className="anim-up mt-3 text-sm tracking-[0.3em] text-white/40" style={{ '--d': '0.25s' } as React.CSSProperties}>
+        <p className="anim-up mt-3 text-sm tracking-[0.3em] text-white/60" style={{ '--d': '0.25s' } as React.CSSProperties}>
           ARMORSTRIKE НЕ ПРОЩАЕТ СЛАБОСТИ
         </p>
 
@@ -57,9 +61,10 @@ export default function GameOverScreen({
           <StatCard icon={<Waves size={16} />} label="ВОЛНА" value={wave} accent="text-cyan-300" />
         </div>
 
-        <div className="anim-up mt-10 flex flex-wrap items-center justify-center gap-4" style={{ '--d': '0.52s' } as React.CSSProperties}>
+        {/* Primary CTA without enter-anim so focus trap lands on a visible control (M1) */}
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           <button type="button" onClick={onRestart} className="btn-game btn-primary px-12 py-4 text-base">
-            <RefreshCcw size={19} className="bicon-spin" />
+            <RefreshCcw size={19} className="bicon-spin" aria-hidden />
             <span>РЕВАНШ</span>
           </button>
           <button type="button" onClick={onGarage} className="btn-game btn-ghost px-8 py-4 text-sm">
@@ -81,8 +86,8 @@ function StatCard({ icon, label, value, accent }: {
 }) {
   return (
     <div className="hud-panel min-w-32 px-6 py-4">
-      <div className={`flex items-center justify-center gap-1.5 text-[10px] tracking-[0.3em] ${accent}`}>
-        {icon} {label}
+      <div className={`flex items-center justify-center gap-1.5 text-[11px] tracking-[0.22em] ${accent}`}>
+        <span aria-hidden>{icon}</span> {label}
       </div>
       <div className="mt-1 font-display text-3xl text-white">
         <CountUp value={value} />

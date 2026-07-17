@@ -47,3 +47,30 @@
 
 .esc-blink { animation: esc-blink 1.8s ease-in-out infinite; }
 @keyframes esc-blink { 0%, 100% { opacity: 0.75; } 50% { opacity: 0.25; } }
+
+/* Accessibility: respect reduced motion (C5) */
+@media (prefers-reduced-motion: reduce) {
+  .anim-up,
+  .anim-pop,
+  .anim-left {
+    opacity: 1;
+    animation: none;
+    filter: none;
+    transform: none;
+  }
+  .floaty,
+  .skull-pulse,
+  .pause-breathe,
+  .esc-blink {
+    animation: none;
+  }
+  .skull-pulse {
+    filter: drop-shadow(0 0 12px rgba(255, 77, 61, 0.6));
+  }
+  .pause-breathe {
+    opacity: 1;
+  }
+  .esc-blink {
+    opacity: 0.75;
+  }
+}

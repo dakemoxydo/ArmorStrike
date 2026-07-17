@@ -48,7 +48,7 @@ export default function MainMenu({ hull, turret, onStart, onGarage }: MainMenuPr
                 <Shield size={20} />
               </div>
               <div>
-                <div className="text-[10px] tracking-widest text-white/50">КОРПУС</div>
+                <div className="text-[11px] tracking-widest text-white/60">КОРПУС</div>
                 <div className="font-display text-sm text-cyan-200">{hull.name}</div>
               </div>
             </div>
@@ -58,7 +58,7 @@ export default function MainMenu({ hull, turret, onStart, onGarage }: MainMenuPr
                 <Zap size={20} />
               </div>
               <div>
-                <div className="text-[10px] tracking-widest text-white/50">БАШНЯ</div>
+                <div className="text-[11px] tracking-widest text-white/60">БАШНЯ</div>
                 <div className="font-display text-sm text-amber-200">{turret.name}</div>
               </div>
             </div>
@@ -89,7 +89,7 @@ export default function MainMenu({ hull, turret, onStart, onGarage }: MainMenuPr
           <div className="hud-label mb-1 flex items-center justify-end gap-1.5 text-cyan-300/90">
             <Flame size={12} /> 3D ПРЕДПРОСМОТР
           </div>
-          <p className="text-[10px] leading-relaxed tracking-widest text-white/50">
+          <p className="text-[11px] leading-relaxed tracking-widest text-white/60">
             Модель рендерится в реальном времени.
             Смена корпуса или башни в Гараже мгновенно обновляет модель.
           </p>
@@ -101,11 +101,11 @@ export default function MainMenu({ hull, turret, onStart, onGarage }: MainMenuPr
 
 function ControlCard({ icon, k, label }: { icon: React.ReactNode; k: string; label: string }) {
   return (
-    <div className="hud-panel flex items-center gap-2.5 bg-black/40 px-3 py-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40">
-      <span className="text-cyan-300">{icon}</span>
+    <div className="hud-panel flex items-center gap-2.5 bg-black/40 px-3 py-2">
+      <span className="text-cyan-300" aria-hidden>{icon}</span>
       <div>
         <div className="font-display text-xs tracking-wider text-white">{k}</div>
-        <div className="text-[9px] text-white/40">{label}</div>
+        <div className="text-[11px] text-white/60">{label}</div>
       </div>
     </div>
   );

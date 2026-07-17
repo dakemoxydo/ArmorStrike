@@ -1,4 +1,5 @@
 // ===== HUD: оркестрация панелей, событий и ref-обновлений =====
+import { memo } from 'react';
 import { Trophy } from 'lucide-react';
 import type { GameApi } from '../game/GameApi';
 import { useGameHud } from '../hooks/useGameHud';
@@ -14,10 +15,17 @@ interface HudProps {
   active: boolean;
 }
 
+const MemoRadar = memo(HudRadar);
+const MemoVitals = memo(HudVitals);
+const MemoWeapon = memo(HudWeapon);
+const MemoFeed = memo(HudFeed);
+const MemoScoreboard = memo(HudScoreboard);
+const MemoCrosshair = memo(HudCrosshair);
+
 export default function HUD({ game, active }: HudProps) {
   const {
     snap, feed, banner, vignette, dmgArc, hitmark, showHint, frag,
-    healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef,
+    healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
   } = useGameHud(game, active);
 
   if (!game) return null;
@@ -27,7 +35,16 @@ export default function HUD({ game, active }: HudProps) {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 select-none overflow-hidden">
-      {inGame && !st.paused && <HudCrosshair crossRef={crossRef} hitmark={hitmark} />}
+      {/* Assistive threshold announcements for ref-driven vitals/ammo (M15) */}
+      <div
+        ref={liveRef}
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      />
+
+      {inGame && !st.paused && <MemoCrosshair crossRef={crossRef} hitmark={hitmark} />}
 
       {vignette > 0 && <div key={vignette} className="damage-vignette" aria-hidden />}
 
@@ -54,33 +71,33 @@ export default function HUD({ game, active }: HudProps) {
 
       {inGame && (
         <>
-          <HudRadar mapRef={mapRef} wave={st.wave} botsAlive={st.botsAlive} />
+          <MemoRadar mapRef={mapRef} wave={st.wave} botsAlive={st.botsAlive} />
 
           <div className="anim-up absolute left-1/2 top-5 -translate-x-1/2" style={{ '--d': '0.15s' } as React.CSSProperties}>
             <div className="hud-panel score-panel px-8 py-2.5 text-center" aria-label={`Счёт ${st.score}`}>
-              <div className="flex items-center justify-center gap-2 text-[10px] tracking-[0.35em] text-cyan-200/60">
-                <Trophy size={11} /> СЧЁТ
+              <div className="flex items-center justify-center gap-2 text-[11px] tracking-[0.28em] text-cyan-200/75">
+                <Trophy size={11} aria-hidden /> СЧЁТ
               </div>
               <div className="score-num">{String(st.score).padStart(6, '0')}</div>
-              <div className="mt-0.5 text-[10px] tracking-[0.3em] text-white/40">
+              <div className="hud-meta mt-0.5">
                 {time} · ФРАГИ {st.kills}
               </div>
             </div>
           </div>
 
-          <HudFeed feed={feed} muted={st.muted} onToggleMute={() => game.toggleMute()} />
-          <HudVitals healthRef={healthRef} healthNumRef={healthNumRef} boostRef={boostRef} maxHealth={st.maxHealth} />
-          <HudWeapon reloadRef={reloadRef} st={st} />
+          <MemoFeed feed={feed} muted={st.muted} onToggleMute={() => game.toggleMute()} />
+          <MemoVitals healthRef={healthRef} healthNumRef={healthNumRef} boostRef={boostRef} maxHealth={st.maxHealth} />
+          <MemoWeapon reloadRef={reloadRef} st={st} />
 
           {showHint && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2" aria-hidden>
-              <div className="hud-panel hint-panel flex items-center gap-5 px-5 py-2 text-[10px] tracking-[0.18em] text-white/55">
-                <span><b className="text-cyan-300">WASD</b> ДВИЖЕНИЕ</span>
-                <span><b className="text-cyan-300">SHIFT</b> НИТРО</span>
-                <span><b className="text-cyan-300">МЫШЬ</b> ОБЗОР/ПРИЦЕЛ</span>
-                <span><b className="text-cyan-300">ЛКМ</b> ОГОНЬ · ЗАХВАТ МЫШИ</span>
-                <span><b className="text-cyan-300">R</b> МАГАЗИН</span>
-                <span><b className="text-cyan-300">ESC</b> ПАУЗА</span>
+            <div className="hud-hint-wrap" aria-hidden>
+              <div className="hud-panel hint-panel">
+                <span><b>WASD</b> ДВИЖЕНИЕ</span>
+                <span><b>SHIFT</b> НИТРО</span>
+                <span><b>МЫШЬ</b> ОБЗОР/ПРИЦЕЛ</span>
+                <span><b>ЛКМ</b> ОГОНЬ</span>
+                <span><b>R</b> МАГАЗИН</span>
+                <span><b>ESC</b> ПАУЗА</span>
               </div>
             </div>
           )}
@@ -99,7 +116,7 @@ export default function HUD({ game, active }: HudProps) {
             </div>
           )}
 
-          {st.showScore && <HudScoreboard rows={st.scoreboard} />}
+          {st.showScore && <MemoScoreboard rows={st.scoreboard} />}
         </>
       )}
     </div>

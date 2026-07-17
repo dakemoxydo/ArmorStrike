@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import { Crosshair } from 'lucide-react';
 import type { HudSnapshot } from '../../game/types';
+import { weaponStatusKind } from '../../ui/hudPresentation';
 
 interface HudWeaponProps {
   reloadRef: RefObject<HTMLDivElement | null>;
@@ -11,22 +12,44 @@ interface HudWeaponProps {
 }
 
 export default function HudWeapon({ reloadRef, st }: HudWeaponProps) {
+  const status = weaponStatusKind({
+    isCharging: st.isCharging,
+    reloading: st.reloading,
+    turretId: st.turretId,
+    ammo: st.ammo,
+    magazine: st.magazine,
+  });
+  const emptyMag = status === 'empty';
+
   return (
     <div className="anim-up absolute bottom-6 right-6" style={{ '--d': '0.3s' } as React.CSSProperties}>
-      <div className="hud-panel flex items-center gap-4 p-4" aria-label={`Оружие: ${st.weaponName}`}>
-        <div className="relative">
+      <div
+        className={`hud-panel weapon-panel flex items-center gap-4 p-4${emptyMag ? ' is-empty' : ''}`}
+        aria-label={`Оружие: ${st.weaponName}`}
+      >
+        <div className="weapon-ring-col">
           <div ref={reloadRef} className="reload-ring">
-            <Crosshair size={20} className={st.turretId === 'flamethrower' ? 'text-orange-300' : 'text-cyan-200'} />
+            <Crosshair size={20} className={st.turretId === 'flamethrower' ? 'text-orange-300' : 'text-cyan-200'} aria-hidden />
           </div>
-          {st.isCharging ? (
-            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] tracking-[0.25em] text-cyan-300 font-display animate-pulse">
-              ⚡ ЗАРЯДКА
-            </span>
-          ) : st.reloading ? (
-            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] tracking-[0.25em] text-amber-300">
-              ПЕРЕЗАРЯДКА
-            </span>
-          ) : null}
+          <span
+            className={`weapon-status${
+              status === 'charging'
+                ? ' is-charging'
+                : status === 'reloading'
+                  ? ' is-reloading'
+                  : status === 'empty'
+                    ? ' is-empty'
+                    : ''
+            }`}
+          >
+            {status === 'charging'
+              ? '⚡ ЗАРЯДКА'
+              : status === 'reloading'
+                ? 'ПЕРЕЗАРЯДКА'
+                : status === 'empty'
+                  ? 'ПУСТО · R'
+                  : '\u00a0'}
+          </span>
         </div>
         <div>
           <div className={`hud-label mb-1.5 ${st.weaponAccentClass}`}>
@@ -42,7 +65,18 @@ export default function HudWeapon({ reloadRef, st }: HudWeaponProps) {
           ) : (
             <div className="flex gap-1" aria-label={`Патроны ${st.ammo} из ${st.magazine}`}>
               {Array.from({ length: st.magazine }).map((_, i) => (
-                <span key={i} className={`ammo-pip ${i < st.ammo ? st.turretId === 'cannon' ? 'cannon' : 'full' : ''}`} />
+                <span
+                  key={i}
+                  className={`ammo-pip ${
+                    i < st.ammo
+                      ? st.turretId === 'cannon'
+                        ? 'cannon'
+                        : 'full'
+                      : emptyMag
+                        ? 'is-empty-mag'
+                        : ''
+                  }`}
+                />
               ))}
             </div>
           )}
