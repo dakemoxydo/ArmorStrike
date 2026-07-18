@@ -11,11 +11,11 @@
 | Размер | 150 × 150 (`ARENA.size`) |
 | half | size/2 = 75 |
 | Стены | height 7.5, thickness 3.5 |
-| Тема | завод «ЗАВОД-51» |
+| Тема | мульти-карта (`factory` / `village` / `city`) — см. [[Maps]] |
 
-Модульные билдеры: `src/game/arena/*` (centralHall, containerYard, foundry, gantryCrane, silos, pipeRack, ramps, scattered crates, smokestacks, skyline, atmosphere…).
+Модульные билдеры: `src/game/arena/*` (shell, factoryMap, villageMap, cityMap + factory modules: centralHall, containerYard, foundry, gantryCrane, silos, pipeRack, ramps, scattered, smokestacks, skyline, atmosphere…).
 
-Сборка: `ArenaBuilder.buildArena` → `Arena`.
+Сборка: `buildArena(arena, effects, mapId)` → `Arena`. Пересборка: `Arena.rebuild(mapId)` при каждом старте матча.
 
 ## Collider model
 

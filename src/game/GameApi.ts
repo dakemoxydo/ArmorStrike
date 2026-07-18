@@ -1,6 +1,7 @@
 // ===== Узкий API игры для UI-слоя (без GameSimulation / engine) =====
 import type { HullId, TurretId } from '../core/catalog';
 import type { QualityLevel } from './graphicsQuality';
+import type { MapId } from './maps/mapCatalog';
 import type {
   GameEvent,
   GameMode,
@@ -17,13 +18,15 @@ import type {
 export interface GameApi {
   readonly currentHull: HullId;
   readonly currentTurret: TurretId;
+  readonly currentMapId: MapId;
 
   addListener(fn: (e: GameEvent) => void): void;
   removeListener(fn: (e: GameEvent) => void): void;
   setHudCallback(fn: ((hud: HudSnapshot) => void) | null): void;
 
   setMode(mode: GameMode): void;
-  startRound(): void;
+  /** Start a match on the given map (rebuilds arena if map changed). */
+  startRound(mapId?: MapId): void;
   togglePause(): void;
   /** Apply between-wave buff and start the next wave. */
   chooseWaveBuff(id: WaveBuffId): void;

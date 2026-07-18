@@ -19,6 +19,18 @@ type GameMode = 'menu' | 'garage' | 'playing' | 'over'
 | `playing` | симуляция, HUD, pointer lock |
 | `over` | GameOverScreen, score summary |
 
+## Старт матча и выбор карты
+
+Поток UI (не отдельный `GameMode`):
+
+```
+Играть / Рестарт → MapSelect → GameApi.startRound(mapId)
+```
+
+- `MapSelect` — оверлей поверх menu/garage/pause/over.
+- `startRound(mapId)` всегда делает `Arena.rebuild(mapId)` + `HudModel.rebuildMinimap`.
+- Карты: `factory` | `village` | `city` — см. [[Maps]].
+
 ## Флаги run
 
 | Флаг | Смысл |

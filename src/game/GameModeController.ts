@@ -9,6 +9,8 @@ import type { WeaponFactoryDeps } from './PlayerFactory';
 import { buildPlayerTank, createWeapon } from './PlayerFactory';
 import { TURRETS } from '../core/catalog';
 import { applyWaveBuff } from './waveBuffs';
+import type { MapId } from './maps/mapCatalog';
+import { DEFAULT_MAP_ID, isMapId } from './maps/mapCatalog';
 
 export interface GameModeControllerDeps {
   sim: GameSimulation;
@@ -19,6 +21,8 @@ export interface GameModeControllerDeps {
   canvas: HTMLCanvasElement;
   weaponDeps: WeaponFactoryDeps;
   emit: (e: GameEvent) => void;
+  /** Rebuild minimap static layer after arena map switch. */
+  onArenaRebuilt?: () => void;
 }
 
 /**
@@ -57,13 +61,18 @@ export class GameModeController {
     emit({ type: 'modeChanged', mode });
   }
 
-  startRound() {
-    const { sim, scene, previewController, cameraRig, weaponDeps, emit } = this.d;
+  startRound(mapId: MapId = DEFAULT_MAP_ID) {
+    const { sim, scene, previewController, cameraRig, weaponDeps, emit, onArenaRebuilt } = this.d;
     sim.audio.ensure();
     sim.audio.stopEngine();
     sim.clearTanks(scene);
     sim.projectiles.clear();
     previewController.setVisible(false);
+
+    // Always rebuild so destructibles / FX reset for a fresh match.
+    const id = isMapId(mapId) ? mapId : DEFAULT_MAP_ID;
+    sim.arena.rebuild(id);
+    onArenaRebuilt?.();
 
     sim.run.resetRun();
     sim.deathT = -1;

@@ -30,6 +30,13 @@ export class HudModel {
     }
   }
 
+  /** Clear and rebuild static minimap after arena map switch. */
+  rebuildMinimap(arena: Arena) {
+    this._static.length = 0;
+    this._byId.clear();
+    this.buildMinimap(arena);
+  }
+
   getStatic(): MinimapStatic[] { return this._static; }
   getByIdMap(): Map<number, MinimapStatic> { return this._byId; }
 

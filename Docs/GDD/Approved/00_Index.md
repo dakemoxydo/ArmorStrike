@@ -23,6 +23,7 @@
 | [[Scoring]] | Очки и убийства | `scoring`, `SCORE` |
 | [[Garage_Loadout]] | Гараж 3×3 | `RunState`, `HULLS`/`TURRETS` |
 | [[Arena_Physics]] | Арена и коллизии | `Arena`, `physics`, `PhysicsSystem` |
+| [[Maps]] | Карты и выбор арены | `mapCatalog`, `Arena.rebuild`, `MapSelect` |
 | [[Game_Lifecycle]] | Режимы, пауза, death cam | `RunState`, `deathLifecycle` |
 
 ## Архитектура
@@ -31,13 +32,14 @@
 
 ## Жанр и петля
 
-**Жанр:** 3D tank survival (волны) на заводской арене 150×150.
+**Жанр:** 3D tank survival (волны) на арене 150×150 (карты: Завод / Деревня / Город).
 
 **Core loop:**
 1. Гараж → выбор корпус + башня (9 комбинаций).
-2. Волна N: зачистка ботов.
-3. Intermission → выбор баффа → волна N+1.
-4. Смерть игрока → game over + score.
+2. Выбор карты → старт матча.
+3. Волна N: зачистка ботов.
+4. Intermission → выбор баффа → волна N+1.
+5. Смерть игрока → game over + score.
 
 ## Источники истины в коде
 

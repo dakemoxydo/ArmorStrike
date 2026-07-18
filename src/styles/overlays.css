@@ -38,6 +38,45 @@
   100% { opacity: 0; visibility: hidden; }
 }
 
+/* Map select cards */
+.map-card {
+  pointer-events: auto;
+  cursor: pointer;
+  padding: 1.15rem 1.1rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.45);
+  color: inherit;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.map-card:hover {
+  border-color: rgba(var(--map-accent-rgb, 46, 230, 192), 0.45);
+  transform: translateY(-3px);
+  box-shadow: 0 0 28px rgba(var(--map-accent-rgb, 46, 230, 192), 0.18);
+}
+.map-card:focus-visible {
+  outline: 2px solid rgba(var(--map-accent-rgb, 46, 230, 192), 0.85);
+  outline-offset: 3px;
+}
+.map-card-active {
+  border-color: rgba(var(--map-accent-rgb, 46, 230, 192), 0.75);
+  background: rgba(var(--map-accent-rgb, 46, 230, 192), 0.08);
+  box-shadow:
+    0 0 32px rgba(var(--map-accent-rgb, 46, 230, 192), 0.28),
+    inset 0 0 0 1px rgba(var(--map-accent-rgb, 46, 230, 192), 0.25);
+}
+.map-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 0.85rem;
+  border: 1px solid rgba(var(--map-accent-rgb, 46, 230, 192), 0.4);
+  border-radius: 4px;
+  color: var(--map-accent, #2ee6c0);
+  background: rgba(var(--map-accent-rgb, 46, 230, 192), 0.1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .menu-stripes {
     animation: none;
@@ -48,5 +87,8 @@
   }
   .hint-panel {
     animation: none;
+  }
+  .map-card:hover {
+    transform: none;
   }
 }

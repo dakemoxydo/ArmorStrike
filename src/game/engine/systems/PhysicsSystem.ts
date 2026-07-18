@@ -8,6 +8,12 @@ import { separateTankPair, type TankXZ } from '../tankSeparation';
 let _solidSrc: Collider[] | null = null;
 let _solid: Collider[] = [];
 
+/** Call after arena rebuild (same array ref, new contents). */
+export function invalidateSolidColliderCache() {
+  _solidSrc = null;
+  _solid = [];
+}
+
 function solidColliders(colliders: Collider[]): Collider[] {
   if (colliders === _solidSrc) return _solid;
   _solidSrc = colliders;

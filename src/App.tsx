@@ -11,6 +11,9 @@ import MainMenu from './components/MainMenu';
 import GameOverScreen from './components/GameOverScreen';
 import BootError from './components/BootError';
 import WaveIntermission, { type IntermissionPayload } from './components/WaveIntermission';
+import MapSelect from './components/MapSelect';
+import type { MapId } from './game/maps/mapCatalog';
+import { DEFAULT_MAP_ID } from './game/maps/mapCatalog';
 import { isInteractiveKeyboardTarget } from './ui/keyboardTarget';
 
 export default function App() {
@@ -21,6 +24,8 @@ export default function App() {
   const [paused, setPaused] = useState(false);
   const [intermission, setIntermission] = useState<IntermissionPayload | null>(null);
   const [finalStats, setFinalStats] = useState({ score: 0, kills: 0, wave: 1 });
+  const [mapSelectOpen, setMapSelectOpen] = useState(false);
+  const [lastMapId, setLastMapId] = useState<MapId>(DEFAULT_MAP_ID);
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
@@ -68,38 +73,56 @@ export default function App() {
     return () => g?.dispose();
   }, []);
 
-  const start = useCallback(() => {
+  /** Open map picker before any match start. */
+  const openMapSelect = useCallback(() => {
     if (!game) return;
-    game.startRound();
+    setMapSelectOpen(true);
   }, [game]);
+
+  const confirmMap = useCallback((mapId: MapId) => {
+    if (!game) return;
+    setLastMapId(mapId);
+    setMapSelectOpen(false);
+    // Leaving pause/over UI before round starts.
+    setPaused(false);
+    game.startRound(mapId);
+  }, [game]);
+
+  const cancelMapSelect = useCallback(() => {
+    setMapSelectOpen(false);
+  }, []);
 
   const goGarage = useCallback(() => {
     if (!game) return;
+    setMapSelectOpen(false);
     game.setMode('garage');
   }, [game]);
 
   const goMenu = useCallback(() => {
     if (!game) return;
+    setMapSelectOpen(false);
     game.setMode('menu');
   }, [game]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!game) return;
+      // Map select owns Escape / Enter while open.
+      if (mapSelectOpen) return;
       if (e.code === 'Escape') {
         // Intermission blocks pause (buff UI owns the screen).
         if (uiMode === 'playing' && !intermission) game.togglePause();
         else if (uiMode === 'garage') goMenu();
       }
       if (e.code === 'KeyM') game.toggleMute();
-      // Enter starts only when focus is not already on a control
+      // Enter opens map select when focus is not already on a control
       if (e.code === 'Enter' && uiMode === 'menu' && !isInteractiveKeyboardTarget(e.target)) {
-        start();
+        openMapSelect();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, uiMode, goMenu, start, intermission]);
+  }, [game, uiMode, goMenu, openMapSelect, intermission, mapSelectOpen]);
 
   const snap: HudSnapshot | null = game ? game.getHud() : null;
 
@@ -114,28 +137,24 @@ export default function App() {
     game.togglePause();
   };
 
-  const restart = useCallback(() => {
-    if (!game) return;
-    game.startRound();
-  }, [game]);
-
   if (bootError) {
     return <BootError message={bootError.message} detail={bootError.detail} />;
   }
 
   const currHull = HULLS[game?.currentHull ?? 'hunter'];
   const currTurret = TURRETS[game?.currentTurret ?? 'railgun'];
+  const hideChrome = mapSelectOpen;
 
   return (
-    <div className={`relative h-screen w-screen overflow-hidden bg-[#04060b] text-white ${uiMode === 'playing' && !paused && !intermission ? 'ingame' : ''}`}>
+    <div className={`relative h-screen w-screen overflow-hidden bg-[#04060b] text-white ${uiMode === 'playing' && !paused && !intermission && !mapSelectOpen ? 'ingame' : ''}`}>
       <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full" />
 
       <div className="fx-scanlines pointer-events-none absolute inset-0 z-30" />
       <div className="fx-vignette pointer-events-none absolute inset-0 z-10" />
 
-      <HUD game={game} active={uiMode === 'playing'} />
+      <HUD game={game} active={uiMode === 'playing' && !mapSelectOpen} />
 
-      {uiMode === 'playing' && intermission && game && (
+      {uiMode === 'playing' && intermission && game && !mapSelectOpen && (
         <WaveIntermission
           game={game}
           data={intermission}
@@ -143,40 +162,48 @@ export default function App() {
         />
       )}
 
-      {uiMode === 'playing' && paused && !intermission && game && snap && (
+      {uiMode === 'playing' && paused && !intermission && game && snap && !mapSelectOpen && (
         <PauseMenu
           game={game}
           muted={snap.muted}
           stats={{ score: snap.score, kills: snap.kills, wave: snap.wave, timeSec: snap.timeSec }}
           onResume={resume}
-          onRestart={restart}
+          onRestart={openMapSelect}
           onGarage={goGarage}
           onMenu={goMenu}
           onToggleMute={toggleMute}
         />
       )}
 
-      {uiMode === 'garage' && (
-        <Garage game={game} onStart={start} onBack={goMenu} />
+      {uiMode === 'garage' && !hideChrome && (
+        <Garage game={game} onStart={openMapSelect} onBack={goMenu} />
       )}
 
-      {uiMode === 'menu' && (
+      {uiMode === 'menu' && !hideChrome && (
         <MainMenu
           hull={currHull}
           turret={currTurret}
-          onStart={start}
+          onStart={openMapSelect}
           onGarage={goGarage}
         />
       )}
 
-      {uiMode === 'over' && (
+      {uiMode === 'over' && !hideChrome && (
         <GameOverScreen
           score={finalStats.score}
           kills={finalStats.kills}
           wave={finalStats.wave}
-          onRestart={start}
+          onRestart={openMapSelect}
           onGarage={goGarage}
           onMenu={goMenu}
+        />
+      )}
+
+      {mapSelectOpen && (
+        <MapSelect
+          initialMapId={game?.currentMapId ?? lastMapId}
+          onConfirm={confirmMap}
+          onCancel={cancelMapSelect}
         />
       )}
     </div>

@@ -22,6 +22,29 @@ export class ArenaEffects {
     this.smokeTex = smokeTexture();
   }
 
+  /**
+   * Clear animated refs and smoke pool before arena rebuild.
+   * Does not dispose the shared smoke texture.
+   */
+  resetForRebuild() {
+    this.dome = null;
+    this.dust = null;
+    this.obeliskCore = null;
+    this.obeliskRing = null;
+    this.craneTrolley = null;
+    this.furnaceGlowMats.length = 0;
+    this.moltenMats.length = 0;
+    this.beaconMats.length = 0;
+    this.smokeEmitters.length = 0;
+    this.smokeT = 0;
+    for (const slot of this.smokePool) {
+      this.group.remove(slot.s);
+      // Material only — map is shared via smokeTexture().
+      slot.s.material.dispose();
+    }
+    this.smokePool.length = 0;
+  }
+
   private spawnStackSmoke(p: THREE.Vector3) {
     let slot = this.smokePool.find((s) => s.life <= 0);
     if (!slot) {

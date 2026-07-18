@@ -9,6 +9,8 @@ import type { GameEvent, GameMode, HudSnapshot, MinimapDynamic, MinimapStatic, W
 import type { QualityLevel } from './graphicsQuality';
 import type { GameSimulation } from './engine/GameSimulation';
 import type { GameApi } from './GameApi';
+import type { MapId } from './maps/mapCatalog';
+import { DEFAULT_MAP_ID } from './maps/mapCatalog';
 
 export class Game implements GameApi {
   /** Внутренний доступ к симуляции — не часть GameApi (UI не видит). */
@@ -36,6 +38,7 @@ export class Game implements GameApi {
       canvas: this.canvas,
       weaponDeps: this.ctx.weaponDeps,
       emit: this.ctx.emitEvent,
+      onArenaRebuilt: () => this.ctx.sim.hudModel.rebuildMinimap(this.ctx.sim.arena),
     });
     this.garage = new GarageBinding({
       sim: this.ctx.sim,
@@ -56,6 +59,7 @@ export class Game implements GameApi {
 
   get currentHull() { return this.sim.run.currentHull; }
   get currentTurret() { return this.sim.run.currentTurret; }
+  get currentMapId(): MapId { return this.sim.arena.mapId; }
   get previewVisual(): TankVisual | null { return this.ctx.previewController.previewVisual; }
 
   setGarageSelection(hullId: HullId, turretId: TurretId) {
@@ -63,7 +67,7 @@ export class Game implements GameApi {
   }
 
   setMode(mode: GameMode) { this.modes.setMode(mode); }
-  startRound() { this.modes.startRound(); }
+  startRound(mapId: MapId = DEFAULT_MAP_ID) { this.modes.startRound(mapId); }
   togglePause() { this.modes.togglePause(); }
   chooseWaveBuff(id: WaveBuffId) { this.modes.chooseWaveBuff(id); }
 
