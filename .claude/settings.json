@@ -1,22 +1,4 @@
 {
-  "enabledPlugins": {
-    "code-review@claude-plugins-official": true,
-    "ecc@ecc": true
-  },
-  "extraKnownMarketplaces": {
-    "claude-plugins-official": {
-      "source": {
-        "source": "github",
-        "repo": "anthropics/claude-plugins-official"
-      }
-    },
-    "ecc": {
-      "source": {
-        "source": "github",
-        "repo": "affaan-m/ecc"
-      }
-    }
-  },
   "hooks": {
     "PreToolUse": [
       {
