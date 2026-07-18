@@ -1,0 +1,223 @@
+{
+  "main": {
+    "id": "30daa82e35a932a5",
+    "type": "split",
+    "children": [
+      {
+        "id": "5acf75fe958555b0",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "60b51e9aca83683b",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Docs/GDD/Drafts/README.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "README"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "1614100a6575fd3e",
+    "type": "split",
+    "children": [
+      {
+        "id": "166a27d2aa63de24",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "58cbab69e647c00c",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Файловый менеджер"
+            }
+          },
+          {
+            "id": "f02ca25177a1f81f",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Поиск"
+            }
+          },
+          {
+            "id": "080e301525c0320d",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Закладки"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "1b205530790c2326",
+    "type": "split",
+    "children": [
+      {
+        "id": "cbd63c28d1f654c4",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "5187460a6f5a3464",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Docs/GDD/Drafts/README.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Обратные ссылки для README"
+            }
+          },
+          {
+            "id": "598843c93e299b4e",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Docs/GDD/Drafts/README.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Исходящие ссылки из README"
+            }
+          },
+          {
+            "id": "0770bad0bceeb798",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Теги"
+            }
+          },
+          {
+            "id": "c07969d0fe7abdf1",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Все свойства"
+            }
+          },
+          {
+            "id": "e23136fa09af8198",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Docs/GDD/Drafts/README.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Структура README"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Меню быстрого перехода": false,
+      "graph:Граф": false,
+      "canvas:Создать новый холст": false,
+      "daily-notes:Сегодняшняя заметка": false,
+      "templates:Вставить шаблон": false,
+      "command-palette:Открыть палитру команд": false,
+      "bases:Создать новую базу": false
+    }
+  },
+  "active": "60b51e9aca83683b",
+  "lastOpenFiles": [
+    "Docs/GDD/Approved/Weapon_Flamethrower.md",
+    "Docs/GDD/Approved/Wave_System.md",
+    "Docs/GDD/Approved/Health_And_Regen.md",
+    "Docs/GDD/Drafts/README.md",
+    "Docs/GDD/Approved/Garage_Loadout.md",
+    "Docs/GDD/Approved/Player_Controls.md",
+    "Docs/GDD/Approved/Scoring.md",
+    "Docs/Architecture/Core.md",
+    "Docs/graphify-out/cache/stat-index.json",
+    "Docs/graphify-out/manifest.json",
+    "Docs/graphify-out/graph.json",
+    "Docs/graphify-out/cache/semantic/pf33081f95084/2e5168e7028429978819b88703b570686359ed5d5caf7dca38e8bdfb9ad19339.json",
+    "Docs/graphify-out/cache/semantic/pf33081f95084/19cc6fe8041be314974d88d5f114e1684f7e070c3aa134d7a6ba55a793f74a68.json",
+    "Docs/graphify-out/cache/semantic/pf33081f95084/7b5cf091eb549d1d6ad884c5865632b869d8f286ec56a875d3a5b9cda9a9fb4d.json",
+    "Docs/graphify-out/cache/semantic/pf33081f95084/45cb0ca0418e0f9a1ed0f11047b0cc8e897f957eeebb7e3f6395c09a55f81b7f.json",
+    "Docs/graphify-out/cache/semantic/pf33081f95084/5b6a693be12f440bd5e6e16022b47c2e5d312ad7bd068b7cd01859af3beac2b3.json",
+    "Docs/graphify-out/cache/semantic/pf33081f95084/220012e31dc116491c8d9e6791889c4de4e37f512ddc74d2a456e93c695d9474.json",
+    "Docs/graphify-out/cache/semantic/pf33081f95084/9fe68a0483f6aeb4f5570d96d912f475988e12eaee3f089cea4bf26d5df0ef27.json",
+    "Docs/GDD/Approved/Tank_Aim.md",
+    "Docs/GDD/Approved/AI_Bots.md",
+    "Docs/GDD/Approved/Game_Lifecycle.md",
+    "Docs/GDD/Approved/Weapon_Cannon.md",
+    "Docs/GDD/Approved/Projectile_System.md",
+    "Docs/GDD/Approved/Arena_Physics.md",
+    "Docs/GDD/Approved/00_Index.md",
+    "Docs/GDD/Approved/Wave_Buffs.md",
+    "Docs/GDD/Approved/Damage_System.md",
+    "Docs/GDD/Approved/Weapon_Railgun.md",
+    "Docs/GDD/Approved/Tank_Movement.md",
+    "graphify-out/GRAPH_REPORT.md",
+    "AGENTS.md",
+    "ANALYSIS.md",
+    "CLAUDE.md",
+    "README.md"
+  ]
+}

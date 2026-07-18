@@ -1,329 +1,320 @@
-# Graph Report - ArmorStrike  (2026-07-18)
+# Graph Report - .  (2026-07-18)
 
 ## Corpus Check
-- 180 files · ~51,066 words
-- Verdict: corpus is large enough that graph structure adds value.
+- cluster-only mode — file stats not available
 
 ## Summary
-- 1097 nodes · 2619 edges · 79 communities (49 shown, 30 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.8)
+- 1146 nodes · 2537 edges · 70 communities (47 shown, 23 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `fb65bdd2`
+- Built from commit: `b171da54`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- TankEntity
 - ArenaBuilder.ts
-- stages.ts
+- simPorts.ts
 - CameraRig.ts
-- AudioFX
-- ArmorStrike — Детальный разбор функционала проекта
-- catalog.ts
-- TankVisual
-- compilerOptions
-- Effects
-- index.ts
-- types.ts
-- CannonWeapon
-- Game
-- Game.ts
-- Tank.ts
-- RailgunWeapon.ts
-- graphicsQuality.ts
-- GameSimulation.ts
-- particles.ts
-- GameBootstrap.ts
-- devDependencies
-- FlamethrowerWeapon.ts
-- dependencies
-- ParticleEffects
-- SparkPool
-- PlayerController
-- Nameplate
-- FlamethrowerWeapon
-- ErrorBoundary
-- clamp
-- scripts
-- package.json
-- ArmorStrike
-- GameOverScreen.tsx
-- FlashSystem
-- RingSystem
-- ScorchSystem
-- SmokeSystem
-- GameModeController
-- graphify.js
-- DamageSystem.test.ts
-- vite.config.ts
-- AGENTS.md
-- eslint-plugin-react-hooks
-- eslint-plugin-react-refresh
-- globals
-- @tailwindcss/vite
-- @types/node
-- @types/react
-- typescript-eslint
-- vite
-- eslint
-- tuning.ts
-- RunState.test.ts
-- waves.test.ts
-- physics.ts
-- SKILL.md
-- Caveman Help
-- SKILL.md
-- Caveman Help
-- SKILL.md
-- Caveman Help
-- AIController
-- effects.ts
-- eslint
 - PlayerFactory.ts
-- WeaponCatalog.ts
-- 2026-07-17
-- Step 1. ANALYST (2026-07-17)
-- task_plan.md
-- BootError.tsx
+- Projectile.ts
+- EffectsPort
+- stages.ts
+- ArmorStrike — Детальный разбор функционала проекта
+- compilerOptions
+- GameEvent
+- physics.ts
+- GameApi
+- AudioFX
+- particles.ts
+- devDependencies
+- AI.ts
+- HudModel.ts
+- AudioPort
+- Game
+- WeaponDeps
+- HUD.tsx
+- useGameHud.ts
+- GameBootstrap.ts
+- SparkPool
+- FlamethrowerWeapon
+- types.ts
+- RailgunWeapon
+- ParticleEffects
+- WaveBuffId
+- RailgunBeamFx
+- ArmorStrike Project
+- dependencies
+- types.ts
+- wavePreview.ts
+- PlayerController
+- FlamethrowerWeapon.ts
+- minimapDraw.ts
+- AIController
+- Nameplate
+- PhysicsSystem.ts
+- railgunChargeFx.ts
+- RailgunWeapon.ts
+- useFocusTrap
+- ErrorBoundary
+- GameLoop
+- SmokeSystem
+- scripts
+- QualityController
+- PlayerController.ts
+- CoreSystem
+- RingSystem
+- package.json
+- aiObstacle.ts
+- opencode.json
+- HudFeed.tsx
+- MainMenu.tsx
+- Working Style Guidelines
+- graphify.js
+- vite.config.ts
 - CLAUDE.md
-- vitest
-- botStatsForWave
+- @eslint/js
 - globals
+- @types/react
+- @types/react-dom
+- CI Workflow Configuration
+- ArmorStrike — 3D Бронетанковый Штурм (HTML)
+- botStatsForWave
+- ProjectileManager
 
 ## God Nodes (most connected - your core abstractions)
-1. `TankEntity` - 51 edges
-2. `AudioFX` - 39 edges
-3. `Effects` - 34 edges
-4. `CameraRig` - 30 edges
-5. `Arena` - 29 edges
+1. `AudioPort` - 38 edges
+2. `EffectsPort` - 38 edges
+3. `TankEntity` - 33 edges
+4. `CameraRig` - 29 edges
+5. `GameApi` - 29 edges
 6. `Game` - 28 edges
-7. `GameApi` - 28 edges
-8. `HullId` - 27 edges
-9. `TurretId` - 27 edges
-10. `TankLike` - 25 edges
+7. `AudioFX` - 25 edges
+8. `GameEvent` - 25 edges
+9. `TankLike` - 24 edges
+10. `Effects` - 24 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `ArmorStrike Project` --uses_style_framework--> `tailwindcss`  [EXTRACTED]
+  README.md → package.json
 - `HudProps` --references--> `GameApi`  [EXTRACTED]
   src/components/HUD.tsx → src/game/GameApi.ts
-- `HudScoreboardProps` --references--> `ScoreRow`  [EXTRACTED]
-  src/components/hud/HudScoreboard.tsx → src/game/types.ts
-- `HudWeaponProps` --references--> `HudSnapshot`  [EXTRACTED]
-  src/components/hud/HudWeapon.tsx → src/game/types.ts
-- `resolveCannonDirectHit()` --calls--> `applyHit()`  [EXTRACTED]
-  src/__tests__/ProjectileDamage.test.ts → src/game/engine/applyHit.ts
-- `GameOverScreen()` --calls--> `useFocusTrap()`  [EXTRACTED]
-  src/components/GameOverScreen.tsx → src/hooks/useFocusTrap.ts
+- `HUD()` --calls--> `useGameHud()`  [EXTRACTED]
+  src/components/HUD.tsx → src/hooks/useGameHud.ts
+- `PauseMenuProps` --references--> `GameApi`  [EXTRACTED]
+  src/components/PauseMenu.tsx → src/game/GameApi.ts
+- `WaveIntermissionProps` --references--> `GameApi`  [EXTRACTED]
+  src/components/WaveIntermission.tsx → src/game/GameApi.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (79 total, 30 thin omitted)
+## Hyperedges (group relationships)
+- **ArmorStrike Frontend Technology Stack** — react_19, typescript, three_js, vite [EXTRACTED 1.00]
+- **Game Architecture Layer Separation** — src_core_catalog, src_game_game_ts, src_components_hud, src_components_garage, src_components_pause [EXTRACTED 0.90]
 
-### Community 0 - "TankEntity"
-Cohesion: 0.09
-Nodes (22): createDamageSystem(), ArenaLike, DamageSystem, DamageSystemHooks, TankLike, applyHit(), applySplashHit(), HitEffect (+14 more)
+## Communities (70 total, 23 thin omitted)
 
-### Community 1 - "ArenaBuilder.ts"
-Cohesion: 0.09
-Nodes (39): buildAtmosphere(), buildCentralHall(), buildContainerYard(), ArenaBuildContext, buildFoundry(), buildGantryCrane(), buildPipeRack(), buildRamps() (+31 more)
+### Community 0 - "ArenaBuilder.ts"
+Cohesion: 0.07
+Nodes (41): Arena, buildAtmosphere(), buildCentralHall(), buildContainerYard(), ArenaBuildContext, buildFoundry(), buildGantryCrane(), buildPipeRack() (+33 more)
 
-### Community 2 - "stages.ts"
-Cohesion: 0.15
-Nodes (8): AmbientStage, BotAiStage, EngineAudioStage, PlayerInputStage, ProjectileStage, SimSystem, TankAnimationSystemStage, WavesStage
+### Community 1 - "simPorts.ts"
+Cohesion: 0.05
+Nodes (42): personaForRole(), roleForBot(), roleLabel(), BotEntry, BotSpawnDeps, disposeBots(), pickSpawnIndex(), SPAWN_POINTS (+34 more)
 
-### Community 3 - "CameraRig.ts"
-Cohesion: 0.10
-Nodes (12): CameraLookState, CameraMode, GarageCameraMode, MenuCameraMode, OverCameraMode, PlayingCameraMode, CameraRig, CameraUpdateParams (+4 more)
+### Community 2 - "CameraRig.ts"
+Cohesion: 0.06
+Nodes (24): CameraMode, GarageCameraMode, MenuCameraMode, OverCameraMode, PlayingCameraMode, CameraRig, CameraUpdateParams, PREVIEW_POS (+16 more)
 
-### Community 4 - "AudioFX"
-Cohesion: 0.53
-Nodes (5): TankStyle, buildTankMesh(), TankBuildContext, buildHull(), buildTurret()
+### Community 3 - "PlayerFactory.ts"
+Cohesion: 0.06
+Nodes (30): HULL_IDS, HULLS, TURRET_IDS, TURRETS, WEAPON_TUNING, HullDef, HullId, TurretDef (+22 more)
 
-### Community 5 - "ArmorStrike — Детальный разбор функционала проекта"
+### Community 4 - "Projectile.ts"
+Cohesion: 0.08
+Nodes (24): createDamageSystem(), ArenaLike, DamageSystem, DamageSystemHooks, TankLike, CombatDeps, CombatSystem, PROJECTILE (+16 more)
+
+### Community 5 - "EffectsPort"
+Cohesion: 0.05
+Nodes (3): CameraShake, Effects, EffectsPort
+
+### Community 6 - "stages.ts"
+Cohesion: 0.08
+Nodes (26): rearPoint(), AmbientStage, _bd, BoostFxCtx, BoostStage, BotAiCtx, BotAiStage, _bv (+18 more)
+
+### Community 7 - "ArmorStrike — Детальный разбор функционала проекта"
 Cohesion: 0.06
 Nodes (33): 10. Снаряды — `ProjectileManager`, 11. ИИ противников — `AIController`, 12. Менеджер волн — `WaveManager`, 13. Физика и геометрия — `physics.ts`, 14. Эффекты — `Effects`, 15. Камера — `CameraRig`, 16. Звук — процедурный `AudioFX`, 17. HUD и UI (React) (+25 more)
-
-### Community 6 - "catalog.ts"
-Cohesion: 0.08
-Nodes (31): AIBody, AIController, AICtx, aimTolerance(), AIPersona, AIState, AITarget, DEFAULT_PERSONA (+23 more)
 
 ### Community 8 - "compilerOptions"
 Cohesion: 0.07
 Nodes (26): DOM, DOM.Iterable, ES2020, node, src, vite.config.ts, compilerOptions, allowImportingTsExtensions (+18 more)
 
-### Community 10 - "index.ts"
-Cohesion: 0.07
-Nodes (29): C1. Death softlock — auto-pause freezes game-over — **FIXED**, C2. Cannon projectiles never reduce tank HP — **FIXED**, C3. Railgun bots fire once then soft-stop — **FIXED**, CRITICAL — all fixed, Final status, L1. `applyDamage(0)` presentation (standalone residual if knock-only helpers remain), L2. Flamethrower `reloading` when energy < 10, L3. Flame restart dead-zone energy (0, 5] (+21 more)
+### Community 9 - "GameEvent"
+Cohesion: 0.19
+Nodes (9): GameSimulation, ScalarCell, GameContext, GameModeControllerDeps, GarageBindingDeps, buildPlayerTank(), createWeapon(), WeaponFactoryDeps (+1 more)
 
-### Community 11 - "types.ts"
-Cohesion: 0.15
-Nodes (8): EMPTY_HUD, HudModel, RunState, GameMode, MinimapDynamic, MinimapStatic, ScoreRow, WaveContext
+### Community 10 - "physics.ts"
+Cohesion: 0.17
+Nodes (14): AimFireState, updateTurretAndFire(), findCoverPoint(), CoreAnim, RingAnim, _circleOut, clamp(), ColliderKind (+6 more)
 
-### Community 14 - "Game.ts"
-Cohesion: 0.06
-Nodes (32): HUD(), HudCrosshairProps, FeedEntry, HudFeedProps, HudProps, HudRadarProps, HudScoreboard(), HudScoreboardProps (+24 more)
+### Community 11 - "GameApi"
+Cohesion: 0.10
+Nodes (6): GarageProps, HullCard(), HullCardProps, TurretCard(), TurretCardProps, GameApi
 
-### Community 15 - "Tank.ts"
+### Community 13 - "particles.ts"
 Cohesion: 0.11
-Nodes (11): NameplateEntry, disposeObject3D(), TankEntity, TankFxState, TankParams, TankVisual, tmpDir, tmpMuzzle (+3 more)
+Nodes (5): FlashLight, FlashSystem, MuzzleSystem, ScorchMark, ScorchSystem
 
-### Community 16 - "RailgunWeapon.ts"
-Cohesion: 0.15
-Nodes (3): Arena, RailgunWeapon, CombatPeer
+### Community 14 - "devDependencies"
+Cohesion: 0.10
+Nodes (21): eslint, eslint-plugin-react-hooks, eslint-plugin-react-refresh, devDependencies, eslint, eslint-plugin-react-hooks, eslint-plugin-react-refresh, @tailwindcss/vite (+13 more)
 
-### Community 17 - "graphicsQuality.ts"
-Cohesion: 0.16
-Nodes (9): getQualityPreset(), nextQuality(), ORDER, QUALITY_PRESETS, QualityLevel, QualityPreset, saveQuality(), QualityController (+1 more)
+### Community 15 - "AI.ts"
+Cohesion: 0.19
+Nodes (13): AIBody, AICtx, AIPersona, AIState, AITarget, DEFAULT_PERSONA, aimErrorMulForRole(), coverHpFracForRole() (+5 more)
 
-### Community 18 - "GameSimulation.ts"
-Cohesion: 0.14
-Nodes (8): GameSimulation, ScalarCell, GameContext, GameModeControllerDeps, GarageBindingDeps, WeaponFactoryDeps, PreviewController, GameEvent
+### Community 16 - "HudModel.ts"
+Cohesion: 0.17
+Nodes (5): GameLoopDeps, HudModel, RunState, HudUnit, MinimapStatic
 
-### Community 19 - "particles.ts"
-Cohesion: 0.22
-Nodes (6): CoreAnim, FlashLight, ParticleSystem, RingAnim, ScorchMark, SparkSystem
+### Community 19 - "WeaponDeps"
+Cohesion: 0.18
+Nodes (6): CannonWeapon, WeaponDeps, emptyMag(), makeTank(), makeVisual(), PARAMS
 
-### Community 21 - "devDependencies"
+### Community 20 - "HUD.tsx"
 Cohesion: 0.12
-Nodes (17): @eslint/js, eslint-plugin-react-refresh, devDependencies, @eslint/js, eslint-plugin-react-refresh, tailwindcss, @types/react-dom, @types/three (+9 more)
+Nodes (12): HUD(), HudCrosshairProps, HudProps, HudRadarProps, HudVitals(), HudVitalsProps, MemoCrosshair, MemoFeed (+4 more)
 
-### Community 22 - "FlamethrowerWeapon.ts"
+### Community 21 - "useGameHud.ts"
 Cohesion: 0.20
-Nodes (6): FlameParticle, FlameParticlePool, localDir, tmpColor, tmpMatrix, tmpScaleVec
+Nodes (12): HudScoreboard(), HudScoreboardProps, HudWeapon(), HudWeaponProps, ScoreRow, SNAP_INIT, useGameHud(), root (+4 more)
 
-### Community 23 - "dependencies"
+### Community 22 - "GameBootstrap.ts"
+Cohesion: 0.22
+Nodes (13): applyGameOverInputState(), applyPlayerDeathState(), GameModeLike, shouldAutoPauseOnInterrupt(), buildSimulationStages(), bootstrapGame(), buildCoreSubsystems(), buildDerivedSystems() (+5 more)
+
+### Community 23 - "SparkPool"
+Cohesion: 0.17
+Nodes (3): ParticleSystem, SparkPool, SparkSystem
+
+### Community 24 - "FlamethrowerWeapon"
+Cohesion: 0.16
+Nodes (4): _wctx, WeaponHost, FlamethrowerWeapon, WeaponContext
+
+### Community 25 - "types.ts"
+Cohesion: 0.20
+Nodes (8): tmpDir, tmpMuzzle, fillMuzzleAndAim(), buildAmmoState(), WeaponAmmoState, WeaponOwner, WeaponOwnerParams, WeaponOwnerVisual
+
+### Community 26 - "RailgunWeapon"
+Cohesion: 0.18
+Nodes (3): RailgunWeapon, ownerReloadMul(), CombatPeer
+
+### Community 28 - "WaveBuffId"
+Cohesion: 0.18
+Nodes (6): GameModeController, BuffableTank, applyWaveBuff(), BuffBaseSnapshot, clearWaveBuff(), WaveBuffId
+
+### Community 29 - "RailgunBeamFx"
+Cohesion: 0.21
+Nodes (5): makeBeamMesh(), RailgunBeamFx, tmpEnd, tmpLook, tmpMid
+
+### Community 30 - "ArmorStrike Project"
+Cohesion: 0.15
+Nodes (13): ArmorStrike Project, Loadout Data (localStorage), Graphics Quality Preset (localStorage), tailwindcss, typescript, vite, React 19, Pause Component (+5 more)
+
+### Community 31 - "dependencies"
 Cohesion: 0.15
 Nodes (13): clsx, lucide-react, dependencies, clsx, lucide-react, react, react-dom, tailwind-merge (+5 more)
 
-### Community 26 - "PlayerController"
-Cohesion: 0.17
-Nodes (13): WeaponType, COLORS, buildBotStyle(), buildPlayerStyle(), randomPersona(), BotSpawnDeps, SPAWN_POINTS, spawnBot() (+5 more)
+### Community 32 - "types.ts"
+Cohesion: 0.32
+Nodes (6): App(), BootErrorProps, GameMode, HudSnapshot, MinimapDynamic, isInteractiveKeyboardTarget()
 
-### Community 27 - "Nameplate"
-Cohesion: 0.14
-Nodes (11): MainMenuProps, HULL_IDS, HULLS, TURRET_IDS, TURRETS, WEAPON_TUNING, HullDef, TurretDef (+3 more)
+### Community 33 - "wavePreview.ts"
+Cohesion: 0.24
+Nodes (11): BUFF_ICON, IntermissionPayload, WaveIntermission(), WaveIntermissionProps, WEAPON_ICON, AIRole, RoleTally, WAVE_BUFF_OPTIONS (+3 more)
 
-### Community 28 - "FlamethrowerWeapon"
-Cohesion: 0.23
-Nodes (6): fillMuzzleAndAim(), WeaponAmmoState, WeaponDeps, WeaponOwner, WeaponOwnerParams, WeaponOwnerVisual
-
-### Community 29 - "ErrorBoundary"
-Cohesion: 0.25
-Nodes (4): ErrorBoundary, Props, State, root
-
-### Community 31 - "scripts"
-Cohesion: 0.29
-Nodes (7): scripts, build, dev, lint, preview, test, typecheck
-
-### Community 32 - "package.json"
-Cohesion: 0.40
-Nodes (4): name, private, type, version
-
-### Community 33 - "ArmorStrike"
-Cohesion: 0.40
-Nodes (4): Architecture (short), ArmorStrike, Controls, Quick start
-
-### Community 34 - "GameOverScreen.tsx"
-Cohesion: 0.14
-Nodes (3): AudioFX, CombatDeps, CombatSystem
-
-### Community 37 - "ScorchSystem"
-Cohesion: 0.50
-Nodes (3): plugin, $schema, .opencode/plugins/graphify.js
-
-### Community 39 - "GameModeController"
-Cohesion: 0.25
-Nodes (13): applyGameOverInputState(), applyPlayerDeathState(), GameModeLike, shouldAutoPauseOnInterrupt(), bootstrapGame(), buildCoreSubsystems(), buildDerivedSystems(), buildEventBus() (+5 more)
-
-### Community 41 - "DamageSystem.test.ts"
-Cohesion: 0.11
-Nodes (14): GarageProps, HullCard(), HullCardProps, PauseMenuProps, TurretCard(), TurretCardProps, HullId, TurretId (+6 more)
-
-### Community 43 - "AGENTS.md"
-Cohesion: 0.50
-Nodes (3): Everyday commands, Graphify, Working style
-
-### Community 45 - "eslint-plugin-react-refresh"
+### Community 35 - "FlamethrowerWeapon.ts"
 Cohesion: 0.23
 Nodes (6): inFlameConeXZ(), tmpDir, tmpMuzzle, tmpMuzzleQuat, tmpTargetVec, resolveWeaponDamage()
 
-### Community 46 - "globals"
-Cohesion: 0.18
-Nodes (10): C1, C2+M2, C3, Cycle reports (summary), Cycles, Final verification, Inventory, M1–M12 (+2 more)
-
-### Community 53 - "tuning.ts"
-Cohesion: 0.15
-Nodes (13): BOOST, botAiForWave(), botsForWave(), PROJECTILE, SCORE, TANK, TankAimSystem, TankCombatTimersSystem (+5 more)
-
-### Community 56 - "RunState.test.ts"
-Cohesion: 0.28
-Nodes (3): TankAnimationSystem, GameLoop, GameLoopDeps
-
-### Community 57 - "waves.test.ts"
-Cohesion: 0.28
-Nodes (5): RailgunFireState, railgunShouldStartCharge(), RailgunState, tmpDir, tmpMuzzle
-
-### Community 58 - "physics.ts"
-Cohesion: 0.13
-Nodes (14): _aiBots, _aiCtx, _bd, buildSimulationStages(), _bv, _hitCtx, MinimapStage, NameplateSystemStage (+6 more)
-
-### Community 59 - "SKILL.md"
+### Community 36 - "minimapDraw.ts"
 Cohesion: 0.25
-Nodes (7): Final report — functional bugfix, Fixed (critical), Fixed (medium), Key files, Remaining, Summary, Verification
+Nodes (6): cacheByCanvas, CanvasCache, drawMinimap(), getCache(), paintStatics(), staticLayerKey()
 
-### Community 60 - "Caveman Help"
+### Community 38 - "Nameplate"
 Cohesion: 0.25
-Nodes (5): rearPoint(), BoostStage, TankFxSystemStage, TankFxSystem, tmpV
+Nodes (3): NameplateEntry, NameplateSystem, Nameplate
 
-### Community 61 - "SKILL.md"
+### Community 39 - "PhysicsSystem.ts"
+Cohesion: 0.25
+Nodes (8): _pa, _pb, resolveWalls(), _solid, solidColliders(), separateTankPair(), TankXZ, PhysicsBody
+
+### Community 40 - "railgunChargeFx.ts"
+Cohesion: 0.25
+Nodes (5): applyRailgunChargingFx(), applyRailgunCooldownChargeFx(), applyRailgunIdleChargeFx(), tmpDir, tmpMuzzle
+
+### Community 41 - "RailgunWeapon.ts"
+Cohesion: 0.22
+Nodes (7): RailgunFireState, railgunShouldStartCharge(), BEAM_SPARK_COLOR, RailgunState, tmpDir, tmpMuzzle, tmpSpark
+
+### Community 42 - "useFocusTrap"
 Cohesion: 0.29
-Nodes (6): Active cycle, Functional bugfix — ArmorStrike, Goal, Inventory, Rules, Status
+Nodes (5): GameOverScreen(), GameOverScreenProps, PauseMenu(), PauseMenuProps, useFocusTrap()
 
-### Community 63 - "SKILL.md"
+### Community 43 - "ErrorBoundary"
+Cohesion: 0.25
+Nodes (4): ErrorBoundary, Props, State, root
+
+### Community 44 - "GameLoop"
+Cohesion: 0.25
+Nodes (3): TankAnimationSystemStage, TankAnimationSystem, GameLoop
+
+### Community 46 - "scripts"
+Cohesion: 0.29
+Nodes (7): scripts, build, dev, lint, preview, test, typecheck
+
+### Community 51 - "package.json"
 Cohesion: 0.40
-Nodes (3): WeaponSystemStage, _wctx, WeaponSystem
+Nodes (4): name, private, type, version
 
-### Community 66 - "effects.ts"
-Cohesion: 0.10
-Nodes (5): GameOverScreen(), GameOverScreenProps, PauseMenu(), PlayerController, useFocusTrap()
+### Community 52 - "aiObstacle.ts"
+Cohesion: 0.70
+Nodes (4): AvoidState, computeObstacleAvoidance(), dirFree(), pointInCollider()
 
-### Community 68 - "PlayerFactory.ts"
-Cohesion: 0.20
-Nodes (5): BotEntry, disposeBots(), SimContext, Nameplate, WaveManager
+### Community 53 - "opencode.json"
+Cohesion: 0.50
+Nodes (3): plugin, $schema, .opencode/plugins/graphify.js
 
-### Community 83 - "2026-07-17"
-Cohesion: 0.20
-Nodes (9): Deferred, Done cycles, Done cycles, Plan status, Progress — Stepwise Refactor, Re-analysis, Session 2026-07-17 (session 1), Session 2026-07-17 (session 2 — goal loop) (+1 more)
+### Community 56 - "Working Style Guidelines"
+Cohesion: 0.67
+Nodes (3): Graphify Skill System, Project Knowledge Graph, Working Style Guidelines
 
-### Community 86 - "Step 1. ANALYST (2026-07-17)"
-Cohesion: 0.18
-Nodes (10): Completed prior cycles (session 1), CRITICAL, Findings — Stepwise Refactor (final state), LOW / melочь (out of critical/medium clear scope), MEDIUM — deferred (behavior risk; needs user OK), MEDIUM — resolved this session, Prioritized problem list — final, Re-analysis snapshot (2026-07-17 session 2) (+2 more)
-
-### Community 87 - "task_plan.md"
-Cohesion: 0.29
-Nodes (6): Deferred (not auto-fixed), Goal, Phases, Residual low (optional later), Status: **complete** (critical + medium structural cleared; P5 deferred with reason), Task Plan: Stepwise structural refactor
+### Community 69 - "ProjectileManager"
+Cohesion: 0.25
+Nodes (3): ProjectileManager, DeathTimerStage, SimContext
 
 ## Knowledge Gaps
-- **235 isolated node(s):** `$schema`, `.opencode/plugins/graphify.js`, `name`, `private`, `version` (+230 more)
+- **195 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+190 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Effects` connect `Effects` to `TankEntity`, `GameOverScreen.tsx`, `CameraRig.ts`, `PlayerFactory.ts`, `PlayerController`, `GameModeController`, `types.ts`, `FlamethrowerWeapon`, `GameSimulation.ts`, `eslint`, `ParticleEffects`, `physics.ts`, `Caveman Help`?**
-  _High betweenness centrality (0.051) - this node is a cross-community bridge._
-- **Why does `ParticleEffects` connect `ParticleEffects` to `FlashSystem`, `RingSystem`, `SmokeSystem`, `Effects`, `WeaponCatalog.ts`, `particles.ts`, `eslint`, `Caveman Help`, `clamp`?**
-  _High betweenness centrality (0.044) - this node is a cross-community bridge._
-- **Why does `AudioFX` connect `GameOverScreen.tsx` to `TankEntity`, `PlayerController`, `PlayerFactory.ts`, `GameModeController`, `types.ts`, `graphicsQuality.ts`, `GameSimulation.ts`, `physics.ts`, `FlamethrowerWeapon`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
-- **What connects `$schema`, `.opencode/plugins/graphify.js`, `name` to the rest of the system?**
-  _235 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `TankEntity` be split into smaller, more focused modules?**
-  _Cohesion score 0.08941176470588236 - nodes in this community are weakly interconnected._
+- **Why does `TypeScript` connect `ArmorStrike Project` to `PlayerFactory.ts`?**
+  _High betweenness centrality (0.079) - this node is a cross-community bridge._
+- **Why does `EffectsPort` connect `EffectsPort` to `simPorts.ts`, `CameraRig.ts`, `PlayerFactory.ts`, `Projectile.ts`, `ProjectileManager`, `stages.ts`, `railgunChargeFx.ts`, `GameEvent`, `WeaponDeps`, `GameBootstrap.ts`, `types.ts`?**
+  _High betweenness centrality (0.075) - this node is a cross-community bridge._
+- **Why does `devDependencies` connect `devDependencies` to `package.json`, `ArmorStrike Project`, `@eslint/js`, `globals`, `@types/react`, `@types/react-dom`?**
+  _High betweenness centrality (0.070) - this node is a cross-community bridge._
+- **What connects `name`, `private`, `version` to the rest of the system?**
+  _195 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `ArenaBuilder.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.09295967190704033 - nodes in this community are weakly interconnected._
-- **Should `stages.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.14705882352941177 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07404437316225608 - nodes in this community are weakly interconnected._
+- **Should `simPorts.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.05450372920252438 - nodes in this community are weakly interconnected._
+- **Should `CameraRig.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.06400409626216078 - nodes in this community are weakly interconnected._

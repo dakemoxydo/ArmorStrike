@@ -1,36 +1,38 @@
-## Working style
+# ArmorStrike — Project Rules
 
-- Prefer clear, complete sentences. Keep changes focused on the request.
-- For multi-step or ambiguous work, use **Plan Mode** before large edits.
-- After substantive code changes, run relevant **tests / builds** when they exist.
-- Prefer small, reviewable diffs over drive-by refactors.
+This project uses Obsidian for Game Design Documents (GDD) under the `Docs/` directory. 
+These rules override or extend the global `AGENTS.md`.
 
-## Graphify
+## 1. GDD & Obsidian Workflow (The Core Loop)
 
-This project has a knowledge graph at `graphify-out/` with god nodes, community structure, and cross-file relationships.
+**MUST** strictly follow this lifecycle for game mechanics, features, and ideas:
 
-When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+### Phase A: Brainstorming
+**WHEN** the user brainstorms new ideas, features, or mechanics:
+- Act as a Lead Game Designer. Discuss, balance, and iterate in the chat.
+- **Auto-Draft:** If an idea is taking shape, automatically document it in `Docs/GDD/Drafts/`. Do not wait for the user to ask.
 
-Rules:
+### Phase B: Implementation
+**WHEN** the user approves a mechanic for implementation:
+- Write the code (keep diffs small, follow existing architecture).
+- Read the relevant `Docs/GDD/Approved/` files first to ensure compliance with established rules.
 
-1. **Read the map first.** Before architectural questions, dependency analysis, or large refactors, consult `graphify-out/GRAPH_REPORT.md` when it exists.
-2. **Prefer graph queries over bulk file reads.** Use `graphify query`, `graphify path`, and `graphify explain` instead of mass `grep` / reading many source files for structure questions. These return a scoped subgraph, usually much smaller than `GRAPH_REPORT.md` or raw grep output.
-3. **Keep the graph fresh.** After significant architectural changes, offer to rebuild (`graphify .` or incremental `graphify update .` / `graphify . --update`). After ordinary code edits, run `graphify update .` (AST-only, no API cost).
-4. **Share the graph.** Prefer committing `graphify-out/` so teammates share the map. Keep local-only noise out of git (e.g. `graphify-out/cost.json`; optionally ignore `graphify-out/cache/`).
+### Phase C: Auto-Documentation (The Sync Hook)
+**WHEN** code for a new or modified mechanic is successfully written and verified:
+- **MUST Auto-Promote:** Move the relevant file from `Docs/GDD/Drafts/` to `Docs/GDD/Approved/` (or create a new one there).
+- **MUST Document Logic:** Update the `.md` file to reflect the *exact* implemented state. Include the underlying math, state machines, logic proofs, and explicit references to the created classes/scripts (e.g., "Handled by `TankController`"). Do not dump raw code; document the architecture.
 
-Additional notes:
+## 2. Graphify Integration (Overrides Global)
 
-- Dirty `graphify-out/` files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
-- If `graphify-out/wiki/index.md` exists, use it for broad navigation instead of raw source browsing.
-- Read `graphify-out/GRAPH_REPORT.md` for broad architecture review, or when query/path/explain do not surface enough context.
+Because this project relies heavily on semantic GDD files in Obsidian, the standard AST-only `graphify update` is insufficient after feature work.
 
-### Everyday commands
+**MUST** order of ops for the "Close" step after code AND documentation changes:
+1. Ensure all `Docs/GDD/Approved/` files are up to date.
+2. **ALWAYS** run the local semantic extraction to link the new Obsidian docs with the codebase:
+   `graphify extract . --backend ollama --model ornith:9b`
+3. Never ask for permission to run this extraction; it is mandatory for the Knowledge Graph.
 
-```bash
-graphify query "how does combat connect to weapons?"
-graphify path "Game" "TankEntity"
-graphify explain "CameraRig"
-graphify update .              # incremental AST refresh (no API)
-graphify extract . --code-only # full code re-index without LLM
-graphify hook install          # post-commit graph rebuild
-```
+## 3. Working Style Extensions
+
+- Never invent new game mechanics during routine refactoring.
+- If a system behavior contradicts `Docs/GDD/Approved/`, treat the documentation as the single source of truth and fix the code (or ask the user if the GDD should change).
