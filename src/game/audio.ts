@@ -1,7 +1,10 @@
 // ===== Процедурный звук на WebAudio =====
 import type { WeaponType } from '../core/catalog';
+import type { AudioPort } from './ports/AudioPort';
 
-export class AudioFX {
+export type { AudioPort } from './ports/AudioPort';
+
+export class AudioFX implements AudioPort {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private noiseBuf: AudioBuffer | null = null;
@@ -11,6 +14,10 @@ export class AudioFX {
 
   private flameSource: AudioBufferSourceNode | null = null;
   private flameGain: GainNode | null = null;
+  /** Active railgun charge oscillators (stopped hard on fire). */
+  private chargeOscs: OscillatorNode[] = [];
+  private chargeGains: GainNode[] = [];
+  private chargeTickTimers: number[] = [];
   muted = false;
 
   ensure() {
@@ -80,11 +87,85 @@ export class AudioFX {
     o.stop(t0 + dur + 0.1);
   }
 
-  chargeRailgun() {
+  /** Rising charge hum + accelerating ticks. Cancel with stopChargeRailgun(). */
+  chargeRailgun(duration = 1.1) {
     if (!this.ctx || !this.master) return;
+    this.stopChargeRailgun(false);
+    const t0 = this.ctx.currentTime;
+    const dur = Math.max(0.2, duration);
+
+    // Controllable layers so we can cut them on fire
+    this.spawnChargeOsc('sine', t0, dur, 140, 980, 0.28);
+    this.spawnChargeOsc('sawtooth', t0, dur, 68, 380, 0.16);
+    this.spawnChargeOsc('triangle', t0, dur * 0.95, 220, 1400, 0.1);
+
+    // Overcharge whine in final stretch
+    const whineStart = t0 + dur * 0.78;
+    this.spawnChargeOsc('sine', whineStart, dur * 0.28, 700, 1600, 0.22);
+    this.spawnChargeOsc('square', whineStart, dur * 0.22, 180, 90, 0.08);
+
+    // Accelerating capacitor ticks (scheduled; cleared if fire early)
+    const tickCount = 14;
+    for (let i = 0; i < tickCount; i++) {
+      const u = (i + 1) / (tickCount + 1);
+      // ease-in: more ticks near the end
+      const when = t0 + dur * (u * u);
+      const delayMs = Math.max(0, (when - this.ctx.currentTime) * 1000);
+      const id = window.setTimeout(() => {
+        if (!this.ctx || !this.master) return;
+        // Only play if still charging (nodes still tracked)
+        if (this.chargeOscs.length === 0) return;
+        const tt = this.ctx.currentTime;
+        this.osc('square', tt, 0.028, 880 + i * 40, 640, 0.07 + u * 0.06);
+      }, delayMs);
+      this.chargeTickTimers.push(id);
+    }
+  }
+
+  /** Hard-cut charge (on fire) or soft fade (dispose/interrupt). */
+  stopChargeRailgun(hard = true) {
+    for (const id of this.chargeTickTimers) window.clearTimeout(id);
+    this.chargeTickTimers = [];
+    if (!this.ctx) {
+      this.chargeOscs = [];
+      this.chargeGains = [];
+      return;
+    }
     const t = this.ctx.currentTime;
-    this.osc('sine', t, 1.1, 140, 920, 0.3);
-    this.osc('sawtooth', t, 1.1, 70, 360, 0.18);
+    const fade = hard ? 0.012 : 0.06;
+    for (let i = 0; i < this.chargeOscs.length; i++) {
+      const g = this.chargeGains[i];
+      const o = this.chargeOscs[i];
+      try {
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + fade);
+        o.stop(t + fade + 0.02);
+      } catch { /* already stopped */ }
+    }
+    this.chargeOscs = [];
+    this.chargeGains = [];
+  }
+
+  private spawnChargeOsc(
+    type: OscillatorType, t0: number, dur: number, f0: number, f1: number, peak: number,
+  ) {
+    if (!this.ctx || !this.master) return;
+    const o = this.ctx.createOscillator();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t0);
+    o.frequency.exponentialRampToValueAtTime(Math.max(f1, 20), t0 + dur);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t0 + 0.04);
+    // Hold then slight swell into end
+    g.gain.linearRampToValueAtTime(peak * 1.15, t0 + dur * 0.92);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur + 0.05);
+    o.connect(g).connect(this.master);
+    o.start(t0);
+    o.stop(t0 + dur + 0.12);
+    this.chargeOscs.push(o);
+    this.chargeGains.push(g);
   }
 
   startFlameLoop() {
@@ -122,10 +203,13 @@ export class AudioFX {
       this.osc('square', t, 0.14, 220, 35, 0.45);
       this.noise(t, 0.18, 'lowpass', 1400, 120, 0.5);
     } else {
-      // railgun explosion beam sound
-      this.osc('square', t, 0.25, 260, 30, 0.6);
-      this.osc('sine', t, 0.35, 140, 25, 0.8);
-      this.noise(t, 0.22, 'highpass', 1800, 300, 0.6);
+      // Railgun snap: cut charge, then compact layered crack (fewer nodes = less main-thread spike)
+      this.stopChargeRailgun(true);
+      this.osc('sine', t, 0.16, 78, 26, 0.85);
+      this.osc('square', t, 0.18, 240, 32, 0.5);
+      this.noise(t, 0.06, 'highpass', 3800, 800, 0.65);
+      this.osc('sine', t, 0.1, 2000, 320, 0.28);
+      this.osc('sine', t + 0.03, 0.22, 900, 500, 0.12);
     }
   }
 

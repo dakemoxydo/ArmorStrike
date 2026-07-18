@@ -55,6 +55,9 @@ export function rearPoint(out: THREE.Vector3, x: number, z: number, yaw: number,
   return out.set(x + Math.sin(back) * offset, height, z + Math.cos(back) * offset);
 }
 
+/** Reused result — read x/z/hit immediately; do not store across calls. */
+const _circleOut = { x: 0, z: 0, hit: false };
+
 /** Выталкивание круга из набора AABB. Возвращает скорректированную позицию. */
 export function resolveCircle(
   x: number, z: number, r: number,
@@ -88,7 +91,10 @@ export function resolveCircle(
       }
     }
   }
-  return { x, z, hit };
+  _circleOut.x = x;
+  _circleOut.z = z;
+  _circleOut.hit = hit;
+  return _circleOut;
 }
 
 export function pointInCollider(x: number, z: number, c: Collider, pad = 0): boolean {

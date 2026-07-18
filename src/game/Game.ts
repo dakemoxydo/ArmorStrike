@@ -5,7 +5,7 @@ import { bootstrapGame, type GameContext } from './GameBootstrap';
 import { QualityController } from './QualityController';
 import { GameModeController } from './GameModeController';
 import { GarageBinding } from './GarageBinding';
-import type { GameEvent, GameMode, HudSnapshot, MinimapDynamic, MinimapStatic } from './types';
+import type { GameEvent, GameMode, HudSnapshot, MinimapDynamic, MinimapStatic, WaveBuffId } from './types';
 import type { QualityLevel } from './graphicsQuality';
 import type { GameSimulation } from './engine/GameSimulation';
 import type { GameApi } from './GameApi';
@@ -65,6 +65,7 @@ export class Game implements GameApi {
   setMode(mode: GameMode) { this.modes.setMode(mode); }
   startRound() { this.modes.startRound(); }
   togglePause() { this.modes.togglePause(); }
+  chooseWaveBuff(id: WaveBuffId) { this.modes.chooseWaveBuff(id); }
 
   toggleMute(): boolean {
     this.sim.audio.setMuted(!this.sim.audio.muted);

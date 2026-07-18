@@ -16,7 +16,11 @@ export function glowTexture(): THREE.CanvasTexture {
   return t;
 }
 
+/** Shared smoke map — combat + arena smoke reuse one GPU texture. */
+let _smokeTex: THREE.CanvasTexture | null = null;
+
 export function smokeTexture(): THREE.CanvasTexture {
+  if (_smokeTex) return _smokeTex;
   const S = 128;
   const { c, ctx } = makeCanvas(S);
   const g = ctx.createRadialGradient(S / 2, S / 2, 8, S / 2, S / 2, S / 2);
@@ -25,10 +29,15 @@ export function smokeTexture(): THREE.CanvasTexture {
   g.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, S, S);
-  return toTexture(c, 1);
+  _smokeTex = toTexture(c, 1);
+  return _smokeTex;
 }
 
+/** Shared scorch map — one GPU texture for all ground marks. */
+let _scorchTex: THREE.CanvasTexture | null = null;
+
 export function scorchTexture(): THREE.CanvasTexture {
+  if (_scorchTex) return _scorchTex;
   const S = 128;
   const { c, ctx } = makeCanvas(S);
   const g = ctx.createRadialGradient(S / 2, S / 2, 4, S / 2, S / 2, S / 2);
@@ -37,7 +46,8 @@ export function scorchTexture(): THREE.CanvasTexture {
   g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, S, S);
-  return toTexture(c, 1);
+  _scorchTex = toTexture(c, 1);
+  return _scorchTex;
 }
 
 export function hexTexture(): THREE.CanvasTexture {

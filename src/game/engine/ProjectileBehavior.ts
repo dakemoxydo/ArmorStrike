@@ -46,10 +46,12 @@ const cannon: ProjectileBehavior = {
     ctx.effects.explosion(pos, 0xffb020, 0.8);
   },
   trailEffect(_, pos, ctx) {
-    ctx.effects.trailPuff(pos, new THREE.Color(0xffb020));
+    ctx.effects.trailPuff(pos, CANNON_TRAIL_COLOR);
   },
   trailInterval() { return 0.04; },
 };
+
+const CANNON_TRAIL_COLOR = new THREE.Color(0xffb020);
 
 export const BEHAVIORS: Partial<Record<WeaponType, ProjectileBehavior>> = {
   cannon,

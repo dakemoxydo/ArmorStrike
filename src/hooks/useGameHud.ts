@@ -4,12 +4,13 @@ import type { GameEvent, HudSnapshot, MinimapDynamic } from '../game/types';
 import { drawMinimap } from '../components/hud/minimapDraw';
 import type { FeedEntry } from '../components/hud/HudFeed';
 import { WEAPONS } from '../core/WeaponCatalog';
-import { isLowHealth } from '../ui/hudPresentation';
+import { ammoForcesHudRender, isLowHealth } from '../ui/hudPresentation';
 
 const _defaultWeapon = WEAPONS.railgun;
 const SNAP_INIT: HudSnapshot = {
   mode: 'menu', paused: false, health: 100, maxHealth: 100, ammo: 0, magazine: 0,
   reloading: false, reloadProgress: 0, boost: 1, score: 0, kills: 0, wave: 0, botsAlive: 0,
+  intermission: false,
   alive: false, timeSec: 0, muted: false, hullId: 'hunter', turretId: 'railgun',
   weaponName: _defaultWeapon.name, weaponLabel: _defaultWeapon.label,
   weaponColor: _defaultWeapon.color, weaponAccentClass: _defaultWeapon.accentClass,
@@ -34,6 +35,8 @@ export function useGameHud(game: GameApi | null, active: boolean) {
   const crossRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLCanvasElement>(null);
   const liveRef = useRef<HTMLDivElement>(null);
+  /** Flame energy bar — continuous ammo without React force thrash. */
+  const flameFillRef = useRef<HTMLDivElement>(null);
   const mmBuf = useRef<MinimapDynamic[]>([]);
   const feedId = useRef(0);
   const lastLiveKey = useRef('');
@@ -101,6 +104,10 @@ export function useGameHud(game: GameApi | null, active: boolean) {
             ? `conic-gradient(var(--warn, #ffd24a) ${p}deg, rgba(255,255,255,0.07) ${p}deg)`
             : `conic-gradient(var(--accent, #2ee6c0) 360deg, rgba(0,0,0,0) 0deg)`;
       }
+      if (s.turretId === 'flamethrower' && flameFillRef.current) {
+        const pct = Math.max(0, Math.min(100, s.ammo));
+        flameFillRef.current.style.width = `${pct}%`;
+      }
       if (game) drawMinimap(game, mapRef.current, mmBuf.current);
 
       // Threshold live region (M15) — announce only on discrete state crosses
@@ -127,15 +134,18 @@ export function useGameHud(game: GameApi | null, active: boolean) {
       }
 
       if (
-        c.ammo !== s.ammo || c.reloading !== s.reloading || c.isCharging !== s.isCharging ||
-        c.score !== s.score || c.wave !== s.wave || c.botsAlive !== s.botsAlive || c.alive !== s.alive ||
+        ammoForcesHudRender(c.turretId, s.turretId, c.ammo, s.ammo) ||
+        c.reloading !== s.reloading || c.isCharging !== s.isCharging ||
+        c.score !== s.score || c.kills !== s.kills ||
+        c.wave !== s.wave || c.botsAlive !== s.botsAlive || c.alive !== s.alive ||
         c.paused !== s.paused || c.muted !== s.muted || c.mode !== s.mode ||
-        c.showScore !== s.showScore ||
+        c.showScore !== s.showScore || c.intermission !== s.intermission ||
+        c.turretId !== s.turretId || c.magazine !== s.magazine || c.weaponName !== s.weaponName ||
         Math.floor(s.timeSec) !== Math.floor(c.timeSec)
       ) {
         force();
       }
-      snap.current = { ...s };
+      Object.assign(c, s);
     };
     game.setHudCallback(onHud);
     return () => game.setHudCallback(null);
@@ -145,6 +155,8 @@ export function useGameHud(game: GameApi | null, active: boolean) {
     snap,
     feed, banner, vignette, dmgArc, hitmark, showHint, frag,
     setFeed, setBanner, setVignette, setDmgArc, setHitmark, setShowHint, setFrag,
-    healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef, mmBuf, feedId,
+    healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
+    flameFillRef,
+    mmBuf, feedId,
   };
 }

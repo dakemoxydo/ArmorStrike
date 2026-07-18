@@ -4,13 +4,17 @@
 
 export type GameModeLike = 'menu' | 'garage' | 'playing' | 'over';
 
-/** Auto-pause on lock-lost / tab-hide only while fighting — never during death cam. */
+/**
+ * Auto-pause on lock-lost / tab-hide only while fighting —
+ * never during death cam or between-wave intermission (lock is released on purpose).
+ */
 export function shouldAutoPauseOnInterrupt(
   mode: GameModeLike,
   paused: boolean,
   deathT: number,
+  intermission = false,
 ): boolean {
-  return mode === 'playing' && !paused && deathT < 0;
+  return mode === 'playing' && !paused && deathT < 0 && !intermission;
 }
 
 /**

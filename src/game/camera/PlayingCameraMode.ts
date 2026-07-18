@@ -2,12 +2,12 @@
 import type { CameraMode } from './CameraMode';
 import type { CameraRig } from '../CameraRig';
 import type { CameraUpdateParams } from '../CameraRig';
-import type { TankEntity } from '../Tank';
+import type { CameraFollowable } from '../tank/simPorts';
 import { dampTo } from '../engine/physics';
 
 export class PlayingCameraMode implements CameraMode {
   update(dt: number, p: CameraUpdateParams, rig: CameraRig): void {
-    const pl = p.player as TankEntity;
+    const pl = p.player as CameraFollowable;
     const yaw = p.look.yaw;
     const pitch = p.look.pitch;
     const dist = 9.6;
@@ -39,9 +39,14 @@ export class PlayingCameraMode implements CameraMode {
     rig.camLook.y = dampTo(rig.camLook.y, lookY, lam, dt);
     rig.camLook.z = dampTo(rig.camLook.z, lookZ, lam, dt);
 
-    // Плавное расширение FOV при скорости/бусте
+    // Плавное расширение FOV при скорости/бусте + weapon FOV bias (rail charge/fire)
     const speed01 = Math.min(1, Math.abs(pl.speed) / pl.params.speed);
-    const targetFov = 58 + speed01 * 5 + (pl.boostActive && pl.speed > pl.params.speed * 0.9 ? 4 : 0);
-    rig.applyFov(targetFov, dt);
+    const fovBias = p.effects.getFovBias();
+    const targetFov = 58 + speed01 * 5
+      + (pl.boostActive && pl.speed > pl.params.speed * 0.9 ? 4 : 0)
+      + fovBias;
+    // Snappier FOV when punch/tighten active
+    const fovRate = Math.abs(fovBias) > 0.05 ? 14 : 5;
+    rig.applyFov(targetFov, dt, fovRate);
   }
 }

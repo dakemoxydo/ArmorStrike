@@ -1,5 +1,19 @@
 /** Pure presentation helpers for HUD (no game logic). */
 
+/**
+ * Discrete ammo (rail/cannon) forces React; flamethrower energy is continuous (ref paint).
+ */
+export function ammoForcesHudRender(
+  prevTurretId: string,
+  nextTurretId: string,
+  prevAmmo: number,
+  nextAmmo: number,
+): boolean {
+  if (prevAmmo === nextAmmo) return false;
+  if (prevTurretId === 'flamethrower' && nextTurretId === 'flamethrower') return false;
+  return true;
+}
+
 export function scoreboardHpClass(hpFrac: number): 'hp-high' | 'hp-mid' | 'hp-low' {
   const frac = Math.max(0, Math.min(1, hpFrac));
   if (frac > 0.55) return 'hp-high';

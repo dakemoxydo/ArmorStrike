@@ -2,10 +2,10 @@ import * as THREE from 'three';
 import type { TankEntity } from '../Tank';
 import { Nameplate } from '../nameplate';
 import type { Arena } from '../Arena';
-import type { Effects } from '../effects';
+import type { EffectsPort } from '../ports/EffectsPort';
 import type { ProjectileManager } from './Projectile';
 import type { PlayerController } from '../PlayerController';
-import type { AudioFX } from '../audio';
+import type { AudioPort } from '../ports/AudioPort';
 import type { RunState } from '../RunState';
 import type { WaveManager } from '../WaveManager';
 import type { CombatSystem } from '../CombatSystem';
@@ -31,47 +31,67 @@ export class GameSimulation {
 
   private systems: SimSystem[] = buildSimulationStages();
 
+  /** Long-lived sim context — fields rewritten each step. */
+  private readonly simCtx: SimContext = {
+    dt: 0,
+    emit: () => {},
+    player: null!,
+    tanks: [],
+    nameplates: this.nameplates,
+    arena: null!,
+    effects: null!,
+    projectiles: null!,
+    input: null!,
+    audio: null!,
+    run: null!,
+    combat: null!,
+    waves: null!,
+    hudModel: null!,
+    deathT: this.deathCell,
+    prevReloading: this.prevReloadingCell,
+    requestGameOver: () => {},
+  };
+
   /** Колбэк гибели игрока (устанавливается Game после создания sim). */
   onPlayerDeath?: () => void;
 
   constructor(
     readonly arena: Arena,
-    readonly effects: Effects,
+    readonly effects: EffectsPort,
     readonly projectiles: ProjectileManager,
     readonly input: PlayerController,
-    readonly audio: AudioFX,
+    readonly audio: AudioPort,
     readonly run: RunState,
     readonly combat: CombatSystem,
     readonly waves: WaveManager,
     readonly hudModel: HudModel,
-  ) {}
+  ) {
+    const c = this.simCtx;
+    c.arena = arena;
+    c.effects = effects;
+    c.projectiles = projectiles;
+    c.input = input;
+    c.audio = audio;
+    c.run = run;
+    c.combat = combat;
+    c.waves = waves;
+    c.hudModel = hudModel;
+    c.nameplates = this.nameplates;
+    c.deathT = this.deathCell;
+    c.prevReloading = this.prevReloadingCell;
+  }
 
   step(dt: number, emit: (e: GameEvent) => void) {
     const p = this.player;
     if (!p) return;
     this.run.matchTime += dt;
 
-    // Плоский контекст: стадии не зависят от типа GameSimulation.
-    // Скаляры — shared cells (mid-step sim.deathT = 0 видно DeathTimerStage в том же кадре).
-    const ctx: SimContext = {
-      dt,
-      emit,
-      player: p,
-      tanks: this.tanks,
-      nameplates: this.nameplates,
-      arena: this.arena,
-      effects: this.effects,
-      projectiles: this.projectiles,
-      input: this.input,
-      audio: this.audio,
-      run: this.run,
-      combat: this.combat,
-      waves: this.waves,
-      hudModel: this.hudModel,
-      deathT: this.deathCell,
-      prevReloading: this.prevReloadingCell,
-      requestGameOver: () => this.requestGameOver(emit),
-    };
+    const ctx = this.simCtx;
+    ctx.dt = dt;
+    ctx.emit = emit;
+    ctx.player = p;
+    ctx.tanks = this.tanks;
+    ctx.requestGameOver = () => this.requestGameOver(emit);
     for (const s of this.systems) s.update(ctx);
   }
 
@@ -84,11 +104,6 @@ export class GameSimulation {
     this.run.paused = st.paused;
     this.input.enabled = st.inputEnabled;
     this.input.releaseLock();
-    // TEMP DEBUG [BUGFIX-C1] / [BUGFIX-M4]
-    console.debug('[BUGFIX-C1][BUGFIX-M4] requestGameOver', {
-      score: this.run.score, kills: this.run.kills, wave: this.waves.wave,
-      inputEnabled: this.input.enabled, paused: this.run.paused,
-    });
     emit({ type: 'modeChanged', mode: 'over' });
     emit({ type: 'gameOver', score: this.run.score, kills: this.run.kills, wave: this.waves.wave });
   }

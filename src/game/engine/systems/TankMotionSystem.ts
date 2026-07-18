@@ -1,18 +1,20 @@
 import * as THREE from 'three';
-import type { TankEntity } from '../../Tank';
+import type { MotionBody } from '../../tank/simPorts';
 import { BOOST } from '../../constants';
 import { clamp } from '../physics';
 import { KNOCKBACK_DECAY, SPEED_DAMP } from '../../tuning';
 
 export const TankMotionSystem = {
-  updateOne(t: TankEntity, dt: number) {
+  updateOne(t: MotionBody, dt: number) {
     const p = t.params;
 
     const wantBoost = t.boosting && t.boostEnergy > BOOST.minActivate && t.throttle > 0.15;
     t.boostActive = wantBoost;
 
+    const drain = BOOST.drainPerSec * (t.boostDrainMul || 1);
+    const recharge = BOOST.rechargePerSec * (t.boostRechargeMul || 1);
     t.boostEnergy = clamp(
-      t.boostEnergy + (wantBoost ? -BOOST.drainPerSec : BOOST.rechargePerSec) * dt,
+      t.boostEnergy + (wantBoost ? -drain : recharge) * dt,
       0, 1,
     );
 

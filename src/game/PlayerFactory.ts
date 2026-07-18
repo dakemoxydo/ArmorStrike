@@ -8,15 +8,15 @@ import { RailgunWeapon } from './weapons/RailgunWeapon';
 import { FlamethrowerWeapon } from './weapons/FlamethrowerWeapon';
 import { CannonWeapon } from './weapons/CannonWeapon';
 import type { Weapon, WeaponDeps, WeaponOwner, DamageSystem } from './weapons/types';
-import type { Effects } from './effects';
-import type { AudioFX } from './audio';
+import type { EffectsPort } from './ports/EffectsPort';
+import type { AudioPort } from './ports/AudioPort';
 import type { ProjectileManager } from './engine/Projectile';
 import { buildPlayerStyle } from '../core/TankCatalog';
 
 export interface WeaponFactoryDeps {
   scene: THREE.Scene;
-  effects: Effects;
-  audio: AudioFX;
+  effects: EffectsPort;
+  audio: AudioPort;
   damageSystem: DamageSystem;
   projectiles: ProjectileManager;
   onShotFired: () => void;

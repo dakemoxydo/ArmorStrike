@@ -4,10 +4,11 @@ import type { GameSimulation } from './engine/GameSimulation';
 import type { CameraRig } from './CameraRig';
 import type { RenderWorld } from './RenderWorld';
 import type { PreviewController } from './PreviewController';
-import type { GameMode, GameEvent } from './types';
+import type { GameMode, GameEvent, WaveBuffId } from './types';
 import type { WeaponFactoryDeps } from './PlayerFactory';
 import { buildPlayerTank, createWeapon } from './PlayerFactory';
 import { TURRETS } from '../core/catalog';
+import { applyWaveBuff } from './waveBuffs';
 
 export interface GameModeControllerDeps {
   sim: GameSimulation;
@@ -88,7 +89,7 @@ export class GameModeController {
 
   togglePause() {
     const { sim, emit } = this.d;
-    if (sim.run.mode !== 'playing' || sim.deathT >= 0) return;
+    if (sim.run.mode !== 'playing' || sim.deathT >= 0 || sim.run.intermission) return;
     sim.run.paused = !sim.run.paused;
     if (sim.run.paused) {
       // M3: release lock so pause UI is clickable; onLockLost is no-op when already paused.
@@ -96,8 +97,24 @@ export class GameModeController {
     } else {
       sim.input.requestLock();
     }
-    // TEMP DEBUG [BUGFIX-M3]
-    console.debug('[BUGFIX-M3] togglePause', { paused: sim.run.paused });
     emit({ type: 'pauseChanged', value: sim.run.paused });
+  }
+
+  /**
+   * Between-wave pick: apply buff, spawn next wave, resume combat + pointer lock.
+   */
+  chooseWaveBuff(id: WaveBuffId) {
+    const { sim } = this.d;
+    if (!sim.run.intermission || sim.run.mode !== 'playing') return;
+    const player = sim.player;
+    if (!player?.alive) return;
+
+    applyWaveBuff(player, id);
+    sim.waves.confirmChoice(sim.tanks, sim.nameplates);
+
+    sim.run.paused = false;
+    sim.input.enabled = true;
+    sim.input.requestLock();
+    sim.audio.click();
   }
 }

@@ -6,6 +6,7 @@ import { WEAPON_TUNING } from '../../core/catalog';
 import type { Weapon, WeaponContext, WeaponDeps, WeaponOwner } from './types';
 import { buildAmmoState } from './types';
 import { fillMuzzleAndAim } from './muzzle';
+import { ownerReloadMul } from './reloadMul';
 
 const tmpMuzzle = new THREE.Vector3();
 const tmpDir = new THREE.Vector3();
@@ -60,10 +61,14 @@ export class CannonWeapon implements Weapon {
     return this.ammo > 0 && !this.fullReloading;
   }
 
+  private effectiveReloadTime(): number {
+    return this.fullReloadTime / ownerReloadMul(this.owner);
+  }
+
   private startFullReload() {
     if (this.fullReloading || !this.owner.alive) return;
     this.fullReloading = true;
-    this.reloadTimer = this.fullReloadTime;
+    this.reloadTimer = this.effectiveReloadTime();
   }
 
   updateReload(dt: number) {
@@ -88,7 +93,8 @@ export class CannonWeapon implements Weapon {
 
   getAmmoState() {
     const reloading = this.fullReloading;
-    const reloadProgress = reloading ? 1 - this.reloadTimer / this.fullReloadTime : 0;
+    const dur = this.effectiveReloadTime();
+    const reloadProgress = reloading && dur > 0 ? 1 - this.reloadTimer / dur : 0;
     return buildAmmoState({
       ammo: reloading ? 0 : this.ammo,
       magazine: this.magazine,

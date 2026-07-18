@@ -68,9 +68,12 @@ export class FlamethrowerWeapon implements Weapon {
         this.deps.audio.stopFlameLoop();
       }
     } else {
+      const mul = this.owner.reloadSpeedMul && this.owner.reloadSpeedMul > 0
+        ? this.owner.reloadSpeedMul
+        : 1;
       this.energy = Math.min(
         WEAPON_TUNING.flamethrower.energyMax,
-        this.energy + WEAPON_TUNING.flamethrower.rechargeRate * dt,
+        this.energy + WEAPON_TUNING.flamethrower.rechargeRate * mul * dt,
       );
     }
   }
@@ -96,11 +99,6 @@ export class FlamethrowerWeapon implements Weapon {
       this.owner.params.damage,
       WEAPON_TUNING.flamethrower.damagePerTick,
     );
-    // TEMP DEBUG [BUGFIX-M6]
-    console.debug('[BUGFIX-M6] flamethrower tick dmg', {
-      paramsDamage: this.owner.params.damage, dmg,
-      tuning: WEAPON_TUNING.flamethrower.damagePerTick,
-    });
     const dirX = tmpDir.x;
     const dirZ = tmpDir.z;
 
@@ -122,8 +120,6 @@ export class FlamethrowerWeapon implements Weapon {
         (p) => this.deps.effects.spawnSmoke(p, 1, 1.0, false),
         t.position,
       );
-      // TEMP DEBUG [BUGFIX-M7]
-      console.debug('[BUGFIX-M7] flame cone hit', { dist, dmg, targetId: t.id });
     }
   }
 

@@ -15,12 +15,12 @@ export const DUST_SPREAD = 1.2;
 export const SPEED_DAMP = { normal: 4.5, boost: 6 };
 /** Затухание отбрасывания (knockback) за секунду. */
 export const KNOCKBACK_DECAY = 5.5;
-/** Регенерация здоровья в секунду при отсутствии урона. */
-export const HEAL_PER_SEC = 7;
+/** Регенерация здоровья в секунду при отсутствии урона (was 7 → half). */
+export const HEAL_PER_SEC = 3.5;
 /** Порог здоровья для появления дыма повреждений (доля от max). */
 export const SMOKE_HEALTH_FRAC = 0.32;
-/** Время до начала регенерации после получения урона (сек). */
-export const HEAL_DELAY = 5;
+/** Время до начала регенерации после получения урона (сек; was 5). */
+export const HEAL_DELAY = 10;
 
 /**
  * Базовый rest Z ствола для recoil-анимации и сброса джиттера рельсы.

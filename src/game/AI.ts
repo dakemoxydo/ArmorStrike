@@ -1,11 +1,22 @@
 // ===== ИИ противников: патруль, обнаружение, преследование, огонь =====
 import * as THREE from 'three';
-import { clamp, losClear, pointInCollider, segmentHitsCircle, wrapAngle } from './engine/physics';
+import { clamp, losClear, wrapAngle } from './engine/physics';
 import type { Collider } from './engine/physics';
-import { PROJECTILE } from './constants';
 import type { WeaponType } from '../core/catalog';
+import { findCoverPoint } from './aiCover';
+import {
+  aimErrorMulForRole,
+  coverHpFracForRole,
+  type AIRole,
+} from './aiRoles';
+import { computeObstacleAvoidance } from './aiObstacle';
+import { updateTurretAndFire } from './aiAimFire';
+import { preferredRange, steeringFromAngle } from './aiTuning';
+
+export { preferredRange, aimTolerance, steeringFromAngle } from './aiTuning';
 
 export type { WeaponType };
+export type { AIRole };
 
 /** Цель ИИ (игрок): позиция, жив, скорость для lead. */
 export interface AITarget {
@@ -27,6 +38,8 @@ export interface AIBody {
   speed: number;
   alive: boolean;
   radius: number;
+  health: number;
+  maxHealth: number;
   params: { weaponType?: WeaponType };
 }
 
@@ -55,22 +68,6 @@ const DEFAULT_PERSONA: AIPersona = { aggro: 0.5, react: 0.25, lead: 0.9 };
 
 type AIState = 'patrol' | 'engage';
 
-export function preferredRange(weapon: WeaponType, aggro: number): number {
-  if (weapon === 'flamethrower') return 7;
-  if (weapon === 'railgun') return 34 + aggro * 10;
-  return 20 + aggro * 8;
-}
-
-export function aimTolerance(weapon: WeaponType): number {
-  if (weapon === 'flamethrower') return 0.3;
-  if (weapon === 'railgun') return 0.1;
-  return 0.14;
-}
-
-export function steeringFromAngle(diff: number): number {
-  return clamp(diff * 2.4, -1, 1);
-}
-
 export class AIController {
   wantsFire = false;
   private state: AIState = 'patrol';
@@ -78,8 +75,8 @@ export class AIController {
   private idleT = 0;
   private loseT = 0;
   private lastSeen = new THREE.Vector2(0, 0);
-  private avoidT = 0;
-  private avoidDir = 1;
+  /** Shared with aiObstacle.computeObstacleAvoidance (mutable bag). */
+  private readonly avoid = { avoidT: 0, avoidDir: 1 };
   private stuckT = 0;
   private strafeDir = 1;
   private strafeT = 0;
@@ -89,7 +86,13 @@ export class AIController {
   /** M11: hold aim noise so turret can settle within aimTol (was re-rolled every frame). */
   private aimNoise = 0;
   private aimNoiseT = 0;
+  /** Low-HP cover seek: re-pick point on timer. */
+  private coverT = 0;
+  private coverX = 0;
+  private coverZ = 0;
+  private hasCover = false;
   private persona: AIPersona;
+  private role: AIRole;
 
   constructor(
     private tank: AIBody,
@@ -97,13 +100,20 @@ export class AIController {
     private fireRange: number,
     private aimError: number,
     persona?: AIPersona,
+    role: AIRole = 'standard',
   ) {
     this.persona = persona ?? DEFAULT_PERSONA;
+    this.role = role;
+    this.aimError *= aimErrorMulForRole(role);
     this.pickWaypoint(44);
   }
 
   private prefRange(): number {
-    return preferredRange(this.tank.params.weaponType ?? 'cannon', this.persona.aggro);
+    const base = preferredRange(this.tank.params.weaponType ?? 'cannon', this.persona.aggro);
+    if (this.role === 'sniper') return base + 10;
+    if (this.role === 'assault') return Math.min(base, 8);
+    if (this.role === 'elite') return base + 3;
+    return base;
   }
 
   private pickWaypoint(bounds: number, huntTarget?: { x: number; z: number }) {
@@ -155,54 +165,84 @@ export class AIController {
   private computeTargetPoint(
     state: AIState, dist: number, dx: number, dz: number,
     player: AITarget, pref: number, dt: number, t: AIBody,
+    colliders: Collider[],
   ) {
     let tx = this.waypoint.x;
     let tz = this.waypoint.y;
     let throttleBase = 0.85;
 
     if (state === 'engage' && player.alive) {
+      // Low HP → break contact and hide behind cover if any exists nearby.
+      // Elite/sniper seek cover earlier (role threshold).
+      const hpFrac = t.maxHealth > 0 ? t.health / t.maxHealth : 1;
+      const coverFrac = coverHpFracForRole(this.role);
+      if (hpFrac < coverFrac) {
+        this.coverT -= dt;
+        if (!this.hasCover || this.coverT <= 0) {
+          const pt = findCoverPoint(
+            t.position.x, t.position.z,
+            player.position.x, player.position.z,
+            colliders,
+          );
+          if (pt) {
+            this.coverX = pt.x;
+            this.coverZ = pt.z;
+            this.hasCover = true;
+            this.coverT = 1.4 + Math.random() * 0.8;
+          } else {
+            this.hasCover = false;
+            this.coverT = 0.8;
+          }
+        }
+        if (this.hasCover) {
+          return { tx: this.coverX, tz: this.coverZ, throttleBase: 1 };
+        }
+      } else {
+        this.hasCover = false;
+      }
+
+      // Assault: hard rush the player (close range pressure).
+      if (this.role === 'assault') {
+        return {
+          tx: player.position.x,
+          tz: player.position.z,
+          throttleBase: 1,
+        };
+      }
+
       this.strafeT -= dt;
       if (this.strafeT <= 0) {
         this.strafeDir = Math.random() > 0.5 ? 1 : -1;
-        this.strafeT = 2 + Math.random() * 2;
+        // Sniper holds line longer; less jittery orbit.
+        this.strafeT = this.role === 'sniper'
+          ? 3.2 + Math.random() * 2
+          : 2 + Math.random() * 2;
       }
       const nx = dx / (dist || 1);
       const nz = dz / (dist || 1);
       const perpX = -nz * this.strafeDir;
       const perpZ = nx * this.strafeDir;
-      if (dist > pref + 8) { tx = player.position.x + perpX * 6; tz = player.position.z + perpZ * 6; throttleBase = 1; }
-      else if (dist < pref - 5) { tx = t.position.x - nx * 10; tz = t.position.z - nz * 10; throttleBase = 0.7; }
-      else { tx = t.position.x + perpX * 10; tz = t.position.z + perpZ * 10; throttleBase = 0.6; }
+      const strafeW = this.role === 'sniper' ? 4 : this.role === 'elite' ? 8 : 10;
+      const approachBand = this.role === 'sniper' ? 12 : 8;
+      const retreatBand = this.role === 'sniper' ? 4 : 5;
+
+      if (dist > pref + approachBand) {
+        tx = player.position.x + perpX * (this.role === 'sniper' ? 3 : 6);
+        tz = player.position.z + perpZ * (this.role === 'sniper' ? 3 : 6);
+        throttleBase = this.role === 'sniper' ? 0.75 : 1;
+      } else if (dist < pref - retreatBand) {
+        tx = t.position.x - nx * (this.role === 'sniper' ? 14 : 10);
+        tz = t.position.z - nz * (this.role === 'sniper' ? 14 : 10);
+        throttleBase = this.role === 'sniper' ? 0.85 : 0.7;
+      } else {
+        // Sniper: minimal lateral drift at preferred range (hold angle).
+        tx = t.position.x + perpX * strafeW;
+        tz = t.position.z + perpZ * strafeW;
+        throttleBase = this.role === 'sniper' ? 0.35 : 0.6;
+      }
     }
 
     return { tx, tz, throttleBase };
-  }
-
-  /** Шаг 6 (выполняется в update): избегание препятствий. */
-  private computeObstacleAvoidance(
-    dt: number, t: AIBody, colliders: Collider[],
-  ): { steerOverride: number | null; throttleOverride: number | null } {
-    const fx = Math.sin(t.yaw);
-    const fz = Math.cos(t.yaw);
-    const probeX = t.position.x + fx * 4.2;
-    const probeZ = t.position.z + fz * 4.2;
-    let blocked = false;
-    for (const c of colliders) {
-      if (!c.active || c.kind === 'ramp') continue; // M12: ramps not solid for hull/AI
-      if (pointInCollider(probeX, probeZ, c, 1.4)) { blocked = true; break; }
-    }
-    if (this.avoidT > 0) {
-      this.avoidT -= dt;
-      return { steerOverride: this.avoidDir, throttleOverride: 0.7 };
-    } else if (blocked) {
-      const la = t.yaw + Math.PI / 3;
-      const ra = t.yaw - Math.PI / 3;
-      const lFree = this.dirFree(t, la, colliders);
-      const rFree = this.dirFree(t, ra, colliders);
-      this.avoidDir = lFree && !rFree ? 1 : !lFree && rFree ? -1 : Math.random() > 0.5 ? 1 : -1;
-      this.avoidT = 0.6;
-    }
-    return { steerOverride: null, throttleOverride: null };
   }
 
   /** Шаг 8: антизастревание. */
@@ -216,7 +256,7 @@ export class AIController {
       if (this.stuckT > 1.1) {
         this.pickWaypoint(bounds, playerAlive ? playerPos : undefined);
         this.stuckT = 0;
-        this.avoidT = 0;
+        this.avoid.avoidT = 0;
       }
     } else {
       this.stuckT = Math.max(0, this.stuckT - dt * 2);
@@ -240,59 +280,17 @@ export class AIController {
     return false;
   }
 
-  /** Шаг 11: нитро. */
+  /** Шаг 11: нитро. Assault boosts aggressively; snipers almost never. */
   private computeBoost(
     diff: number, dist: number, pref: number,
     tx: number, tz: number, tPos: THREE.Vector3,
   ): boolean {
-    return this.avoidT <= 0 && Math.abs(diff) < 0.4 && this.persona.aggro > 0.5 &&
-      ((this.state === 'engage' && dist > pref + 14) ||
+    if (this.role === 'sniper') return false;
+    const aggroGate = this.role === 'assault' ? 0.3 : 0.5;
+    const engageDist = this.role === 'assault' ? pref + 6 : pref + 14;
+    return this.avoid.avoidT <= 0 && Math.abs(diff) < 0.4 && this.persona.aggro > aggroGate &&
+      ((this.state === 'engage' && dist > engageDist) ||
        (this.state === 'patrol' && Math.hypot(tx - tPos.x, tz - tPos.z) > 22));
-  }
-
-  /** Шаг 12: наведение башни и огонь. */
-  private updateTurretAndFire(
-    dt: number, canSee: boolean, dist: number,
-    player: AITarget, bots: AIBody[],
-  ) {
-    const t = this.tank;
-    if (this.state === 'engage' && player.alive) {
-      const w = t.params.weaponType;
-      const lead = w === 'cannon'
-        ? clamp(dist / PROJECTILE.speed, 0, 1.4) * this.persona.lead
-        : 0;
-      const ax = player.position.x + player.vel.x * lead;
-      const az = player.position.z + player.vel.z * lead;
-      // M11: re-roll aim noise on a short timer, not every frame (servo could never settle).
-      this.aimNoiseT -= dt;
-      if (this.aimNoiseT <= 0) {
-        this.aimNoise = (Math.random() - 0.5) * this.aimError * 2;
-        this.aimNoiseT = 0.35 + Math.random() * 0.25;
-        // TEMP DEBUG [BUGFIX-M11]
-        console.debug('[BUGFIX-M11] aim noise re-roll', {
-          aimNoise: this.aimNoise, holdSec: this.aimNoiseT,
-        });
-      }
-      t.aimYaw = Math.atan2(ax - t.position.x, az - t.position.z) + this.aimNoise;
-
-      const aimTol = aimTolerance(w ?? 'cannon');
-      if (canSee && this.reactT <= 0 && dist < this.fireRange && t.fireTimer <= 0) {
-        const turretAbs = t.yaw + t.turretYaw;
-        const aimed = Math.abs(wrapAngle(t.aimYaw - turretAbs)) < aimTol;
-        let friendlyInLine = false;
-        for (const b of bots) {
-          if (b === t || !b.alive) continue;
-          if (segmentHitsCircle(
-            t.position.x, t.position.z, player.position.x, player.position.z,
-            b.position.x, b.position.z, b.radius + 0.6,
-          )) { friendlyInLine = true; break; }
-        }
-        if (aimed && !friendlyInLine) this.wantsFire = true;
-      }
-    } else {
-      this.scanT += dt * 0.7;
-      t.aimYaw = t.yaw + Math.sin(this.scanT) * 0.9;
-    }
   }
 
   update(dt: number, ctx: AICtx) {
@@ -305,10 +303,10 @@ export class AIController {
     const { canSee, dist, dx, dz } = this.perceive(ctx);
     this.updateStateMachine(canSee, dt, ctx.player);
 
-    // Шаг 3-4: целевая точка + предпочтительная дистанция
+    // Шаг 3-4: целевая точка + предпочтительная дистанция (+ low-HP cover)
     const pref = this.prefRange();
     const { tx, tz, throttleBase } = this.computeTargetPoint(
-      this.state, dist, dx, dz, ctx.player, pref, dt, t,
+      this.state, dist, dx, dz, ctx.player, pref, dt, t, ctx.colliders,
     );
 
     // Шаг 5: рулевое управление
@@ -318,7 +316,9 @@ export class AIController {
     let throttle = Math.abs(diff) < 1.1 ? throttleBase : 0.18;
 
     // Шаг 6-7: избегание препятствий (переопределяет steer/throttle)
-    const avoid = this.computeObstacleAvoidance(dt, t, ctx.colliders);
+    const avoid = computeObstacleAvoidance(
+      this.avoid, dt, t, ctx.colliders,
+    );
     if (avoid.steerOverride !== null) steer = avoid.steerOverride;
     if (avoid.throttleOverride !== null) throttle = avoid.throttleOverride;
 
@@ -340,15 +340,20 @@ export class AIController {
     t.boosting = this.computeBoost(diff, dist, pref, tx, tz, t.position);
 
     // Шаг 12: башня + огонь
-    this.updateTurretAndFire(dt, canSee, dist, ctx.player, ctx.bots);
-  }
-
-  private dirFree(t: AIBody, a: number, colliders: Collider[]): boolean {
-    const px = t.position.x + Math.sin(a) * 5;
-    const pz = t.position.z + Math.cos(a) * 5;
-    for (const c of colliders) {
-      if (c.active && c.kind !== 'ramp' && pointInCollider(px, pz, c, 1.4)) return false;
-    }
-    return true;
+    const aimState = {
+      aimNoise: this.aimNoise,
+      aimNoiseT: this.aimNoiseT,
+      reactT: this.reactT,
+      scanT: this.scanT,
+      wantsFire: false,
+    };
+    updateTurretAndFire(
+      aimState, dt, this.state === 'engage', canSee, dist,
+      this.fireRange, this.aimError, this.persona, t, ctx.player, ctx.bots,
+    );
+    this.aimNoise = aimState.aimNoise;
+    this.aimNoiseT = aimState.aimNoiseT;
+    this.scanT = aimState.scanT;
+    this.wantsFire = aimState.wantsFire;
   }
 }

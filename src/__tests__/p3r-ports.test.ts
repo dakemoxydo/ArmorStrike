@@ -48,6 +48,8 @@ describe('P3r residual TankEntity fan-in ports', () => {
       speed: 0,
       alive: true,
       radius: 1.5,
+      health: 100,
+      maxHealth: 100,
       params: { weaponType: 'cannon' },
     };
     const player: AITarget = {

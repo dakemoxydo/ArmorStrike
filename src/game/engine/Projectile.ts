@@ -3,7 +3,7 @@ import { PROJECTILE } from '../constants';
 import type { Collider } from './physics';
 import { pointInCollider, segmentHitsCircle } from './physics';
 import type { Arena } from '../Arena';
-import type { Effects } from '../effects';
+import type { EffectsPort } from '../ports/EffectsPort';
 import type { DamageSystem, TankLike } from '../../core/types';
 import type { WeaponType } from '../../core/catalog';
 import { glowTexture } from '../textures';
@@ -14,7 +14,7 @@ export interface HitContext {
   colliders: Collider[];
   tanks: TankLike[];
   arena: Arena;
-  effects: Effects;
+  effects: EffectsPort;
   damageSystem: DamageSystem;
   onTankHit: (target: TankLike, dmg: number, owner: TankLike) => void;
 }
@@ -41,6 +41,9 @@ export interface Shot {
 
 const POOL_SIZE = 42;
 const tmp = new THREE.Vector3();
+const hitPosA = new THREE.Vector3();
+const hitPosB = new THREE.Vector3();
+const expPos = new THREE.Vector3();
 
 function doSplash(hitPos: THREE.Vector3, ctx: HitContext, s: Shot, exclude?: TankLike) {
   if (s.splashRadius <= 0 || !s.owner) return;
@@ -156,13 +159,13 @@ export class ProjectileManager {
           if (!pointInCollider(pos.x, pos.z, c, PROJECTILE.radius)) continue;
           if (pos.y > c.height + PROJECTILE.radius) continue;
 
-          const hitPos = tmp.set(px, pos.y, pz).clone();
-          beh.onCollideWall(s, hitPos, ctx);
-          if (s.splashRadius > 0) doSplash(hitPos, ctx, s);
+          hitPosA.set(px, pos.y, pz);
+          beh.onCollideWall(s, hitPosA, ctx);
+          if (s.splashRadius > 0) doSplash(hitPosA, ctx, s);
 
           if (c.destructible) {
-            hitPos.y = Math.min(c.height * 0.5, 2);
-            ctx.damageSystem.damageBlock(c.id, s.damage, hitPos);
+            hitPosA.y = Math.min(c.height * 0.5, 2);
+            ctx.damageSystem.damageBlock(c.id, s.damage, hitPosA);
           }
           despawn(s);
           dead = true;
@@ -174,9 +177,9 @@ export class ProjectileManager {
           if (!t.alive || t === s.owner) continue;
           if (!segmentHitsCircle(px, pz, pos.x, pos.z, t.position.x, t.position.z, t.radius + PROJECTILE.radius)) continue;
 
-          const hitPos = tmp.set(pos.x, 1.6, pos.z).clone();
-          beh.onHitTank(s, t, hitPos, s.dir, ctx, s.owner);
-          if (s.splashRadius > 0) doSplash(hitPos, ctx, s, t);
+          hitPosB.set(pos.x, 1.6, pos.z);
+          beh.onHitTank(s, t, hitPosB, s.dir, ctx, s.owner);
+          if (s.splashRadius > 0) doSplash(hitPosB, ctx, s, t);
 
           ctx.onTankHit(t, s.damage, s.owner!);
           despawn(s);
@@ -186,7 +189,7 @@ export class ProjectileManager {
         if (dead) break;
 
         if (s.traveled >= s.maxRange) {
-          const expPos = pos.clone();
+          expPos.copy(pos);
           beh.onExpire(s, expPos, ctx);
           if (s.splashRadius > 0) doSplash(expPos, ctx, s);
           despawn(s);

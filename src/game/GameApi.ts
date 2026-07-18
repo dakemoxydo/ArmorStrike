@@ -7,6 +7,7 @@ import type {
   HudSnapshot,
   MinimapDynamic,
   MinimapStatic,
+  WaveBuffId,
 } from './types';
 
 /**
@@ -24,6 +25,8 @@ export interface GameApi {
   setMode(mode: GameMode): void;
   startRound(): void;
   togglePause(): void;
+  /** Apply between-wave buff and start the next wave. */
+  chooseWaveBuff(id: WaveBuffId): void;
 
   toggleMute(): boolean;
   getQuality(): QualityLevel;

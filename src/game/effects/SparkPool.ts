@@ -14,6 +14,8 @@ export class SparkPool {
   private maxLife: Float32Array;
   private grav: Float32Array;
   private cursor = 0;
+  /** Skip GPU buffer upload when no sparks are live. */
+  private anyActive = false;
 
   private scene: THREE.Scene;
 
@@ -67,6 +69,7 @@ export class SparkPool {
       this.baseCol[idx * 3] = color.r;
       this.baseCol[idx * 3 + 1] = color.g;
       this.baseCol[idx * 3 + 2] = color.b;
+      this.anyActive = true;
     }
   }
 
@@ -87,10 +90,13 @@ export class SparkPool {
       this.baseCol[idx * 3] = color.r;
       this.baseCol[idx * 3 + 1] = color.g;
       this.baseCol[idx * 3 + 2] = color.b;
+      this.anyActive = true;
     }
   }
 
   update(dt: number) {
+    if (!this.anyActive) return;
+    let alive = false;
     for (let i = 0; i < SPARK_COUNT; i++) {
       if (this.life[i] <= 0) continue;
       this.life[i] -= dt;
@@ -99,6 +105,7 @@ export class SparkPool {
         this.col[i * 3] = this.col[i * 3 + 1] = this.col[i * 3 + 2] = 0;
         continue;
       }
+      alive = true;
       this.vel[i * 3 + 1] -= this.grav[i] * dt;
       const drag = Math.exp(-2.2 * dt);
       this.vel[i * 3] *= drag;
@@ -116,6 +123,7 @@ export class SparkPool {
       this.col[i * 3 + 1] = this.baseCol[i * 3 + 1] * f;
       this.col[i * 3 + 2] = this.baseCol[i * 3 + 2] * f;
     }
+    this.anyActive = alive;
     (this.points.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
     (this.points.geometry.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
   }

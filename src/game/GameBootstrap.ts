@@ -7,6 +7,8 @@ import { Effects } from './effects';
 import { ProjectileManager } from './engine/Projectile';
 import { PlayerController } from './PlayerController';
 import { AudioFX } from './audio';
+import type { AudioPort } from './ports/AudioPort';
+import type { EffectsPort } from './ports/EffectsPort';
 import { CombatSystem } from './CombatSystem';
 import { HudModel } from './HudModel';
 import { RenderWorld } from './RenderWorld';
@@ -34,7 +36,7 @@ export interface GameContext {
   gameLoop: GameLoop;
   weaponDeps: WeaponFactoryDeps;
   garageInput: GarageInput;
-  audio: AudioFX;
+  audio: AudioPort;
   emitEvent: (e: GameEvent) => void;
   addListener: (fn: (e: GameEvent) => void) => void;
   removeListener: (fn: (e: GameEvent) => void) => void;
@@ -71,10 +73,10 @@ function buildEventBus(): {
 // ---- Builder: базовые подсистемы ----
 function buildCoreSubsystems(scene: THREE.Scene, canvas: HTMLCanvasElement): {
   arena: Arena;
-  effects: Effects;
+  effects: EffectsPort;
   projectiles: ProjectileManager;
   input: PlayerController;
-  audio: AudioFX;
+  audio: AudioPort;
   run: RunState;
 } {
   const arena = new Arena(scene);
@@ -91,8 +93,8 @@ function buildCoreSubsystems(scene: THREE.Scene, canvas: HTMLCanvasElement): {
 function buildDerivedSystems(
   scene: THREE.Scene,
   arena: Arena,
-  effects: Effects,
-  audio: AudioFX,
+  effects: EffectsPort,
+  audio: AudioPort,
   projectiles: ProjectileManager,
   input: PlayerController,
   run: RunState,
@@ -142,29 +144,19 @@ function registerWindowHandlers(
     // TEMP DEBUG [BUGFIX-C1]: visibility auto-pause gated by death cam
     if (
       document.hidden &&
-      shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT)
+      shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT, sim.run.intermission)
     ) {
       sim.run.paused = true;
       emitEvent({ type: 'pauseChanged', value: true });
-      console.debug('[BUGFIX-C1] visibility auto-pause applied');
-    } else if (document.hidden) {
-      console.debug('[BUGFIX-C1] visibility auto-pause skipped', {
-        mode: sim.run.mode, paused: sim.run.paused, deathT: sim.deathT,
-      });
     }
   };
   document.addEventListener('visibilitychange', onVisibility);
 
   input.onLockLost = () => {
-    // Root fix C1: intentional lock release on death must NOT pause (timer lives in step).
-    if (shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT)) {
+    // Root fix C1: intentional lock release on death / intermission must NOT pause.
+    if (shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT, sim.run.intermission)) {
       sim.run.paused = true;
       emitEvent({ type: 'pauseChanged', value: true });
-      console.debug('[BUGFIX-C1] lock-lost auto-pause applied');
-    } else {
-      console.debug('[BUGFIX-C1] lock-lost auto-pause skipped', {
-        mode: sim.run.mode, paused: sim.run.paused, deathT: sim.deathT,
-      });
     }
   };
 
@@ -242,10 +234,6 @@ export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
     sim.run.paused = st.paused;
     input.enabled = st.inputEnabled;
     input.releaseLock();
-    // TEMP DEBUG [BUGFIX-C1]
-    console.debug('[BUGFIX-C1] player death applied', {
-      deathT: sim.deathT, paused: sim.run.paused, inputEnabled: input.enabled,
-    });
   };
 
   const previewController = new PreviewController(scene, () => sim.run.mode);

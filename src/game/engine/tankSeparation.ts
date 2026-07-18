@@ -43,9 +43,7 @@ export function separateTankPair(
   a.z -= nz * half;
   b.x += nx * half;
   b.z += nz * half;
-  // TEMP DEBUG [BUGFIX-M10]
   if (half >= maxPush - 1e-6 || d < 1e-2) {
-    console.debug('[BUGFIX-M10] clamped tank separation', { half, maxPush, d });
   }
   return true;
 }

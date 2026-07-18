@@ -1,8 +1,8 @@
-import type { TankEntity } from '../../Tank';
+import type { CombatTimerBody } from '../../tank/simPorts';
 import { HEAL_DELAY, HEAL_PER_SEC } from '../../tuning';
 
 export const TankCombatTimersSystem = {
-  updateOne(t: TankEntity, dt: number) {
+  updateOne(t: CombatTimerBody, dt: number) {
     t.fx.timeSinceHit += dt;
     if (t.fx.timeSinceHit > HEAL_DELAY && t.health < t.maxHealth) {
       t.health = Math.min(t.maxHealth, t.health + HEAL_PER_SEC * dt);

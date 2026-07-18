@@ -1,8 +1,8 @@
 // ===== Общий контракт оружия: единый интерфейс для рельсотрона, огнемёта и пушки =====
 import type * as THREE from 'three';
 import type { Arena } from '../Arena';
-import type { Effects } from '../effects';
-import type { AudioFX } from '../audio';
+import type { EffectsPort } from '../ports/EffectsPort';
+import type { AudioPort } from '../ports/AudioPort';
 import type { ProjectileManager } from '../engine/Projectile';
 import type { DamageSystem, TankLike } from '../../core/types';
 
@@ -48,9 +48,16 @@ export interface WeaponOwner extends TankLike {
   fireTimer: number;
   params: WeaponOwnerParams;
   visual: WeaponOwnerVisual;
+  /** Wave buff: >1 shortens reload/charge (optional on non-player). */
+  reloadSpeedMul?: number;
   muzzleWorld(out: THREE.Vector3): THREE.Vector3;
   aimDir(out: THREE.Vector3): THREE.Vector3;
   onFired(recoil: number): void;
+  /**
+   * Visual barrel pull (0..~2). Used by railgun charge anticipation;
+   * tanks map this to fx.barrelKick. Optional for lightweight mocks.
+   */
+  setBarrelKick?(amount: number): void;
 }
 
 /**
@@ -70,8 +77,8 @@ export interface WeaponContext {
 /** Зависимости, необходимые оружию для работы. */
 export interface WeaponDeps {
   scene: THREE.Scene;
-  effects: Effects;
-  audio: AudioFX;
+  effects: EffectsPort;
+  audio: AudioPort;
   damageSystem: DamageSystem;
   projectiles: ProjectileManager;
   /** Колбэк для события «игрок выстрелил» (используется HUD). */

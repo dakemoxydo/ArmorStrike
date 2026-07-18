@@ -1,8 +1,8 @@
-import type { TankEntity } from '../../Tank';
+import type { AimBody } from '../../tank/simPorts';
 import { clamp, wrapAngle } from '../physics';
 
 export const TankAimSystem = {
-  updateOne(t: TankEntity, dt: number) {
+  updateOne(t: AimBody, dt: number) {
     const p = t.params;
     const rel = wrapAngle(t.aimYaw - t.yaw);
     const diff = wrapAngle(rel - t.turretYaw);

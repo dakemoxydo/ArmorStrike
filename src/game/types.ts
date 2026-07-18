@@ -1,11 +1,15 @@
 // ===== Общие типы игрового слоя (без зависимости от Game) =====
 import type { HullId, TurretId } from '../core/catalog';
+import type { WaveBuffId, WaveUnitPreview, WeaponTally, RoleTally } from './wavePreview';
 
 export type GameMode = 'menu' | 'garage' | 'playing' | 'over';
+export type { WaveBuffId, WaveUnitPreview, WeaponTally, RoleTally };
 
 export interface HudSnapshot {
   mode: GameMode;
   paused: boolean;
+  /** True while player picks a between-wave buff. */
+  intermission: boolean;
   health: number;
   maxHealth: number;
   ammo: number;
@@ -36,6 +40,14 @@ export type GameEvent =
   | { type: 'enemyHit'; killed: boolean }
   | { type: 'kill'; victim: string; byPlayer: boolean }
   | { type: 'wave'; n: number }
+  | {
+      type: 'intermission';
+      clearedWave: number;
+      nextWave: number;
+      composition: WaveUnitPreview[];
+      tally: WeaponTally[];
+      roleTally: RoleTally[];
+    }
   | { type: 'shotFired' }
   | { type: 'gameOver'; score: number; kills: number; wave: number }
   | { type: 'pauseChanged'; value: boolean }

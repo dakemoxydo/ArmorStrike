@@ -5,10 +5,10 @@
 import * as THREE from 'three';
 import type { TankEntity } from '../Tank';
 import type { Arena } from '../Arena';
-import type { Effects } from '../effects';
+import type { EffectsPort } from '../ports/EffectsPort';
 import type { ProjectileManager } from './Projectile';
 import type { PlayerController } from '../PlayerController';
-import type { AudioFX } from '../audio';
+import type { AudioPort } from '../ports/AudioPort';
 import type { RunState } from '../RunState';
 import type { WaveManager } from '../WaveManager';
 import type { CombatSystem } from '../CombatSystem';
@@ -29,6 +29,10 @@ import { rearPoint } from './physics';
 /** Shared mutable scalar (same object as GameSimulation cell — mid-step external writes stay visible). */
 export type ScalarCell<T> = { value: T };
 
+/**
+ * Полный контекст кадра симуляции (composition bag).
+ * Stages type-narrow via Pick-slices below (ISP at type level; runtime object unchanged).
+ */
 export interface SimContext {
   dt: number;
   emit: (e: GameEvent) => void;
@@ -36,10 +40,10 @@ export interface SimContext {
   tanks: TankEntity[];
   nameplates: Map<number, { plate: Nameplate; color: number }>;
   arena: Arena;
-  effects: Effects;
+  effects: EffectsPort;
   projectiles: ProjectileManager;
   input: PlayerController;
-  audio: AudioFX;
+  audio: AudioPort;
   run: RunState;
   combat: CombatSystem;
   waves: WaveManager;
@@ -51,6 +55,13 @@ export interface SimContext {
   /** Единый переход в game over (mode + events). */
   requestGameOver(): void;
 }
+
+/** Stage-local views (documentation + type discipline; same object as SimContext). */
+export type PlayerInputCtx = Pick<SimContext, 'player' | 'input' | 'audio' | 'prevReloading'>;
+export type BotAiCtx = Pick<SimContext, 'dt' | 'player' | 'waves' | 'arena'>;
+export type EngineAudioCtx = Pick<SimContext, 'player' | 'audio'>;
+export type BoostFxCtx = Pick<SimContext, 'player' | 'effects'>;
+export type WavesCtx = Pick<SimContext, 'player' | 'deathT' | 'run' | 'waves' | 'dt' | 'tanks' | 'nameplates' | 'input'>;
 
 export interface SimSystem {
   readonly name: string;
@@ -74,8 +85,6 @@ export class PlayerInputStage implements SimSystem {
     } else {
       // M8: cut flamethrower/weapon fire on death so audio/state do not leak.
       p.weapon?.setFire(false);
-      // TEMP DEBUG [BUGFIX-M8]
-      console.debug('[BUGFIX-M8] player dead → setFire(false)');
       ctx.prevReloading.value = false;
     }
   }
@@ -160,10 +169,7 @@ export class ProjectileStage implements SimSystem {
       // C2 root fix: real HP must go through applyDamage (takeDamage + hooks),
       // not onTankDamaged alone (presentation hook assumes damage already applied).
       onTankHit: (target, dmg, owner) => {
-        // TEMP DEBUG [BUGFIX-C2]
-        console.debug('[BUGFIX-C2] projectile onTankHit → applyDamage', {
-          dmg, targetId: target.id, ownerId: owner.id, hpBefore: target.health,
-        });
+        // C2: real HP must go through applyDamage (takeDamage + hooks).
         ctx.combat.damageSystem.applyDamage(target, dmg, owner);
       },
     });
@@ -175,13 +181,15 @@ export class WavesStage implements SimSystem {
   update(ctx: SimContext): void {
     // M5: do not advance waves / award waveBonus during death cam or after player death.
     if (!ctx.player.alive || ctx.deathT.value >= 0) {
-      // TEMP DEBUG [BUGFIX-M5]
-      console.debug('[BUGFIX-M5] waves skipped during death', {
-        alive: ctx.player.alive, deathT: ctx.deathT.value,
-      });
       return;
     }
+    const wasIntermission = ctx.run.intermission;
     ctx.waves.update(ctx.dt, ctx.tanks, ctx.nameplates);
+    // Opened this frame: free cursor so React intermission UI is clickable.
+    if (ctx.run.intermission && !wasIntermission) {
+      ctx.input.enabled = false;
+      ctx.input.releaseLock();
+    }
   }
 }
 

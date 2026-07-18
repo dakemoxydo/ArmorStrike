@@ -1,7 +1,7 @@
 // ===== Управление игроком: WASD — корпус, мышь (pointer-lock) — башня/камера, ЛКМ/Пробел — огонь =====
 // Схема управления: камера следует за мышью (CameraLookState),
 // а башня целится туда же, куда смотрит камера. Прицел — по центру экрана.
-import type { TankEntity } from './Tank';
+import type { ControllableTank } from './tank/simPorts';
 import { CameraLookState } from './camera/CameraLookState';
 
 export class PlayerController {
@@ -98,7 +98,7 @@ export class PlayerController {
   }
 
   /** Применить ввод к танку. Возвращает true, если запрошен выстрел. */
-  update(tank: TankEntity): boolean {
+  update(tank: ControllableTank): boolean {
     const k = this.keys;
     tank.throttle = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) + (k.has('KeyS') || k.has('ArrowDown') ? -1 : 0);
     tank.steer = (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0) + (k.has('KeyD') || k.has('ArrowRight') ? -1 : 0);

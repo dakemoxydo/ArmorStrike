@@ -1,1 +1,1 @@
-﻿docs/plans/functional-bugfix
+docs/plans/architecture-refactor

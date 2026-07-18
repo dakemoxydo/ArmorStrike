@@ -26,6 +26,7 @@ export default function HUD({ game, active }: HudProps) {
   const {
     snap, feed, banner, vignette, dmgArc, hitmark, showHint, frag,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
+    flameFillRef,
   } = useGameHud(game, active);
 
   if (!game) return null;
@@ -87,7 +88,11 @@ export default function HUD({ game, active }: HudProps) {
 
           <MemoFeed feed={feed} muted={st.muted} onToggleMute={() => game.toggleMute()} />
           <MemoVitals healthRef={healthRef} healthNumRef={healthNumRef} boostRef={boostRef} maxHealth={st.maxHealth} />
-          <MemoWeapon reloadRef={reloadRef} st={st} />
+          <MemoWeapon
+            reloadRef={reloadRef}
+            flameFillRef={flameFillRef}
+            st={st}
+          />
 
           {showHint && (
             <div className="hud-hint-wrap" aria-hidden>

@@ -1,11 +1,12 @@
 // ===== Модель HUD: снапшот состояния для UI, миникарта динамика/статика =====
 import type { Arena } from './Arena';
-import type { AudioFX } from './audio';
+import type { AudioPort } from './ports/AudioPort';
 import type { PlayerController } from './PlayerController';
 import type { RunState } from './RunState';
-import type { TankEntity } from './Tank';
 import type { WaveManager } from './WaveManager';
+import type { HudUnit } from './tank/simPorts';
 import { HULLS, TURRETS } from '../core/catalog';
+import type { HullId, TurretId } from '../core/catalog';
 
 import type { HudSnapshot, MinimapDynamic, MinimapStatic, ScoreRow } from './types';
 import { getWeaponMeta } from '../core/WeaponCatalog';
@@ -15,7 +16,7 @@ export class HudModel {
   private _byId = new Map<number, MinimapStatic>();
   private _emptyBoard: ScoreRow[] = [];
 
-  constructor(private deps: { run: RunState; audio: AudioFX; waves: WaveManager; input: PlayerController }) {}
+  constructor(private deps: { run: RunState; audio: AudioPort; waves: WaveManager; input: PlayerController }) {}
 
   buildMinimap(arena: Arena) {
     for (const c of arena.colliders) {
@@ -32,7 +33,7 @@ export class HudModel {
   getStatic(): MinimapStatic[] { return this._static; }
   getByIdMap(): Map<number, MinimapStatic> { return this._byId; }
 
-  fillDynamics(tanks: TankEntity[], out: MinimapDynamic[]): MinimapDynamic[] {
+  fillDynamics(tanks: HudUnit[], out: MinimapDynamic[]): MinimapDynamic[] {
     out.length = 0;
     for (const t of tanks) {
       if (!t.alive) continue;
@@ -41,7 +42,17 @@ export class HudModel {
     return out;
   }
 
-  getHud(player: TankEntity | null, tanks: TankEntity[], includeScoreboard = false): HudSnapshot {
+  getHud(
+    player: (HudUnit & {
+      weapon?: { getAmmoState(): {
+        ammo: number; magazine: number; reloading: boolean;
+        reloadProgress: number; isCharging: boolean;
+      } };
+      boostEnergy?: number;
+    }) | null,
+    tanks: HudUnit[],
+    includeScoreboard = false,
+  ): HudSnapshot {
     const { run, audio, waves, input } = this.deps;
 
     const ammoState = player?.weapon?.getAmmoState();
@@ -54,23 +65,27 @@ export class HudModel {
     const showScore = run.mode === 'playing' && input.scoreHeld && !run.paused;
     const board: ScoreRow[] = includeScoreboard
       ? tanks
-        .map((t) => ({
-          name: t.name,
-          hull: t.hullId ? HULLS[t.hullId].name : '-',
-          turret: t.turretId ? TURRETS[t.turretId].name : '-',
-          weapon: t.params.weaponType ?? '-',
-          weaponName: t.turretId ? getWeaponMeta(t.turretId).name : '-',
-          hpFrac: t.maxHealth > 0 ? t.health / t.maxHealth : 0,
-          isPlayer: t.isPlayer,
-          alive: t.alive,
-        }))
+        .map((t) => {
+          const hullId = t.hullId as HullId | undefined;
+          const turretId = t.turretId as TurretId | undefined;
+          return {
+            name: t.name,
+            hull: hullId ? HULLS[hullId].name : '-',
+            turret: turretId ? TURRETS[turretId].name : '-',
+            weapon: t.params.weaponType ?? '-',
+            weaponName: turretId ? getWeaponMeta(turretId).name : '-',
+            hpFrac: t.maxHealth > 0 ? t.health / t.maxHealth : 0,
+            isPlayer: t.isPlayer,
+            alive: t.alive,
+          };
+        })
         .sort((a, b) => (b.isPlayer ? 1 : 0) - (a.isPlayer ? 1 : 0) || b.hpFrac - a.hpFrac)
       : this._emptyBoard;
 
     const wmeta = getWeaponMeta(run.currentTurret);
 
     return {
-      mode: run.mode, paused: run.paused,
+      mode: run.mode, paused: run.paused, intermission: run.intermission,
       health: player?.health ?? HULLS[run.currentHull].maxHealth,
       maxHealth: player?.maxHealth ?? HULLS[run.currentHull].maxHealth,
       ammo, magazine, reloading, reloadProgress, isCharging,

@@ -29,6 +29,20 @@ export class TankEntity implements TankLike, WeaponOwner {
   boosting = false;
   boostActive = false;
   boostEnergy = 1;
+  /** Wave buff: multiply BOOST.drain (1 = normal). */
+  boostDrainMul = 1;
+  /** Wave buff: multiply BOOST.recharge (1 = normal). */
+  boostRechargeMul = 1;
+  /** Wave buff: >1 = faster weapon reload / charge / energy recovery. */
+  reloadSpeedMul = 1;
+  /** Snapshot of combat params while a wave buff is active. */
+  buffBase: {
+    damage: number;
+    speed: number;
+    reverseSpeed: number;
+    turnSpeed: number;
+    shotCooldown: number;
+  } | null = null;
   knockback = new THREE.Vector3();
 
   /** Представленческое/визуальное состояние (только FX), вне симуляции. */
@@ -75,9 +89,15 @@ export class TankEntity implements TankLike, WeaponOwner {
 
   onFired(recoil: number) {
     this.fireTimer = this.params.shotCooldown;
-    this.fx.barrelKick = 1;
+    // Visual kick scales with recoil so railgun (≈18) snaps harder than cannon (≈5).
+    this.fx.barrelKick = Math.min(2.25, 0.55 + Math.abs(recoil) * 0.07);
     this.aimDir(this._v);
     this.knockback.addScaledVector(this._v, -recoil);
+  }
+
+  /** Railgun charge pull-back / external barrel animation driver. */
+  setBarrelKick(amount: number) {
+    this.fx.barrelKick = amount;
   }
 
   takeDamage(dmg: number, attackerId: number) {

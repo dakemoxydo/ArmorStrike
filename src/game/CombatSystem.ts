@@ -4,8 +4,8 @@
 import * as THREE from 'three';
 import type { GameEvent } from './types';
 import type { Arena } from './Arena';
-import type { Effects } from './effects';
-import type { AudioFX } from './audio';
+import type { EffectsPort } from './ports/EffectsPort';
+import type { AudioPort } from './ports/AudioPort';
 import type { TankLike } from '../core/types';
 import { COLORS } from '../core/constants';
 import { createDamageSystem } from '../core/DamageSystem';
@@ -14,8 +14,8 @@ import { applyPlayerKillScore } from './scoring';
 
 export interface CombatDeps {
   arena: Arena;
-  effects: Effects;
-  audio: AudioFX;
+  effects: EffectsPort;
+  audio: AudioPort;
   emit: (e: GameEvent) => void;
   /** Run stats (kills/score) updated on player frags. */
   run: RunState;
@@ -78,12 +78,6 @@ export class CombatSystem {
       );
       this.deps.run.kills = next.kills;
       this.deps.run.score = next.score;
-      // TEMP DEBUG [BUGFIX-M1]
-      if (byPlayer) {
-        console.debug('[BUGFIX-M1] player kill scored', {
-          victim: target.name, kills: this.deps.run.kills, score: this.deps.run.score,
-        });
-      }
       this.deps.emit({ type: 'kill', victim: target.name, byPlayer });
     }
   }

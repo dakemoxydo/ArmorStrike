@@ -55,9 +55,47 @@ export class ParticleEffects {
     this.sparks.poolRef.burst(p, new THREE.Color(color), 6, { speed: 12, up: 1, life: 0.22, gravity: 2 });
   }
 
+  private static readonly _cWhite = new THREE.Color(0xffffff);
+  private static readonly _cCyan = new THREE.Color(0x8fffe8);
+  private static readonly _cTmp = new THREE.Color();
+
+  /**
+   * Railgun muzzle punch — kept light: 1 sprite + 1 point-flash + modest sparks.
+   * (Previous multi-flash/light stack caused visible frame hitches.)
+   */
+  railgunMuzzle(p: THREE.Vector3) {
+    this.muzzle_.flash(p, 0x8fffe8);
+    this.flash.flash(p, 0xffffff, 48, 0.08);
+    this.sparks.poolRef.burst(p, ParticleEffects._cWhite, 8, {
+      speed: 18, up: 2, life: 0.14, gravity: 1,
+    });
+    this.sparks.poolRef.burst(p, ParticleEffects._cCyan, 12, {
+      speed: 14, up: 3, life: 0.22, gravity: 4,
+    });
+  }
+
   impact(p: THREE.Vector3, color: number) {
     this.sparks.poolRef.burst(p, new THREE.Color(color), 16, { speed: 10, up: 5, life: 0.5 });
     this.flash.flash(p, color, 18, 0.12);
+  }
+
+  /**
+   * Rail impact. Avoids ring mesh alloc + second flash light on every pierce.
+   * heavy = first tank / wall terminus only.
+   */
+  railgunImpact(p: THREE.Vector3, color: number, heavy = false) {
+    const col = ParticleEffects._cTmp.setHex(color);
+    const n = heavy ? 14 : 8;
+    this.sparks.poolRef.burst(p, col, n, {
+      speed: heavy ? 14 : 11, up: heavy ? 6 : 4, life: 0.4, gravity: 10,
+    });
+    if (heavy) {
+      this.sparks.poolRef.burst(p, ParticleEffects._cWhite, 5, {
+        speed: 16, up: 3, life: 0.14, gravity: 2,
+      });
+      // One flash light only on heavy hits — lights are the main lag source.
+      this.flash.flash(p, color, 28, 0.1);
+    }
   }
 
   explosion(p: THREE.Vector3, color: number, scale = 1) {

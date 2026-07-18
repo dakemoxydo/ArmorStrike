@@ -1,6 +1,6 @@
 // ===== RAILGUN (Рельсотрон) =====
-// Hitscan-оружие мгновенного действия с FSM (IDLE -> CHARGING -> FIRING -> COOLDOWN -> IDLE)
-// Визуальный луч вынесен в RailgunBeamFx.
+// Hitscan-оружие мгновенного действия с FSM (IDLE -> CHARGING -> FIRING -> COOLDOWN)
+// Визуальный луч вынесен в RailgunBeamFx. Juice: charge pull, shake/FOV, layered beam/SFX.
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
 import type { Arena } from '../Arena';
@@ -14,11 +14,19 @@ import { RailgunBeamFx } from './RailgunBeamFx';
 import { railgunShouldStartCharge } from './railgunFireLogic';
 import { nearestShotBlockerDist } from './railgunBlockers';
 import { resolveWeaponDamage } from './weaponDamage';
+import { ownerReloadMul } from './reloadMul';
+import {
+  applyRailgunChargingFx,
+  applyRailgunCooldownChargeFx,
+  applyRailgunIdleChargeFx,
+} from './railgunChargeFx';
 
 export type RailgunState = 'IDLE' | 'CHARGING' | 'FIRING' | 'COOLDOWN';
 
 const tmpMuzzle = new THREE.Vector3();
 const tmpDir = new THREE.Vector3();
+const tmpSpark = new THREE.Vector3();
+const BEAM_SPARK_COLOR = new THREE.Color(0x8fffe8);
 
 export class RailgunWeapon implements Weapon {
   readonly owner: WeaponOwner;
@@ -32,8 +40,9 @@ export class RailgunWeapon implements Weapon {
   private raycaster = new THREE.Raycaster();
 
   private deps: WeaponDeps;
-  private prevFire = false;
   private _tankMap = new Map<THREE.Object3D, CombatPeer>();
+  /** Accumulator for charge micro-shake / ion sparks (player). */
+  private chargeFxAcc = 0;
 
   constructor(owner: WeaponOwner, deps: WeaponDeps) {
     this.owner = owner;
@@ -43,28 +52,33 @@ export class RailgunWeapon implements Weapon {
 
   /**
    * Спуск: заряд стартует в IDLE при удержании/нажатии (level-trigger).
-   * C3 root: rising-edge only + AI holds wantsFire every frame → after first shot
-   * prevFire stays true through COOLDOWN, so no second charge ever started.
+   * Charge start is owned by railgunShouldStartCharge.
    */
   setFire(active: boolean) {
     if (railgunShouldStartCharge(active, this.state, this.owner.alive)) {
       this.state = 'CHARGING';
       this.chargeTimer = 0;
-      this.deps.audio.chargeRailgun();
-      // TEMP DEBUG [BUGFIX-C3]
-      console.debug('[BUGFIX-C3] railgun charge start', {
-        ownerId: this.owner.id, wasEdge: !this.prevFire, prevFire: this.prevFire,
-      });
+      this.chargeFxAcc = 0;
+      this.deps.audio.chargeRailgun(this.chargeDuration());
     }
-    this.prevFire = active;
+  }
+
+  private chargeDuration(): number {
+    return WEAPON_TUNING.railgun.chargeTime / ownerReloadMul(this.owner);
+  }
+
+  private cooldownDuration(): number {
+    return WEAPON_TUNING.railgun.reloadTime / ownerReloadMul(this.owner);
   }
 
   get reloadProgress(): number {
     if (this.state === 'COOLDOWN') {
-      return 1 - this.reloadTimer / WEAPON_TUNING.railgun.reloadTime;
+      const d = this.cooldownDuration();
+      return d > 0 ? 1 - this.reloadTimer / d : 1;
     }
     if (this.state === 'CHARGING') {
-      return this.chargeTimer / WEAPON_TUNING.railgun.chargeTime;
+      const d = this.chargeDuration();
+      return d > 0 ? this.chargeTimer / d : 1;
     }
     return 1;
   }
@@ -82,60 +96,38 @@ export class RailgunWeapon implements Weapon {
 
     switch (this.state) {
       case 'IDLE': {
-        // Базовое тусклое свечение в дуле
-        if (visual.railGlowMat) {
-          visual.railGlowMat.emissiveIntensity = WEAPON_TUNING.railgun.emissiveIdle;
-        }
+        applyRailgunIdleChargeFx(this.owner, this.deps.effects);
         break;
       }
 
       case 'CHARGING': {
         this.chargeTimer += dt;
-        const progress = Math.min(1, this.chargeTimer / WEAPON_TUNING.railgun.chargeTime);
+        const chargeDur = this.chargeDuration();
+        const progress = Math.min(1, this.chargeTimer / chargeDur);
+        this.chargeFxAcc = applyRailgunChargingFx(
+          this.owner, this.deps.effects, progress, this.chargeFxAcc, dt,
+        );
 
-        // Нарастание свечения рельсотрона через useFrame dt
-        if (visual.railGlowMat) {
-          visual.railGlowMat.emissiveIntensity = THREE.MathUtils.lerp(
-            WEAPON_TUNING.railgun.emissiveIdle,
-            WEAPON_TUNING.railgun.emissiveCharged,
-            progress * progress, // экспоненциальный прирост свечения
-          );
-        }
-
-        // Лёгкая вибрация ствола перед выстрелом
-        const jitter = Math.pow(progress, 2.5) * 0.08;
-        visual.barrelGroup.position.x = (Math.random() - 0.5) * jitter;
-        visual.barrelGroup.position.y = BARREL_REST_Y + (Math.random() - 0.5) * jitter;
-
-        // По завершении времени заряда — автоматический переход в FIRING
-        if (this.chargeTimer >= WEAPON_TUNING.railgun.chargeTime) {
+        if (this.chargeTimer >= chargeDur) {
           visual.barrelGroup.position.set(0, BARREL_REST_Y, BARREL_REST_Z);
           this.executeFiring(ctx.tanks, ctx.arena);
           this.state = 'COOLDOWN';
-          this.reloadTimer = WEAPON_TUNING.railgun.reloadTime;
+          this.reloadTimer = this.cooldownDuration();
         }
         break;
       }
 
       case 'FIRING': {
-        // Кадр выстрела обработан при переходе
         this.state = 'COOLDOWN';
-        this.reloadTimer = WEAPON_TUNING.railgun.reloadTime;
+        this.reloadTimer = this.cooldownDuration();
         break;
       }
 
       case 'COOLDOWN': {
         this.reloadTimer -= dt;
-
-        // Восстановление свечения до IDLE
-        if (visual.railGlowMat) {
-          visual.railGlowMat.emissiveIntensity = THREE.MathUtils.damp(
-            visual.railGlowMat.emissiveIntensity,
-            WEAPON_TUNING.railgun.emissiveIdle,
-            6,
-            dt,
-          );
-        }
+        applyRailgunCooldownChargeFx(
+          this.owner, this.deps.effects, this.reloadTimer, this.cooldownDuration(), dt,
+        );
 
         if (this.reloadTimer <= 0) {
           this.state = 'IDLE';
@@ -148,24 +140,44 @@ export class RailgunWeapon implements Weapon {
     this.beamFx.update(dt);
   }
 
-  /** Выполнение Hitscan-выстрела с помощью Raycast */
+  /** Выполнение Hitscan-выстрела с помощью Raycast + juice payload. */
   private executeFiring(tanks: CombatPeer[], arena: Arena) {
     fillMuzzleAndAim(this.owner, tmpMuzzle, tmpDir);
+    const isPlayer = this.owner.isPlayer;
+    const rt = WEAPON_TUNING.railgun;
 
-    // Звук и импульс отката
+    // Audio + body recoil
     this.deps.audio.shoot('railgun');
-    this.deps.effects.muzzle(tmpMuzzle, 0x8fffe8);
-    this.owner.onFired(WEAPON_TUNING.railgun.knockback);
+    this.owner.onFired(rt.knockback);
+
+    // Muzzle / camera / FOV punch
+    this.deps.effects.railgunMuzzle(tmpMuzzle);
+    this.deps.effects.addShake(isPlayer ? rt.fireShakePlayer : rt.fireShakeBot);
+    if (isPlayer) {
+      this.deps.effects.setFovTighten(0);
+      this.deps.effects.addFovPunch(rt.fireFovPunch);
+      this.deps.onShotFired?.();
+    }
 
     const hits = this.castHitscan(tanks, arena);
     const maxHitDist = this.resolveHits(hits, arena);
     this.beamFx.show(tmpMuzzle, tmpDir, maxHitDist);
+
+    // Along-beam ion trail (midpoints)
+    const segs = Math.min(6, Math.max(2, Math.floor(maxHitDist / 18)));
+    for (let i = 1; i <= segs; i++) {
+      const u = i / (segs + 1);
+      tmpSpark.copy(tmpMuzzle).addScaledVector(tmpDir, maxHitDist * u);
+      this.deps.effects.trailPuff(tmpSpark, BEAM_SPARK_COLOR);
+      if (i === Math.ceil(segs / 2)) {
+        this.deps.effects.railgunImpact(tmpSpark.clone(), 0x8fffe8, false);
+      }
+    }
   }
 
   /**
    * M9: tank meshes via raycast; walls/blocks via collider slab (blocksShots),
    * same parity as projectiles — decorative arena meshes never stop the beam.
-   * Non-destructible solids clear mesh colliderId, so mesh-only filtering was wrong.
    */
   private castHitscan(tanks: CombatPeer[], _arena: Arena): THREE.Intersection[] {
     this.raycaster.set(tmpMuzzle, tmpDir);
@@ -207,16 +219,11 @@ export class RailgunWeapon implements Weapon {
     const tankMap = this._tankMap;
     const range = this.owner.params.range ?? WEAPON_TUNING.railgun.range;
     let maxHitDist = range;
-    // M6: use owner.params.damage (wave damageScale) as base, not hardcoded tuning.
     const baseDamage = resolveWeaponDamage(this.owner.params.damage, WEAPON_TUNING.railgun.damage);
     let currentDamage = baseDamage;
-    // TEMP DEBUG [BUGFIX-M6]
-    console.debug('[BUGFIX-M6] railgun baseDamage', {
-      paramsDamage: this.owner.params.damage,
-      baseDamage,
-      tuning: WEAPON_TUNING.railgun.damage,
-    });
     const hitTanksSet = new Set<number>();
+    let lastImpact: THREE.Vector3 | null = null;
+    let hitCount = 0;
 
     const wall = this.nearestShotBlocker(arena, range);
     const wallDist = wall?.dist ?? Infinity;
@@ -233,13 +240,16 @@ export class RailgunWeapon implements Weapon {
       if (!hitTank || hitTanksSet.has(hitTank.id)) continue;
 
       hitTanksSet.add(hitTank.id);
+      hitCount += 1;
       const dmg = Math.round(currentDamage);
       const force = WEAPON_TUNING.railgun.knockback * (currentDamage / baseDamage);
+      const heavy = hitCount === 1;
       applyHit(
         this.deps.damageSystem, hitTank, dmg, this.owner, tmpDir, force,
         (p) => {
-          this.deps.effects.impact(p, 0x8fffe8);
+          this.deps.effects.railgunImpact(p, 0x8fffe8, heavy);
           this.beamFx.setImpactPosition(p);
+          lastImpact = p;
         },
         hit.point,
       );
@@ -247,12 +257,21 @@ export class RailgunWeapon implements Weapon {
     }
 
     if (wall) {
-      // TEMP DEBUG [BUGFIX-M9]
-      console.debug('[BUGFIX-M9] railgun stopped by collider', { id: wall.id, dist: wall.dist });
       this.deps.damageSystem.damageBlock(wall.id, Math.round(currentDamage), wall.point);
-      this.deps.effects.impact(wall.point, 0xffa040);
+      this.deps.effects.railgunImpact(wall.point, 0xffa040, true);
+      this.deps.effects.debris(wall.point, 0xffa040, 10);
+      this.beamFx.setImpactPosition(wall.point);
       maxHitDist = wall.dist;
+    } else if (lastImpact) {
+      // Beam ends at last tank if no wall and we want shorter visual? Keep full range
+      // unless we only hit tanks — still draw to range for sniper feel.
     }
+
+    // Extra shake when player lands at least one pierce
+    if (this.owner.isPlayer && hitCount > 0) {
+      this.deps.effects.addShake(0.08 + hitCount * 0.04);
+    }
+
     return maxHitDist;
   }
 
@@ -272,6 +291,8 @@ export class RailgunWeapon implements Weapon {
   }
 
   dispose() {
+    this.deps.audio.stopChargeRailgun(false);
+    if (this.owner.isPlayer) this.deps.effects.setFovTighten(0);
     this.beamFx.dispose();
   }
 }

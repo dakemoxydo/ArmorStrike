@@ -8,7 +8,8 @@ export class OverCameraMode implements CameraMode {
   update(_dt: number, p: CameraUpdateParams, rig: CameraRig): void {
     const tmpV = new THREE.Vector3();
     const tmpV2 = new THREE.Vector3();
-    const pl = p.player as import('../Tank').TankEntity;
+    const pl = p.player;
+    if (!pl) return;
     const pos = pl.position;
     tmpV.set(pos.x - 14, 16, pos.z - 14);
     rig.camPos.lerp(tmpV, 1 - Math.exp(-1.5 * _dt));

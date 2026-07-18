@@ -3,64 +3,102 @@ import type { ParticleSystem } from './ParticleSystem';
 import { smokeTexture } from '../textures';
 import { clamp } from '../engine/physics';
 
-interface SmokePuff { s: THREE.Sprite; life: number; maxLife: number; grow: number; dark: boolean }
+interface SmokePuff {
+  s: THREE.Sprite;
+  mat: THREE.SpriteMaterial;
+  life: number;
+  maxLife: number;
+  grow: number;
+  active: boolean;
+}
 
+/**
+ * Fixed-size smoke sprite pool. Spawning reuses slots (hide/reactivate) instead of
+ * new SpriteMaterial + smokeTexture() + dispose each puff.
+ */
 export class SmokeSystem implements ParticleSystem {
-  private smoke: SmokePuff[] = [];
-  private cap = 42;
-  private scene: THREE.Scene;
+  private readonly pool: SmokePuff[] = [];
+  private readonly cap = 42;
+  private readonly scene: THREE.Scene;
+  private readonly map: THREE.Texture;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+    this.map = smokeTexture();
+    for (let i = 0; i < this.cap; i++) {
+      const mat = new THREE.SpriteMaterial({
+        map: this.map,
+        transparent: true,
+        depthWrite: false,
+        color: 0x565d68,
+        opacity: 0,
+      });
+      const s = new THREE.Sprite(mat);
+      s.visible = false;
+      scene.add(s);
+      this.pool.push({ s, mat, life: 0, maxLife: 1, grow: 0, active: false });
+    }
+  }
+
+  private acquire(): SmokePuff {
+    const free = this.pool.find((p) => !p.active);
+    if (free) return free;
+    let oldest = this.pool[0];
+    let oldestFrac = oldest.life;
+    for (let i = 1; i < this.pool.length; i++) {
+      const p = this.pool[i];
+      if (p.life < oldestFrac) {
+        oldest = p;
+        oldestFrac = p.life;
+      }
+    }
+    return oldest;
   }
 
   spawn(p: THREE.Vector3, n: number, size = 1.2, dark = false) {
+    const color = dark ? 0x2a2a2e : 0x565d68;
     for (let i = 0; i < n; i++) {
-      const mat = new THREE.SpriteMaterial({
-        map: smokeTexture(), transparent: true, depthWrite: false,
-        color: dark ? 0x2a2a2e : 0x565d68, opacity: 0.55,
-      });
-      const s = new THREE.Sprite(mat);
-      s.position.set(
+      const slot = this.acquire();
+      slot.active = true;
+      slot.life = 1;
+      slot.maxLife = 0.9 + Math.random() * 1.1;
+      slot.grow = 1.8 + Math.random() * 2;
+      slot.mat.color.setHex(color);
+      slot.mat.opacity = 0.55;
+      slot.mat.rotation = Math.random() * Math.PI * 2;
+      slot.s.position.set(
         p.x + (Math.random() - 0.5) * 1.2,
         p.y + Math.random() * 0.8,
         p.z + (Math.random() - 0.5) * 1.2,
       );
-      s.scale.setScalar(size);
-      (mat as THREE.SpriteMaterial).rotation = Math.random() * Math.PI * 2;
-      this.scene.add(s);
-      this.smoke.push({ s, life: 1, maxLife: 0.9 + Math.random() * 1.1, grow: 1.8 + Math.random() * 2, dark });
-    }
-    while (this.smoke.length > this.cap) {
-      const old = this.smoke.shift()!;
-      this.scene.remove(old.s);
-      old.s.material.dispose();
+      slot.s.scale.setScalar(size);
+      slot.s.visible = true;
     }
   }
 
   update(_dt: number) {
-    for (let i = this.smoke.length - 1; i >= 0; i--) {
-      const p = this.smoke[i];
+    for (const p of this.pool) {
+      if (!p.active) continue;
       p.life -= _dt / p.maxLife;
       if (p.life <= 0) {
-        this.scene.remove(p.s);
-        p.s.material.dispose();
-        this.smoke.splice(i, 1);
+        p.active = false;
+        p.s.visible = false;
+        p.mat.opacity = 0;
         continue;
       }
-      const m = p.s.material as THREE.SpriteMaterial;
-      m.opacity = 0.5 * clamp(p.life, 0, 1);
-      m.rotation += _dt * 0.6;
+      p.mat.opacity = 0.5 * clamp(p.life, 0, 1);
+      p.mat.rotation += _dt * 0.6;
       p.s.position.y += _dt * 1.6;
       p.s.scale.setScalar(p.s.scale.x + p.grow * _dt);
     }
   }
 
   dispose() {
-    for (const p of this.smoke) {
+    for (const p of this.pool) {
       this.scene.remove(p.s);
-      p.s.material.dispose();
+      p.mat.dispose();
+      p.active = false;
     }
-    this.smoke.length = 0;
+    this.pool.length = 0;
   }
 }

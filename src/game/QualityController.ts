@@ -1,6 +1,6 @@
 // ===== Контроллер качества графики (low/medium/high) =====
 import type { RenderWorld } from './RenderWorld';
-import type { AudioFX } from './audio';
+import type { AudioPort } from './ports/AudioPort';
 import {
   getQualityPreset, nextQuality, saveQuality, type QualityLevel,
 } from './graphicsQuality';
@@ -12,7 +12,7 @@ import {
 export class QualityController {
   constructor(
     private renderWorld: RenderWorld,
-    private audio: AudioFX,
+    private audio: AudioPort,
   ) {}
 
   getQuality(): QualityLevel {

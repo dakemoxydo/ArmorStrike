@@ -8,6 +8,8 @@ const LS_KEY = 'as2_loadout';
 export class RunState {
   mode: GameMode = 'menu';
   paused = false;
+  /** Between-wave choice screen: combat frozen, pointer free. */
+  intermission = false;
   score = 0;
   kills = 0;
   matchTime = 0;
@@ -39,5 +41,6 @@ export class RunState {
     this.score = 0;
     this.kills = 0;
     this.matchTime = 0;
+    this.intermission = false;
   }
 }

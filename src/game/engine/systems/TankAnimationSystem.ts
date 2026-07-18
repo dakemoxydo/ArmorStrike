@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import type { TankEntity } from '../../Tank';
+import type { AnimBody } from '../../tank/simPorts';
 import { clamp, dampTo } from '../physics';
 import { BARREL_REST_Z } from '../../tuning';
 
 export const TankAnimationSystem = {
-  update(tanks: TankEntity[], dt: number) {
+  update(tanks: AnimBody[], dt: number) {
     for (const t of tanks) {
       if (!t.alive) {
         t.boostActive = false;

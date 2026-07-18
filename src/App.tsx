@@ -10,6 +10,8 @@ import PauseMenu from './components/PauseMenu';
 import MainMenu from './components/MainMenu';
 import GameOverScreen from './components/GameOverScreen';
 import BootError from './components/BootError';
+import WaveIntermission, { type IntermissionPayload } from './components/WaveIntermission';
+import { isInteractiveKeyboardTarget } from './ui/keyboardTarget';
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -17,6 +19,7 @@ export default function App() {
   const [bootError, setBootError] = useState<{ message: string; detail?: string } | null>(null);
   const [uiMode, setUiMode] = useState<GameMode>('menu');
   const [paused, setPaused] = useState(false);
+  const [intermission, setIntermission] = useState<IntermissionPayload | null>(null);
   const [finalStats, setFinalStats] = useState({ score: 0, kills: 0, wave: 1 });
   const [, forceUpdate] = useState(0);
 
@@ -40,13 +43,26 @@ export default function App() {
     g.addListener((e) => {
       if (e.type === 'modeChanged') {
         setUiMode(e.mode);
-        if (e.mode !== 'playing') setPaused(false);
+        if (e.mode !== 'playing') {
+          setPaused(false);
+          setIntermission(null);
+        }
       }
       if (e.type === 'gameOver') {
         setFinalStats({ score: e.score, kills: e.kills, wave: e.wave });
         setPaused(false);
+        setIntermission(null);
       }
       if (e.type === 'pauseChanged') setPaused(e.value);
+      if (e.type === 'intermission') {
+        setIntermission({
+          clearedWave: e.clearedWave,
+          nextWave: e.nextWave,
+          tally: e.tally,
+          roleTally: e.roleTally,
+        });
+      }
+      if (e.type === 'wave') setIntermission(null);
     });
     setGame(g);
     return () => g?.dispose();
@@ -71,15 +87,19 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (!game) return;
       if (e.code === 'Escape') {
-        if (uiMode === 'playing') game.togglePause();
+        // Intermission blocks pause (buff UI owns the screen).
+        if (uiMode === 'playing' && !intermission) game.togglePause();
         else if (uiMode === 'garage') goMenu();
       }
       if (e.code === 'KeyM') game.toggleMute();
-      if (e.code === 'Enter' && uiMode === 'menu') start();
+      // Enter starts only when focus is not already on a control
+      if (e.code === 'Enter' && uiMode === 'menu' && !isInteractiveKeyboardTarget(e.target)) {
+        start();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, uiMode, goMenu, start]);
+  }, [game, uiMode, goMenu, start, intermission]);
 
   const snap: HudSnapshot | null = game ? game.getHud() : null;
 
@@ -107,7 +127,7 @@ export default function App() {
   const currTurret = TURRETS[game?.currentTurret ?? 'railgun'];
 
   return (
-    <div className={`relative h-screen w-screen overflow-hidden bg-[#04060b] text-white ${uiMode === 'playing' && !paused ? 'ingame' : ''}`}>
+    <div className={`relative h-screen w-screen overflow-hidden bg-[#04060b] text-white ${uiMode === 'playing' && !paused && !intermission ? 'ingame' : ''}`}>
       <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full" />
 
       <div className="fx-scanlines pointer-events-none absolute inset-0 z-30" />
@@ -115,7 +135,15 @@ export default function App() {
 
       <HUD game={game} active={uiMode === 'playing'} />
 
-      {uiMode === 'playing' && paused && game && snap && (
+      {uiMode === 'playing' && intermission && game && (
+        <WaveIntermission
+          game={game}
+          data={intermission}
+          onChosen={() => setIntermission(null)}
+        />
+      )}
+
+      {uiMode === 'playing' && paused && !intermission && game && snap && (
         <PauseMenu
           game={game}
           muted={snap.muted}

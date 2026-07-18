@@ -10,8 +10,18 @@ export const WEAPON_TUNING = {
     knockback: 18.0,
     emissiveIdle: 0.15,
     emissiveCharged: 4.5,
-    beamDuration: 0.25,
+    /** Body beam fade (core shorter, glow slightly longer in RailgunBeamFx). */
+    beamDuration: 0.32,
     magazine: 1,
+    /** Camera trauma on fire (player / bot). */
+    fireShakePlayer: 0.48,
+    fireShakeBot: 0.14,
+    /** Peak micro-shake while charging (player only). */
+    chargeShakePeak: 0.055,
+    /** FOV tighten at full charge (degrees, player). */
+    chargeFovTighten: 2.8,
+    /** FOV punch on fire (degrees, player). */
+    fireFovPunch: 5.5,
   },
   flamethrower: {
     damagePerTick: 12,

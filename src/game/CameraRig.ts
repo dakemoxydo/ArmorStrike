@@ -3,9 +3,9 @@ import * as THREE from 'three';
 import type { GameMode } from './types';
 import type { Collider } from './engine/physics';
 import { segmentHitT, dampTo } from './engine/physics';
-import type { Effects } from './effects';
-import type { TankEntity } from './Tank';
+import type { EffectsPort } from './ports/EffectsPort';
 import type { TankVisual } from './Tank';
+import type { CameraFollowable } from './tank/simPorts';
 import type { CameraLookState } from './camera/CameraLookState';
 import { CameraMode } from './camera/CameraMode';
 import { MenuCameraMode } from './camera/MenuCameraMode';
@@ -20,10 +20,10 @@ export interface CameraUpdateParams {
   elapsed: number;
   /** Углы взгляда (playing); menu/garage/over игнорируют. */
   look: CameraLookState;
-  player: TankEntity | null;
+  player: CameraFollowable | null;
   previewVisual: TankVisual | null;
   colliders: Collider[];
-  effects: Effects;
+  effects: EffectsPort;
 }
 
 export class CameraRig {
@@ -83,7 +83,7 @@ export class CameraRig {
   }
 
   /** Мгновенно поставить камеру за спиной игрока (спавн/старт матча). */
-  snap(player: TankEntity, camYaw: number, camPitch: number) {
+  snap(player: CameraFollowable, camYaw: number, camPitch: number) {
     if (!player) return;
     const yaw = camYaw;
     const pitch = camPitch;
@@ -127,8 +127,8 @@ export class CameraRig {
   }
 
   /** Плавный переход FOV с обновлением проекционной матрицы. */
-  applyFov(targetFov: number, dt: number) {
-    this.camFov = dampTo(this.camFov, targetFov, 5, dt);
+  applyFov(targetFov: number, dt: number, rate = 5) {
+    this.camFov = dampTo(this.camFov, targetFov, rate, dt);
     if (Math.abs(this.camFov - this.camera.fov) > 0.05) {
       this.camera.fov = this.camFov;
       this.camera.updateProjectionMatrix();

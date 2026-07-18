@@ -5,13 +5,15 @@ import { weaponStatusKind } from '../../ui/hudPresentation';
 
 interface HudWeaponProps {
   reloadRef: RefObject<HTMLDivElement | null>;
+  /** Flame energy fill — width painted every frame via ref (no React force). */
+  flameFillRef?: RefObject<HTMLDivElement | null>;
   st: Pick<
     HudSnapshot,
     'turretId' | 'weaponLabel' | 'weaponName' | 'weaponAccentClass' | 'isCharging' | 'reloading' | 'ammo' | 'magazine'
   >;
 }
 
-export default function HudWeapon({ reloadRef, st }: HudWeaponProps) {
+export default function HudWeapon({ reloadRef, flameFillRef, st }: HudWeaponProps) {
   const status = weaponStatusKind({
     isCharging: st.isCharging,
     reloading: st.reloading,
@@ -20,6 +22,7 @@ export default function HudWeapon({ reloadRef, st }: HudWeaponProps) {
     magazine: st.magazine,
   });
   const emptyMag = status === 'empty';
+  const flamePct = Math.max(0, Math.min(100, st.ammo));
 
   return (
     <div className="anim-up absolute bottom-6 right-6" style={{ '--d': '0.3s' } as React.CSSProperties}>
@@ -58,8 +61,9 @@ export default function HudWeapon({ reloadRef, st }: HudWeaponProps) {
           {st.turretId === 'flamethrower' ? (
             <div className="w-36 h-3.5 bg-white/10 rounded-sm overflow-hidden border border-amber-500/40 relative">
               <div
+                ref={flameFillRef}
                 className="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-300 transition-all duration-75"
-                style={{ width: `${Math.max(0, Math.min(100, st.ammo))}%` }}
+                style={{ width: `${flamePct}%` }}
               />
             </div>
           ) : (

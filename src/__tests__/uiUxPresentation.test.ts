@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  ammoForcesHudRender,
   isLowHealth,
   scoreboardHpClass,
   weaponStatusKind,
@@ -71,6 +72,16 @@ describe('hudPresentation pure helpers (shipped)', () => {
     expect(isLowHealth(32, 100)).toBe(false);
     expect(isLowHealth(50, 200)).toBe(true);
     expect(isLowHealth(0, 0)).toBe(false);
+  });
+
+  it('ammoForcesHudRender: discrete ammo forces; continuous flame does not', () => {
+    expect(ammoForcesHudRender('railgun', 'railgun', 1, 0)).toBe(true);
+    expect(ammoForcesHudRender('cannon', 'cannon', 3, 2)).toBe(true);
+    expect(ammoForcesHudRender('flamethrower', 'flamethrower', 80, 79)).toBe(false);
+    expect(ammoForcesHudRender('railgun', 'flamethrower', 1, 100)).toBe(true);
+    const hook = readSrc('src/hooks/useGameHud.ts');
+    expect(hook).toMatch(/ammoForcesHudRender/);
+    expect(hook).toMatch(/flameFillRef/);
   });
 });
 
