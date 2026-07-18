@@ -1,4 +1,13 @@
 // ===== Карта City: grid-авеню, 4 квартала-districts, плаза, short overpass =====
+// Arena half = 150 (ARENA.size 300). Layout graph:
+//   N–S main avenue : x ∈ [−14, 14]        (primary fire lane, no solid blocks)
+//   E–W main avenue : z ∈ [−14, 14]        (primary fire lane, no solid blocks)
+//   Secondary ring  : |x|≈56, |z|≈56        (secondary lanes, low channels)
+//   Outer ring      : |x|,|z|≈104–120       (spawn-adjacent corridor)
+//   Plaza core      : |x|,|z| < 24           (monument + soft planter ring)
+//   Districts       : NE parking/mall · NW construction · SW neon-market · SE residential
+//   Overpass        : EW deck z≈−80, solid pillars only, approach ramps
+// Cover hierarchy: hard (offices/shops/pillars) · medium (jersey/kiosk) · soft (cars/planters/hay) · non-LOS (billboards/lamps/ramps)
 import * as THREE from 'three';
 import { ARENA } from '../constants';
 import { colliderFromCenter } from '../engine/physics';
@@ -132,15 +141,15 @@ function shop(
 ) {
   const body = concrete(0x6a7080);
   const neon = new THREE.MeshBasicMaterial({ color: neonColor });
-  ctx.addColliderBlock(x, z, w, d, 4.0, false, () => {
+  ctx.addColliderBlock(x, z, w, d, 4.6, false, () => {
     const g = new THREE.Group();
-    g.add(ctx.box(w, 4.0, d, body));
+    g.add(ctx.box(w, 4.6, d, body));
     // podium ledge
     const ledge = ctx.box(w * 1.04, 0.35, d * 1.04, concrete(0x555e6e));
     ledge.position.y = 0.15;
     g.add(ledge);
     const strip = new THREE.Mesh(new THREE.BoxGeometry(w * 0.88, 0.38, 0.22), neon);
-    strip.position.set(0, 3.5, (d / 2 + 0.08) * faceSignZ);
+    strip.position.set(0, 4.0, (d / 2 + 0.08) * faceSignZ);
     g.add(strip);
     return g;
   }, 0, 'wall');
@@ -217,15 +226,28 @@ function jersey(ctx: ArenaBuildContext, x: number, z: number, w: number, d: numb
   }, destructible ? 95 : 0, 'block');
 }
 
+/** Linear jersey row helper — spawn N barriers along an axis (soft peek line). */
+function jerseyLine(
+  ctx: ArenaBuildContext,
+  x0: number, z0: number, count: number, step: number, alongX: boolean,
+) {
+  for (let i = 0; i < count; i++) {
+    const x = alongX ? x0 + i * step : x0;
+    const z = alongX ? z0 : z0 + i * step;
+    if (alongX) jersey(ctx, x, z, step * 0.82, 1.4, true);
+    else jersey(ctx, x, z, 1.4, step * 0.82, true);
+  }
+}
+
 function kiosk(ctx: ArenaBuildContext, x: number, z: number, neonColor: number = NEON.magenta) {
-  ctx.addColliderBlock(x, z, 3.2, 3.2, 2.6, true, () => {
+  ctx.addColliderBlock(x, z, 3.6, 3.6, 3.0, true, () => {
     const g = new THREE.Group();
-    g.add(ctx.box(3.0, 2.2, 3.0, concrete(0x5a6270)));
+    g.add(ctx.box(3.4, 2.5, 3.4, concrete(0x5a6270)));
     const roof = new THREE.Mesh(
-      new THREE.BoxGeometry(3.4, 0.25, 3.4),
+      new THREE.BoxGeometry(3.8, 0.28, 3.8),
       new THREE.MeshBasicMaterial({ color: neonColor }),
     );
-    roof.position.y = 2.35;
+    roof.position.y = 2.65;
     g.add(roof);
     return g;
   }, 70);
@@ -315,7 +337,7 @@ function busStop(ctx: ArenaBuildContext, x: number, z: number, alongX = true) {
   }, 0, 'block');
 }
 
-// ── skyline (decorative, outside playable) ─────────────────────────────────
+// ── skyline (decorative, outside playable ring) ────────────────────────────
 
 function buildCitySkyline(ctx: ArenaBuildContext) {
   const dark = new THREE.MeshStandardMaterial({
@@ -326,16 +348,17 @@ function buildCitySkyline(ctx: ArenaBuildContext) {
     new THREE.MeshBasicMaterial({ color: NEON.magenta }),
     new THREE.MeshBasicMaterial({ color: NEON.lime }),
   ];
-  for (let i = 0; i < 36; i++) {
-    const ang = (i / 36) * Math.PI * 2 + (Math.random() - 0.5) * 0.04;
-    const r = 112 + Math.random() * 42;
-    const w = 10 + Math.random() * 24;
-    const h = 16 + Math.random() * 44;
+  // Denser neon towers ringing the 300-arena wall.
+  for (let i = 0; i < 60; i++) {
+    const ang = (i / 60) * Math.PI * 2 + (Math.random() - 0.5) * 0.04;
+    const r = 172 + Math.random() * 72;
+    const w = 14 + Math.random() * 34;
+    const h = 24 + Math.random() * 78;
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * 0.85), dark);
     m.position.set(Math.cos(ang) * r, h / 2 - 0.3, Math.sin(ang) * r);
     m.rotation.y = Math.random() * 0.35;
     ctx.group.add(m);
-    if (Math.random() > 0.28) {
+    if (Math.random() > 0.24) {
       const win = new THREE.Mesh(
         new THREE.PlaneGeometry(w * 0.55, h * 0.07),
         neon[i % neon.length],
@@ -350,213 +373,213 @@ function buildCitySkyline(ctx: ArenaBuildContext) {
 // ── plaza ──────────────────────────────────────────────────────────────────
 
 function buildCityPlaza(ctx: ArenaBuildContext) {
-  // civic monument / fountain base
-  ctx.addColliderBlock(0, 0, 9, 9, 7.2, false, () => {
+  // civic monument / fountain base (scaled ~1.7× for the bigger arena)
+  ctx.addColliderBlock(0, 0, 15, 15, 9.5, false, () => {
     const g = new THREE.Group();
     const base = concrete(0x6a7588);
-    g.add(ctx.box(9, 1.1, 9, base));
+    g.add(ctx.box(15, 1.4, 15, base));
     // fountain ring (visual, low)
     const basin = new THREE.Mesh(
-      new THREE.TorusGeometry(3.6, 0.35, 8, 28),
+      new THREE.TorusGeometry(5.6, 0.5, 8, 30),
       concrete(0x708090),
     );
     basin.rotation.x = Math.PI / 2;
-    basin.position.y = 1.15;
+    basin.position.y = 1.45;
     g.add(basin);
     const pillar = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.35, 1.75, 5.4, 12),
+      new THREE.CylinderGeometry(1.9, 2.4, 7.2, 12),
       concrete(0x90a0b4),
     );
-    pillar.position.y = 3.9;
+    pillar.position.y = 5.2;
     pillar.castShadow = true;
     g.add(pillar);
     const cap = new THREE.Mesh(
-      new THREE.BoxGeometry(3.4, 0.5, 3.4),
+      new THREE.BoxGeometry(4.6, 0.7, 4.6),
       new THREE.MeshStandardMaterial({
         color: NEON.cyan, roughness: 0.3, metalness: 0.8,
         emissive: 0x1a4060, emissiveIntensity: 0.65,
       }),
     );
-    cap.position.y = 6.9;
+    cap.position.y = 9.1;
     g.add(cap);
     const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(2.15, 0.12, 8, 24),
+      new THREE.TorusGeometry(3.0, 0.16, 8, 26),
       new THREE.MeshBasicMaterial({ color: NEON.cyan }),
     );
     ring.rotation.x = Math.PI / 2;
-    ring.position.y = 6.15;
+    ring.position.y = 8.1;
     g.add(ring);
     ctx.setObelisk(cap, ring);
     return g;
   }, 0, 'wall');
 
-  // soft ring — planters (not only 4 corners)
+  // soft ring — planters around the plaza (peek cover, not sealed)
   const ring: [number, number][] = [
-    [12, 12], [-12, 12], [12, -12], [-12, -12],
-    [16, 0], [-16, 0], [0, 16], [0, -16],
-    [11, 5], [-11, 5], [11, -5], [-11, -5],
+    [20, 20], [-20, 20], [20, -20], [-20, -20],
+    [26, 0], [-26, 0], [0, 26], [0, -26],
+    [18, 9], [-18, 9], [18, -9], [-18, -9],
   ];
   for (const [x, z] of ring) planter(ctx, x, z);
 
-  // low hard cover on plaza approaches (peek points)
-  jersey(ctx, 0, 20, 6.5, 1.4, false);
-  jersey(ctx, 0, -20, 6.5, 1.4, false);
-  jersey(ctx, 20, 0, 1.4, 6.5, false);
-  jersey(ctx, -20, 0, 1.4, 6.5, false);
+  // low hard cover on plaza approaches (peek points, avenues stay clear)
+  jersey(ctx, 0, 32, 10, 1.6, false);
+  jersey(ctx, 0, -32, 10, 1.6, false);
+  jersey(ctx, 32, 0, 1.6, 10, false);
+  jersey(ctx, -32, 0, 1.6, 10, false);
 }
 
-// ── grid blocks (L-shape per quadrant, avenues clear) ──────────────────────
-// Main avenues: |x| < 7, |z| < 7. Secondary corridors ~|x|≈28, |z|≈28.
+// ── grid blocks (per quadrant, avenues clear) ──────────────────────────────
+// Main avenues clear: |x| < 14, |z| < 14. Secondary corridors ~|x|,|z|≈56.
 
 function buildCityBlocks(ctx: ArenaBuildContext) {
   // ── NE (+x, +z): Parking-facing mall towers ──
-  office(ctx, 17, 17, 10, 10, 9, NEON.cyan, 'ac', 'bands');
-  office(ctx, 17, 48, 12, 10, 12, NEON.lime, 'neon', 'grid');
-  office(ctx, 48, 17, 10, 12, 10, NEON.cyan, 'ac', 'fins');
-  office(ctx, 48, 48, 12, 12, 14, NEON.magenta, 'neon', 'bands');
-  shop(ctx, 17, 10, 10, 5, NEON.cyan, -1);
-  shop(ctx, 10, 17, 5, 10, NEON.cyan, 1);
+  office(ctx, 34, 34, 18, 18, 15, NEON.cyan, 'ac', 'bands');
+  office(ctx, 34, 92, 22, 18, 20, NEON.lime, 'neon', 'grid');
+  office(ctx, 92, 34, 18, 22, 17, NEON.cyan, 'ac', 'fins');
+  office(ctx, 92, 92, 22, 22, 24, NEON.magenta, 'neon', 'bands');
+  shop(ctx, 34, 20, 18, 8, NEON.cyan, -1);
+  shop(ctx, 20, 34, 8, 18, NEON.cyan, 1);
 
   // ── NW (−x, +z): Construction / mid-rise ──
-  office(ctx, -17, 17, 10, 10, 8, NEON.magenta, 'tank', 'fins');
-  office(ctx, -17, 48, 12, 10, 11, NEON.cyan, 'ac', 'bands');
-  office(ctx, -48, 17, 10, 12, 10, NEON.lime, 'neon', 'grid');
-  office(ctx, -48, 48, 12, 12, 13, NEON.magenta, 'tank', 'bands');
-  shop(ctx, -17, 10, 10, 5, NEON.magenta, -1);
-  shop(ctx, -10, 17, 5, 10, NEON.magenta, 1);
+  office(ctx, -34, 34, 18, 18, 14, NEON.magenta, 'tank', 'fins');
+  office(ctx, -34, 92, 22, 18, 19, NEON.cyan, 'ac', 'bands');
+  office(ctx, -92, 34, 18, 22, 17, NEON.lime, 'neon', 'grid');
+  office(ctx, -92, 92, 22, 22, 23, NEON.magenta, 'tank', 'bands');
+  shop(ctx, -34, 20, 18, 8, NEON.magenta, -1);
+  shop(ctx, -20, 34, 8, 18, NEON.magenta, 1);
 
   // ── SE (+x, −z): Residential lower ──
-  office(ctx, 17, -17, 10, 10, 7, NEON.lime, 'ac', 'grid');
-  office(ctx, 17, -48, 12, 10, 9, NEON.cyan, 'tank', 'bands');
-  office(ctx, 48, -17, 10, 12, 8, NEON.lime, 'ac', 'fins');
-  office(ctx, 48, -48, 12, 12, 11, NEON.cyan, 'neon', 'bands');
-  shop(ctx, 17, -10, 10, 5, NEON.lime, 1);
-  shop(ctx, 10, -17, 5, 10, NEON.lime, 1);
+  office(ctx, 34, -34, 18, 18, 12, NEON.lime, 'ac', 'grid');
+  office(ctx, 34, -92, 22, 18, 15, NEON.cyan, 'tank', 'bands');
+  office(ctx, 92, -34, 18, 22, 13, NEON.lime, 'ac', 'fins');
+  office(ctx, 92, -92, 22, 22, 18, NEON.cyan, 'neon', 'bands');
+  shop(ctx, 34, -20, 18, 8, NEON.lime, 1);
+  shop(ctx, 20, -34, 8, 18, NEON.lime, 1);
 
   // ── SW (−x, −z): Neon market mid-rises ──
-  office(ctx, -17, -17, 10, 10, 9, NEON.magenta, 'neon', 'bands');
-  office(ctx, -17, -48, 12, 10, 12, NEON.magenta, 'neon', 'grid');
-  office(ctx, -48, -17, 10, 12, 10, NEON.cyan, 'ac', 'fins');
-  office(ctx, -48, -48, 12, 12, 14, NEON.lime, 'neon', 'bands');
-  shop(ctx, -17, -10, 10, 5, NEON.magenta, 1);
-  shop(ctx, -10, -17, 5, 10, NEON.magenta, 1);
+  office(ctx, -34, -34, 18, 18, 15, NEON.magenta, 'neon', 'bands');
+  office(ctx, -34, -92, 22, 18, 20, NEON.magenta, 'neon', 'grid');
+  office(ctx, -92, -34, 18, 22, 17, NEON.cyan, 'ac', 'fins');
+  office(ctx, -92, -92, 22, 22, 24, NEON.lime, 'neon', 'bands');
+  shop(ctx, -34, -20, 18, 8, NEON.magenta, 1);
+  shop(ctx, -20, -34, 8, 18, NEON.magenta, 1);
 
-  // mid-ring solid barriers at secondary cross (channel fire without sealing)
+  // mid-ring solid channels at secondary cross (guide fire without sealing)
   const bar = concrete(0x555e6e);
-  ctx.addColliderBlock(28, 12, 2.4, 6, 2.6, false, () => ctx.box(2.4, 2.6, 6, bar.clone()), 0, 'block');
-  ctx.addColliderBlock(-28, -12, 2.4, 6, 2.6, false, () => ctx.box(2.4, 2.6, 6, bar.clone()), 0, 'block');
-  ctx.addColliderBlock(12, -28, 6, 2.4, 2.6, false, () => ctx.box(6, 2.6, 2.4, bar.clone()), 0, 'block');
-  ctx.addColliderBlock(-12, 28, 6, 2.4, 2.6, false, () => ctx.box(6, 2.6, 2.4, bar.clone()), 0, 'block');
+  ctx.addColliderBlock(56, 24, 3.2, 10, 3.2, false, () => ctx.box(3.2, 3.2, 10, bar.clone()), 0, 'block');
+  ctx.addColliderBlock(-56, -24, 3.2, 10, 3.2, false, () => ctx.box(3.2, 3.2, 10, bar.clone()), 0, 'block');
+  ctx.addColliderBlock(24, -56, 10, 3.2, 3.2, false, () => ctx.box(10, 3.2, 3.2, bar.clone()), 0, 'block');
+  ctx.addColliderBlock(-24, 56, 10, 3.2, 3.2, false, () => ctx.box(10, 3.2, 3.2, bar.clone()), 0, 'block');
 }
 
 // ── district soft cover ────────────────────────────────────────────────────
 
 function buildCityDistricts(ctx: ArenaBuildContext) {
-  // NE — Parking lot
-  const lotCars: [number, number, number, 'sedan' | 'van' | 'taxi'][] = [
-    [38, 32, 0, 'sedan'], [38, 36, 0, 'taxi'], [38, 40, 0, 'sedan'],
-    [54, 28, Math.PI, 'van'], [54, 33, Math.PI, 'sedan'], [54, 38, Math.PI, 'taxi'],
-    [42, 54, Math.PI / 2, 'sedan'], [46, 54, Math.PI / 2, 'van'],
-  ];
   const carCols = [0x2a4060, 0x602a2a, 0x2a5030, 0x404050, 0x503020, 0x1a1a2a];
-  lotCars.forEach(([x, z, yaw, v], i) => car(ctx, x, z, yaw, carCols[i % carCols.length], v));
-  // lot walls (low hard)
-  jersey(ctx, 36, 56, 14, 1.3, false);
-  jersey(ctx, 56, 36, 1.3, 14, false);
-  // ticket booth
-  kiosk(ctx, 32, 28, NEON.cyan);
 
-  // NW — Construction
-  jersey(ctx, -36, 36, 5, 1.3, true);
-  jersey(ctx, -41, 36, 5, 1.3, true);
-  jersey(ctx, -46, 36, 5, 1.3, true);
-  jersey(ctx, -36, 40, 1.3, 5, true);
-  jersey(ctx, -36, 45, 1.3, 5, true);
-  deliveryCrate(ctx, -40, 52, 4.5, 3.5, 2.2);
-  deliveryCrate(ctx, -52, 40, 3.5, 4.5, 2.4);
-  deliveryCrate(ctx, -32, 42, 3.5, 3.5, 2.0);
-  // scaffold frame (visual hard poles as thin blocks)
-  ctx.addColliderBlock(-54, 54, 8, 2.5, 5.5, false, () => {
+  // NE — Parking lot (dense soft car rows + lot walls)
+  const lotCars: [number, number, number, 'sedan' | 'van' | 'taxi'][] = [
+    [72, 62, 0, 'sedan'], [72, 68, 0, 'taxi'], [72, 74, 0, 'sedan'], [72, 80, 0, 'van'],
+    [104, 54, Math.PI, 'van'], [104, 62, Math.PI, 'sedan'], [104, 70, Math.PI, 'taxi'], [104, 78, Math.PI, 'sedan'],
+    [82, 104, Math.PI / 2, 'sedan'], [90, 104, Math.PI / 2, 'van'], [98, 104, Math.PI / 2, 'taxi'],
+  ];
+  lotCars.forEach(([x, z, yaw, v], i) => car(ctx, x, z, yaw, carCols[i % carCols.length], v));
+  jersey(ctx, 72, 108, 28, 1.6, false);
+  jersey(ctx, 108, 72, 1.6, 28, false);
+  kiosk(ctx, 62, 54, NEON.cyan); // ticket booth
+
+  // NW — Construction (jersey grids + crate stacks + scaffold)
+  jerseyLine(ctx, -72, 72, 4, 10, true);
+  jerseyLine(ctx, -72, 82, 4, 10, false);
+  deliveryCrate(ctx, -80, 104, 9, 7, 4.4);
+  deliveryCrate(ctx, -104, 80, 7, 9, 4.8);
+  deliveryCrate(ctx, -64, 84, 7, 7, 4.0);
+  ctx.addColliderBlock(-108, 108, 16, 5, 10.5, false, () => {
     const g = new THREE.Group();
     const steel = concrete(0x8899aa);
-    for (const sx of [-3, 3]) {
-      for (const sz of [-0.8, 0.8]) {
-        const p = ctx.box(0.3, 5.5, 0.3, steel);
-        p.position.set(sx, 2.75, sz);
+    for (const sx of [-6, 6]) {
+      for (const sz of [-1.6, 1.6]) {
+        const p = ctx.box(0.5, 10.5, 0.5, steel);
+        p.position.set(sx, 5.25, sz);
         g.add(p);
       }
     }
-    const beam = ctx.box(7, 0.3, 2.2, steel);
-    beam.position.y = 5.2;
+    const beam = ctx.box(14, 0.5, 4.4, steel);
+    beam.position.y = 10.0;
     g.add(beam);
     return g;
   }, 0, 'block');
 
-  // SW — Neon market
-  kiosk(ctx, -24, -24, NEON.magenta);
-  kiosk(ctx, -32, -22, NEON.lime);
-  kiosk(ctx, -22, -34, NEON.cyan);
-  dumpster(ctx, -38, -28, 0.2);
-  dumpster(ctx, -28, -40, Math.PI / 2);
-  dumpster(ctx, -44, -36, -0.3);
-  deliveryCrate(ctx, -52, -28, 4, 3.5, 2.2);
-  car(ctx, -36, -52, Math.PI / 2, 0x2a4060, 'taxi');
-  car(ctx, -42, -52, Math.PI / 2, 0x503020, 'sedan');
-  billboard(ctx, -28, -14, 0.4, NEON.magenta);
-  billboard(ctx, -14, -30, -0.5, NEON.lime);
+  // SW — Neon market (kiosks + dumpsters + magenta billboards)
+  kiosk(ctx, -48, -48, NEON.magenta);
+  kiosk(ctx, -64, -44, NEON.lime);
+  kiosk(ctx, -44, -68, NEON.cyan);
+  dumpster(ctx, -76, -56, 0.2);
+  dumpster(ctx, -56, -80, Math.PI / 2);
+  dumpster(ctx, -88, -72, -0.3);
+  deliveryCrate(ctx, -104, -56, 8, 7, 4.4);
+  car(ctx, -72, -104, Math.PI / 2, 0x2a4060, 'taxi');
+  car(ctx, -84, -104, Math.PI / 2, 0x503020, 'sedan');
+  billboard(ctx, -56, -28, 0.4, NEON.magenta);
+  billboard(ctx, -28, -60, -0.5, NEON.lime);
 
-  // SE — Residential
-  planter(ctx, 24, -24, 0x3a6a38);
-  planter(ctx, 32, -24, 0x2a5a30);
-  planter(ctx, 24, -32, 0x355a32);
-  planter(ctx, 36, -36, 0x2a5a30);
-  planter(ctx, 52, -24, 0x3a6a38);
-  planter(ctx, 24, -52, 0x2a5a30);
-  busStop(ctx, 36, -10, true);
-  busStop(ctx, 10, -36, false);
-  car(ctx, 52, -36, Math.PI, 0x404050, 'sedan');
-  car(ctx, 52, -42, Math.PI, 0x2a5030, 'van');
+  // SE — Residential (planter clusters + bus stops + parked cars)
+  planter(ctx, 48, -48, 0x3a6a38);
+  planter(ctx, 64, -48, 0x2a5a30);
+  planter(ctx, 48, -64, 0x355a32);
+  planter(ctx, 72, -72, 0x2a5a30);
+  planter(ctx, 104, -48, 0x3a6a38);
+  planter(ctx, 48, -104, 0x2a5a30);
+  busStop(ctx, 72, -20, true);
+  busStop(ctx, 20, -72, false);
+  car(ctx, 104, -72, Math.PI, 0x404050, 'sedan');
+  car(ctx, 104, -84, Math.PI, 0x2a5030, 'van');
 
   // mid-ring soft along secondary corridors (linear, not only corners)
-  car(ctx, 28, -8, 0.1, 0x2a4060, 'sedan');
-  car(ctx, -28, 8, Math.PI + 0.1, 0x602a2a, 'taxi');
-  car(ctx, 8, 28, Math.PI / 2, 0x404050, 'sedan');
-  car(ctx, -8, -28, -Math.PI / 2, 0x503020, 'van');
-  jersey(ctx, 28, 0, 1.3, 5, true);
-  jersey(ctx, -28, 0, 1.3, 5, true);
-  jersey(ctx, 0, 28, 5, 1.3, true);
-  jersey(ctx, 0, -28, 5, 1.3, true);
+  car(ctx, 56, -16, 0.1, 0x2a4060, 'sedan');
+  car(ctx, -56, 16, Math.PI + 0.1, 0x602a2a, 'taxi');
+  car(ctx, 16, 56, Math.PI / 2, 0x404050, 'sedan');
+  car(ctx, -16, -56, -Math.PI / 2, 0x503020, 'van');
+  jerseyLine(ctx, 56, -6, 3, 6, false);
+  jerseyLine(ctx, -56, -6, 3, 6, false);
+  jerseyLine(ctx, -6, 56, 3, 6, true);
+  jerseyLine(ctx, -6, -56, 3, 6, true);
 
-  // outer delivery / one loading-dock container stack (city-not-factory)
+  // outer loading-dock container stacks (city-not-factory, hard flank anchors)
   const ctex = containerTexture('#2a6a9a', 'CITY', '#1a3a5a');
   const mat = new THREE.MeshStandardMaterial({
     map: ctex, roughness: 0.55, metalness: 0.45, color: 0x8ab4d0,
   });
-  ctx.addColliderBlock(58, -52, 6.5, 2.6, 5.2, false, () => {
-    const g = new THREE.Group();
-    const low = ctx.box(6.5, 2.6, 2.6, mat);
-    low.position.y = 1.3;
-    g.add(low);
-    const up = ctx.box(6.5, 2.6, 2.6, mat);
-    up.position.y = 3.9;
-    up.rotation.y = 0.06;
-    g.add(up);
-    return g;
-  }, 0, 'block');
+  const dock = (dx: number, dz: number, yaw: number) => {
+    ctx.addColliderBlock(dx, dz, 11, 4.6, 9.4, false, () => {
+      const g = new THREE.Group();
+      const low = ctx.box(11, 4.6, 4.6, mat);
+      low.position.y = 2.3;
+      low.rotation.y = yaw;
+      g.add(low);
+      const up = ctx.box(11, 4.6, 4.6, mat);
+      up.position.y = 6.9;
+      up.rotation.y = yaw + 0.06;
+      g.add(up);
+      return g;
+    }, 0, 'block');
+  };
+  dock(116, -104, 0);
+  dock(-116, 104, Math.PI / 2);
 
-  // edge billboards
-  billboard(ctx, 0, 58, 0, NEON.cyan);
-  billboard(ctx, 0, -58, Math.PI, NEON.magenta);
-  billboard(ctx, 58, 0, Math.PI / 2, NEON.lime);
-  billboard(ctx, -58, 0, -Math.PI / 2, NEON.cyan);
+  // edge billboards (each cardinal wall)
+  billboard(ctx, 0, 116, 0, NEON.cyan);
+  billboard(ctx, 0, -116, Math.PI, NEON.magenta);
+  billboard(ctx, 116, 0, Math.PI / 2, NEON.lime);
+  billboard(ctx, -116, 0, -Math.PI / 2, NEON.cyan);
 }
 
 // ── short overpass (EW spine south of center) ──────────────────────────────
 
 function buildCityOverpass(ctx: ArenaBuildContext) {
-  const z = -40;
-  const pillarH = 6.2;
-  const deckY = 7.0;
+  const z = -80;
+  const pillarH = 8.4;
+  const deckY = 9.6;
   const pillarMat = concrete(0x5a6575);
   const deckMat = new THREE.MeshStandardMaterial({
     color: 0x3a4454, roughness: 0.65, metalness: 0.35,
@@ -565,43 +588,43 @@ function buildCityOverpass(ctx: ArenaBuildContext) {
   const railMat = new THREE.MeshBasicMaterial({ color: NEON.cyan });
 
   // pillars — solid hard cover under the span
-  for (const px of [-32, -12, 12, 32]) {
-    ctx.addColliderBlock(px, z, 3.2, 3.2, pillarH, false, () => {
+  for (const px of [-64, -24, 24, 64]) {
+    ctx.addColliderBlock(px, z, 4.4, 4.4, pillarH, false, () => {
       const g = new THREE.Group();
-      g.add(ctx.box(3.0, pillarH, 3.0, pillarMat));
-      const cap = ctx.box(3.6, 0.4, 3.6, concrete(0x4a5565));
-      cap.position.y = pillarH + 0.15;
+      g.add(ctx.box(4.2, pillarH, 4.2, pillarMat));
+      const cap = ctx.box(5.0, 0.5, 5.0, concrete(0x4a5565));
+      cap.position.y = pillarH + 0.2;
       g.add(cap);
       return g;
     }, 0, 'wall');
   }
 
   // deck + rails — visual only (tanks pass under; no shot-block slab)
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(72, 0.7, 8), deckMat);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(148, 1.0, 12), deckMat);
   deck.position.set(0, deckY, z);
   deck.castShadow = true;
   deck.receiveShadow = true;
   ctx.group.add(deck);
 
-  for (const side of [-3.6, 3.6]) {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(72, 0.35, 0.25), railMat);
-    rail.position.set(0, deckY + 0.7, z + side);
+  for (const side of [-5.4, 5.4]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(148, 0.5, 0.35), railMat);
+    rail.position.set(0, deckY + 1.0, z + side);
     ctx.group.add(rail);
   }
 
   // neon under-glow strip
   const glow = new THREE.Mesh(
-    new THREE.BoxGeometry(70, 0.15, 0.4),
+    new THREE.BoxGeometry(144, 0.2, 0.6),
     new THREE.MeshBasicMaterial({ color: NEON.magenta }),
   );
-  glow.position.set(0, deckY - 0.45, z);
+  glow.position.set(0, deckY - 0.65, z);
   ctx.group.add(glow);
 
   // approach ramps at ends (blocksShots false)
-  addCityRamp(ctx, -40, z + 10, Math.PI * 0.15);
-  addCityRamp(ctx, 40, z + 10, -Math.PI * 0.15);
-  addCityRamp(ctx, -40, z - 10, Math.PI * 0.85);
-  addCityRamp(ctx, 40, z - 10, -Math.PI * 0.85);
+  addCityRamp(ctx, -80, z + 16, Math.PI * 0.15);
+  addCityRamp(ctx, 80, z + 16, -Math.PI * 0.15);
+  addCityRamp(ctx, -80, z - 16, Math.PI * 0.85);
+  addCityRamp(ctx, 80, z - 16, -Math.PI * 0.85);
 }
 
 // ── street lamps ───────────────────────────────────────────────────────────
@@ -622,8 +645,8 @@ function buildCityStreetProps(ctx: ArenaBuildContext) {
     }, 0, 'block', false);
   };
 
-  const edge = 62;
-  for (const p of [-50, -30, -10, 10, 30, 50]) {
+  const edge = 124;
+  for (const p of [-100, -60, -20, 20, 60, 100]) {
     lamp(p, -edge);
     lamp(p, edge);
     lamp(-edge, p);
@@ -631,12 +654,12 @@ function buildCityStreetProps(ctx: ArenaBuildContext) {
   }
   // intersection lamps at main × secondary
   for (const s of [1, -1]) {
-    lamp(s * 8, s * 8);
-    lamp(s * 8, -s * 8);
-    lamp(s * 28, 8);
-    lamp(s * 28, -8);
-    lamp(8, s * 28);
-    lamp(-8, s * 28);
+    lamp(s * 16, s * 16);
+    lamp(s * 16, -s * 16);
+    lamp(s * 56, 16);
+    lamp(s * 56, -16);
+    lamp(16, s * 56);
+    lamp(-16, s * 56);
   }
 
   // traffic light poles at main cross
@@ -663,10 +686,10 @@ function buildCityStreetProps(ctx: ArenaBuildContext) {
       return g;
     }, 0, 'block', false);
   };
-  tl(9, 9);
-  tl(-9, 9);
-  tl(9, -9);
-  tl(-9, -9);
+  tl(16, 16);
+  tl(-16, 16);
+  tl(16, -16);
+  tl(-16, -16);
 }
 
 // ── city ramps (not shared factory positions) ──────────────────────────────
@@ -704,21 +727,21 @@ function addCityRamp(ctx: ArenaBuildContext, x: number, z: number, yaw: number) 
 
 function buildCityRamps(ctx: ArenaBuildContext) {
   // parking / approach ramps — keep main cross free
-  addCityRamp(ctx, 34, 34, Math.PI * 0.75);
-  addCityRamp(ctx, -34, 34, -Math.PI * 0.75);
-  addCityRamp(ctx, 34, -34, Math.PI * 0.25);
-  addCityRamp(ctx, -34, -34, -Math.PI * 0.25);
+  addCityRamp(ctx, 68, 68, Math.PI * 0.75);
+  addCityRamp(ctx, -68, 68, -Math.PI * 0.75);
+  addCityRamp(ctx, 68, -68, Math.PI * 0.25);
+  addCityRamp(ctx, -68, -68, -Math.PI * 0.25);
   // outer approach
-  addCityRamp(ctx, 0, 50, Math.PI);
-  addCityRamp(ctx, 0, -54, 0);
-  addCityRamp(ctx, 52, 0, Math.PI / 2);
-  addCityRamp(ctx, -52, 0, -Math.PI / 2);
+  addCityRamp(ctx, 0, 100, Math.PI);
+  addCityRamp(ctx, 0, -108, 0);
+  addCityRamp(ctx, 104, 0, Math.PI / 2);
+  addCityRamp(ctx, -104, 0, -Math.PI / 2);
 }
 
 // ── atmosphere ─────────────────────────────────────────────────────────────
 
 function buildCityAtmosphere(ctx: ArenaBuildContext) {
-  const domeGeo = new THREE.CylinderGeometry(ctx.half + 6, ctx.half + 6, 52, 48, 1, true);
+  const domeGeo = new THREE.CylinderGeometry(ctx.half + 6, ctx.half + 6, 80, 48, 1, true);
   const domeMat = new THREE.MeshBasicMaterial({
     map: hexTexture(),
     transparent: true,
@@ -729,22 +752,22 @@ function buildCityAtmosphere(ctx: ArenaBuildContext) {
     blending: THREE.AdditiveBlending,
   });
   const dome = new THREE.Mesh(domeGeo, domeMat);
-  dome.position.y = 22;
+  dome.position.y = 34;
   ctx.group.add(dome);
   ctx.setDome(dome);
 
-  const N = 280;
+  const N = 560;
   const pos = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) {
     pos[i * 3] = (Math.random() - 0.5) * ARENA.size;
-    pos[i * 3 + 1] = 0.4 + Math.random() * 10;
+    pos[i * 3 + 1] = 0.4 + Math.random() * 12;
     pos[i * 3 + 2] = (Math.random() - 0.5) * ARENA.size;
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const mat = new THREE.PointsMaterial({
     color: 0x6ad0ff,
-    size: 0.12,
+    size: 0.14,
     transparent: true,
     opacity: 0.42,
     blending: THREE.AdditiveBlending,

@@ -3,7 +3,7 @@
 // Визуальный луч вынесен в RailgunBeamFx. Juice: charge pull, shake/FOV, layered beam/SFX.
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
-import type { Arena } from '../Arena';
+import type { Collider } from '../engine/physics';
 import type { CombatPeer, WeaponOwner } from './types';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
 import { buildAmmoState } from './types';
@@ -110,7 +110,7 @@ export class RailgunWeapon implements Weapon {
 
         if (this.chargeTimer >= chargeDur) {
           visual.barrelGroup.position.set(0, BARREL_REST_Y, BARREL_REST_Z);
-          this.executeFiring(ctx.tanks, ctx.arena);
+          this.executeFiring(ctx.tanks, ctx.colliders);
           this.state = 'COOLDOWN';
           this.reloadTimer = this.cooldownDuration();
         }
@@ -141,7 +141,7 @@ export class RailgunWeapon implements Weapon {
   }
 
   /** Выполнение Hitscan-выстрела с помощью Raycast + juice payload. */
-  private executeFiring(tanks: CombatPeer[], arena: Arena) {
+  private executeFiring(tanks: CombatPeer[], colliders: Collider[]) {
     fillMuzzleAndAim(this.owner, tmpMuzzle, tmpDir);
     const isPlayer = this.owner.isPlayer;
     const rt = WEAPON_TUNING.railgun;
@@ -159,8 +159,8 @@ export class RailgunWeapon implements Weapon {
       this.deps.onShotFired?.();
     }
 
-    const hits = this.castHitscan(tanks, arena);
-    const maxHitDist = this.resolveHits(hits, arena);
+    const hits = this.castHitscan(tanks);
+    const maxHitDist = this.resolveHits(hits, colliders);
     this.beamFx.show(tmpMuzzle, tmpDir, maxHitDist);
 
     // Along-beam ion trail (midpoints)
@@ -179,7 +179,7 @@ export class RailgunWeapon implements Weapon {
    * M9: tank meshes via raycast; walls/blocks via collider slab (blocksShots),
    * same parity as projectiles — decorative arena meshes never stop the beam.
    */
-  private castHitscan(tanks: CombatPeer[], _arena: Arena): THREE.Intersection[] {
+  private castHitscan(tanks: CombatPeer[]): THREE.Intersection[] {
     this.raycaster.set(tmpMuzzle, tmpDir);
     this.raycaster.far = this.owner.params.range ?? WEAPON_TUNING.railgun.range;
 
@@ -201,21 +201,21 @@ export class RailgunWeapon implements Weapon {
 
   /** Nearest shot-blocking collider along aim ray; builds world hit point for FX/damage. */
   private nearestShotBlocker(
-    arena: Arena,
+    colliders: Collider[],
     range: number,
   ): { dist: number; id: number; point: THREE.Vector3 } | null {
     const hit = nearestShotBlockerDist(
-      tmpMuzzle.x, tmpMuzzle.z, tmpDir.x, tmpDir.z, range, arena.colliders, tmpMuzzle.y,
+      tmpMuzzle.x, tmpMuzzle.z, tmpDir.x, tmpDir.z, range, colliders, tmpMuzzle.y,
     );
     if (!hit) return null;
-    const col = arena.colliders.find((c) => c.id === hit.id);
+    const col = colliders.find((c) => c.id === hit.id);
     const point = tmpMuzzle.clone().addScaledVector(tmpDir, hit.dist);
     point.y = col ? Math.min(col.height * 0.5, 2) : 1.6;
     return { dist: hit.dist, id: hit.id, point };
   }
 
   /** Проход по попаданиям: пенетрация, урон, толчок, эффекты. Возвращает дистанцию луча. */
-  private resolveHits(hits: THREE.Intersection[], arena: Arena): number {
+  private resolveHits(hits: THREE.Intersection[], colliders: Collider[]): number {
     const tankMap = this._tankMap;
     const range = this.owner.params.range ?? WEAPON_TUNING.railgun.range;
     let maxHitDist = range;
@@ -225,7 +225,7 @@ export class RailgunWeapon implements Weapon {
     let lastImpact: THREE.Vector3 | null = null;
     let hitCount = 0;
 
-    const wall = this.nearestShotBlocker(arena, range);
+    const wall = this.nearestShotBlocker(colliders, range);
     const wallDist = wall?.dist ?? Infinity;
 
     for (const hit of hits) {

@@ -28,10 +28,10 @@ export class RenderWorld {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
 
-    this.camera = new THREE.PerspectiveCamera(58, 1, 0.1, 500);
+    this.camera = new THREE.PerspectiveCamera(58, 1, 0.1, 900);
     this.cameraRig = new CameraRig(this.camera);
     this.scene.background = new THREE.Color(0x060a12);
-    this.scene.fog = new THREE.Fog(0x0a0f18, 75, 250);
+    this.scene.fog = new THREE.Fog(0x0a0f18, 130, 440);
 
     const sky = new THREE.Mesh(
       new THREE.SphereGeometry(480, 32, 20),
@@ -72,12 +72,12 @@ export class RenderWorld {
     const hemi = new THREE.HemisphereLight(0x8fb9d8, 0x0a0e14, 0.5);
     this.scene.add(hemi);
     this.sun = new THREE.DirectionalLight(0xffe6c0, 2.4);
-    this.sun.position.set(58, 78, 32);
+    this.sun.position.set(116, 156, 64);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(preset.shadowMapSize, preset.shadowMapSize);
     const sc = this.sun.shadow.camera;
-    sc.left = -88; sc.right = 88; sc.top = 88; sc.bottom = -88;
-    sc.near = 10; sc.far = 220;
+    sc.left = -170; sc.right = 170; sc.top = 170; sc.bottom = -170;
+    sc.near = 10; sc.far = 420;
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.add(this.sun);

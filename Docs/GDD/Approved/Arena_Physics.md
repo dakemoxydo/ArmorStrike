@@ -8,10 +8,12 @@
 
 | Параметр | Значение |
 |----------|----------|
-| Размер | 150 × 150 (`ARENA.size`) |
-| half | size/2 = 75 |
+| Размер | **300 × 300** (`ARENA.size`) |
+| half | size/2 = **150** |
 | Стены | height 7.5, thickness 3.5 |
 | Тема | мульти-карта (`factory` / `village` / `city`) — см. [[Maps]] |
+
+City / Village заполняют всю арену ([[City_Level_Design]], [[Village_Level_Design]]). Factory-контент пока кластер в центре (~исторический ±75) — outer ring пустой.
 
 Модульные билдеры: `src/game/arena/*` (shell, factoryMap, villageMap, cityMap + factory modules: centralHall, containerYard, foundry, gantryCrane, silos, pipeRack, ramps, scattered, smokestacks, skyline, atmosphere…).
 
@@ -64,4 +66,5 @@ Hook: `CombatSystem.onBlockDestroyed` → explosion/debris.
 | `buildArena` | `src/game/ArenaBuilder.ts` |
 | `ArenaBuildContext` | `src/game/arena/context.ts` |
 | `Collider`, `resolveCircle` | `src/game/engine/physics.ts` |
+| `solidColliderCache` (invalidate + solid filter) | `src/game/engine/solidColliderCache.ts` |
 | `PhysicsSystem` | `src/game/engine/systems/PhysicsSystem.ts` |

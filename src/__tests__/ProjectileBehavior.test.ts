@@ -69,7 +69,7 @@ describe('ProjectileBehavior (cannon pool only)', () => {
       spawnSmoke: vi.fn(),
     };
     BEHAVIORS.cannon!.onHitTank(s, target, hitPos, dir, {
-      colliders: [], tanks: [], arena: {} as any, effects: effects as any,
+      colliders: [], tanks: [], effects: effects as any,
       damageSystem: {
         applyDamage: vi.fn(),
         applyKnockback: (t: any, d: any, f: number) => t.knockback.addScaledVector(d, f),

@@ -1,7 +1,19 @@
 # Core Architecture — ArmorStrike
 
 **Статус:** Living doc (synced with code)  
-**GDD mechanics:** [[../GDD/Approved/00_Index|Approved Index]]
+**GDD mechanics:** [Approved Index](../GDD/Approved/00_Index.md)
+
+## Engineering standards (детальные правила)
+
+| Документ | Содержание |
+|----------|------------|
+| [Core Patterns](Core_Patterns.md) | Layering, bootstrap, simulation stages, ports, events, testing |
+| [Standard Tank](Standard_Tank.md) | `TankEntity`, components, `simPorts`, systems, factory |
+| [Standard Weapon](Standard_Weapon.md) | `Weapon` strategy, projectiles, `DamageSystem` / `CombatSystem` |
+| [Standard UI & Input](Standard_UI_Input.md) | `GameApi`, HUD, React boundary, input, camera modes |
+
+Новый код и рефакторинг **обязаны** следовать соответствующему standard-файлу.  
+Механики и баланс — только в [Docs/GDD](../GDD/Approved/00_Index.md), не дублировать числа здесь.
 
 ## Overview
 
@@ -31,6 +43,8 @@
 | `src/game/` | simulation, weapons, AI, arena, render | may import `core/` |
 | `src/components/` | React views | `GameApi`, types, HUD |
 
+Подробности: [Core Patterns §1](Core_Patterns.md).
+
 ## Bootstrap composition
 
 `bootstrapGame` (`GameBootstrap.ts`) wires:
@@ -42,6 +56,8 @@
 5. `WaveManager`, `HudModel`, weapon factory deps
 6. `GameSimulation` + `GameLoop` stages
 7. Window handlers (resize, visibility auto-pause)
+
+Подробности: [Core Patterns §2](Core_Patterns.md).
 
 ## Simulation pipeline
 
@@ -59,14 +75,23 @@ Ordered stages (`engine/stages.ts`):
 | 8 | Waves | intermission when cleared |
 | 9 | Death / game-over timer | player lifecycle |
 
-`dt` clamp ~0.05s in game loop.
+`dt` clamp ~0.05s in game loop.  
+Полный контракт стадий: [Core Patterns §3](Core_Patterns.md).
 
 ## Key patterns
 
 ### 1. Entity + systems
 
-- **Entity:** `TankEntity` (shared player/bot).
+- **Entity:** `TankEntity` — identity + composition of runtime components:
+  - `motion` → `TankMotionState` (drive, aim pose, knockback)
+  - `combat` → `TankCombatState` (HP, death, fireTimer)
+  - `buffs` → `TankBuffState` (wave-buff muls + snapshot)
+  - `fx` → `TankFxState` (presentation accumulators)
+  - `visual` / `weapon` / `params`
+- **Flat port projections:** getters/setters on `TankEntity` keep structural ports (`MotionBody`, `WeaponOwner`, `TankLike`, `AIBody`) stable without call-site churn.
 - **Systems:** pure `updateOne` objects (`TankMotionSystem`, `TankAimSystem`, …) operating on narrow **ports** (`simPorts.ts`: `MotionBody`, `AimBody`, `CombatTimerBody`).
+
+Стандарт: [Standard Tank](Standard_Tank.md).
 
 ### 2. Weapon strategy
 
@@ -84,11 +109,15 @@ interface Weapon {
 Implementations: `RailgunWeapon`, `FlamethrowerWeapon`, `CannonWeapon`.  
 Factory: `createWeapon` in `PlayerFactory.ts` (single path for player & bots).
 
+Стандарт: [Standard Weapon](Standard_Weapon.md).
+
 ### 3. Damage ports
 
 - Domain: `DamageSystem` + `TankLike` + hooks.
 - Glue: `CombatSystem` implements scoring/VFX via hooks.
 - Shared hit helper: `applyHit` / `applySplashHit`.
+
+Стандарт: [Standard Weapon §6](Standard_Weapon.md).
 
 ### 4. Ports for I/O
 
@@ -96,14 +125,22 @@ Factory: `createWeapon` in `PlayerFactory.ts` (single path for player & bots).
 |------|------|
 | `EffectsPort` | shake, explosions, muzzle, trails |
 | `AudioPort` | procedural WebAudio |
+| `WeaponContext.colliders` | shot geometry without concrete `Arena` |
+| `HitContext.colliders` | projectile walls without concrete `Arena` |
 
-Weapons/combat depend on ports, not concrete `Effects`/`AudioFX` (testable).
+Weapons/combat depend on ports, not concrete `Effects`/`AudioFX`/`Arena` (testable; avoids import cycles).
+
+`Arena.rebuild` invalidates hull solid-cache via `engine/solidColliderCache` (not via `PhysicsSystem`).
+
+Подробности: [Core Patterns §4](Core_Patterns.md).
 
 ### 5. Event bus
 
 `GameEvent` union → React:
 
 `playerHit` · `enemyHit` · `kill` · `wave` · `intermission` · `shotFired` · `gameOver` · `pauseChanged` · `garageChanged`
+
+UI-контракт: [Standard UI & Input](Standard_UI_Input.md).
 
 ### 6. Run state
 
@@ -129,6 +166,9 @@ src/
     tank/         # mesh build + sim ports
   components/     # React UI
   hooks/
+Docs/
+  Architecture/   # engineering standards (this folder)
+  GDD/            # game design (balance & mechanics)
 ```
 
 ## God nodes (knowledge graph)
@@ -157,4 +197,4 @@ Use `graphify query|path|explain` before structural refactors.
 
 ## Related GDD
 
-Полный список механик: [[../GDD/Approved/00_Index]].
+Полный список механик: [Approved Index](../GDD/Approved/00_Index.md).

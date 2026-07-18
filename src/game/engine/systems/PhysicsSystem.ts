@@ -3,23 +3,11 @@ import { resolveCircle } from '../physics';
 import type { Collider } from '../physics';
 import type { PhysicsBody } from '../../tank/simPorts';
 import { separateTankPair, type TankXZ } from '../tankSeparation';
+import { solidColliders } from '../solidColliderCache';
 
-/** Cached non-ramp colliders (arena collider list is stable; kinds don't flip). */
-let _solidSrc: Collider[] | null = null;
-let _solid: Collider[] = [];
+/** Re-export: Arena.rebuild calls the leaf module; keep path for tests/docs. */
+export { invalidateSolidColliderCache } from '../solidColliderCache';
 
-/** Call after arena rebuild (same array ref, new contents). */
-export function invalidateSolidColliderCache() {
-  _solidSrc = null;
-  _solid = [];
-}
-
-function solidColliders(colliders: Collider[]): Collider[] {
-  if (colliders === _solidSrc) return _solid;
-  _solidSrc = colliders;
-  _solid = colliders.filter((c) => c.kind !== 'ramp');
-  return _solid;
-}
 
 const _pa: TankXZ = { x: 0, z: 0 };
 const _pb: TankXZ = { x: 0, z: 0 };

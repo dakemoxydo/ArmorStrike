@@ -71,7 +71,7 @@ export function buildPlayerTank(hullId: HullId, turretId: TurretId): TankEntity 
   const entity = createTankEntity({
     name: 'ВЫ', isPlayer: true, hullId, turretId, style: buildPlayerStyle(),
   });
-  entity.visual.group.position.set(0, 0, -58);
+  entity.visual.group.position.set(0, 0, -120);
   entity.yaw = 0;
   entity.aimYaw = 0;
   return entity;

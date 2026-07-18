@@ -181,7 +181,7 @@ export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
 
 /** Earthy packed-dirt ground for Village map. */
 export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
-  const S = 2048;
+  const S = 3072;
   const K = S / arenaSize;
   const half = arenaSize / 2;
   const px = (x: number) => (x + half) * K;
@@ -192,17 +192,17 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
 
   ctx.fillStyle = '#2a2418';
   ctx.fillRect(0, 0, S, S);
-  noise(ctx, S, 10000, 0.06);
+  noise(ctx, S, 14000, 0.06);
 
   // grass patches
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 160; i++) {
     ctx.fillStyle = `rgba(50,90,40,${0.08 + Math.random() * 0.12})`;
     ctx.beginPath();
     ctx.ellipse(
       S * (0.05 + Math.random() * 0.9),
       S * (0.05 + Math.random() * 0.9),
-      (4 + Math.random() * 12) * K,
-      (3 + Math.random() * 10) * K,
+      (6 + Math.random() * 20) * K,
+      (5 + Math.random() * 16) * K,
       Math.random() * Math.PI,
       0,
       Math.PI * 2,
@@ -210,32 +210,79 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
     ctx.fill();
   }
 
-  // dirt roads (cross)
-  ctx.fillStyle = '#3a3020';
-  rectX(-half + 8, -5, arenaSize - 16, 10);
-  rectX(-5, -half + 8, 10, arenaSize - 16);
+  const dirtRoad = (x0: number, z0: number, w: number, d: number) => {
+    ctx.fillStyle = '#3a3020';
+    rectX(x0, z0, w, d);
+    // wheel ruts
+    ctx.strokeStyle = 'rgba(30,24,14,0.4)';
+    ctx.lineWidth = 0.5 * K;
+    const horiz = w > d;
+    ctx.beginPath();
+    if (horiz) {
+      ctx.moveTo(px(x0), pz(z0 + d * 0.35)); ctx.lineTo(px(x0 + w), pz(z0 + d * 0.35));
+      ctx.moveTo(px(x0), pz(z0 + d * 0.65)); ctx.lineTo(px(x0 + w), pz(z0 + d * 0.65));
+    } else {
+      ctx.moveTo(px(x0 + w * 0.35), pz(z0)); ctx.lineTo(px(x0 + w * 0.35), pz(z0 + d));
+      ctx.moveTo(px(x0 + w * 0.65), pz(z0)); ctx.lineTo(px(x0 + w * 0.65), pz(z0 + d));
+    }
+    ctx.stroke();
+  };
 
-  // village square
-  ctx.fillStyle = 'rgba(90,75,50,0.35)';
-  rectX(-14, -14, 28, 28);
+  // main dirt cross (fire lanes) x∈[-10,10], z∈[-10,10]
+  dirtRoad(-half + 16, -10, arenaSize - 32, 20);
+  dirtRoad(-10, -half + 16, 20, arenaSize - 32);
 
-  // field patches
-  ctx.fillStyle = 'rgba(70,100,45,0.12)';
-  rectX(-60, -55, 30, 28);
-  rectX(28, 30, 32, 30);
-  ctx.fillStyle = 'rgba(120,90,40,0.10)';
-  rectX(30, -55, 28, 26);
-  rectX(-58, 28, 26, 32);
+  // diagonal-ish paths to barn clusters (NW / SE)
+  const barnPath = (x0: number, z0: number, x1: number, z1: number) => {
+    ctx.strokeStyle = 'rgba(58,48,32,0.7)';
+    ctx.lineWidth = 7 * K;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(px(x0), pz(z0));
+    ctx.lineTo(px(x1), pz(z1));
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  };
+  barnPath(-10, 10, -90, 82);   // to NW barns
+  barnPath(10, -10, 92, -82);   // to SE barns
+  barnPath(-10, -10, -82, -46); // to mid-W barn
+  barnPath(10, 10, 78, 48);     // to mid-E barn
+
+  // village square (packed earth, worn light)
+  ctx.fillStyle = 'rgba(96,80,54,0.4)';
+  rectX(-28, -28, 56, 56);
+  // cobble ring hint around well
+  ctx.strokeStyle = 'rgba(120,108,84,0.3)';
+  ctx.lineWidth = 0.6 * K;
+  ctx.beginPath();
+  ctx.arc(px(0), pz(0), 12 * K, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // paddock field patches (green/tilled) near clusters
+  ctx.fillStyle = 'rgba(70,100,45,0.14)';
+  rectX(-124, -116, 60, 56);
+  rectX(60, 62, 64, 60);
+  ctx.fillStyle = 'rgba(120,90,40,0.12)';
+  rectX(62, -116, 58, 54);   // tilled SE field
+  rectX(-120, 58, 54, 64);   // tilled NW field
+  // furrow lines on tilled fields
+  ctx.strokeStyle = 'rgba(40,32,18,0.25)';
+  ctx.lineWidth = 0.4 * K;
+  for (let i = 0; i < 8; i++) {
+    ctx.beginPath();
+    ctx.moveTo(px(62 + i * 7), pz(-116)); ctx.lineTo(px(62 + i * 7), pz(-62));
+    ctx.stroke();
+  }
 
   // soft grid
-  ctx.strokeStyle = 'rgba(180,150,80,0.06)';
+  ctx.strokeStyle = 'rgba(180,150,80,0.05)';
   ctx.lineWidth = 2;
-  for (let m = -half; m <= half; m += 12.5) {
+  for (let m = -half; m <= half; m += 25) {
     ctx.beginPath(); ctx.moveTo(px(m), 0); ctx.lineTo(px(m), S); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, pz(m)); ctx.lineTo(S, pz(m)); ctx.stroke();
   }
 
-  noise(ctx, S, 4000, 0.04);
+  noise(ctx, S, 6000, 0.04);
   const t = new THREE.CanvasTexture(c);
   t.anisotropy = 8;
   t.colorSpace = THREE.SRGBColorSpace;
@@ -245,7 +292,7 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
 /** Asphalt city grid for City map. */
 /** City ground: orthogonal main cross + secondary ring, synced to cityMap layout. */
 export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
-  const S = 2048;
+  const S = 3072;
   const K = S / arenaSize;
   const half = arenaSize / 2;
   const px = (x: number) => (x + half) * K;
@@ -259,11 +306,11 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
   noise(ctx, S, 7000, 0.04);
 
   // district pavement tiles (slightly varied blocks)
-  const block = 16;
-  for (let x = -half + 4; x < half - 4; x += block) {
-    for (let z = -half + 4; z < half - 4; z += block) {
+  const block = 32;
+  for (let x = -half + 8; x < half - 8; x += block) {
+    for (let z = -half + 8; z < half - 8; z += block) {
       ctx.fillStyle = `rgba(42,50,62,${0.10 + Math.random() * 0.07})`;
-      rectX(x + 1.2, z + 1.2, block - 2.4, block - 2.4);
+      rectX(x + 2.4, z + 2.4, block - 4.8, block - 4.8);
     }
   }
 
@@ -272,12 +319,12 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
     ctx.fillStyle = 'rgba(70,82,98,0.16)';
     rectX(x0, z0, w, d);
   };
-  // main NS road x∈[-7,7] → sidewalks at |x| 7–9.5
-  sidewalk(-9.5, -half + 6, 2.5, arenaSize - 12);
-  sidewalk(7, -half + 6, 2.5, arenaSize - 12);
-  // main EW road z∈[-7,7]
-  sidewalk(-half + 6, -9.5, arenaSize - 12, 2.5);
-  sidewalk(-half + 6, 7, arenaSize - 12, 2.5);
+  // main NS road x∈[-14,14] → sidewalks at |x| 14–19
+  sidewalk(-19, -half + 12, 5, arenaSize - 24);
+  sidewalk(14, -half + 12, 5, arenaSize - 24);
+  // main EW road z∈[-14,14]
+  sidewalk(-half + 12, -19, arenaSize - 24, 5);
+  sidewalk(-half + 12, 14, arenaSize - 24, 5);
 
   const drawAve = (x0: number, z0: number, w: number, d: number, horizontal: boolean, glow = false) => {
     ctx.fillStyle = '#0a0c10';
@@ -289,8 +336,8 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
       ctx.strokeRect(px(x0), pz(z0), w * K, d * K);
     }
     ctx.strokeStyle = 'rgba(220,230,255,0.20)';
-    ctx.lineWidth = 0.22 * K;
-    ctx.setLineDash([2.4 * K, 1.8 * K]);
+    ctx.lineWidth = 0.28 * K;
+    ctx.setLineDash([4.6 * K, 3.4 * K]);
     ctx.beginPath();
     if (horizontal) {
       ctx.moveTo(px(x0), pz(z0 + d / 2));
@@ -303,73 +350,73 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
     ctx.setLineDash([]);
   };
 
-  // Main cross — synced to cityMap clear corridors |x|<7, |z|<7
-  drawAve(-7, -half + 5, 14, arenaSize - 10, false, true);
-  drawAve(-half + 5, -7, arenaSize - 10, 14, true, true);
+  // Main cross — synced to cityMap clear corridors |x|<14, |z|<14
+  drawAve(-14, -half + 10, 28, arenaSize - 20, false, true);
+  drawAve(-half + 10, -14, arenaSize - 20, 28, true, true);
 
-  // Secondary ring corridors ~|x|≈28, |z|≈28 (width ~8)
-  drawAve(24, -half + 5, 8, arenaSize - 10, false, false);
-  drawAve(-32, -half + 5, 8, arenaSize - 10, false, false);
-  drawAve(-half + 5, 24, arenaSize - 10, 8, true, false);
-  drawAve(-half + 5, -32, arenaSize - 10, 8, true, false);
+  // Secondary ring corridors ~|x|,|z|≈56 (width ~16)
+  drawAve(48, -half + 10, 16, arenaSize - 20, false, false);
+  drawAve(-64, -half + 10, 16, arenaSize - 20, false, false);
+  drawAve(-half + 10, 48, arenaSize - 20, 16, true, false);
+  drawAve(-half + 10, -64, arenaSize - 20, 16, true, false);
 
   // Plaza under monument
   ctx.fillStyle = 'rgba(50,75,110,0.20)';
-  rectX(-15, -15, 30, 30);
+  rectX(-30, -30, 60, 60);
   ctx.strokeStyle = 'rgba(94,200,255,0.28)';
-  ctx.lineWidth = 0.45 * K;
-  ctx.strokeRect(px(-15), pz(-15), 30 * K, 30 * K);
+  ctx.lineWidth = 0.55 * K;
+  ctx.strokeRect(px(-30), pz(-30), 60 * K, 60 * K);
   // inner fountain ring hint
   ctx.strokeStyle = 'rgba(94,200,255,0.14)';
-  ctx.lineWidth = 0.3 * K;
+  ctx.lineWidth = 0.4 * K;
   ctx.beginPath();
-  ctx.arc(px(0), pz(0), 5 * K, 0, Math.PI * 2);
+  ctx.arc(px(0), pz(0), 9 * K, 0, Math.PI * 2);
   ctx.stroke();
 
   // Crosswalks at main intersection
   for (const [cx, cz, horiz] of [
-    [0, -8, true], [0, 8, true], [-8, 0, false], [8, 0, false],
+    [0, -16, true], [0, 16, true], [-16, 0, false], [16, 0, false],
   ] as const) {
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 9; i++) {
       ctx.fillStyle = 'rgba(220,230,245,0.16)';
-      if (horiz) rectX(cx - 7 + i * 2.05, cz - 1.15, 1.15, 2.3);
-      else rectX(cx - 1.15, cz - 7 + i * 2.05, 2.3, 1.15);
+      if (horiz) rectX(cx - 14 + i * 3.2, cz - 2.3, 2.3, 4.6);
+      else rectX(cx - 2.3, cz - 14 + i * 3.2, 4.6, 2.3);
     }
   }
 
   // Secondary crosswalks (main × secondary)
-  for (const s of [28, -28] as const) {
-    for (let i = 0; i < 5; i++) {
+  for (const s of [56, -56] as const) {
+    for (let i = 0; i < 6; i++) {
       ctx.fillStyle = 'rgba(200,220,240,0.10)';
-      rectX(s - 3 + i * 1.4, -1.0, 0.9, 2.0);
-      rectX(-1.0, s - 3 + i * 1.4, 2.0, 0.9);
+      rectX(s - 6 + i * 2.8, -2.0, 1.8, 4.0);
+      rectX(-2.0, s - 6 + i * 2.8, 4.0, 1.8);
     }
   }
 
   // NE parking stalls paint
   ctx.fillStyle = 'rgba(30,38,48,0.22)';
-  rectX(34, 26, 24, 30);
+  rectX(68, 52, 48, 60);
   ctx.strokeStyle = 'rgba(200,210,230,0.12)';
-  ctx.lineWidth = 0.15 * K;
+  ctx.lineWidth = 0.2 * K;
   for (let i = 0; i < 5; i++) {
-    ctx.strokeRect(px(36), pz(28 + i * 5), 14 * K, 4 * K);
+    ctx.strokeRect(px(72), pz(56 + i * 10), 28 * K, 8 * K);
   }
 
-  // Overpass shadow band (south secondary)
+  // Overpass shadow band (south secondary z≈-80)
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  rectX(-36, -44, 72, 8);
+  rectX(-74, -88, 148, 16);
   ctx.strokeStyle = 'rgba(255,77,154,0.10)';
-  ctx.lineWidth = 0.25 * K;
-  ctx.strokeRect(px(-36), pz(-44), 72 * K, 8 * K);
+  ctx.lineWidth = 0.3 * K;
+  ctx.strokeRect(px(-74), pz(-88), 148 * K, 16 * K);
 
   // cyan edge wet-glow on main cross centerlines
   ctx.strokeStyle = 'rgba(94,200,255,0.08)';
-  ctx.lineWidth = 0.5 * K;
+  ctx.lineWidth = 0.7 * K;
   ctx.beginPath();
-  ctx.moveTo(px(0), pz(-half + 8));
-  ctx.lineTo(px(0), pz(half - 8));
-  ctx.moveTo(px(-half + 8), pz(0));
-  ctx.lineTo(px(half - 8), pz(0));
+  ctx.moveTo(px(0), pz(-half + 16));
+  ctx.lineTo(px(0), pz(half - 16));
+  ctx.moveTo(px(-half + 16), pz(0));
+  ctx.lineTo(px(half - 16), pz(0));
   ctx.stroke();
 
   noise(ctx, S, 3500, 0.035);

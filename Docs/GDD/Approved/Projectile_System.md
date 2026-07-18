@@ -44,5 +44,6 @@ interface ProjectileBehavior {
 |-------|------|
 | `ProjectileManager` | `src/game/engine/Projectile.ts` |
 | `Shot` | там же |
+| `HitContext` | colliders + tanks + effects + damage (без concrete `Arena`) |
 | `ProjectileBehavior` / `BEHAVIORS` | `src/game/engine/ProjectileBehavior.ts` |
 | `WeaponSystem` | `src/game/engine/systems/WeaponSystem.ts` (update weapons, не flight) |

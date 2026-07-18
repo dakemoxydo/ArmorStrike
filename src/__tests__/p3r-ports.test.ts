@@ -89,7 +89,7 @@ describe('P3r residual TankEntity fan-in ports', () => {
 
     const ctx: WeaponContext = {
       tanks: [peer],
-      arena: { group: new THREE.Group() } as WeaponContext['arena'],
+      colliders: [],
     };
     expect(ctx.tanks[0].visual.group).toBeInstanceOf(THREE.Object3D);
     expect(buildAmmoState({ magazine: 1, ammo: 1 }).magazine).toBe(1);

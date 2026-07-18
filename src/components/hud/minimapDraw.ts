@@ -4,7 +4,7 @@ import type { GameApi } from '../../game/GameApi';
 import type { MinimapDynamic, MinimapStatic } from '../../game/types';
 
 export const MAP_SIZE = 172;
-export const MAP_HALF = 80;
+export const MAP_HALF = 156;
 
 /** Fingerprint of static layer content (layout + block alive flags). */
 export function staticLayerKey(statics: readonly MinimapStatic[]): string {

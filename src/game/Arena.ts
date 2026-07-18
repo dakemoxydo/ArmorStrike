@@ -8,7 +8,8 @@ import { disposeObject3D } from './resources/disposeObject3D';
 import type { BlockInfo } from './arena/types';
 import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './maps/mapCatalog';
-import { invalidateSolidColliderCache } from './engine/systems/PhysicsSystem';
+import { invalidateSolidColliderCache } from './engine/solidColliderCache';
+
 import { smokeTexture } from './textures';
 
 export type { BlockInfo } from './arena/types';

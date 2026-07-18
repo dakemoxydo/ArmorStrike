@@ -1,10 +1,11 @@
 // ===== Общий контракт оружия: единый интерфейс для рельсотрона, огнемёта и пушки =====
 import type * as THREE from 'three';
-import type { Arena } from '../Arena';
+import type { Collider } from '../engine/physics';
 import type { EffectsPort } from '../ports/EffectsPort';
 import type { AudioPort } from '../ports/AudioPort';
 import type { ProjectileManager } from '../engine/Projectile';
 import type { DamageSystem, TankLike } from '../../core/types';
+
 
 export type { DamageSystem } from '../../core/types';
 
@@ -68,10 +69,11 @@ export interface CombatPeer extends TankLike {
   visual: { group: THREE.Object3D };
 }
 
-/** Контекст кадра, доступный оружию при обновлении. */
+/** Контекст кадра, доступный оружию при обновлении (без concrete Arena — нет цикла). */
 export interface WeaponContext {
   tanks: CombatPeer[];
-  arena: Arena;
+  /** Shot-blocking / LOS geometry; same list as Arena.colliders. */
+  colliders: Collider[];
 }
 
 /** Зависимости, необходимые оружию для работы. */

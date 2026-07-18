@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { PROJECTILE } from '../constants';
 import type { Collider } from './physics';
 import { pointInCollider, segmentHitsCircle } from './physics';
-import type { Arena } from '../Arena';
 import type { EffectsPort } from '../ports/EffectsPort';
 import type { DamageSystem, TankLike } from '../../core/types';
 import type { WeaponType } from '../../core/catalog';
@@ -13,7 +12,6 @@ import { applySplashHit } from './applyHit';
 export interface HitContext {
   colliders: Collider[];
   tanks: TankLike[];
-  arena: Arena;
   effects: EffectsPort;
   damageSystem: DamageSystem;
   onTankHit: (target: TankLike, dmg: number, owner: TankLike) => void;

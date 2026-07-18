@@ -13,19 +13,19 @@
 
 ## Получение урона
 
-`TankEntity.takeDamage(dmg, attackerId)`:
+`TankEntity.takeDamage(dmg, attackerId)` (storage: `combat` + `fx` + `motion` components; flat projections for ports):
 
 ```
 if !alive || dmg <= 0: return
-health -= dmg
-hitFlash = 1
-lastAttackerId = attackerId
-timeSinceHit = 0
+health -= dmg          # combat.health
+hitFlash = 1           # fx.hitFlash
+lastAttackerId = …     # combat.lastAttackerId
+timeSinceHit = 0       # fx.timeSinceHit
 if health <= 0:
   health = 0
   alive = false
   deathT = 0
-  throttle = steer = 0
+  throttle = steer = 0 # motion
 ```
 
 **Важно:** боевой код **не** вызывает `takeDamage` напрямую — только через `DamageSystem.applyDamage` (хуки скоринга/VFX).
@@ -63,8 +63,7 @@ if timeSinceHit > HEAL_DELAY && health < maxHealth:
 
 ## Классы
 
-| Символ | Файл |
-|--------|------|
+
 | `TankEntity.takeDamage` | `src/game/Tank.ts` |
 | `TankCombatTimersSystem` | `src/game/engine/systems/TankCombatTimersSystem.ts` |
 | `HEAL_*`, `SMOKE_HEALTH_FRAC` | `src/game/tuning.ts` |

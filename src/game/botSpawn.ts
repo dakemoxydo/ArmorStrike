@@ -15,9 +15,9 @@ import { personaForRole, roleForBot, roleLabel } from './aiRoles';
 export interface BotEntry { tank: TankEntity; ai: AIController }
 
 export const SPAWN_POINTS: [number, number][] = [
-  [64, 64], [-64, 64], [64, -64], [-64, -64],
-  // North edge (was [0, -66] — ~8m from player start at z≈-58)
-  [0, 66], [67, 0], [-67.5, 18],
+  [128, 128], [-128, 128], [128, -128], [-128, -128],
+  // Edge points (player start z≈-120 — keep all ≥ MIN_BOT_SPAWN_DIST away)
+  [0, 132], [134, 0], [-135, 36],
 ];
 
 /** Min planar distance from player so bots never drop on top of them. */

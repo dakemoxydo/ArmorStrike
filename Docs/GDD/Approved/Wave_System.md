@@ -58,12 +58,12 @@ AI tune: `sightRange=46`, `aimError = max(0.05, 0.14 - wave*0.012)`.
 
 ## Точки спавна
 
-`SPAWN_POINTS` (7 точек у краёв). `pickSpawnIndex`:
+`SPAWN_POINTS` (7 точек у краёв арены 300×300): corners ±128 + edge points (~0,132 / 134,0 / −135,36). `pickSpawnIndex`:
 
 - неиспользуемая точка с `dist ≥ MIN_BOT_SPAWN_DIST` (32) от игрока;
 - иначе furthest unused / furthest overall.
 
-Игрок стартует примерно в `(0, 0, -58)`.
+Игрок стартует в `(0, 0, −120)` (`PlayerFactory.createTankEntity`).
 
 ## Score за волну
 

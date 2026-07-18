@@ -60,9 +60,9 @@
     "semantic_hash": "c6f3c5c0ef7ce1c2b28aa9423a7a747c"
   },
   "src/game/Arena.ts": {
-    "mtime": 1784346040.657637,
-    "ast_hash": "087663017c2b1b60b7e2c9e6fe0e5df5",
-    "semantic_hash": "087663017c2b1b60b7e2c9e6fe0e5df5"
+    "mtime": 1784350033.3901074,
+    "ast_hash": "aef44cded4c302d863ee5f0601fbf40e",
+    "semantic_hash": "aef44cded4c302d863ee5f0601fbf40e"
   },
   "src/game/ArenaBuilder.ts": {
     "mtime": 1784347819.0458198,
@@ -105,9 +105,9 @@
     "semantic_hash": "58afe588704b96370cdfdfb895c5cf97"
   },
   "src/game/PlayerFactory.ts": {
-    "mtime": 1784334021.4104524,
-    "ast_hash": "d3795ac39017ba236b718a9e79932684",
-    "semantic_hash": "d3795ac39017ba236b718a9e79932684"
+    "mtime": 1784398231.5462584,
+    "ast_hash": "237cf4c14d67348be03e155631e5d64c",
+    "semantic_hash": "237cf4c14d67348be03e155631e5d64c"
   },
   "src/game/PreviewController.ts": {
     "mtime": 1784199545.105957,
@@ -115,9 +115,9 @@
     "semantic_hash": "5be7509f0671e520ffec59e63db0511d"
   },
   "src/game/RenderWorld.ts": {
-    "mtime": 1784225983.9821239,
-    "ast_hash": "140307c6ef5cc4d00a7b01a79605e826",
-    "semantic_hash": "140307c6ef5cc4d00a7b01a79605e826"
+    "mtime": 1784399424.105415,
+    "ast_hash": "db6973eb079c90562258bebbca59e757",
+    "semantic_hash": "db6973eb079c90562258bebbca59e757"
   },
   "src/game/RunState.ts": {
     "mtime": 1784332918.8739774,
@@ -125,9 +125,9 @@
     "semantic_hash": "176a6b722ff1a22de0bb8eff5f74b82a"
   },
   "src/game/Tank.ts": {
-    "mtime": 1784334094.756251,
-    "ast_hash": "6a56eb1434ecf20478c62ae6b47e4592",
-    "semantic_hash": "6a56eb1434ecf20478c62ae6b47e4592"
+    "mtime": 1784350961.3012125,
+    "ast_hash": "ba39c45a3d5497db8283d9cfd8617acf",
+    "semantic_hash": "ba39c45a3d5497db8283d9cfd8617acf"
   },
   "src/game/WaveManager.ts": {
     "mtime": 1784334052.6652753,
@@ -205,9 +205,9 @@
     "semantic_hash": "1fa08495ba03fa71d8d79b1243261aea"
   },
   "src/game/constants.ts": {
-    "mtime": 1784311847.5294235,
-    "ast_hash": "1b79d7e7b9cf72ef4baf1786137a5426",
-    "semantic_hash": "1b79d7e7b9cf72ef4baf1786137a5426"
+    "mtime": 1784397915.2423658,
+    "ast_hash": "1cf29f7dc02f868b9af82e6f74cf1530",
+    "semantic_hash": "1cf29f7dc02f868b9af82e6f74cf1530"
   },
   "src/game/effects.ts": {
     "mtime": 1784334021.4094741,
@@ -220,9 +220,9 @@
     "semantic_hash": "97cdbe138b26f79f5ac2a9280119201e"
   },
   "src/game/engine/Projectile.ts": {
-    "mtime": 1784334152.9583845,
-    "ast_hash": "1bcca088d0354f20ae0ce4c3ada16dea",
-    "semantic_hash": "1bcca088d0354f20ae0ce4c3ada16dea"
+    "mtime": 1784350033.3910842,
+    "ast_hash": "511d1bf6a860482d241bb3e89b769aa7",
+    "semantic_hash": "511d1bf6a860482d241bb3e89b769aa7"
   },
   "src/game/engine/ProjectileBehavior.ts": {
     "mtime": 1784331751.0654867,
@@ -240,14 +240,14 @@
     "semantic_hash": "5bc645fcec8c4d624f2edbdfff0a3f38"
   },
   "src/game/engine/systems/NameplateSystem.ts": {
-    "mtime": 1784167233.4761133,
-    "ast_hash": "73833f508bf9712a755e290a34280961",
-    "semantic_hash": "73833f508bf9712a755e290a34280961"
+    "mtime": 1784350961.3012125,
+    "ast_hash": "224fcac48ada4b4c9c0193abd5bf15bb",
+    "semantic_hash": "224fcac48ada4b4c9c0193abd5bf15bb"
   },
   "src/game/engine/systems/PhysicsSystem.ts": {
-    "mtime": 1784345880.5261,
-    "ast_hash": "69dfa55a4243f50114f141632b1a3fcf",
-    "semantic_hash": "69dfa55a4243f50114f141632b1a3fcf"
+    "mtime": 1784350033.3901074,
+    "ast_hash": "84a2233ed10d46933652f396ac8196cb",
+    "semantic_hash": "84a2233ed10d46933652f396ac8196cb"
   },
   "src/game/engine/systems/TankAnimationSystem.ts": {
     "mtime": 1784334079.7218752,
@@ -265,9 +265,9 @@
     "semantic_hash": "6c310d479bff3f822717d117c7f11224"
   },
   "src/game/engine/systems/WeaponSystem.ts": {
-    "mtime": 1784334079.721293,
-    "ast_hash": "18ae49e0af78cb1a85060ffe71fe8f50",
-    "semantic_hash": "18ae49e0af78cb1a85060ffe71fe8f50"
+    "mtime": 1784350033.3901074,
+    "ast_hash": "4d43929bf0bb9f2852951516cfa3499c",
+    "semantic_hash": "4d43929bf0bb9f2852951516cfa3499c"
   },
   "src/game/nameplate.ts": {
     "mtime": 1784144189.6349564,
@@ -320,14 +320,14 @@
     "semantic_hash": "88ed1439fb1b6202e2c53b942c16ec25"
   },
   "src/game/weapons/RailgunWeapon.ts": {
-    "mtime": 1784334112.5078382,
-    "ast_hash": "cf928e88a8903980490d4eb5c158a467",
-    "semantic_hash": "cf928e88a8903980490d4eb5c158a467"
+    "mtime": 1784350057.4459083,
+    "ast_hash": "870408f7bc75a12893883ad38a76041a",
+    "semantic_hash": "870408f7bc75a12893883ad38a76041a"
   },
   "src/game/weapons/types.ts": {
-    "mtime": 1784334021.4668088,
-    "ast_hash": "7d409163be6bd84af03a2e01b964f74a",
-    "semantic_hash": "7d409163be6bd84af03a2e01b964f74a"
+    "mtime": 1784350033.4067142,
+    "ast_hash": "16561bd7b097f8c6d42758e0aec19a79",
+    "semantic_hash": "16561bd7b097f8c6d42758e0aec19a79"
   },
   "src/main.tsx": {
     "mtime": 1784225672.137233,
@@ -365,9 +365,9 @@
     "semantic_hash": "b33d000860642c6f4907a877e0387a21"
   },
   "AGENTS.md": {
-    "mtime": 1784344783.9940083,
-    "ast_hash": "b65a9f05d986523feefec7a982e9afad",
-    "semantic_hash": ""
+    "mtime": 1784396812.5442438,
+    "ast_hash": "fd7e1559c1a25f80e3edd2a0762fa34d",
+    "semantic_hash": "fd7e1559c1a25f80e3edd2a0762fa34d"
   },
   "index.html": {
     "mtime": 1784145747.915913,
@@ -450,9 +450,9 @@
     "semantic_hash": "af0c5daa632eaf46a595dfbbfbef426e"
   },
   "src/__tests__/ProjectileBehavior.test.ts": {
-    "mtime": 1784257227.544884,
-    "ast_hash": "13262dc18854c1c69cd1e6cf06c2df16",
-    "semantic_hash": "13262dc18854c1c69cd1e6cf06c2df16"
+    "mtime": 1784350057.4293027,
+    "ast_hash": "3b1ce965ec7a0e5780c395934d934075",
+    "semantic_hash": "3b1ce965ec7a0e5780c395934d934075"
   },
   "src/__tests__/graphicsQuality.test.ts": {
     "mtime": 1784226073.8648512,
@@ -495,9 +495,9 @@
     "semantic_hash": "2e2c28ef43e969a65ef7a7b6eabb8bfa"
   },
   "src/components/hud/minimapDraw.ts": {
-    "mtime": 1784331664.9477758,
-    "ast_hash": "df5a17f8b76b2b2cc2c83e1d97f91445",
-    "semantic_hash": "df5a17f8b76b2b2cc2c83e1d97f91445"
+    "mtime": 1784399380.9006147,
+    "ast_hash": "a3246a4a04e2937ea8b264cfe6814132",
+    "semantic_hash": "a3246a4a04e2937ea8b264cfe6814132"
   },
   "src/game/graphicsQuality.ts": {
     "mtime": 1784225983.9821239,
@@ -635,9 +635,9 @@
     "semantic_hash": "bb9cf38f6b1e7b4b3258afe539b1dfb3"
   },
   "src/game/engine/stages.ts": {
-    "mtime": 1784334052.6652753,
-    "ast_hash": "b2d8ba172388781049bc848affdbde2c",
-    "semantic_hash": "b2d8ba172388781049bc848affdbde2c"
+    "mtime": 1784350033.4076898,
+    "ast_hash": "82419b21610c2edb4478b18b57c949fb",
+    "semantic_hash": "82419b21610c2edb4478b18b57c949fb"
   },
   "src/game/textures/crates.ts": {
     "mtime": 1784244620.1895661,
@@ -650,9 +650,9 @@
     "semantic_hash": "6b90fa590301458bb4756da765ca441a"
   },
   "src/game/textures/ground.ts": {
-    "mtime": 1784347819.0458198,
-    "ast_hash": "5bcadfa202f23f3dd4bd9d2a66565107",
-    "semantic_hash": "5bcadfa202f23f3dd4bd9d2a66565107"
+    "mtime": 1784399787.1489367,
+    "ast_hash": "7f6321025f66c28723f86c27257cdb31",
+    "semantic_hash": "7f6321025f66c28723f86c27257cdb31"
   },
   "src/game/textures/index.ts": {
     "mtime": 1784345850.2555113,
@@ -695,9 +695,9 @@
     "semantic_hash": "a26639560ede6c1e66e9932c9dff7be2"
   },
   "src/game/botSpawn.ts": {
-    "mtime": 1784332810.57263,
-    "ast_hash": "c78c372ce9d95e321da45b0b0cf97174",
-    "semantic_hash": "c78c372ce9d95e321da45b0b0cf97174"
+    "mtime": 1784398224.25361,
+    "ast_hash": "cebdff631659bd784e663756514eb8d5",
+    "semantic_hash": "cebdff631659bd784e663756514eb8d5"
   },
   "src/game/engine/systems/TankAimSystem.ts": {
     "mtime": 1784334079.721293,
@@ -735,9 +735,9 @@
     "semantic_hash": "e1f46a64e131c75d3bd01f09086150be"
   },
   "src/__tests__/p3r-ports.test.ts": {
-    "mtime": 1784333044.0251453,
-    "ast_hash": "56eac30492483bf87cba333013443359",
-    "semantic_hash": "56eac30492483bf87cba333013443359"
+    "mtime": 1784350057.4293027,
+    "ast_hash": "8ff1227f3040b5853d48c0c9c704c052",
+    "semantic_hash": "8ff1227f3040b5853d48c0c9c704c052"
   },
   "src/game/camera/CameraLookState.ts": {
     "mtime": 1784258270.7237427,
@@ -785,9 +785,9 @@
     "semantic_hash": "5a5e8f7b319edb821f5e795ebf8c14b5"
   },
   "src/__tests__/minimapDraw.test.ts": {
-    "mtime": 1784331173.2948544,
-    "ast_hash": "f781b2869653cf0db6536d1ea486e10f",
-    "semantic_hash": "f781b2869653cf0db6536d1ea486e10f"
+    "mtime": 1784399402.0715017,
+    "ast_hash": "a728cfe141adcdd340152a8a48d65727",
+    "semantic_hash": "a728cfe141adcdd340152a8a48d65727"
   },
   "src/__tests__/railgunBlockers.test.ts": {
     "mtime": 1784261981.8655245,
@@ -865,9 +865,9 @@
     "semantic_hash": "0f08eae6086eebfca4a0cc8f37957e58"
   },
   "src/__tests__/botSpawn.test.ts": {
-    "mtime": 1784332810.5765345,
-    "ast_hash": "453e7d1ca1623ba3b559ea42714dc429",
-    "semantic_hash": "453e7d1ca1623ba3b559ea42714dc429"
+    "mtime": 1784398237.8583045,
+    "ast_hash": "513008edbead14e47b5e8595a2efd1e8",
+    "semantic_hash": "513008edbead14e47b5e8595a2efd1e8"
   },
   "src/__tests__/waveBuffs.test.ts": {
     "mtime": 1784334094.7552736,
@@ -920,14 +920,14 @@
     "semantic_hash": "fb193c07b1360bc929cc72748b15366b"
   },
   "src/game/tank/simPorts.ts": {
-    "mtime": 1784334079.7047088,
-    "ast_hash": "06671f009a56f73b5872355b60c90c4f",
-    "semantic_hash": "06671f009a56f73b5872355b60c90c4f"
+    "mtime": 1784350961.3168707,
+    "ast_hash": "7d0d448c463511b7b49ada574bff8360",
+    "semantic_hash": "7d0d448c463511b7b49ada574bff8360"
   },
   "src/game/waveBuffs.ts": {
-    "mtime": 1784334094.756251,
-    "ast_hash": "e563be7b421373cb233a741112e41319",
-    "semantic_hash": "e563be7b421373cb233a741112e41319"
+    "mtime": 1784350998.666986,
+    "ast_hash": "cba4931351d35b5371f85ac59fbcb8cd",
+    "semantic_hash": "cba4931351d35b5371f85ac59fbcb8cd"
   },
   "src/game/wavePreview.ts": {
     "mtime": 1784332810.5780425,
@@ -950,38 +950,38 @@
     "semantic_hash": "2985e823e9dd10f0cbb4445afb599b0c"
   },
   ".obsidian/app.json": {
-    "mtime": 1784342906.0451882,
+    "mtime": 1784396490.9488947,
     "ast_hash": "cd257f685de5624c9cb8c0ef0eb4b8bc",
     "semantic_hash": "cd257f685de5624c9cb8c0ef0eb4b8bc"
   },
   ".obsidian/appearance.json": {
-    "mtime": 1784342906.046168,
+    "mtime": 1784396490.95085,
     "ast_hash": "99914b932bd37a50b983c5e7c90ae93b",
     "semantic_hash": "99914b932bd37a50b983c5e7c90ae93b"
   },
   ".obsidian/core-plugins.json": {
-    "mtime": 1784342832.7829816,
+    "mtime": 1784396490.672135,
     "ast_hash": "7c877bea49eaeabb100563bd157b9051",
     "semantic_hash": "7c877bea49eaeabb100563bd157b9051"
   },
   "Docs/Architecture/Core.md": {
-    "mtime": 1784343167.2692065,
-    "ast_hash": "1cfb7f2f32283ef52f08827adff5f602",
+    "mtime": 1784397775.8195605,
+    "ast_hash": "ce3df6d4fc47cb710c27b91265897eca",
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/00_Index.md": {
-    "mtime": 1784345988.1972964,
-    "ast_hash": "cea4e2109428a5e1ca8358a5c7b5d747",
+    "mtime": 1784400148.803954,
+    "ast_hash": "5ff969728672fdec2c06688e54fecfd0",
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/AI_Bots.md": {
     "mtime": 1784343167.2897522,
     "ast_hash": "79c0ea41d6a1aaf14dfb3623d638a996",
-    "semantic_hash": ""
+    "semantic_hash": "79c0ea41d6a1aaf14dfb3623d638a996"
   },
   "Docs/GDD/Approved/Arena_Physics.md": {
-    "mtime": 1784345973.4853225,
-    "ast_hash": "e05502bc8fac874768cb5d0e5956ee5d",
+    "mtime": 1784400148.7827592,
+    "ast_hash": "17188523b992aebb09349cbbc5d97569",
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Damage_System.md": {
@@ -992,7 +992,7 @@
   "Docs/GDD/Approved/Game_Lifecycle.md": {
     "mtime": 1784345973.4853225,
     "ast_hash": "50787e8f70ba1987d83baa0ff1104e25",
-    "semantic_hash": ""
+    "semantic_hash": "50787e8f70ba1987d83baa0ff1104e25"
   },
   "Docs/GDD/Approved/Garage_Loadout.md": {
     "mtime": 1784343167.2838867,
@@ -1000,9 +1000,9 @@
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Health_And_Regen.md": {
-    "mtime": 1784343167.2829087,
-    "ast_hash": "93f842f53e7f035aa7d9ab0fc9001bd7",
-    "semantic_hash": ""
+    "mtime": 1784350974.5361135,
+    "ast_hash": "33f1186e5382b91d0fbffbd36b8865c4",
+    "semantic_hash": "33f1186e5382b91d0fbffbd36b8865c4"
   },
   "Docs/GDD/Approved/Player_Controls.md": {
     "mtime": 1784343167.2838867,
@@ -1010,14 +1010,14 @@
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Projectile_System.md": {
-    "mtime": 1784343167.2897522,
-    "ast_hash": "0d795b710ee816f1e321879deabde917",
-    "semantic_hash": ""
+    "mtime": 1784350117.422163,
+    "ast_hash": "720f6c92e396bc436061e2dbc9d955ac",
+    "semantic_hash": "720f6c92e396bc436061e2dbc9d955ac"
   },
   "Docs/GDD/Approved/Scoring.md": {
     "mtime": 1784343167.2838867,
     "ast_hash": "d60062ba0634dab363a69f5f9d460eb7",
-    "semantic_hash": ""
+    "semantic_hash": "d60062ba0634dab363a69f5f9d460eb7"
   },
   "Docs/GDD/Approved/Tank_Aim.md": {
     "mtime": 1784343167.2946358,
@@ -1025,18 +1025,18 @@
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Tank_Movement.md": {
-    "mtime": 1784343167.2819326,
-    "ast_hash": "4a0f8f4342e423b52a36f464bcf394f1",
+    "mtime": 1784350988.4141412,
+    "ast_hash": "e799e8715ec8059c67d45f5d6a2239ab",
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Wave_Buffs.md": {
-    "mtime": 1784343167.2829087,
-    "ast_hash": "ffaabfc3cb11849db7b58a34597fbcee",
+    "mtime": 1784350988.4141412,
+    "ast_hash": "815a3bd3a83e15f8f5db4c1adf4a5d2b",
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Wave_System.md": {
-    "mtime": 1784343167.2858462,
-    "ast_hash": "093a4d8d5b412e91cdf0797b2fce4f57",
+    "mtime": 1784400148.7827592,
+    "ast_hash": "c644b06813f8ceb69f8d4ce59090426c",
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Weapon_Cannon.md": {
@@ -1052,12 +1052,12 @@
   "Docs/GDD/Approved/Weapon_Railgun.md": {
     "mtime": 1784343167.2819326,
     "ast_hash": "b21acd5a88bc705301d2d133476d0079",
-    "semantic_hash": ""
+    "semantic_hash": "b21acd5a88bc705301d2d133476d0079"
   },
   "Docs/GDD/Drafts/README.md": {
     "mtime": 1784343167.2770524,
     "ast_hash": "8751826bcee6628f0e17c6edd98357ca",
-    "semantic_hash": ""
+    "semantic_hash": "8751826bcee6628f0e17c6edd98357ca"
   },
   "src/__tests__/mapCatalog.test.ts": {
     "mtime": 1784345973.4853225,
@@ -1070,9 +1070,9 @@
     "semantic_hash": "49e5d9ca9af1c77eb88b889aec9b0470"
   },
   "src/game/arena/cityMap.ts": {
-    "mtime": 1784347836.573146,
-    "ast_hash": "e8973b5808220361f5d46846f624f047",
-    "semantic_hash": "e8973b5808220361f5d46846f624f047"
+    "mtime": 1784399574.1059175,
+    "ast_hash": "8d95e934b937a5943ea3e1a25801c1a1",
+    "semantic_hash": "8d95e934b937a5943ea3e1a25801c1a1"
   },
   "src/game/arena/factoryMap.ts": {
     "mtime": 1784345850.2564902,
@@ -1085,23 +1085,63 @@
     "semantic_hash": "337e3c9e1c555013fbf1f72367d57a32"
   },
   "src/game/arena/villageMap.ts": {
-    "mtime": 1784345880.5261,
-    "ast_hash": "f3387c01358a3354cfbc0e9652eb069f",
-    "semantic_hash": "f3387c01358a3354cfbc0e9652eb069f"
+    "mtime": 1784399757.644232,
+    "ast_hash": "0af594a97493546fab4ce2570be1c88d",
+    "semantic_hash": "0af594a97493546fab4ce2570be1c88d"
   },
   "src/game/maps/mapCatalog.ts": {
-    "mtime": 1784347819.0458198,
-    "ast_hash": "ceb7bb50ff34bd56c920452fc17e7c7f",
-    "semantic_hash": "ceb7bb50ff34bd56c920452fc17e7c7f"
+    "mtime": 1784399803.118004,
+    "ast_hash": "3a52451f3fe4ff31ca1b8a0944785f7b",
+    "semantic_hash": "3a52451f3fe4ff31ca1b8a0944785f7b"
   },
   "Docs/GDD/Approved/Maps.md": {
-    "mtime": 1784347848.732926,
-    "ast_hash": "29f5b578cad4c7d71b05810ca84412e7",
+    "mtime": 1784400148.7827592,
+    "ast_hash": "89beb5d8637c0fdb335f687db004f784",
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/City_Level_Design.md": {
-    "mtime": 1784347863.6183133,
-    "ast_hash": "59a1b039017de5b58fa118c47399411e",
+    "mtime": 1784400148.7827592,
+    "ast_hash": "fa5fabde49837daf10a3b762f37b8c39",
+    "semantic_hash": ""
+  },
+  "src/game/engine/solidColliderCache.ts": {
+    "mtime": 1784350033.3901074,
+    "ast_hash": "b7e3782fc5f0d2b662081d3a6b1b46e0",
+    "semantic_hash": "b7e3782fc5f0d2b662081d3a6b1b46e0"
+  },
+  "src/__tests__/tankComponents.test.ts": {
+    "mtime": 1784351001.4848695,
+    "ast_hash": "556f588aac4ae7e34fe367263292c7ee",
+    "semantic_hash": "556f588aac4ae7e34fe367263292c7ee"
+  },
+  "src/game/tank/components.ts": {
+    "mtime": 1784350961.3012125,
+    "ast_hash": "16ec664469f2a4648cfd9827db6eef0f",
+    "semantic_hash": "16ec664469f2a4648cfd9827db6eef0f"
+  },
+  "Docs/Architecture/Core_Patterns.md": {
+    "mtime": 1784397775.8185863,
+    "ast_hash": "08c52fe5941b60405f29afc3b933a540",
+    "semantic_hash": ""
+  },
+  "Docs/Architecture/Standard_Tank.md": {
+    "mtime": 1784397775.8195605,
+    "ast_hash": "9a51f9318987369747bd3813a8c3ebf1",
+    "semantic_hash": ""
+  },
+  "Docs/Architecture/Standard_UI_Input.md": {
+    "mtime": 1784397775.8195605,
+    "ast_hash": "8e3e8b31a4334bab33eb52563f2becf2",
+    "semantic_hash": ""
+  },
+  "Docs/Architecture/Standard_Weapon.md": {
+    "mtime": 1784397775.8195605,
+    "ast_hash": "e506bc0db2e82191c44b203827279e6e",
+    "semantic_hash": ""
+  },
+  "Docs/GDD/Approved/Village_Level_Design.md": {
+    "mtime": 1784400148.7827592,
+    "ast_hash": "5c7f6a6f5407f787b2ecf1363fd8fb68",
     "semantic_hash": ""
   }
 }

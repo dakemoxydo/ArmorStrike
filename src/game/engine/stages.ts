@@ -110,7 +110,7 @@ export class BotAiStage implements SimSystem {
 export class WeaponSystemStage implements SimSystem {
   readonly name = 'weapon';
   update(ctx: SimContext): void {
-    WeaponSystem.update(ctx.tanks, ctx.arena, ctx.dt);
+    WeaponSystem.update(ctx.tanks, ctx.arena.colliders, ctx.dt);
   }
 }
 
@@ -163,7 +163,6 @@ export class ProjectileStage implements SimSystem {
     ctx.projectiles.update(ctx.dt, {
       colliders: ctx.arena.colliders,
       tanks: ctx.tanks,
-      arena: ctx.arena,
       effects: ctx.effects,
       damageSystem: ctx.combat.damageSystem,
       // C2 root fix: real HP must go through applyDamage (takeDamage + hooks),

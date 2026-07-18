@@ -14,7 +14,7 @@ function entry(
 describe('minimapDraw static layer key (shipped)', () => {
   it('exports map constants used by radar canvas', () => {
     expect(MAP_SIZE).toBe(172);
-    expect(MAP_HALF).toBe(80);
+    expect(MAP_HALF).toBe(156);
   });
 
   it('staticLayerKey is stable for identical static lists', () => {

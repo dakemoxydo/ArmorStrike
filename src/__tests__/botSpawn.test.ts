@@ -5,8 +5,8 @@ import {
   SPAWN_POINTS,
 } from '../game/botSpawn';
 
-/** Player start from PlayerFactory (z ≈ -58). */
-const PLAYER_START = { x: 0, z: -58 };
+/** Player start from PlayerFactory (z ≈ -120). */
+const PLAYER_START = { x: 0, z: -120 };
 
 describe('pickSpawnIndex (shipped)', () => {
   it('never returns a point closer than MIN_BOT_SPAWN_DIST when far points exist', () => {

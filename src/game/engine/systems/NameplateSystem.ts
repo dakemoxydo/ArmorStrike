@@ -1,11 +1,19 @@
 // ===== Система обновления именных табличек ботов =====
-import type { TankEntity } from '../../Tank';
 import type { Nameplate } from '../../nameplate';
+
+/** Narrow port — no TankEntity fan-in. */
+export interface NameplateSubject {
+  id: number;
+  alive: boolean;
+  health: number;
+  maxHealth: number;
+  position: { x: number; z: number };
+}
 
 type NameplateEntry = { plate: Nameplate; color: number };
 
 export const NameplateSystem = {
-  update(bots: Iterable<{ tank: TankEntity }>, nameplates: Map<number, NameplateEntry>) {
+  update(bots: Iterable<{ tank: NameplateSubject }>, nameplates: Map<number, NameplateEntry>) {
     for (const b of bots) {
       const np = nameplates.get(b.tank.id);
       if (!np) continue;

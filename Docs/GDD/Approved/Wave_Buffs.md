@@ -42,5 +42,6 @@
 |--------|------|
 | `WaveBuffId`, `WAVE_BUFF_OPTIONS` | `src/game/wavePreview.ts` |
 | `applyWaveBuff`, `clearWaveBuff` | `src/game/waveBuffs.ts` |
+| `TankBuffState` / `buffs` on entity | `src/game/tank/components.ts`, `TankEntity` |
 | `WaveIntermission` | `src/components/WaveIntermission.tsx` |
 | `GameModeController` | `src/game/GameModeController.ts` (выбор → buff → confirm) |

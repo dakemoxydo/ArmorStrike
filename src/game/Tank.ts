@@ -1,4 +1,6 @@
-// ===== Танк: сущность танка (данные) =====
+// ===== Танк: сущность = id + composition of domain components =====
+// Systems / weapons keep using flat port projections (MotionBody, WeaponOwner, …);
+// storage lives in motion / combat / buffs / fx / visual.
 import * as THREE from 'three';
 import { TANK } from './constants';
 import type { HullId, TurretId } from '../core/catalog';
@@ -6,8 +8,16 @@ import type { Weapon, WeaponOwner } from './weapons/types';
 import { disposeObject3D } from './resources/disposeObject3D';
 import type { TankLike } from '../core/types';
 import type { TankParams, TankVisual, TankFxState } from './tank/types';
+import {
+  TankBuffState,
+  TankCombatState,
+  TankMotionState,
+  createTankFxState,
+  type BuffBaseSnapshot,
+} from './tank/components';
 
 export type { TankParams, TankVisual } from './tank/types';
+export type { BuffBaseSnapshot } from './tank/components';
 /** Удобный re-export сборки меша (импорт типов — из tank/types, цикл разорван). */
 export { buildTankMesh } from './tank/buildMesh';
 
@@ -20,54 +30,90 @@ export class TankEntity implements TankLike, WeaponOwner {
   params: TankParams;
   visual: TankVisual;
 
-  yaw = 0;
-  turretYaw = 0;
-  aimYaw = 0;
-  speed = 0;
-  throttle = 0;
-  steer = 0;
-  boosting = false;
-  boostActive = false;
-  boostEnergy = 1;
-  /** Wave buff: multiply BOOST.drain (1 = normal). */
-  boostDrainMul = 1;
-  /** Wave buff: multiply BOOST.recharge (1 = normal). */
-  boostRechargeMul = 1;
-  /** Wave buff: >1 = faster weapon reload / charge / energy recovery. */
-  reloadSpeedMul = 1;
-  /** Snapshot of combat params while a wave buff is active. */
-  buffBase: {
-    damage: number;
-    speed: number;
-    reverseSpeed: number;
-    turnSpeed: number;
-    shotCooldown: number;
-  } | null = null;
-  knockback = new THREE.Vector3();
+  /** Drive / aim pose / knockback. */
+  readonly motion = new TankMotionState();
+  /** HP, death, fire timer. */
+  readonly combat: TankCombatState;
+  /** Wave-buff multipliers + snapshot. */
+  readonly buffs = new TankBuffState();
+  /** Presentation-only FX accumulators (outside TankLike). */
+  readonly fx: TankFxState = createTankFxState();
 
-  /** Представленческое/визуальное состояние (только FX), вне симуляции. */
-  fx: TankFxState = { hitFlash: 0, barrelKick: 0, smokeAcc: 0, dustAcc: 0, timeSinceHit: 0 };
   hullId?: HullId;
   turretId?: TurretId;
   weapon?: Weapon;
-
   radius = TANK.radius;
-  health: number;
-  alive = true;
-  deathT = 0;
-
-  fireTimer = 0;
-
-  lastAttackerId = -1;
-  vel = new THREE.Vector3();
 
   constructor(name: string, isPlayer: boolean, params: TankParams, visual: TankVisual) {
     this.name = name;
     this.isPlayer = isPlayer;
     this.params = params;
     this.visual = visual;
-    this.health = params.maxHealth;
+    this.combat = new TankCombatState(params.maxHealth);
   }
+
+  // ---- Flat port projections (MotionBody / AimBody / WeaponOwner / TankLike / AIBody) ----
+  // Call sites and port types stay structural; storage is in components above.
+
+  get yaw() { return this.motion.yaw; }
+  set yaw(v: number) { this.motion.yaw = v; }
+
+  get turretYaw() { return this.motion.turretYaw; }
+  set turretYaw(v: number) { this.motion.turretYaw = v; }
+
+  get aimYaw() { return this.motion.aimYaw; }
+  set aimYaw(v: number) { this.motion.aimYaw = v; }
+
+  get speed() { return this.motion.speed; }
+  set speed(v: number) { this.motion.speed = v; }
+
+  get throttle() { return this.motion.throttle; }
+  set throttle(v: number) { this.motion.throttle = v; }
+
+  get steer() { return this.motion.steer; }
+  set steer(v: number) { this.motion.steer = v; }
+
+  get boosting() { return this.motion.boosting; }
+  set boosting(v: boolean) { this.motion.boosting = v; }
+
+  get boostActive() { return this.motion.boostActive; }
+  set boostActive(v: boolean) { this.motion.boostActive = v; }
+
+  get boostEnergy() { return this.motion.boostEnergy; }
+  set boostEnergy(v: number) { this.motion.boostEnergy = v; }
+
+  get knockback() { return this.motion.knockback; }
+  set knockback(v: THREE.Vector3) { this.motion.knockback.copy(v); }
+
+  get vel() { return this.motion.vel; }
+  set vel(v: THREE.Vector3) { this.motion.vel.copy(v); }
+
+  get boostDrainMul() { return this.buffs.boostDrainMul; }
+  set boostDrainMul(v: number) { this.buffs.boostDrainMul = v; }
+
+  get boostRechargeMul() { return this.buffs.boostRechargeMul; }
+  set boostRechargeMul(v: number) { this.buffs.boostRechargeMul = v; }
+
+  get reloadSpeedMul() { return this.buffs.reloadSpeedMul; }
+  set reloadSpeedMul(v: number) { this.buffs.reloadSpeedMul = v; }
+
+  get buffBase(): BuffBaseSnapshot | null { return this.buffs.buffBase; }
+  set buffBase(v: BuffBaseSnapshot | null) { this.buffs.buffBase = v; }
+
+  get health() { return this.combat.health; }
+  set health(v: number) { this.combat.health = v; }
+
+  get alive() { return this.combat.alive; }
+  set alive(v: boolean) { this.combat.alive = v; }
+
+  get deathT() { return this.combat.deathT; }
+  set deathT(v: number) { this.combat.deathT = v; }
+
+  get fireTimer() { return this.combat.fireTimer; }
+  set fireTimer(v: number) { this.combat.fireTimer = v; }
+
+  get lastAttackerId() { return this.combat.lastAttackerId; }
+  set lastAttackerId(v: number) { this.combat.lastAttackerId = v; }
 
   get position() { return this.visual.group.position; }
   get maxHealth() { return this.params.maxHealth; }

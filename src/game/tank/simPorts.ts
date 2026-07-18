@@ -1,7 +1,10 @@
-// ===== Узкие порты танка для sim-систем (ISP) — runtime по-прежнему TankEntity =====
+// ===== Узкие порты танка для sim-систем (ISP) =====
+// Runtime storage: TankEntity composes TankMotionState / TankCombatState / TankBuffState / fx / visual.
+// Flat projections on TankEntity still satisfy these ports (structural typing).
 import type * as THREE from 'three';
 import type { Weapon } from '../weapons/types';
 import type { TankFxState, TankParams, TankVisual } from './types';
+import type { BuffBaseSnapshot } from './components';
 
 /** Движение корпуса + boost + knockback. */
 export interface MotionBody {
@@ -90,15 +93,9 @@ export interface ControllableTank {
   weapon?: Weapon;
 }
 
-/** Временные волновые баффы. */
+/** Временные волновые баффы (flat view; entity projects from `buffs`). */
 export interface BuffableTank {
-  buffBase: {
-    damage: number;
-    speed: number;
-    reverseSpeed: number;
-    turnSpeed: number;
-    shotCooldown: number;
-  } | null;
+  buffBase: BuffBaseSnapshot | null;
   reloadSpeedMul: number;
   boostDrainMul: number;
   boostRechargeMul: number;

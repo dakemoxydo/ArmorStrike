@@ -22,7 +22,19 @@ These rules override or extend the global `AGENTS.md`.
 - **MUST Auto-Promote:** Move the relevant file from `Docs/GDD/Drafts/` to `Docs/GDD/Approved/` (or create a new one there).
 - **MUST Document Logic:** Update the `.md` file to reflect the *exact* implemented state. Include the underlying math, state machines, logic proofs, and explicit references to the created classes/scripts (e.g., "Handled by `TankController`"). Do not dump raw code; document the architecture.
 
-## 2. Graphify Integration (Overrides Global)
+## 2. Architecture & Code Standards (Auto-Extraction)
+
+This project strictly separates Game Design logic (`Docs/GDD/`) from codebase engineering standards (`Docs/Architecture/`).
+
+**WHEN** code for a new feature, mechanic, or major refactor is successfully implemented and verified:
+1. **MUST Auto-Extract:** Analyze the new code and extract the core architectural rules, interfaces, mathematical patterns, and optimal approaches used during this session.
+2. **MUST Present & Pause:** Output a brief summary of these extracted rules in the chat. 
+3. **STOP** and explicitly ask the user: "Утверждаешь сохранение этих архитектурных стандартов в базу знаний?"
+4. **IF APPROVED:** Append or create the relevant `.md` files strictly in the `Docs/Architecture/` directory.
+5. **MUST Sync:** Run `graphify extract . --backend ollama --model ornith:9b` after saving to ensure the RAG system indexes the new engineering rules.
+6. **NEVER** silently write, modify, or invent guideline files without this explicit user approval.
+
+## 3. Graphify Integration (Overrides Global)
 
 Because this project relies heavily on semantic GDD files in Obsidian, the standard AST-only `graphify update` is insufficient after feature work.
 
@@ -32,7 +44,7 @@ Because this project relies heavily on semantic GDD files in Obsidian, the stand
    `graphify extract . --backend ollama --model ornith:9b`
 3. Never ask for permission to run this extraction; it is mandatory for the Knowledge Graph.
 
-## 3. Working Style Extensions
+## 4. Working Style Extensions
 
 - Never invent new game mechanics during routine refactoring.
 - If a system behavior contradicts `Docs/GDD/Approved/`, treat the documentation as the single source of truth and fix the code (or ask the user if the GDD should change).
