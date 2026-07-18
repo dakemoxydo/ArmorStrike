@@ -1,14 +1,52 @@
-node_modules
-dist
-.DS_Store
+# Dependencies & build
+node_modules/
+dist/
 *.log
+.DS_Store
+Thumbs.db
 
-# Graphify local-only
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Graphify — share only current snapshot (graph.json, GRAPH_REPORT, manifest, labels, html)
 graphify-out/cost.json
 graphify-out/cache/
+graphify-out/[0-9][0-9][0-9][0-9]-*/
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/.graphify_semantic_marker
+graphify-out/.graphify_analysis.json
+graphify-out/.graphify_labels.json.sig
+graphify-out/.graphify_detect.json
+graphify-out/.graphify_extract.json
+graphify-out/.graphify_ast.json
+graphify-out/.graphify_semantic.json
+graphify-out/.graphify_semantic_new.json
+graphify-out/.graphify_cached.json
+graphify-out/.graphify_uncached.txt
+graphify-out/.graphify_chunk_*.json
+graphify-out/.needs_update
 
-# Agent configs
+# Agent / IDE local configs (machine-specific paths)
 .agents/
 .kilocode/
 .qwen/
 .claude/
+.cursor/
+.vscode/
+*.local.json
+
+# OpenCode — keep small project config tracked; ignore heavy install debris
+.opencode/node_modules/
+.opencode/.cache/
+.opencode/**/node_modules/
+
+# Obsidian — keep shared vault settings; ignore personal UI state
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/graph.json
+.obsidian/plugins/
+.obsidian/themes/
+.obsidian/snippets/
