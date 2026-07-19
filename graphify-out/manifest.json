@@ -60,19 +60,19 @@
     "semantic_hash": "c6f3c5c0ef7ce1c2b28aa9423a7a747c"
   },
   "src/game/Arena.ts": {
-    "mtime": 1784350033.3901074,
-    "ast_hash": "aef44cded4c302d863ee5f0601fbf40e",
-    "semantic_hash": "aef44cded4c302d863ee5f0601fbf40e"
+    "mtime": 1784424592.61369,
+    "ast_hash": "f5be54bf44714a7655047579281fdf51",
+    "semantic_hash": ""
   },
   "src/game/ArenaBuilder.ts": {
-    "mtime": 1784347819.0458198,
-    "ast_hash": "c51a2bfc4426292a9c0667d3c11c2a61",
-    "semantic_hash": "c51a2bfc4426292a9c0667d3c11c2a61"
+    "mtime": 1784426327.709336,
+    "ast_hash": "b14872aa397db64d0758b51d27fb8ca6",
+    "semantic_hash": ""
   },
   "src/game/ArenaEffects.ts": {
-    "mtime": 1784345880.5261,
-    "ast_hash": "4552fe9f59cc8e42fc269cf0b17f0252",
-    "semantic_hash": "4552fe9f59cc8e42fc269cf0b17f0252"
+    "mtime": 1784426294.6187947,
+    "ast_hash": "3493dac27148094637b5dea7a2de9aae",
+    "semantic_hash": ""
   },
   "src/game/CameraRig.ts": {
     "mtime": 1784334079.7047088,
@@ -115,9 +115,9 @@
     "semantic_hash": "5be7509f0671e520ffec59e63db0511d"
   },
   "src/game/RenderWorld.ts": {
-    "mtime": 1784399424.105415,
-    "ast_hash": "db6973eb079c90562258bebbca59e757",
-    "semantic_hash": "db6973eb079c90562258bebbca59e757"
+    "mtime": 1784424761.57329,
+    "ast_hash": "461aded904bf4ece7909b4e28e6b1ed8",
+    "semantic_hash": ""
   },
   "src/game/RunState.ts": {
     "mtime": 1784332918.8739774,
@@ -150,9 +150,9 @@
     "semantic_hash": "df5b19c7c6b8670b145f11a7438de94f"
   },
   "src/game/arena/context.ts": {
-    "mtime": 1784225616.3087304,
-    "ast_hash": "42855faee3b2182e46a6bec2506573bb",
-    "semantic_hash": "42855faee3b2182e46a6bec2506573bb"
+    "mtime": 1784426313.2239704,
+    "ast_hash": "37072a237f5797a1abb183798e9c4967",
+    "semantic_hash": ""
   },
   "src/game/arena/foundry.ts": {
     "mtime": 1784149360.434647,
@@ -525,9 +525,9 @@
     "semantic_hash": "1d839c4c00e46ad67cbed00b1b9e1739"
   },
   "src/game/GameBootstrap.ts": {
-    "mtime": 1784334126.3688254,
-    "ast_hash": "695a864f198e254ce210b552ddb389ee",
-    "semantic_hash": "695a864f198e254ce210b552ddb389ee"
+    "mtime": 1784424621.8180432,
+    "ast_hash": "06f9a58db9f91f6650ddc739d73975db",
+    "semantic_hash": ""
   },
   "src/game/GameModeController.ts": {
     "mtime": 1784345920.9134912,
@@ -650,9 +650,9 @@
     "semantic_hash": "6b90fa590301458bb4756da765ca441a"
   },
   "src/game/textures/ground.ts": {
-    "mtime": 1784399787.1489367,
-    "ast_hash": "7f6321025f66c28723f86c27257cdb31",
-    "semantic_hash": "7f6321025f66c28723f86c27257cdb31"
+    "mtime": 1784426601.5551322,
+    "ast_hash": "baf03df23a9b0794f8bd237e523eca06",
+    "semantic_hash": ""
   },
   "src/game/textures/index.ts": {
     "mtime": 1784345850.2555113,
@@ -1000,9 +1000,9 @@
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Health_And_Regen.md": {
-    "mtime": 1784350974.5361135,
-    "ast_hash": "33f1186e5382b91d0fbffbd36b8865c4",
-    "semantic_hash": "33f1186e5382b91d0fbffbd36b8865c4"
+    "mtime": 1784412288.6841555,
+    "ast_hash": "1db296be116f183546dddef31ec070ea",
+    "semantic_hash": ""
   },
   "Docs/GDD/Approved/Player_Controls.md": {
     "mtime": 1784343167.2838867,
@@ -1085,14 +1085,14 @@
     "semantic_hash": "337e3c9e1c555013fbf1f72367d57a32"
   },
   "src/game/arena/villageMap.ts": {
-    "mtime": 1784399757.644232,
-    "ast_hash": "0af594a97493546fab4ce2570be1c88d",
-    "semantic_hash": "0af594a97493546fab4ce2570be1c88d"
+    "mtime": 1784426644.8994544,
+    "ast_hash": "131bb400d214297c18305165d7cfb7b6",
+    "semantic_hash": ""
   },
   "src/game/maps/mapCatalog.ts": {
-    "mtime": 1784399803.118004,
-    "ast_hash": "3a52451f3fe4ff31ca1b8a0944785f7b",
-    "semantic_hash": "3a52451f3fe4ff31ca1b8a0944785f7b"
+    "mtime": 1784426710.1514,
+    "ast_hash": "203f9cdd20b053199523d6696850d84e",
+    "semantic_hash": ""
   },
   "Docs/GDD/Approved/Maps.md": {
     "mtime": 1784400148.7827592,
@@ -1125,8 +1125,8 @@
     "semantic_hash": ""
   },
   "Docs/Architecture/Standard_Tank.md": {
-    "mtime": 1784397775.8195605,
-    "ast_hash": "9a51f9318987369747bd3813a8c3ebf1",
+    "mtime": 1784412253.3571923,
+    "ast_hash": "4361dd2a66808164f31fd4fc7040b1ec",
     "semantic_hash": ""
   },
   "Docs/Architecture/Standard_UI_Input.md": {
@@ -1140,8 +1140,18 @@
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Village_Level_Design.md": {
-    "mtime": 1784400148.7827592,
-    "ast_hash": "5c7f6a6f5407f787b2ecf1363fd8fb68",
+    "mtime": 1784426814.5209973,
+    "ast_hash": "9c4c2712622321fc7f075ad6e48e3802",
+    "semantic_hash": ""
+  },
+  "src/__tests__/atmospherePresets.test.ts": {
+    "mtime": 1784424786.884972,
+    "ast_hash": "fa95c7559b16f6be1d8787e2bb91e2bb",
+    "semantic_hash": ""
+  },
+  "src/game/atmospherePresets.ts": {
+    "mtime": 1784424716.1279697,
+    "ast_hash": "946044be859e0e925d4769fb21df0942",
     "semantic_hash": ""
   }
 }

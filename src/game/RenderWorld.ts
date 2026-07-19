@@ -3,6 +3,10 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { CameraRig } from './CameraRig';
 import { getQualityPreset, type QualityLevel, type QualityPreset } from './graphicsQuality';
+import type { MapId } from './maps/mapCatalog';
+import { getAtmosphere } from './atmospherePresets';
+
+const NIGHT = getAtmosphere('factory');
 
 export class RenderWorld {
   readonly renderer: THREE.WebGLRenderer;
@@ -11,7 +15,11 @@ export class RenderWorld {
   readonly cameraRig: CameraRig;
 
   private sun: THREE.DirectionalLight;
+  private hemi: THREE.HemisphereLight;
+  private rim: THREE.DirectionalLight;
+  private sky: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   private quality: QualityLevel;
+  private atmosphere: MapId = 'factory';
 
   constructor(canvas: HTMLCanvasElement) {
     const preset = getQualityPreset();
@@ -26,53 +34,65 @@ export class RenderWorld {
     this.renderer.shadowMap.enabled = preset.shadows;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.08;
+    this.renderer.toneMappingExposure = NIGHT.exposure;
 
     this.camera = new THREE.PerspectiveCamera(58, 1, 0.1, 900);
     this.cameraRig = new CameraRig(this.camera);
-    this.scene.background = new THREE.Color(0x060a12);
-    this.scene.fog = new THREE.Fog(0x0a0f18, 130, 440);
+    this.scene.background = new THREE.Color(NIGHT.background);
+    this.scene.fog = new THREE.Fog(NIGHT.fogColor, NIGHT.fogNear, NIGHT.fogFar);
 
-    const sky = new THREE.Mesh(
+    this.sky = new THREE.Mesh(
       new THREE.SphereGeometry(480, 32, 20),
       new THREE.ShaderMaterial({
         side: THREE.BackSide,
         depthWrite: false,
+        uniforms: {
+          uZen: { value: new THREE.Vector3(...NIGHT.skyZenith) },
+          uHor: { value: new THREE.Vector3(...NIGHT.skyHorizon) },
+          uCloud: { value: new THREE.Vector3(...NIGHT.skyCloud) },
+          uSunDir: { value: new THREE.Vector3(...NIGHT.skySunDir) },
+          uSunDisc: { value: new THREE.Vector3(...NIGHT.skySunDisc) },
+          uSunGlow: { value: new THREE.Vector3(...NIGHT.skySunGlow) },
+        },
         vertexShader: `
           varying vec3 vPos;
           void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
         fragmentShader: `
           varying vec3 vPos;
+          uniform vec3 uZen;
+          uniform vec3 uHor;
+          uniform vec3 uCloud;
+          uniform vec3 uSunDir;
+          uniform vec3 uSunDisc;
+          uniform vec3 uSunGlow;
           void main() {
             vec3 n = normalize(vPos);
             float h = n.y;
-            vec3 zen = vec3(0.03, 0.05, 0.09);
-            vec3 hor = vec3(0.10, 0.17, 0.26);
-            vec3 col = mix(hor, zen, clamp(h * 1.6, 0.0, 1.0));
-            vec3 sunDir = normalize(vec3(0.5, 0.6, 0.4));
+            vec3 col = mix(uHor, uZen, clamp(h * 1.6, 0.0, 1.0));
+            vec3 sunDir = normalize(uSunDir);
             float sunDot = max(0.0, dot(n, sunDir));
             float sunDisc = smoothstep(0.9975, 0.999, sunDot);
-            col += vec3(1.0, 0.85, 0.6) * sunDisc * 2.0;
-            col += vec3(0.5, 0.6, 0.8) * pow(sunDot, 16.0) * 0.4;
+            col += uSunDisc * sunDisc * 2.0;
+            col += uSunGlow * pow(sunDot, 16.0) * 0.4;
             float cloud = sin(n.x * 10.0 + n.z * 16.0) * cos(n.z * 12.0 - n.x * 7.0);
             float puff = smoothstep(0.25, 0.7, cloud);
             if (h > 0.04) {
-              col = mix(col, vec3(0.16, 0.22, 0.30), puff * 0.25 * smoothstep(0.04, 0.2, h));
+              col = mix(col, uCloud, puff * 0.25 * smoothstep(0.04, 0.2, h));
             }
             gl_FragColor = vec4(col, 1.0);
           }`,
       }),
     );
-    this.scene.add(sky);
+    this.scene.add(this.sky);
 
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.06).texture;
     pmrem.dispose();
 
-    const hemi = new THREE.HemisphereLight(0x8fb9d8, 0x0a0e14, 0.5);
-    this.scene.add(hemi);
-    this.sun = new THREE.DirectionalLight(0xffe6c0, 2.4);
-    this.sun.position.set(116, 156, 64);
+    this.hemi = new THREE.HemisphereLight(NIGHT.hemiSky, NIGHT.hemiGround, NIGHT.hemiIntensity);
+    this.scene.add(this.hemi);
+    this.sun = new THREE.DirectionalLight(NIGHT.sunColor, NIGHT.sunIntensity);
+    this.sun.position.set(...NIGHT.sunPosition);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(preset.shadowMapSize, preset.shadowMapSize);
     const sc = this.sun.shadow.camera;
@@ -81,13 +101,53 @@ export class RenderWorld {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.add(this.sun);
-    const rim = new THREE.DirectionalLight(0x2ee6c0, 0.5);
-    rim.position.set(-30, 20, -40);
-    this.scene.add(rim);
+    this.rim = new THREE.DirectionalLight(NIGHT.rimColor, NIGHT.rimIntensity);
+    this.rim.position.set(-30, 20, -40);
+    this.scene.add(this.rim);
   }
 
   getQuality(): QualityLevel {
     return this.quality;
+  }
+
+  /** Текущая карта атмосферы (для тестов / отладки). */
+  getAtmosphere(): MapId {
+    return this.atmosphere;
+  }
+
+  /**
+   * Применить атмосферный пресет под карту (sky/fog/sun/hemi/rim/exposure).
+   * Вызывается из buildArena при каждой сборке/пересборке арены.
+   */
+  applyAtmosphere(mapId: MapId) {
+    const p = getAtmosphere(mapId);
+    this.atmosphere = mapId;
+
+    (this.scene.background as THREE.Color).set(p.background);
+    const fog = this.scene.fog as THREE.Fog;
+    fog.color.set(p.fogColor);
+    fog.near = p.fogNear;
+    fog.far = p.fogFar;
+    this.renderer.toneMappingExposure = p.exposure;
+
+    this.hemi.color.set(p.hemiSky);
+    this.hemi.groundColor.set(p.hemiGround);
+    this.hemi.intensity = p.hemiIntensity;
+
+    this.sun.color.set(p.sunColor);
+    this.sun.intensity = p.sunIntensity;
+    this.sun.position.set(...p.sunPosition);
+
+    this.rim.color.set(p.rimColor);
+    this.rim.intensity = p.rimIntensity;
+
+    const u = this.sky.material.uniforms;
+    u.uZen.value.set(...p.skyZenith);
+    u.uHor.value.set(...p.skyHorizon);
+    u.uCloud.value.set(...p.skyCloud);
+    u.uSunDir.value.set(...p.skySunDir);
+    u.uSunDisc.value.set(...p.skySunDisc);
+    u.uSunGlow.value.set(...p.skySunGlow);
   }
 
   /** Применить пресет (pixel ratio + shadow map). Antialias не меняется runtime. */

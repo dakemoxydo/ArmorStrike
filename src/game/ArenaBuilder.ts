@@ -13,12 +13,17 @@ import { buildCityContent } from './arena/cityMap';
 import type { ArenaEffects } from './ArenaEffects';
 import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './maps/mapCatalog';
+import type { RenderWorld } from './RenderWorld';
 
 export function buildArena(
   arena: Arena,
   effects: ArenaEffects,
   mapId: MapId = DEFAULT_MAP_ID,
+  renderWorld?: RenderWorld,
 ) {
+  // Per-map atmosphere (sky/fog/sun/rim). type-only import — нет цикла (правило C3).
+  renderWorld?.applyAtmosphere(mapId);
+
   const ctx = makeContext(arena, effects);
 
   switch (mapId) {
@@ -78,6 +83,7 @@ export function makeContext(arena: Arena, effects: ArenaEffects): ArenaBuildCont
     smokeEmitters: effects.smokeEmitters,
     furnaceGlowMats: effects.furnaceGlowMats,
     moltenMats: effects.moltenMats,
+    animNodes: effects.animNodes,
     box: (w, h, d, mat, cy) => arena.box(w, h, d, mat, cy),
     addColliderBlock: (x, z, w, d, h, destructible, buildMesh, hp, kind, blocksSight) =>
       arena.addColliderBlock(x, z, w, d, h, destructible, buildMesh, hp, kind, blocksSight),

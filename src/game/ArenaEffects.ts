@@ -3,6 +3,9 @@ import { smokeTexture } from './textures';
 
 interface SmokeSprite { s: THREE.Sprite; life: number; maxLife: number; vx: number }
 
+/** Живой узел арены: callback(dt, elapsed) каждый кадр. Generic-механизм анимации. */
+export type AnimNodeFn = (dt: number, elapsed: number) => void;
+
 export class ArenaEffects {
   dome: THREE.Mesh | null = null;
   dust: THREE.Points | null = null;
@@ -13,6 +16,8 @@ export class ArenaEffects {
   moltenMats: THREE.MeshBasicMaterial[] = [];
   beaconMats: THREE.MeshBasicMaterial[] = [];
   smokeEmitters: THREE.Vector3[] = [];
+  /** Generic-анимации (ветряк, флаги, трава и т.п.) — обновляются каждый кадр. */
+  animNodes: AnimNodeFn[] = [];
 
   private smokePool: SmokeSprite[] = [];
   private smokeT = 0;
@@ -36,6 +41,7 @@ export class ArenaEffects {
     this.moltenMats.length = 0;
     this.beaconMats.length = 0;
     this.smokeEmitters.length = 0;
+    this.animNodes.length = 0;
     this.smokeT = 0;
     for (const slot of this.smokePool) {
       this.group.remove(slot.s);
@@ -96,6 +102,8 @@ export class ArenaEffects {
       this.craneTrolley.position.x = Math.sin(elapsed * 0.14) * 13;
       this.craneTrolley.rotation.z = Math.sin(elapsed * 0.6) * 0.008;
     }
+
+    for (const fn of this.animNodes) fn(dt, elapsed);
 
     this.smokeT -= dt;
     if (this.smokeT <= 0 && this.smokeEmitters.length > 0) {

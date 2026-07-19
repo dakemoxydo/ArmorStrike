@@ -248,29 +248,68 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
   barnPath(-10, -10, -82, -46); // to mid-W barn
   barnPath(10, 10, 78, 48);     // to mid-E barn
 
-  // village square (packed earth, worn light)
+  // village square (packed earth, worn light) + cobble paving
   ctx.fillStyle = 'rgba(96,80,54,0.4)';
   rectX(-28, -28, 56, 56);
-  // cobble ring hint around well
-  ctx.strokeStyle = 'rgba(120,108,84,0.3)';
-  ctx.lineWidth = 0.6 * K;
+  // cobble tiles across the square (плотная брусчатка)
+  ctx.fillStyle = 'rgba(118,104,80,0.5)';
+  for (let x = -26; x < 26; x += 3.2) {
+    for (let z = -26; z < 26; z += 3.2) {
+      const jx = (Math.random() - 0.5) * 0.8, jz = (Math.random() - 0.5) * 0.8;
+      ctx.beginPath();
+      ctx.arc(px(x + jx), pz(z + jz), 1.5 * K, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // cobble ring around the well (accent)
+  ctx.strokeStyle = 'rgba(150,134,102,0.55)';
+  ctx.lineWidth = 0.7 * K;
   ctx.beginPath();
   ctx.arc(px(0), pz(0), 12 * K, 0, Math.PI * 2);
   ctx.stroke();
 
-  // paddock field patches (green/tilled) near clusters
-  ctx.fillStyle = 'rgba(70,100,45,0.14)';
+  // paddock field patches (green pasture) near clusters
+  ctx.fillStyle = 'rgba(70,100,45,0.16)';
   rectX(-124, -116, 60, 56);
   rectX(60, 62, 64, 60);
-  ctx.fillStyle = 'rgba(120,90,40,0.12)';
+  // wheat fields (золотые) with furrows — SW + NE quadrants
+  const wheatField = (x0: number, z0: number, w: number, d: number, horiz: boolean) => {
+    ctx.fillStyle = 'rgba(168,132,58,0.28)';
+    rectX(x0, z0, w, d);
+    ctx.strokeStyle = 'rgba(120,90,36,0.35)';
+    ctx.lineWidth = 0.35 * K;
+    const step = 3.4;
+    if (horiz) {
+      for (let i = 1; i < d / step; i++) {
+        ctx.beginPath();
+        ctx.moveTo(px(x0), pz(z0 + i * step)); ctx.lineTo(px(x0 + w), pz(z0 + i * step));
+        ctx.stroke();
+      }
+    } else {
+      for (let i = 1; i < w / step; i++) {
+        ctx.beginPath();
+        ctx.moveTo(px(x0 + i * step), pz(z0)); ctx.lineTo(px(x0 + i * step), pz(z0 + d));
+        ctx.stroke();
+      }
+    }
+  };
+  wheatField(-128, 40, 56, 70, false);   // SW wheat
+  wheatField(70, -128, 62, 58, true);    // NE wheat
+  wheatField(34, 96, 56, 34, true);      // S-mid wheat strip
+  // tilled fields (коричневые борозды)
+  ctx.fillStyle = 'rgba(120,90,40,0.16)';
   rectX(62, -116, 58, 54);   // tilled SE field
   rectX(-120, 58, 54, 64);   // tilled NW field
-  // furrow lines on tilled fields
-  ctx.strokeStyle = 'rgba(40,32,18,0.25)';
+  ctx.strokeStyle = 'rgba(40,32,18,0.3)';
   ctx.lineWidth = 0.4 * K;
   for (let i = 0; i < 8; i++) {
     ctx.beginPath();
     ctx.moveTo(px(62 + i * 7), pz(-116)); ctx.lineTo(px(62 + i * 7), pz(-62));
+    ctx.stroke();
+  }
+  for (let i = 0; i < 8; i++) {
+    ctx.beginPath();
+    ctx.moveTo(px(-120), pz(58 + i * 8)); ctx.lineTo(px(-66), pz(58 + i * 8));
     ctx.stroke();
   }
 

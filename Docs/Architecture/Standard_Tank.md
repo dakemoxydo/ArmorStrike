@@ -11,15 +11,15 @@ Runtime-сущность: **`TankEntity`**.
 
 Хранение (SRP-слайсы):
 
-| Component | Класс / тип | Ответственность |
-|-----------|-------------|-----------------|
-| motion | `TankMotionState` | yaw, aim, throttle, boost, knockback, vel |
-| combat | `TankCombatState` | health, alive, deathT, fireTimer, lastAttackerId |
-| buffs | `TankBuffState` | wave multipliers + `BuffBaseSnapshot` |
-| fx | `TankFxState` | hitFlash, barrelKick, smoke/dust acc (presentation) |
-| visual | `TankVisual` | Three mesh tree; **position** живёт на `visual.group` |
-| params | `TankParams` | maxHealth, speeds, damage, cooldown, weaponType, range |
-| weapon | `Weapon?` | strategy instance |
+| Component | Класс / тип       | Ответственность                                        |
+| --------- | ----------------- | ------------------------------------------------------ |
+| motion    | `TankMotionState` | yaw, aim, throttle, boost, knockback, vel              |
+| combat    | `TankCombatState` | health, alive, deathT, fireTimer, lastAttackerId       |
+| buffs     | `TankBuffState`   | wave multipliers + `BuffBaseSnapshot`                  |
+| fx        | `TankFxState`     | hitFlash, barrelKick, smoke/dust acc (presentation)    |
+| visual    | `TankVisual`      | Three mesh tree; **position** живёт на `visual.group`  |
+| params    | `TankParams`      | maxHealth, speeds, damage, cooldown, weaponType, range |
+| weapon    | `Weapon?`         | strategy instance                                      |
 
 Запрещено: раздувать `TankEntity` новой «логикой кадра» (движение, aim, FX). Это работа systems.
 

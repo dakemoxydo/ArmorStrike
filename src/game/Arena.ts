@@ -9,6 +9,7 @@ import type { BlockInfo } from './arena/types';
 import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './maps/mapCatalog';
 import { invalidateSolidColliderCache } from './engine/solidColliderCache';
+import type { RenderWorld } from './RenderWorld';
 
 import { smokeTexture } from './textures';
 
@@ -22,12 +23,21 @@ export class Arena {
   mapId: MapId = DEFAULT_MAP_ID;
 
   private effects: ArenaEffects;
+  /** Опциональный рендер-мир для применения per-map атмосферы при сборке. */
+  private renderWorld?: RenderWorld;
 
   constructor(scene: THREE.Scene, mapId: MapId = DEFAULT_MAP_ID) {
     this.effects = new ArenaEffects(this.group);
     this.mapId = mapId;
-    buildArena(this, this.effects, mapId);
+    buildArena(this, this.effects, mapId, this.renderWorld);
     scene.add(this.group);
+  }
+
+  /** Подключить RenderWorld (вызывается из Game после создания сцены). */
+  setRenderWorld(renderWorld: RenderWorld) {
+    this.renderWorld = renderWorld;
+    // Применить атмосферу текущей карты немедленно (конструктор уже собрал арену).
+    this.renderWorld.applyAtmosphere(this.mapId);
   }
 
   /**
@@ -48,7 +58,7 @@ export class Arena {
     invalidateSolidColliderCache();
 
     this.mapId = mapId;
-    buildArena(this, this.effects, mapId);
+    buildArena(this, this.effects, mapId, this.renderWorld);
   }
 
   addColliderBlock(

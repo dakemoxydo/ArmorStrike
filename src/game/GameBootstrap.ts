@@ -209,6 +209,8 @@ export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
   const { renderWorld, scene, cameraRig } = buildRenderWorld(canvas);
   const { emitEvent, addListener, removeListener } = buildEventBus();
   const { arena, effects, projectiles, input, audio, run } = buildCoreSubsystems(scene, canvas);
+  // Per-map atmosphere: арена применит пресет текущей карты и будет обновлять при rebuild.
+  arena.setRenderWorld(renderWorld);
 
   const combat = new CombatSystem({
     arena, effects, audio,
