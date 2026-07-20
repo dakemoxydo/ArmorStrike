@@ -1,10 +1,16 @@
 # GDD Drafts
 
-Черновики механик **ещё не реализованных** или в процессе дизайна.
+Черновики механик **ещё не реализованных** или design trail.
 
 - Не ссылайтесь на Drafts из production-кода как на source of truth.
-- После имплементации: перенос в `../Approved/` + обновление `00_Index.md` + `graphify extract` / `update`.
+- После имплементации: `../Approved/` + `00_Index.md` + `graphify extract . --backend ollama --model ornith:9b`.
 
-## Ideas backlog (empty)
+## Active / trail
 
-Добавляйте сюда файлы вида `Mechanic_Name.md` с секциями Intent / Open questions / Acceptance.
+| File | Status |
+|------|--------|
+| [[Classic_Match_Modes]] | **Shipped P0–P6** — history trail; use Approved Match_* docs |
+
+## Ideas backlog
+
+Добавляйте `Mechanic_Name.md` (Intent / Open questions / Acceptance).

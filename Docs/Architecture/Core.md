@@ -86,7 +86,7 @@ Ordered stages (`engine/stages.ts`):
 - **Entity:** `TankEntity` — identity + composition of runtime components:
   - `motion` → `TankMotionState` (drive, aim pose, knockback)
   - `combat` → `TankCombatState` (HP, death, fireTimer)
-  - `buffs` → `TankBuffState` (wave-buff muls + snapshot)
+  - `buffs` → `TankBuffState` (legacy mul slots + snapshot; match bots use `BOT_NORMAL` scales at spawn)
   - `fx` → `TankFxState` (presentation accumulators)
   - `visual` / `weapon` / `params`
 - **Flat port projections:** getters/setters on `TankEntity` keep structural ports (`MotionBody`, `WeaponOwner`, `TankLike`, `AIBody`) stable without call-site churn.
@@ -139,18 +139,20 @@ Weapons/combat depend on ports, not concrete `Effects`/`AudioFX`/`Arena` (testab
 
 `GameEvent` union → React:
 
-`playerHit` · `enemyHit` · `kill` · `wave` · `intermission` · `shotFired` · `gameOver` · `pauseChanged` · `garageChanged`
+`playerHit` · `enemyHit` · `kill` · `shotFired` · `gameOver` · `pauseChanged` · `modeChanged` · `garageChanged`
 
-UI-контракт: [Standard UI & Input](Standard_UI_Input.md).
+UI-контракт: [Standard UI & Input](Standard_UI_Input.md).  
+Match rules: [Standard Match](Standard_Match.md).
 
 ### 6. Run state
 
-`RunState`: mode, pause, intermission, score, kills, loadout.  
+`RunState`: mode, pause, score, kills, matchTime, loadout.  
 Persistence: `localStorage` keys `as2_loadout`, `as2_quality`.
 
-### 7. Deterministic wave preview
+### 7. Match modes (not app modes)
 
-`previewWaveComposition` mirrors `spawnBot` hull/turret/role so intermission UI matches actual spawn.
+`MatchModeId` (`deathmatch` | `team_deathmatch` | `capture_point`) lives in `MatchRuntime` / `matchConfig` — **not** in `GameMode`.  
+Flow: ModeSelect → MapSelect → `startRound` → `spawnMatchRoster` + win eval.
 
 ## Directory map
 
@@ -158,14 +160,15 @@ Persistence: `localStorage` keys `as2_loadout`, `as2_quality`.
 src/
   core/           # domain data & damage contract
   game/
+    match/        # MatchRuntime, win, capture, teams, roster
     engine/       # GameSimulation, projectiles, physics, systems
     weapons/      # three weapon classes
-    arena/        # modular factory pieces
+    arena/        # modular map pieces
     camera/       # mode-based camera
     effects/      # particle subsystems
     ports/        # AudioPort, EffectsPort
     tank/         # mesh build + sim ports
-  components/     # React UI
+  components/     # React UI (ModeSelect, HUD, GameOver…)
   hooks/
 Docs/
   Architecture/   # engineering standards (this folder)
@@ -185,7 +188,7 @@ Use `graphify query|path|explain` before structural refactors.
 
 ## Testing strategy
 
-- Pure logic unit tests: scoring, flame cone, railgun fire FSM, wave buffs, death lifecycle, physics.
+- Pure logic unit tests: scoring, match win/teams/capture/objective AI, flame cone, railgun fire FSM, death lifecycle, physics.
 - Vitest in `src/__tests__/`.
 - Commands: `npm test`, `npm run typecheck`, `npm run lint`.
 
@@ -193,7 +196,7 @@ Use `graphify query|path|explain` before structural refactors.
 
 - Multiplayer / netcode  
 - Separate armor DR formula (HP-only “armor”)  
-- Inventory / currency meta beyond wave buffs  
+- Inventory / currency meta  
 - Projectile pool for railgun/flame  
 
 ## Related GDD

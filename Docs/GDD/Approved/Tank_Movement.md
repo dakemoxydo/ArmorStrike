@@ -2,7 +2,7 @@
 
 **Статус:** Approved  
 **Слой:** Simulation  
-**Связано:** [[Player_Controls]], [[Arena_Physics]], [[Wave_Buffs]]
+**Связано:** [[Player_Controls]], [[Arena_Physics]], [[Match_Framework]]
 
 ## Назначение
 
@@ -18,7 +18,7 @@
 | `viking` | Викинг | 80 | 19.5 | 12.0 | 3.6 | Штурм / скорость |
 | `mammoth` | Мамонт | 160 | 11.0 | 7.0 | 2.1 | Тяжёлая броня |
 
-Бафф волны `speed` умножает `speed`, `reverseSpeed` и `turnSpeed` (см. [[Wave_Buffs]]).
+Скорости из корпуса; run-scoped speed buffs удалены (см. [[Wave_Buffs]] removed).
 
 ## Формулы (TankMotionSystem)
 

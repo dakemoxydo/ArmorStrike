@@ -2,7 +2,7 @@
 
 **Статус:** Approved  
 **Тип:** Hitscan + penetration  
-**Связано:** [[Damage_System]], [[Tank_Aim]], [[Wave_Buffs]]
+**Связано:** [[Damage_System]], [[Tank_Aim]], [[Match_Framework]]
 
 ## Фэнтези
 
@@ -59,7 +59,7 @@ currentDamage *= 0.65
 4. Стена / destructible block **останавливает** луч; блоку — `damageBlock` с текущим `currentDamage`.
 5. `nearestShotBlockerDist` учитывает гео-блокеры.
 
-Урон: `resolveWeaponDamage(params.damage, tuning.damage)` — боты получают wave `damageScale`.
+Урон: `resolveWeaponDamage(params.damage, tuning.damage)` — боты матча: `BOT_NORMAL.damageScale`.
 
 ## Аммуниция (HUD)
 

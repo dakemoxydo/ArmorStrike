@@ -18,7 +18,7 @@ interface GameApi {
   addListener / removeListener  // GameEvent
   setHudCallback               // HudSnapshot push
   // polls
-  getHud, getMinimapStatic, fillMinimapDynamics
+  getHud, getMinimapStatic, fillMinimapDynamics, getCaptureMinimap
   dispose
 }
 ```
@@ -34,8 +34,8 @@ Concrete `Game` **implements** `GameApi`; UI типизируется интер
 
 | Канал | Когда | Примеры |
 |-------|-------|---------|
-| `GameEvent` | дискретные импульсы | hit, kill, shotFired, gameOver (winner) |
-| `HudSnapshot` | непрерывное состояние | HP, ammo, boost, score, matchMode, winTarget |
+| `GameEvent` | дискретные импульсы | hit, kill, shotFired, gameOver (scores, time, winner) |
+| `HudSnapshot` | непрерывное состояние | HP, ammo, boost, score, matchMode, winTarget, teamKills/Score, capturePoints |
 
 `useGameHud(game, active)`:
 - подписка на events → vignette, feed, hitmark
@@ -48,15 +48,17 @@ Concrete `Game` **implements** `GameApi`; UI типизируется интер
 
 ```
 components/
-  HUD.tsx + hud/*     # combat overlay (crosshair, vitals, radar, feed, weapon)
-  MainMenu, Garage, MapSelect, PauseMenu, GameOverScreen
+  HUD.tsx + hud/*     # combat overlay (crosshair, vitals, radar, feed, weapon, scoreboard)
+  MainMenu, Garage, ModeSelect, MapSelect, PauseMenu, GameOverScreen
   HullCard, TurretCard
 hooks/
   useGameHud, useFocusTrap
 ui/
   GarageInput, hudPresentation, keyboardTarget
-styles/               # CSS modules by surface (hud, garage, overlays, …)
+styles/               # CSS by surface (hud, garage, overlays, …)
 ```
+
+Flow: **ModeSelect → MapSelect → startRound**; results rematch skips ModeSelect.
 
 Presentation CSS classes могут приходить из catalog (`weaponAccentClass`) — это data, не logic.
 
@@ -75,7 +77,7 @@ Presentation CSS classes могут приходить из catalog (`weaponAcce
 Stage wiring (`PlayerInputStage`):
 - alive → `input.update(player)` → `weapon.setFire`
 - dead → `setFire(false)` (no audio/state leak)
-- intermission → `input.enabled = false` + `releaseLock()` (кликабельный React UI)
+- over / menus → `input.enabled = false` + `releaseLock()` (кликабельный React UI)
 
 ## 5. Garage input (отдельный класс)
 

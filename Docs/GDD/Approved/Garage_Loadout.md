@@ -2,7 +2,7 @@
 
 **Статус:** Approved  
 **Слой:** Meta / UI  
-**Связано:** [[Tank_Movement]], оружие, [[Wave_System]]
+**Связано:** [[Tank_Movement]], оружие, [[Match_Framework]]
 
 ## Модель сборки
 
@@ -29,7 +29,7 @@ weaponType  = turret.weaponType
 range       = turret.range
 ```
 
-Игрок: scales = 1. Боты: wave scales (см. [[Wave_System]]).
+Игрок: scales = 1. Боты матча: `BOT_NORMAL` (`healthScale` / `damageScale` / `shotCooldownScale` в `matchConfig.ts`; без wave ramp).
 
 ## UI / persistence
 

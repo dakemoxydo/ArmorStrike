@@ -2,7 +2,7 @@
 
 **Статус:** Approved  
 **Слой:** Run meta  
-**Связано:** [[Damage_System]], [[Game_Lifecycle]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes (Draft)]]
+**Связано:** [[Damage_System]], [[Game_Lifecycle]], [[Match_Framework]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]]
 
 ## Константы (`SCORE`)
 
@@ -42,14 +42,20 @@ Personal kills on **all** tanks; win uses personal (DM) or team pool (TDM).
 
 Loadout (hull/turret) **не** сбрасывается между матчами (`localStorage as2_loadout`).
 
-## HUD
+## Win vs cosmetic (P6)
 
-- Scoreboard (Tab hold): units, hp.
-- Game over: score + kills (без «волны»).
+| Mode | Win metric | Cosmetic |
+|------|------------|----------|
+| DM | personal kills ≥ **30** | `run.score` (+100 / player kill) |
+| TDM | team kills ≥ **75** | same |
+| CP | team score ≥ **1000** | kills still track K/D |
 
-## P1+
+`run.score` **не** win condition — только XP/results. Personal kills на всех танках.
 
-Win conditions (30 kills DM / 100 team / 1000 CP) заменят cosmetic score как sole end condition; personal kills остаются.
+## HUD / Results
+
+- Scoreboard (Tab): K/D, team columns in TDM/CP.
+- Game over: XP · kills · deaths · K/D · team strip · rematch (`resultsText`, `GameOverScreen`).
 
 ## Классы
 
@@ -58,5 +64,7 @@ Win conditions (30 kills DM / 100 team / 1000 CP) заменят cosmetic score 
 | `SCORE` | `src/game/constants.ts` |
 | `applyPlayerKillScore` | `src/game/scoring.ts` |
 | `CombatSystem` | `src/game/CombatSystem.ts` |
+| `MatchRuntime.onTankKilled` | `src/game/match/MatchRuntime.ts` |
 | `RunState` | `src/game/RunState.ts` |
 | `HudScoreboard` | `src/components/hud/HudScoreboard.tsx` |
+| `resultsText` | `src/game/match/resultsText.ts` |

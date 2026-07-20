@@ -15,7 +15,7 @@ Runtime-сущность: **`TankEntity`**.
 | --------- | ----------------- | ------------------------------------------------------ |
 | motion    | `TankMotionState` | yaw, aim, throttle, boost, knockback, vel              |
 | combat    | `TankCombatState` | health, alive, deathT, fireTimer, lastAttackerId       |
-| buffs     | `TankBuffState`   | wave multipliers + `BuffBaseSnapshot`                  |
+| buffs     | `TankBuffState`   | mul slots + `BuffBaseSnapshot` (match: fixed at spawn) |
 | fx        | `TankFxState`     | hitFlash, barrelKick, smoke/dust acc (presentation)    |
 | visual    | `TankVisual`      | Three mesh tree; **position** живёт на `visual.group`  |
 | params    | `TankParams`      | maxHealth, speeds, damage, cooldown, weaponType, range |
@@ -31,11 +31,13 @@ Runtime-сущность: **`TankEntity`**.
 - `WeaponOwner` — оружие
 - `MotionBody` / `AimBody` / … — sim systems
 - `ControllableTank` — player input
-- `BuffableTank` — wave buffs
+- `BuffableTank` — mul slots (legacy; match uses spawn scales)
 - `HudUnit` / `CameraFollowable` — UI / camera
 
 Правило: **call sites зависят от узкого порта**, не от полного класса.  
 Новое поле: сначала component → затем flat projection, если порт уже существует.
+
+Match fields on entity: `teamId`, `kills`, `deaths`, `invulnT` (see [Standard Match](Standard_Match.md)).
 
 ## 3. Factory (единый путь сборки)
 
@@ -44,9 +46,8 @@ createTankEntity(input)  →  hull+turret params + buildTankMesh + TankEntity
 createWeapon(owner, type, deps)  →  Railgun | Flamethrower | Cannon
 ```
 
-- Игрок: `buildPlayerTank` / PlayerFactory path
-- Боты: `botSpawn` → тот же `createTankEntity` + `createWeapon`
-- Скейлы волны (`healthScale`, `damageScale`, …) — только на factory input, не хардкод в entity.
+- Игрок / боты: `spawnMatchRoster` → `createTankEntity` + `createWeapon`
+- Match bot scales: `BOT_NORMAL` (`healthScale`, `damageScale`, `shotCooldownScale`) — только factory input
 
 ## 4. Sim systems (ISP)
 

@@ -15,7 +15,7 @@
 - Bot may win DM: **yes**
 - Bot difficulty: **Normal only**
 
-> Код пока не меняем. Этот документ — дизайн-замысел после обсуждения.
+> **Shipped.** Исторический design trail; source of truth — `Docs/GDD/Approved/*` + `src/game/match/*`.
 
 ---
 
@@ -155,7 +155,7 @@ interface MatchConfig {
   mapId: MapId
   // roster derived from mode
   winKills?: number        // DM 30
-  winTeamKills?: number    // TDM 100
+  winTeamKills?: number    // TDM 75
   winTeamScore?: number    // CP 1000
   timeLimitSec?: number    // optional soft end
 }

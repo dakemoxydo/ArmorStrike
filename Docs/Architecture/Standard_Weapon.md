@@ -35,7 +35,7 @@ interface Weapon {
 | `WeaponContext` | `{ tanks, colliders }` — **без** concrete Arena |
 | `WeaponDeps` | scene, EffectsPort, AudioPort, DamageSystem, ProjectileManager, onShotFired? |
 
-Оружие не знает о React, HUD React-tree, WaveManager.
+Оружие не знает о React, HUD React-tree, match modes / WaveManager.
 
 ## 3. Fire pipeline (кадр)
 

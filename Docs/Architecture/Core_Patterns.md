@@ -96,9 +96,9 @@ Weapons / combat / systems **не** импортируют concrete `Effects` / 
 
 ## 7. Testing expectations
 
-- Чистая логика — unit tests в `src/__tests__/` (scoring, flame cone, railgun FSM, damage, physics, ports).
+- Чистая логика — unit tests в `src/__tests__/` (scoring, match win/teams/capture/objective, flame cone, railgun FSM, damage, physics, ports).
 - Команды: `npm test`, `npm run typecheck`, `npm run lint`.
-- Новые pure helpers предпочтительнее god-class методов.
+- Новые pure helpers предпочтительнее god-class методов (match layer: `match/*`).
 
 ## 8. Non-goals (текущий билд)
 

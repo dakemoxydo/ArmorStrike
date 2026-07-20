@@ -6,7 +6,7 @@
 
 ## Модель HP
 
-- `maxHealth` — из корпуса (`HULLS`) × `healthScale` (у ботов растёт с волной).
+- `maxHealth` — из корпуса (`HULLS`) × `healthScale` (матч-боты: `BOT_NORMAL.healthScale`).
 - `health` — текущее.
 - `alive` — false при `health <= 0`.
 - Отдельной «брони» (damage reduction) **нет**: «броня» = запас HP + slow корпус.

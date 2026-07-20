@@ -37,7 +37,7 @@
 
 ## Жанр и петля
 
-**Жанр:** 3D tank arena (переход к classic match modes). Арена **300×300** (карты: Завод / Деревня / Город).
+**Жанр:** 3D tank arena, classic match modes (DM / TDM / CP). Арена **300×300** (карты: Завод / Деревня / Город).
 
 **Core loop (P6 complete):**
 1. Гараж → корпус + башня.
@@ -53,7 +53,8 @@
 | Данные | Файл |
 |--------|------|
 | Корпуса / башни / тюнинг оружия | `src/core/catalogData.ts` |
-| Арена, boost, score, волны | `src/game/constants.ts` |
+| Арена, boost, score | `src/game/constants.ts` |
+| Match win/roster/time | `src/game/match/matchConfig.ts` |
 | Heal, knockback decay, damp | `src/game/tuning.ts` |
 | Порядок тика симуляции | `src/game/engine/stages.ts` |
 | Bootstrap | `src/game/GameBootstrap.ts` |

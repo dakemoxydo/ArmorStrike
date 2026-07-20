@@ -2,7 +2,7 @@
 
 **Статус:** Removed  
 **Слой:** —  
-**Связано:** [[Wave_System]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes (Draft)]]
+**Связано:** [[Wave_System]], [[Match_Framework]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]]
 
 ## Что было
 
@@ -19,6 +19,7 @@
 | `RunState.intermission` | `RunState` |
 | Events `intermission` / `wave` | `types.ts` |
 
-## Дальше
+## Замена
 
-Мета-прогрессия run-scoped не планируется в классических матчах v1 (loadout только из гаража).
+Мета-прогрессия run-scoped не используется (loadout только из гаража).  
+Матчи: [[Match_Framework]] (DM / TDM / CP shipped).

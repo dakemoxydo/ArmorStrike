@@ -9,19 +9,18 @@
 Волновой PvE-loop: `WaveManager.begin` → spawn → clear → intermission buff → next wave.  
 Смерть игрока = game over. Счёт: kills + `SCORE.waveBonus`.
 
-## Что сделано в P0
+## Что сделано в P0 (и дальше)
 
 | Было | Стало |
 |------|--------|
-| `WaveManager` | `BotRoster` (пустой список ботов, без lifecycle) |
-| `WavesStage` | удалён из `stages.ts` |
-| `wavePreview` / intermission events | удалены |
+| `WaveManager` | `BotRoster` + `spawnMatchRoster` |
+| `WavesStage` | удалён; `MatchStage` |
+| `wavePreview` / intermission | удалены |
 | `botsForWave` / `SCORE.waveBonus` | удалены |
-| Старт раунда спавнит волну 1 | `startRound` только игрок + `bots.reset()` |
+| Старт = волна 1 | ModeSelect → MapSelect → match roster |
 
-Утилита `spawnBot` / `SPAWN_POINTS` в `botSpawn.ts` **сохранена** для P1 (match roster).
+`SPAWN_POINTS` / `botSpawn` — FFA/team spawn tables через `match/spawnPoints.ts` + `rosterSpawn.ts`.
 
-## Дальше
+## Замена
 
-Классические режимы (DM / TDM / CP) — [[../Drafts/Classic_Match_Modes|Draft]].  
-P1: match framework, roster, teams, respawn, win conditions.
+Классические режимы **shipped (P0–P6):** [[Match_Framework]], [[Team_Deathmatch]], [[Capture_Point]], trail [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]].
