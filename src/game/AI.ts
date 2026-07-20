@@ -48,6 +48,11 @@ export interface AICtx {
   bots: AIBody[];
   colliders: Collider[];
   bounds: number;
+  /**
+   * Optional drive target (CP objective). Aim/fire still use `player`.
+   * When set, bot paths here unless already in close engage.
+   */
+  moveHint?: { x: number; z: number } | null;
 }
 
 export interface AIPersona {
@@ -305,9 +310,29 @@ export class AIController {
 
     // Шаг 3-4: целевая точка + предпочтительная дистанция (+ low-HP cover)
     const pref = this.prefRange();
-    const { tx, tz, throttleBase } = this.computeTargetPoint(
+    let { tx, tz, throttleBase } = this.computeTargetPoint(
       this.state, dist, dx, dz, ctx.player, pref, dt, t, ctx.colliders,
     );
+
+    // CP objective path: drive to moveHint unless in close combat / cover flee.
+    const hint = ctx.moveHint;
+    let onObjectivePath = false;
+    if (hint) {
+      const closeFight =
+        this.state === 'engage' &&
+        ctx.player.alive &&
+        dist <= this.fireRange * 1.05;
+      const covering =
+        this.hasCover &&
+        t.maxHealth > 0 &&
+        t.health / t.maxHealth < coverHpFracForRole(this.role);
+      if (!closeFight && !covering) {
+        tx = hint.x;
+        tz = hint.z;
+        throttleBase = 1;
+        onObjectivePath = true;
+      }
+    }
 
     // Шаг 5: рулевое управление
     const desired = Math.atan2(tx - t.position.x, tz - t.position.z);
@@ -323,10 +348,16 @@ export class AIController {
     if (avoid.throttleOverride !== null) throttle = avoid.throttleOverride;
 
     // Шаг 8: антизастревание
-    this.checkAntiStuck(dt, throttle, t.speed, ctx.bounds, ctx.player.alive, ctx.player.position);
+    this.checkAntiStuck(
+      dt, throttle, t.speed, ctx.bounds, ctx.player.alive,
+      onObjectivePath ? hint! : ctx.player.position,
+    );
 
-    // Шаг 9: бездействие патруля
-    if (this.state === 'patrol' && this.updatePatrolIdle(
+    // Шаг 9: idle at patrol waypoint OR soft hold at objective center
+    if (onObjectivePath && hint) {
+      const wd = Math.hypot(hint.x - t.position.x, hint.z - t.position.z);
+      if (wd < 5) throttle = Math.min(throttle, 0.12);
+    } else if (this.state === 'patrol' && this.updatePatrolIdle(
       dt, tx, tz, t.position, ctx.bounds, ctx.player.alive ? ctx.player.position : undefined,
     )) {
       throttle = 0;

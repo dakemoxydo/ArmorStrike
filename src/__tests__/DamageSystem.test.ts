@@ -3,11 +3,13 @@ import * as THREE from 'three';
 import { createDamageSystem } from '../core/DamageSystem';
 import type { ArenaLike, TankLike } from '../core/types';
 
+let _tid = 1;
 function makeTank(over: Partial<TankLike> = {}): TankLike & { health: number; alive: boolean } {
   return {
-    id: 1, name: 'T', isPlayer: false, health: 100, alive: true, radius: 1.5,
+    id: _tid++, name: 'T', isPlayer: false, health: 100, alive: true, radius: 1.5,
     knockback: new THREE.Vector3(), position: new THREE.Vector3(),
-    yaw: 0, takeDamage: vi.fn(function (this: any, d: number) { this.health -= d; if (this.health <= 0) this.alive = false; }) as any,
+    yaw: 0, teamId: null, invulnT: 0,
+    takeDamage: vi.fn(function (this: any, d: number) { this.health -= d; if (this.health <= 0) this.alive = false; }) as any,
     ...over,
   } as any;
 }
@@ -75,5 +77,33 @@ describe('createDamageSystem', () => {
     ds.damageBlock(1, 30, new THREE.Vector3());
     expect(blocks.get(1)!.hp).toBe(70);
     expect(onBlockDestroyed).not.toHaveBeenCalled();
+  });
+
+  it('блокирует friendly fire при одинаковых teamId', () => {
+    const target = makeTank({ teamId: 'alpha' });
+    const source = makeTank({ teamId: 'alpha' });
+    const onTankDamaged = vi.fn();
+    const ds = createDamageSystem({} as any, { onTankDamaged, onBlockDestroyed: vi.fn() });
+    ds.applyDamage(target, 30, source);
+    expect(onTankDamaged).not.toHaveBeenCalled();
+  });
+
+  it('TDM: урон между разными командами проходит', () => {
+    const target = makeTank({ teamId: 'bravo' });
+    const source = makeTank({ teamId: 'alpha' });
+    const onTankDamaged = vi.fn();
+    const ds = createDamageSystem({} as any, { onTankDamaged, onBlockDestroyed: vi.fn() });
+    ds.applyDamage(target, 30, source);
+    expect(onTankDamaged).toHaveBeenCalled();
+    expect(target.health).toBe(70);
+  });
+
+  it('блокирует урон при invulnT > 0', () => {
+    const target = makeTank({ invulnT: 1.5 });
+    const source = makeTank();
+    const onTankDamaged = vi.fn();
+    const ds = createDamageSystem({} as any, { onTankDamaged, onBlockDestroyed: vi.fn() });
+    ds.applyDamage(target, 30, source);
+    expect(onTankDamaged).not.toHaveBeenCalled();
   });
 });

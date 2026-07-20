@@ -4,21 +4,20 @@ import { MAP_SIZE } from './minimapDraw';
 
 interface HudRadarProps {
   mapRef: RefObject<HTMLCanvasElement | null>;
-  wave: number;
   botsAlive: number;
 }
 
-export default function HudRadar({ mapRef, wave, botsAlive }: HudRadarProps) {
+export default function HudRadar({ mapRef, botsAlive }: HudRadarProps) {
   return (
     <div
       className="hud-panel anim-left absolute left-5 top-5 p-3"
       style={{ width: MAP_SIZE + 24, '--d': '0.05s' } as React.CSSProperties}
       role="img"
-      aria-label={`Радар. Волна ${wave}. Целей: ${botsAlive}`}
+      aria-label={`Радар. Целей: ${botsAlive}`}
     >
       <div className="mb-2 flex items-center justify-between px-1">
         <span className="hud-label flex items-center gap-1.5"><Radio size={12} /> РАДАР</span>
-        <span className="hud-label text-cyan-300/90">ВОЛНА {wave}</span>
+        <span className="hud-label text-cyan-300/90">БОЙ</span>
       </div>
       <div className="minimap-frame">
         <canvas ref={mapRef} width={MAP_SIZE} height={MAP_SIZE} />

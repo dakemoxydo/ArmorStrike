@@ -17,8 +17,11 @@
 | [[Weapon_Railgun]] | Рельсотрон | `RailgunWeapon` |
 | [[Weapon_Flamethrower]] | Огнемёт Firebird | `FlamethrowerWeapon`, `inFlameConeXZ` |
 | [[Projectile_System]] | Снаряды (пул) | `ProjectileManager`, `ProjectileBehavior` |
-| [[Wave_System]] | Волны и спавн | `WaveManager`, `spawnBot` |
-| [[Wave_Buffs]] | Баффы между волнами | `applyWaveBuff`, `WAVE_BUFF_OPTIONS` |
+| [[Wave_System]] | **Removed (P0)** — был wave loop | — |
+| [[Wave_Buffs]] | **Removed (P0)** — intermission buffs | — |
+| [[Match_Framework]] | Режимы DM/TDM/CP, roster, respawn, win | `MatchRuntime`, `spawnMatchRoster` |
+| [[Team_Deathmatch]] | TDM 5v5, FF off, team HUD (P3) | `ModeSelect`, `teams`, `HudScoreboard` |
+| [[Capture_Point]] | CP A/B/C, score tick, markers (P4) | `captureLogic`, `CaptureMarkers`, `MatchRuntime` |
 | [[AI_Bots]] | ИИ ботов | `AIController`, `aiRoles` |
 | [[Scoring]] | Очки и убийства | `scoring`, `SCORE` |
 | [[Garage_Loadout]] | Гараж 3×3 | `RunState`, `HULLS`/`TURRETS` |
@@ -34,14 +37,16 @@
 
 ## Жанр и петля
 
-**Жанр:** 3D tank survival (волны) на арене **300×300** (карты: Завод / Деревня / Город).
+**Жанр:** 3D tank arena (переход к classic match modes). Арена **300×300** (карты: Завод / Деревня / Город).
 
-**Core loop:**
-1. Гараж → выбор корпус + башня (9 комбинаций).
-2. Выбор карты → старт матча.
-3. Волна N: зачистка ботов.
-4. Intermission → выбор баффа → волна N+1.
-5. Смерть игрока → game over + score.
+**Core loop (P6 complete):**
+1. Гараж → корпус + башня.
+2. **ModeSelect** (DM / TDM / CP) → **MapSelect** → старт.
+3. Respawn 4 с; DM 30 kills / TDM **75** team / CP 1000 score / time 12 мин.
+4. CP: ~50% bots push A/B/C; rest hunt.
+5. Results: реванш / смена режима / гараж / меню.
+
+**План:** [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]] — **P0–P6 shipped**.
 
 ## Источники истины в коде
 

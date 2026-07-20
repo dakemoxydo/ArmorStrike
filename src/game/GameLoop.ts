@@ -52,7 +52,7 @@ export class GameLoop {
 
     const { sim, cameraRig, renderWorld, hudModel, hud, emit, getPreviewVisual, onHud } = this.deps;
 
-    const combatLive = sim.run.mode === 'playing' && !sim.run.paused && !sim.run.intermission;
+    const combatLive = sim.run.mode === 'playing' && !sim.run.paused;
     if (combatLive) {
       sim.step(dt, emit);
     } else if (sim.tanks.length > 0) {
@@ -69,9 +69,9 @@ export class GameLoop {
       colliders: sim.arena.colliders, effects: sim.effects,
     });
 
-    if (sim.run.paused || sim.run.intermission) sim.audio.setEngine(0);
+    if (sim.run.paused) sim.audio.setEngine(0);
     const showScoreboard =
-      sim.run.mode === 'playing' && sim.input.scoreHeld && !sim.run.paused && !sim.run.intermission;
+      sim.run.mode === 'playing' && sim.input.scoreHeld && !sim.run.paused;
     Object.assign(hud, hudModel.getHud(sim.player, sim.tanks, showScoreboard));
     onHud(hud);
 

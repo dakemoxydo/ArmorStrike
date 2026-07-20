@@ -1,4 +1,4 @@
-// ===== Спавн одного бота волны (отделён от lifecycle WaveManager) =====
+// ===== Спавн одного бота (утилита для match roster; P1 подключит к BotRoster) =====
 import * as THREE from 'three';
 import { botAiForWave } from './constants';
 import { COLORS } from '../core/constants';
@@ -12,7 +12,12 @@ import { buildBotStyle } from '../core/TankCatalog';
 import { createTankEntity } from './PlayerFactory';
 import { personaForRole, roleForBot, roleLabel } from './aiRoles';
 
-export interface BotEntry { tank: TankEntity; ai: AIController }
+export interface BotEntry {
+  tank: TankEntity;
+  ai: AIController;
+  /** CP: bot prioritizes capture zones (P5). */
+  objectiveDuty?: boolean;
+}
 
 export const SPAWN_POINTS: [number, number][] = [
   [128, 128], [-128, 128], [128, -128], [-128, -128],
@@ -57,7 +62,7 @@ export function pickSpawnIndex(
 
 /**
  * Создаёт одного бота: entity, mesh, nameplate, weapon, AI с ролью.
- * Скоринг/wave horn/emit остаются в WaveManager.
+ * Match scoring / events — вне этой функции (match controller, P1+).
  */
 export function spawnBot(
   wave: number,

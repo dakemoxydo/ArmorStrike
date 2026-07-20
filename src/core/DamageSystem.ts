@@ -14,6 +14,13 @@ export function createDamageSystem(
       // Не бить мёртвых: устраняет повторные эффекты/звук по трупу и
       // делает скоринг устойчивым к источникам урона без фильтра !alive.
       if (!target.alive) return;
+      if (source.id === target.id) return;
+      // Spawn invulnerability (match respawn).
+      if ((target.invulnT ?? 0) > 0) return;
+      // Friendly fire off when both have non-null matching teams.
+      const st = source.teamId;
+      const tt = target.teamId;
+      if (st != null && tt != null && st === tt) return;
       // dmg<=0: knockback/VFX helpers call applyHit/applySplashHit with 0 damage;
       if (dmg <= 0) {
         return;

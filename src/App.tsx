@@ -10,10 +10,11 @@ import PauseMenu from './components/PauseMenu';
 import MainMenu from './components/MainMenu';
 import GameOverScreen from './components/GameOverScreen';
 import BootError from './components/BootError';
-import WaveIntermission, { type IntermissionPayload } from './components/WaveIntermission';
 import MapSelect from './components/MapSelect';
+import ModeSelect from './components/ModeSelect';
 import type { MapId } from './game/maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './game/maps/mapCatalog';
+import type { MatchModeId } from './game/types';
 import { isInteractiveKeyboardTarget } from './ui/keyboardTarget';
 
 export default function App() {
@@ -22,10 +23,23 @@ export default function App() {
   const [bootError, setBootError] = useState<{ message: string; detail?: string } | null>(null);
   const [uiMode, setUiMode] = useState<GameMode>('menu');
   const [paused, setPaused] = useState(false);
-  const [intermission, setIntermission] = useState<IntermissionPayload | null>(null);
-  const [finalStats, setFinalStats] = useState({ score: 0, kills: 0, wave: 1 });
+  const [finalStats, setFinalStats] = useState({
+    score: 0,
+    kills: 0,
+    deaths: 0,
+    playerWon: false,
+    winnerName: null as string | null,
+    winnerTeam: null as import('./game/types').TeamId,
+    reason: 'score' as import('./game/types').MatchEndReason,
+    mode: 'deathmatch' as import('./game/types').MatchModeId,
+    matchTimeSec: 0,
+    teamKills: { alpha: 0, bravo: 0 },
+    teamScore: { alpha: 0, bravo: 0 },
+  });
+  const [modeSelectOpen, setModeSelectOpen] = useState(false);
   const [mapSelectOpen, setMapSelectOpen] = useState(false);
   const [lastMapId, setLastMapId] = useState<MapId>(DEFAULT_MAP_ID);
+  const [lastMatchMode, setLastMatchMode] = useState<MatchModeId>('deathmatch');
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
@@ -50,39 +64,54 @@ export default function App() {
         setUiMode(e.mode);
         if (e.mode !== 'playing') {
           setPaused(false);
-          setIntermission(null);
         }
       }
       if (e.type === 'gameOver') {
-        setFinalStats({ score: e.score, kills: e.kills, wave: e.wave });
+        setFinalStats({
+          score: e.score,
+          kills: e.kills,
+          deaths: e.deaths,
+          playerWon: e.playerWon,
+          winnerName: e.winnerName,
+          winnerTeam: e.winnerTeam,
+          reason: e.reason,
+          mode: e.mode,
+          matchTimeSec: e.matchTimeSec,
+          teamKills: e.teamKills,
+          teamScore: e.teamScore,
+        });
         setPaused(false);
-        setIntermission(null);
       }
       if (e.type === 'pauseChanged') setPaused(e.value);
-      if (e.type === 'intermission') {
-        setIntermission({
-          clearedWave: e.clearedWave,
-          nextWave: e.nextWave,
-          tally: e.tally,
-          roleTally: e.roleTally,
-        });
-      }
-      if (e.type === 'wave') setIntermission(null);
     });
     setGame(g);
     return () => g?.dispose();
   }, []);
 
-  /** Open map picker before any match start. */
-  const openMapSelect = useCallback(() => {
+  /** Flow: ModeSelect → MapSelect → startRound. */
+  const openModeSelect = useCallback(() => {
     if (!game) return;
+    setMapSelectOpen(false);
+    setModeSelectOpen(true);
+  }, [game]);
+
+  const confirmMode = useCallback((mode: MatchModeId) => {
+    if (!game) return;
+    setLastMatchMode(mode);
+    game.setMatchMode(mode);
+    setModeSelectOpen(false);
     setMapSelectOpen(true);
   }, [game]);
+
+  const cancelModeSelect = useCallback(() => {
+    setModeSelectOpen(false);
+  }, []);
 
   const confirmMap = useCallback((mapId: MapId) => {
     if (!game) return;
     setLastMapId(mapId);
     setMapSelectOpen(false);
+    setModeSelectOpen(false);
     // Leaving pause/over UI before round starts.
     setPaused(false);
     game.startRound(mapId);
@@ -90,39 +119,51 @@ export default function App() {
 
   const cancelMapSelect = useCallback(() => {
     setMapSelectOpen(false);
+    // Back to mode select when leaving map picker mid-setup.
+    setModeSelectOpen(true);
   }, []);
+
+  /** Same mode + last map — skip ModeSelect (P6 rematch). */
+  const rematch = useCallback(() => {
+    if (!game) return;
+    setModeSelectOpen(false);
+    setMapSelectOpen(false);
+    setPaused(false);
+    game.startRound(lastMapId);
+  }, [game, lastMapId]);
 
   const goGarage = useCallback(() => {
     if (!game) return;
     setMapSelectOpen(false);
+    setModeSelectOpen(false);
     game.setMode('garage');
   }, [game]);
 
   const goMenu = useCallback(() => {
     if (!game) return;
     setMapSelectOpen(false);
+    setModeSelectOpen(false);
     game.setMode('menu');
   }, [game]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!game) return;
-      // Map select owns Escape / Enter while open.
-      if (mapSelectOpen) return;
+      // Mode/map select own Escape / Enter while open.
+      if (mapSelectOpen || modeSelectOpen) return;
       if (e.code === 'Escape') {
-        // Intermission blocks pause (buff UI owns the screen).
-        if (uiMode === 'playing' && !intermission) game.togglePause();
+        if (uiMode === 'playing') game.togglePause();
         else if (uiMode === 'garage') goMenu();
       }
       if (e.code === 'KeyM') game.toggleMute();
-      // Enter opens map select when focus is not already on a control
+      // Enter opens mode select when focus is not already on a control
       if (e.code === 'Enter' && uiMode === 'menu' && !isInteractiveKeyboardTarget(e.target)) {
-        openMapSelect();
+        openModeSelect();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, uiMode, goMenu, openMapSelect, intermission, mapSelectOpen]);
+  }, [game, uiMode, goMenu, openModeSelect, mapSelectOpen, modeSelectOpen]);
 
   const snap: HudSnapshot | null = game ? game.getHud() : null;
 
@@ -143,32 +184,24 @@ export default function App() {
 
   const currHull = HULLS[game?.currentHull ?? 'hunter'];
   const currTurret = TURRETS[game?.currentTurret ?? 'railgun'];
-  const hideChrome = mapSelectOpen;
+  const hideChrome = mapSelectOpen || modeSelectOpen;
 
   return (
-    <div className={`relative h-screen w-screen overflow-hidden bg-[#04060b] text-white ${uiMode === 'playing' && !paused && !intermission && !mapSelectOpen ? 'ingame' : ''}`}>
+    <div className={`relative h-screen w-screen overflow-hidden bg-[#04060b] text-white ${uiMode === 'playing' && !paused && !hideChrome ? 'ingame' : ''}`}>
       <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full" />
 
       <div className="fx-scanlines pointer-events-none absolute inset-0 z-30" />
       <div className="fx-vignette pointer-events-none absolute inset-0 z-10" />
 
-      <HUD game={game} active={uiMode === 'playing' && !mapSelectOpen} />
+      <HUD game={game} active={uiMode === 'playing' && !hideChrome} />
 
-      {uiMode === 'playing' && intermission && game && !mapSelectOpen && (
-        <WaveIntermission
-          game={game}
-          data={intermission}
-          onChosen={() => setIntermission(null)}
-        />
-      )}
-
-      {uiMode === 'playing' && paused && !intermission && game && snap && !mapSelectOpen && (
+      {uiMode === 'playing' && paused && game && snap && !hideChrome && (
         <PauseMenu
           game={game}
           muted={snap.muted}
-          stats={{ score: snap.score, kills: snap.kills, wave: snap.wave, timeSec: snap.timeSec }}
+          stats={{ score: snap.score, kills: snap.kills, timeSec: snap.timeSec }}
           onResume={resume}
-          onRestart={openMapSelect}
+          onRestart={openModeSelect}
           onGarage={goGarage}
           onMenu={goMenu}
           onToggleMute={toggleMute}
@@ -176,14 +209,14 @@ export default function App() {
       )}
 
       {uiMode === 'garage' && !hideChrome && (
-        <Garage game={game} onStart={openMapSelect} onBack={goMenu} />
+        <Garage game={game} onStart={openModeSelect} onBack={goMenu} />
       )}
 
       {uiMode === 'menu' && !hideChrome && (
         <MainMenu
           hull={currHull}
           turret={currTurret}
-          onStart={openMapSelect}
+          onStart={openModeSelect}
           onGarage={goGarage}
         />
       )}
@@ -192,10 +225,27 @@ export default function App() {
         <GameOverScreen
           score={finalStats.score}
           kills={finalStats.kills}
-          wave={finalStats.wave}
-          onRestart={openMapSelect}
+          deaths={finalStats.deaths}
+          playerWon={finalStats.playerWon}
+          winnerName={finalStats.winnerName}
+          winnerTeam={finalStats.winnerTeam}
+          reason={finalStats.reason}
+          mode={finalStats.mode}
+          matchTimeSec={finalStats.matchTimeSec}
+          teamKills={finalStats.teamKills}
+          teamScore={finalStats.teamScore}
+          onRematch={rematch}
+          onChangeMode={openModeSelect}
           onGarage={goGarage}
           onMenu={goMenu}
+        />
+      )}
+
+      {modeSelectOpen && (
+        <ModeSelect
+          initialMode={game?.currentMatchMode ?? lastMatchMode}
+          onConfirm={confirmMode}
+          onCancel={cancelModeSelect}
         />
       )}
 

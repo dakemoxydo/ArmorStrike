@@ -15,6 +15,7 @@ import {
   createTankFxState,
   type BuffBaseSnapshot,
 } from './tank/components';
+import type { TeamId } from './match/matchTypes';
 
 export type { TankParams, TankVisual } from './tank/types';
 export type { BuffBaseSnapshot } from './tank/components';
@@ -38,6 +39,12 @@ export class TankEntity implements TankLike, WeaponOwner {
   readonly buffs = new TankBuffState();
   /** Presentation-only FX accumulators (outside TankLike). */
   readonly fx: TankFxState = createTankFxState();
+
+  /** Match: FFA null; TDM/CP alpha|bravo. */
+  teamId: TeamId = null;
+  /** Match personal kills / deaths. */
+  kills = 0;
+  deaths = 0;
 
   hullId?: HullId;
   turretId?: TurretId;
@@ -114,6 +121,9 @@ export class TankEntity implements TankLike, WeaponOwner {
 
   get lastAttackerId() { return this.combat.lastAttackerId; }
   set lastAttackerId(v: number) { this.combat.lastAttackerId = v; }
+
+  get invulnT() { return this.combat.invulnT; }
+  set invulnT(v: number) { this.combat.invulnT = v; }
 
   get position() { return this.visual.group.position; }
   get maxHealth() { return this.params.maxHealth; }

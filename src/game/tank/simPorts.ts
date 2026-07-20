@@ -110,6 +110,7 @@ export interface BuffableTank {
 
 /** Строка scoreboard / HUD без полного entity. */
 export interface HudUnit {
+  id?: number;
   name: string;
   hullId?: string;
   turretId?: string;
@@ -121,6 +122,8 @@ export interface HudUnit {
   position: { x: number; z: number };
   yaw: number;
   turretYaw: number;
+  /** null = FFA; set in team modes for scoreboard / minimap. */
+  teamId?: import('../match/matchTypes').TeamId;
 }
 
 /** Камера следует за позицией/yaw; playing mode also needs speed/boost for FOV. */

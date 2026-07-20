@@ -10,11 +10,19 @@ import type { ProjectileManager } from './Projectile';
 import type { PlayerController } from '../PlayerController';
 import type { AudioPort } from '../ports/AudioPort';
 import type { RunState } from '../RunState';
-import type { WaveManager } from '../WaveManager';
+import type { BotRoster } from '../BotRoster';
 import type { CombatSystem } from '../CombatSystem';
 import type { HudModel } from '../HudModel';
 import type { Nameplate } from '../nameplate';
 import type { GameEvent } from '../types';
+import type { MatchRuntime } from '../match/MatchRuntime';
+import { allyLineBlockers, pickAiFocus } from '../match/aiFocus';
+import {
+  moveHintForZone,
+  pickObjectiveZone,
+  shouldFightNearObjective,
+  type ObjectiveZoneView,
+} from '../match/aiObjective';
 import { WeaponSystem } from './systems/WeaponSystem';
 import { TankSystem } from './systems/TankSystem';
 import { TankAnimationSystem } from './systems/TankAnimationSystem';
@@ -25,6 +33,9 @@ import { MinimapSystem } from './systems/MinimapSystem';
 import { COLORS } from '../../core/constants';
 import { BOOST_JET_HEIGHT, BOOST_JET_OFFSET } from '../tuning';
 import { rearPoint } from './physics';
+import type { AITarget } from '../AI';
+import { BOT_NORMAL } from '../match/matchConfig';
+import type { TeamId } from '../match/matchTypes';
 
 /** Shared mutable scalar (same object as GameSimulation cell — mid-step external writes stay visible). */
 export type ScalarCell<T> = { value: T };
@@ -46,7 +57,8 @@ export interface SimContext {
   audio: AudioPort;
   run: RunState;
   combat: CombatSystem;
-  waves: WaveManager;
+  bots: BotRoster;
+  match: MatchRuntime;
   hudModel: HudModel;
   /** Shared cell with GameSimulation.deathT. */
   deathT: ScalarCell<number>;
@@ -58,10 +70,9 @@ export interface SimContext {
 
 /** Stage-local views (documentation + type discipline; same object as SimContext). */
 export type PlayerInputCtx = Pick<SimContext, 'player' | 'input' | 'audio' | 'prevReloading'>;
-export type BotAiCtx = Pick<SimContext, 'dt' | 'player' | 'waves' | 'arena'>;
+export type BotAiCtx = Pick<SimContext, 'dt' | 'player' | 'bots' | 'arena' | 'tanks' | 'match'>;
 export type EngineAudioCtx = Pick<SimContext, 'player' | 'audio'>;
 export type BoostFxCtx = Pick<SimContext, 'player' | 'effects'>;
-export type WavesCtx = Pick<SimContext, 'player' | 'deathT' | 'run' | 'waves' | 'dt' | 'tanks' | 'nameplates' | 'input'>;
 
 export interface SimSystem {
   readonly name: string;
@@ -90,17 +101,112 @@ export class PlayerInputStage implements SimSystem {
   }
 }
 
-/** Обновление ИИ ботов + установка огня. */
+/** Per-bot sticky focus (id) for FFA thrash reduction — stage-local. */
+const _aiSticky = new Map<number, number>();
+/** Per-bot sticky capture zone id (CP objective). */
+const _objSticky = new Map<number, string>();
+
+function deadStub(player: TankEntity): AITarget {
+  return { position: player.position, alive: false, vel: player.vel };
+}
+
+/**
+ * Multi-target hostile focus (DM FFA + team modes).
+ * Uses isEnemy; sticky target; LoS-preferred when in sight.
+ */
+function aiFocusForBot(
+  bot: TankEntity,
+  player: TankEntity,
+  tanks: TankEntity[],
+  colliders: SimContext['arena']['colliders'],
+): AITarget {
+  const stickyId = _aiSticky.get(bot.id) ?? -1;
+  const { target } = pickAiFocus({
+    self: bot,
+    candidates: tanks,
+    colliders,
+    sightRange: BOT_NORMAL.sightRange,
+    stickyId,
+  });
+  if (!target) {
+    _aiSticky.delete(bot.id);
+    return deadStub(player);
+  }
+  _aiSticky.set(bot.id, target.id);
+  // Resolve live entity (pick returns candidate shape; same refs as tanks).
+  const ent = tanks.find((t) => t.id === target.id);
+  return ent ?? deadStub(player);
+}
+
+function zonesAsView(ctx: SimContext): ObjectiveZoneView[] {
+  return ctx.match.getCaptureZones().map((z) => ({
+    id: z.id,
+    x: z.x,
+    z: z.z,
+    radius: z.radius,
+    owner: z.owner,
+    contested: z.contested,
+  }));
+}
+
+/** Обновление ИИ ботов + установка огня (+ CP objective path). */
 export class BotAiStage implements SimSystem {
   readonly name = 'botAi';
   update(ctx: SimContext): void {
     const p = ctx.player;
     const bounds = ctx.arena.half - 6;
-    const others = ctx.waves.bots.map((b) => b.tank);
-    for (const b of ctx.waves.bots) {
+    const cpMode = ctx.match.mode === 'capture_point';
+    const zoneViews = cpMode ? zonesAsView(ctx) : [];
+
+    for (const b of ctx.bots.bots) {
+      if (!b.tank.alive) {
+        b.tank.weapon?.setFire(false);
+        _aiSticky.delete(b.tank.id);
+        _objSticky.delete(b.tank.id);
+        continue;
+      }
+
+      const focus = aiFocusForBot(b.tank, p, ctx.tanks, ctx.arena.colliders);
+      let moveHint: { x: number; z: number } | null = null;
+
+      // P5: ~50% bots path to capture zones. AIController still aims at focus;
+      // moveHint overrides drive unless close combat (see AIController).
+      if (cpMode && b.objectiveDuty && zoneViews.length > 0) {
+        const teamId = b.tank.teamId as Exclude<TeamId, null> | null;
+        if (teamId === 'alpha' || teamId === 'bravo') {
+          const stickyZ = _objSticky.get(b.tank.id) ?? null;
+          const zone = pickObjectiveZone(
+            { x: b.tank.position.x, z: b.tank.position.z, teamId },
+            zoneViews,
+            stickyZ,
+          );
+          if (zone) {
+            _objSticky.set(b.tank.id, zone.id);
+            const enemyPos = focus.alive
+              ? { x: focus.position.x, z: focus.position.z, alive: true }
+              : null;
+            // Always set path; close fight clears moveHint so engage code runs fully.
+            const fight = shouldFightNearObjective(
+              { x: b.tank.position.x, z: b.tank.position.z },
+              enemyPos,
+              zone,
+              BOT_NORMAL.sightRange * 0.85,
+            );
+            moveHint = fight ? null : moveHintForZone(zone);
+          }
+        }
+      } else {
+        _objSticky.delete(b.tank.id);
+      }
+
+      // Line-of-fire block: allies only (empty in FFA → free fire through peers).
+      const allyBlockers = allyLineBlockers(b.tank, ctx.tanks);
       b.ai.update(ctx.dt, {
-        player: p, bots: others,
-        colliders: ctx.arena.colliders, bounds,
+        player: focus,
+        bots: allyBlockers,
+        colliders: ctx.arena.colliders,
+        bounds,
+        moveHint,
       });
       b.tank.weapon?.setFire(b.ai.wantsFire);
     }
@@ -146,7 +252,7 @@ export class AmbientStage implements SimSystem {
 export class NameplateSystemStage implements SimSystem {
   readonly name = 'nameplate';
   update(ctx: SimContext): void {
-    NameplateSystem.update(ctx.waves.bots, ctx.nameplates);
+    NameplateSystem.update(ctx.bots.bots, ctx.nameplates);
   }
 }
 
@@ -175,23 +281,6 @@ export class ProjectileStage implements SimSystem {
   }
 }
 
-export class WavesStage implements SimSystem {
-  readonly name = 'waves';
-  update(ctx: SimContext): void {
-    // M5: do not advance waves / award waveBonus during death cam or after player death.
-    if (!ctx.player.alive || ctx.deathT.value >= 0) {
-      return;
-    }
-    const wasIntermission = ctx.run.intermission;
-    ctx.waves.update(ctx.dt, ctx.tanks, ctx.nameplates);
-    // Opened this frame: free cursor so React intermission UI is clickable.
-    if (ctx.run.intermission && !wasIntermission) {
-      ctx.input.enabled = false;
-      ctx.input.releaseLock();
-    }
-  }
-}
-
 export class MinimapStage implements SimSystem {
   readonly name = 'minimap';
   update(ctx: SimContext): void {
@@ -199,16 +288,11 @@ export class MinimapStage implements SimSystem {
   }
 }
 
-export class DeathTimerStage implements SimSystem {
-  readonly name = 'deathTimer';
+/** Match: invuln tick, respawn, win conditions (replaces death→gameOver timer). */
+export class MatchStage implements SimSystem {
+  readonly name = 'match';
   update(ctx: SimContext): void {
-    if (ctx.deathT.value >= 0) {
-      ctx.deathT.value += ctx.dt;
-      if (ctx.deathT.value > 2.0) {
-        // Единая точка перехода playing → over (mode ownership).
-        ctx.requestGameOver();
-      }
-    }
+    ctx.match.update(ctx.dt, ctx.tanks, ctx.player);
   }
 }
 
@@ -249,9 +333,8 @@ export function buildSimulationStages(): SimSystem[] {
     new NameplateSystemStage(),
     new PhysicsSystemStage(),
     new ProjectileStage(),
-    new WavesStage(),
     new MinimapStage(),
-    new DeathTimerStage(),
+    new MatchStage(),
     new BoostStage(),
     new EngineAudioStage(),
   ];

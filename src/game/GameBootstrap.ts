@@ -13,9 +13,9 @@ import { CombatSystem } from './CombatSystem';
 import { HudModel } from './HudModel';
 import { RenderWorld } from './RenderWorld';
 import { RunState } from './RunState';
-import { WaveManager } from './WaveManager';
+import { BotRoster } from './BotRoster';
 import { GameSimulation } from './engine/GameSimulation';
-import { createWeapon, type WeaponFactoryDeps } from './PlayerFactory';
+import type { WeaponFactoryDeps } from './PlayerFactory';
 import { GameLoop } from './GameLoop';
 import { PreviewController } from './PreviewController';
 import { GarageInput } from '../ui/GarageInput';
@@ -102,8 +102,9 @@ function buildDerivedSystems(
   combat: CombatSystem,
 ): {
   weaponDeps: WeaponFactoryDeps;
-  waves: WaveManager;
+  bots: BotRoster;
   hudModel: HudModel;
+  matchHolder: { current: import('./match/MatchRuntime').MatchRuntime | null };
 } {
   const weaponDeps: WeaponFactoryDeps = {
     scene, effects, audio,
@@ -111,14 +112,18 @@ function buildDerivedSystems(
     projectiles,
     onShotFired: () => emitEvent({ type: 'shotFired' }),
   };
-  const waves = new WaveManager({
-    scene, audio, run,
-    createWeapon: (tank, type) => createWeapon(tank, type, weaponDeps),
-    emit: (e) => emitEvent(e),
+  const bots = new BotRoster();
+  // getMatch filled after GameSimulation construction (see bootstrapGame).
+  const matchHolder: { current: import('./match/MatchRuntime').MatchRuntime | null } = { current: null };
+  const hudModel = new HudModel({
+    run,
+    audio,
+    bots,
+    input,
+    getMatch: () => matchHolder.current,
   });
-  const hudModel = new HudModel({ run, audio, waves, input });
   hudModel.buildMinimap(arena);
-  return { weaponDeps, waves, hudModel };
+  return { weaponDeps, bots, hudModel, matchHolder };
 }
 
 // ---- Builder: оконные обработчики ----
@@ -144,7 +149,7 @@ function registerWindowHandlers(
     // TEMP DEBUG [BUGFIX-C1]: visibility auto-pause gated by death cam
     if (
       document.hidden &&
-      shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT, sim.run.intermission)
+      shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT)
     ) {
       sim.run.paused = true;
       emitEvent({ type: 'pauseChanged', value: true });
@@ -153,8 +158,8 @@ function registerWindowHandlers(
   document.addEventListener('visibilitychange', onVisibility);
 
   input.onLockLost = () => {
-    // Root fix C1: intentional lock release on death / intermission must NOT pause.
-    if (shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT, sim.run.intermission)) {
+    // Root fix C1: intentional lock release on death must NOT pause.
+    if (shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT)) {
       sim.run.paused = true;
       emitEvent({ type: 'pauseChanged', value: true });
     }
@@ -212,18 +217,21 @@ export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
   // Per-map atmosphere: арена применит пресет текущей карты и будет обновлять при rebuild.
   arena.setRenderWorld(renderWorld);
 
+  let sim!: GameSimulation;
   const combat = new CombatSystem({
     arena, effects, audio,
     emit: (e) => emitEvent(e),
-    run,
     onPlayerDeath: () => sim?.onPlayerDeath?.(),
+    getMatch: () => sim?.match ?? null,
+    getTanks: () => sim?.tanks ?? [],
   });
 
-  const { weaponDeps, waves, hudModel } = buildDerivedSystems(
+  const { weaponDeps, bots, hudModel, matchHolder } = buildDerivedSystems(
     scene, arena, effects, audio, projectiles, input, run, emitEvent, combat,
   );
 
-  const sim = new GameSimulation(arena, effects, projectiles, input, audio, run, combat, waves, hudModel);
+  sim = new GameSimulation(arena, effects, projectiles, input, audio, run, combat, bots, hudModel);
+  matchHolder.current = sim.match;
   sim.onPlayerDeath = () => {
     // C1: disable input + clear pause BEFORE releaseLock so onLockLost cannot freeze death cam.
     const st = {

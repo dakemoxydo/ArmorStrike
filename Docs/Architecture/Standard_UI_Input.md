@@ -12,7 +12,7 @@ React-компоненты и хуки видят **только** `GameApi` (+ 
 ```ts
 interface GameApi {
   // commands
-  setMode, startRound, togglePause, chooseWaveBuff, ...
+  setMode, startRound, setMatchMode, togglePause, ...
   setGarageSelection, toggleMute, cycleQuality, ...
   // subscriptions
   addListener / removeListener  // GameEvent
@@ -34,11 +34,11 @@ Concrete `Game` **implements** `GameApi`; UI типизируется интер
 
 | Канал | Когда | Примеры |
 |-------|-------|---------|
-| `GameEvent` | дискретные импульсы | hit, kill, wave banner, shotFired, gameOver |
-| `HudSnapshot` | непрерывное состояние | HP, ammo, boost, score, mode, scoreboard |
+| `GameEvent` | дискретные импульсы | hit, kill, shotFired, gameOver (winner) |
+| `HudSnapshot` | непрерывное состояние | HP, ammo, boost, score, matchMode, winTarget |
 
 `useGameHud(game, active)`:
-- подписка на events → vignette, feed, hitmark, banners
+- подписка на events → vignette, feed, hitmark
 - HUD callback / rAF path → refs для high-frequency bars (health, boost, flame fill, minimap canvas)
 - `ammoForcesHudRender` / `isLowHealth` — pure helpers в `ui/hudPresentation.ts`
 
@@ -49,7 +49,7 @@ Concrete `Game` **implements** `GameApi`; UI типизируется интер
 ```
 components/
   HUD.tsx + hud/*     # combat overlay (crosshair, vitals, radar, feed, weapon)
-  MainMenu, Garage, MapSelect, PauseMenu, WaveIntermission, GameOverScreen
+  MainMenu, Garage, MapSelect, PauseMenu, GameOverScreen
   HullCard, TurretCard
 hooks/
   useGameHud, useFocusTrap

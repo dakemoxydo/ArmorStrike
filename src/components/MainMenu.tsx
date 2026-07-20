@@ -32,8 +32,8 @@ export default function MainMenu({ hull, turret, onStart, onGarage }: MainMenuPr
         </div>
 
         <p className="anim-left mt-4 max-w-lg text-xs leading-relaxed text-white/60 md:text-sm" style={{ '--d': '0.28s' } as React.CSSProperties}>
-          Разрушаемые укрытия, динамические волны ботов и сборка бронетехники.
-          Соедини корпус и орудие в Гараже — и выходи в бой.
+          Разрушаемые укрытия, матчи DM / TDM с ботами и сборка бронетехники.
+          Соедини корпус и орудие в Гараже — выбери режим — и выходи в бой.
         </p>
 
         <div className="anim-left hud-panel mt-6 w-full max-w-md border border-cyan-500/30 bg-black/40 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/60 hover:shadow-[0_0_28px_rgba(46,230,192,0.25)]" style={{ '--d': '0.4s' } as React.CSSProperties}>

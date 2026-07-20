@@ -26,13 +26,15 @@ export class TankMotionState {
   vel = new THREE.Vector3();
 }
 
-/** HP, death, fire cooldown, last attacker. */
+/** HP, death, fire cooldown, last attacker, spawn invuln. */
 export class TankCombatState {
   health: number;
   alive = true;
   deathT = 0;
   fireTimer = 0;
   lastAttackerId = -1;
+  /** Seconds of damage immunity after respawn. */
+  invulnT = 0;
 
   constructor(maxHealth: number) {
     this.health = maxHealth;

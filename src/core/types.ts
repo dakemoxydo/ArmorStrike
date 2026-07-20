@@ -23,6 +23,10 @@ export interface TankLike {
   knockback: THREE.Vector3;
   position: THREE.Vector3;
   yaw: number;
+  /** Match team: null = FFA. Optional for tests/stubs. */
+  teamId?: string | null;
+  /** Spawn invulnerability seconds remaining. Optional for tests/stubs. */
+  invulnT?: number;
   /** Применяет урон и помечает источник (чистая логика без эффектов). */
   takeDamage(dmg: number, attackerId: number): void;
 }

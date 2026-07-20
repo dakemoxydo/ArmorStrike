@@ -7,17 +7,20 @@ import type { ProjectileManager } from './Projectile';
 import type { PlayerController } from '../PlayerController';
 import type { AudioPort } from '../ports/AudioPort';
 import type { RunState } from '../RunState';
-import type { WaveManager } from '../WaveManager';
+import type { BotRoster } from '../BotRoster';
 import type { CombatSystem } from '../CombatSystem';
 import type { HudModel } from '../HudModel';
 import type { GameEvent } from '../types';
 import { buildSimulationStages, type SimSystem, type SimContext, type ScalarCell } from './stages';
 import { applyGameOverInputState } from '../deathLifecycle';
+import { MatchRuntime } from '../match/MatchRuntime';
+import type { MatchResult } from '../match/matchTypes';
 
 export class GameSimulation {
   player: TankEntity | null = null;
   tanks: TankEntity[] = [];
   nameplates = new Map<number, { plate: Nameplate; color: number }>();
+  readonly match: MatchRuntime;
 
   /** Internal cells projected into SimContext by reference. */
   private readonly deathCell: ScalarCell<number> = { value: -1 };
@@ -30,6 +33,9 @@ export class GameSimulation {
   set prevReloading(v: boolean) { this.prevReloadingCell.value = v; }
 
   private systems: SimSystem[] = buildSimulationStages();
+
+  /** Bound each step for MatchRuntime emit. */
+  private stepEmit: (e: GameEvent) => void = () => {};
 
   /** Long-lived sim context — fields rewritten each step. */
   private readonly simCtx: SimContext = {
@@ -45,7 +51,8 @@ export class GameSimulation {
     audio: null!,
     run: null!,
     combat: null!,
-    waves: null!,
+    bots: null!,
+    match: null!,
     hudModel: null!,
     deathT: this.deathCell,
     prevReloading: this.prevReloadingCell,
@@ -63,9 +70,20 @@ export class GameSimulation {
     readonly audio: AudioPort,
     readonly run: RunState,
     readonly combat: CombatSystem,
-    readonly waves: WaveManager,
+    readonly bots: BotRoster,
     readonly hudModel: HudModel,
   ) {
+    this.match = new MatchRuntime({
+      run,
+      audio,
+      input,
+      bots,
+      emit: (e) => this.stepEmit(e),
+      requestMatchOver: (result) => this.requestMatchOver(result),
+      getDeathT: () => this.deathT,
+      setDeathT: (v) => { this.deathT = v; },
+    });
+
     const c = this.simCtx;
     c.arena = arena;
     c.effects = effects;
@@ -74,7 +92,8 @@ export class GameSimulation {
     c.audio = audio;
     c.run = run;
     c.combat = combat;
-    c.waves = waves;
+    c.bots = bots;
+    c.match = this.match;
     c.hudModel = hudModel;
     c.nameplates = this.nameplates;
     c.deathT = this.deathCell;
@@ -85,18 +104,37 @@ export class GameSimulation {
     const p = this.player;
     if (!p) return;
     this.run.matchTime += dt;
+    this.stepEmit = emit;
 
     const ctx = this.simCtx;
     ctx.dt = dt;
     ctx.emit = emit;
     ctx.player = p;
     ctx.tanks = this.tanks;
-    ctx.requestGameOver = () => this.requestGameOver(emit);
+    ctx.requestGameOver = () => {
+      // Legacy path: treat as time-forfeit with player loss (should be rare).
+      const result: MatchResult = {
+        reason: 'time',
+        mode: this.match.mode,
+        winnerName: null,
+        winnerTeam: null,
+        playerWon: false,
+        playerKills: p.kills,
+        playerDeaths: p.deaths,
+        playerScore: this.run.score,
+        teamKills: { ...this.match.teamKills },
+        teamScore: { ...this.match.teamScore },
+        matchTimeSec: this.run.matchTime,
+      };
+      this.requestMatchOver(result);
+    };
     for (const s of this.systems) s.update(ctx);
   }
 
-  /** Единая точка перехода playing → over (DeathTimerStage и любые будущие call-sites). */
-  requestGameOver(emit: (e: GameEvent) => void) {
+  /** Match win / time limit — single exit to game over UI. */
+  requestMatchOver(result: MatchResult) {
+    this.match.ended = true;
+    this.match.lastResult = result;
     this.deathT = -1;
     this.run.mode = 'over';
     const st = { paused: this.run.paused, inputEnabled: this.input.enabled };
@@ -104,8 +142,21 @@ export class GameSimulation {
     this.run.paused = st.paused;
     this.input.enabled = st.inputEnabled;
     this.input.releaseLock();
-    emit({ type: 'modeChanged', mode: 'over' });
-    emit({ type: 'gameOver', score: this.run.score, kills: this.run.kills, wave: this.waves.wave });
+    this.stepEmit({ type: 'modeChanged', mode: 'over' });
+    this.stepEmit({
+      type: 'gameOver',
+      score: result.playerScore,
+      kills: result.playerKills,
+      deaths: result.playerDeaths,
+      playerWon: result.playerWon,
+      winnerName: result.winnerName,
+      winnerTeam: result.winnerTeam,
+      reason: result.reason,
+      mode: result.mode,
+      matchTimeSec: result.matchTimeSec,
+      teamKills: result.teamKills,
+      teamScore: result.teamScore,
+    });
   }
 
   clearTanks(scene: THREE.Scene) {
@@ -113,7 +164,9 @@ export class GameSimulation {
     this.nameplates.clear();
     for (const t of this.tanks) t.dispose(scene);
     this.tanks = [];
-    this.waves.reset();
+    this.bots.reset();
     this.player = null;
+    this.match.disposeVisuals();
+    this.match.reset(this.match.mode);
   }
 }

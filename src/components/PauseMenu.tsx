@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import {
   ArrowLeft, Home, Monitor, Pause, Play, RefreshCcw, Shield,
-  Skull, Trophy, Volume2, VolumeX, Waves, Wrench,
+  Skull, Trophy, Volume2, VolumeX, Wrench,
 } from 'lucide-react';
 import { HULLS, TURRETS } from '../core/catalog';
 import type { GameApi } from '../game/GameApi';
@@ -12,7 +12,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 interface PauseMenuProps {
   game: GameApi;
   muted: boolean;
-  stats: { score: number; kills: number; wave: number; timeSec: number };
+  stats: { score: number; kills: number; timeSec: number };
   onResume: () => void;
   onRestart: () => void;
   onGarage: () => void;
@@ -54,7 +54,7 @@ export default function PauseMenu({
           <div className="head-rule mt-3 w-52" style={{ '--d': '0.15s' } as React.CSSProperties} />
         </div>
 
-        <div className="anim-up mt-6 grid w-full grid-cols-4 gap-2 text-center" style={{ '--d': '0.18s' } as React.CSSProperties}>
+        <div className="anim-up mt-6 grid w-full grid-cols-3 gap-2 text-center" style={{ '--d': '0.18s' } as React.CSSProperties}>
           <div className="hud-panel p-2.5">
             <div className="flex justify-center text-amber-300"><Trophy size={13} aria-hidden /></div>
             <div className="font-display mt-1 text-sm text-white">{stats.score}</div>
@@ -64,11 +64,6 @@ export default function PauseMenu({
             <div className="flex justify-center text-red-300"><Skull size={13} aria-hidden /></div>
             <div className="font-display mt-1 text-sm text-white">{stats.kills}</div>
             <div className="text-[11px] tracking-[0.16em] text-white/60">ФРАГИ</div>
-          </div>
-          <div className="hud-panel p-2.5">
-            <div className="flex justify-center text-cyan-300"><Waves size={13} aria-hidden /></div>
-            <div className="font-display mt-1 text-sm text-white">{stats.wave}</div>
-            <div className="text-[11px] tracking-[0.16em] text-white/60">ВОЛНА</div>
           </div>
           <div className="hud-panel p-2.5">
             <div className="flex justify-center text-emerald-300"><Shield size={13} aria-hidden /></div>

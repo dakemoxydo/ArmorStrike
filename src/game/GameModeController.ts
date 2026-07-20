@@ -4,13 +4,13 @@ import type { GameSimulation } from './engine/GameSimulation';
 import type { CameraRig } from './CameraRig';
 import type { RenderWorld } from './RenderWorld';
 import type { PreviewController } from './PreviewController';
-import type { GameMode, GameEvent, WaveBuffId } from './types';
+import type { GameMode, GameEvent } from './types';
 import type { WeaponFactoryDeps } from './PlayerFactory';
-import { buildPlayerTank, createWeapon } from './PlayerFactory';
-import { TURRETS } from '../core/catalog';
-import { applyWaveBuff } from './waveBuffs';
 import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID, isMapId } from './maps/mapCatalog';
+import { spawnMatchRoster } from './match/rosterSpawn';
+import { DEFAULT_MATCH_MODE } from './match/matchConfig';
+import type { MatchModeId } from './match/matchTypes';
 
 export interface GameModeControllerDeps {
   sim: GameSimulation;
@@ -27,9 +27,11 @@ export interface GameModeControllerDeps {
 
 /**
  * Инкапсулирует переходы между режимами, старт раунда и паузу.
- * Ранее жило в Game (setMode/startRound/togglePause).
  */
 export class GameModeController {
+  /** Last selected match mode (ModeSelect UI → setMatchMode). */
+  matchMode: MatchModeId = DEFAULT_MATCH_MODE;
+
   constructor(private d: GameModeControllerDeps) {}
 
   setMode(mode: GameMode) {
@@ -40,7 +42,6 @@ export class GameModeController {
       sim.projectiles.clear();
       sim.deathT = -1;
       sim.run.paused = false;
-      // Disable input before releaseLock so onLockLost cannot re-pause (same class as C1).
       sim.input.enabled = false;
       sim.input.releaseLock();
       cameraRig.resetFov();
@@ -61,15 +62,20 @@ export class GameModeController {
     emit({ type: 'modeChanged', mode });
   }
 
-  startRound(mapId: MapId = DEFAULT_MAP_ID) {
+  setMatchMode(mode: MatchModeId) {
+    this.matchMode = mode;
+  }
+
+  startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId) {
     const { sim, scene, previewController, cameraRig, weaponDeps, emit, onArenaRebuilt } = this.d;
+    const mode = matchMode ?? this.matchMode;
+
     sim.audio.ensure();
     sim.audio.stopEngine();
     sim.clearTanks(scene);
     sim.projectiles.clear();
     previewController.setVisible(false);
 
-    // Always rebuild so destructibles / FX reset for a fresh match.
     const id = isMapId(mapId) ? mapId : DEFAULT_MAP_ID;
     sim.arena.rebuild(id);
     onArenaRebuilt?.();
@@ -77,20 +83,25 @@ export class GameModeController {
     sim.run.resetRun();
     sim.deathT = -1;
     sim.prevReloading = false;
+    sim.match.reset(mode, { mapId: id, scene });
 
-    const player = buildPlayerTank(sim.run.currentHull, sim.run.currentTurret);
-    player.weapon = createWeapon(player, TURRETS[sim.run.currentTurret].weaponType, weaponDeps);
+    const { player, bots } = spawnMatchRoster(sim.match.config, {
+      scene,
+      weaponDeps,
+      tanks: sim.tanks,
+      nameplates: sim.nameplates,
+      hullId: sim.run.currentHull,
+      turretId: sim.run.currentTurret,
+    });
 
     sim.player = player;
-    sim.tanks.push(player);
-    scene.add(player.visual.group);
+    sim.bots.bots = bots;
 
     sim.run.mode = 'playing';
     sim.run.paused = false;
     sim.input.enabled = true;
     sim.input.look.reset(player.yaw);
     cameraRig.snap(player, sim.input.look.yaw, sim.input.look.pitch);
-    sim.waves.begin(sim.tanks, sim.nameplates);
     sim.audio.startEngine();
     sim.input.requestLock();
     emit({ type: 'modeChanged', mode: 'playing' });
@@ -98,32 +109,13 @@ export class GameModeController {
 
   togglePause() {
     const { sim, emit } = this.d;
-    if (sim.run.mode !== 'playing' || sim.deathT >= 0 || sim.run.intermission) return;
+    if (sim.run.mode !== 'playing' || sim.deathT >= 0) return;
     sim.run.paused = !sim.run.paused;
     if (sim.run.paused) {
-      // M3: release lock so pause UI is clickable; onLockLost is no-op when already paused.
       sim.input.releaseLock();
     } else {
       sim.input.requestLock();
     }
     emit({ type: 'pauseChanged', value: sim.run.paused });
-  }
-
-  /**
-   * Between-wave pick: apply buff, spawn next wave, resume combat + pointer lock.
-   */
-  chooseWaveBuff(id: WaveBuffId) {
-    const { sim } = this.d;
-    if (!sim.run.intermission || sim.run.mode !== 'playing') return;
-    const player = sim.player;
-    if (!player?.alive) return;
-
-    applyWaveBuff(player, id);
-    sim.waves.confirmChoice(sim.tanks, sim.nameplates);
-
-    sim.run.paused = false;
-    sim.input.enabled = true;
-    sim.input.requestLock();
-    sim.audio.click();
   }
 }

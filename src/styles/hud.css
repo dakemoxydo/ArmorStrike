@@ -395,6 +395,75 @@
   width: min(640px, 92vw);
   padding: 20px 22px;
 }
+.scoreboard-panel-teams {
+  width: min(920px, 96vw);
+}
+.scoreboard-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 720px) {
+  .scoreboard-teams { grid-template-columns: 1fr; }
+}
+.scoreboard-team-title {
+  font-family: 'Russo One', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  margin-bottom: 8px;
+}
+.team-col-alpha .scoreboard-team-title { color: #6eb8ff; }
+.team-col-bravo .scoreboard-team-title { color: #ff8a7a; }
+.team-col-alpha { border-left: 2px solid rgba(59, 158, 255, 0.45); padding-left: 10px; }
+.team-col-bravo { border-left: 2px solid rgba(255, 77, 61, 0.45); padding-left: 10px; }
+
+/* TDM / CP top score strip */
+.team-score-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  font-family: 'Russo One', sans-serif;
+  font-size: 1.35rem;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+.team-alpha { color: #6eb8ff; text-shadow: 0 0 12px rgba(59, 158, 255, 0.45); }
+.team-bravo { color: #ff8a7a; text-shadow: 0 0 12px rgba(255, 77, 61, 0.4); }
+.team-score-sep { color: rgba(255, 255, 255, 0.35); font-size: 1rem; }
+
+/* Capture Point ownership strip */
+.cp-points {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.cp-point {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  font-family: 'Russo One', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+}
+.cp-point i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.85;
+}
+.cp-neutral { color: #c0c8d0; border-color: rgba(160, 170, 180, 0.55); }
+.cp-alpha { color: #6eb8ff; border-color: rgba(59, 158, 255, 0.75); background: rgba(59, 158, 255, 0.12); }
+.cp-bravo { color: #ff8a7a; border-color: rgba(255, 77, 61, 0.75); background: rgba(255, 77, 61, 0.12); }
+.cp-contested { color: #ffd24a; border-color: rgba(255, 210, 74, 0.8); background: rgba(255, 210, 74, 0.12); }
 .scoreboard-table {
   width: 100%;
   border-collapse: collapse;

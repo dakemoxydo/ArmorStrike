@@ -1,7 +1,7 @@
 # Core Patterns — ArmorStrike
 
 **Статус:** engineering standard (synced with code)  
-**Связано:** [Core](Core.md) · [Standard Tank](Standard_Tank.md) · [Standard Weapon](Standard_Weapon.md) · [Standard UI Input](Standard_UI_Input.md)  
+**Связано:** [Core](Core.md) · [Standard Tank](Standard_Tank.md) · [Standard Weapon](Standard_Weapon.md) · [Standard UI Input](Standard_UI_Input.md) · [Standard Match](Standard_Match.md)  
 **Не путать с:** [Docs/GDD](../GDD/Approved/00_Index.md) (баланс и дизайн-механика)
 
 ## 1. Layering (жёсткое правило)
@@ -33,8 +33,8 @@ Domain core  (src/core/)
 2. `Arena`, `Effects`, `AudioFX`, `ProjectileManager`
 3. `PlayerController`, `RunState`
 4. `CombatSystem` → владеет `createDamageSystem`
-5. `WaveManager`, `HudModel`, weapon factory deps
-6. `GameSimulation` + `GameLoop` + stages
+5. `BotRoster`, `HudModel`, weapon factory deps
+6. `GameSimulation` (`MatchRuntime`) + `GameLoop` + stages
 7. Window handlers (resize, visibility → auto-pause)
 
 Новые подсистемы подключать в bootstrap, а не «сбоку» из React.
@@ -59,8 +59,8 @@ interface SimSystem {
 5. Animation / FX / nameplates / ambient
 6. `PhysicsSystem` — walls + tank separation
 7. Projectiles — flight & hits
-8. Waves — intermission when cleared
-9. Death / game-over timer
+8. Minimap
+9. Match — respawn + win (`MatchStage`)
 
 Правила:
 - `dt` clamp ~0.05s в game loop.
@@ -83,15 +83,16 @@ Weapons / combat / systems **не** импортируют concrete `Effects` / 
 
 `GameEvent` union (`game/types.ts`) — единственный push-канал UI:
 
-`playerHit` · `enemyHit` · `kill` · `wave` · `intermission` · `shotFired` · `gameOver` · `pauseChanged` · `modeChanged` · `garageChanged`
+`playerHit` · `enemyHit` · `kill` · `shotFired` · `gameOver` (winner fields) · `pauseChanged` · `modeChanged` · `garageChanged`
 
 Правило: sim/combat **эмитит события**; React **подписывается**. Обратный поток команд — только методы `GameApi`.
 
 ## 6. Run state & persistence
 
-- `RunState`: mode, pause, intermission, score, kills, loadout.
+- `RunState`: mode, pause, score, kills, loadout (no intermission).
+- `MatchModeId` / `MatchRuntime` — rules inside `playing` (see Standard Match).
 - Persistence keys: `as2_loadout`, `as2_quality` (`localStorage`).
-- Режим игры (`GameMode`): `'menu' | 'garage' | 'playing' | 'over'`.
+- App shell (`GameMode`): `'menu' | 'garage' | 'playing' | 'over'`.
 
 ## 7. Testing expectations
 

@@ -97,21 +97,59 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
 
   ctx.drawImage(cache.staticCv, 0, 0);
 
+  // Capture point markers (A/B/C) under tank blips.
+  const cps = game.getCaptureMinimap?.() ?? [];
+  for (const cp of cps) {
+    const cx = toX(cp.x);
+    const cy = toY(cp.z);
+    const col =
+      cp.contested
+        ? 'rgba(255,210,74,0.9)'
+        : cp.owner === 'alpha'
+          ? 'rgba(59,158,255,0.9)'
+          : cp.owner === 'bravo'
+            ? 'rgba(255,77,61,0.9)'
+            : 'rgba(160,170,180,0.85)';
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(5,12,18,0.75)';
+    ctx.fill();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.fillStyle = col;
+    ctx.font = 'bold 8px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(cp.id, cx, cy + 0.5);
+    ctx.restore();
+  }
+
   game.fillMinimapDynamics(buf);
   for (const d of buf) {
     const x = toX(d.x);
     const y = toY(d.z);
+    const rel = d.relation ?? (d.isPlayer ? 'self' : 'enemy');
+    const fill =
+      rel === 'self' ? '#2ee6c0' : rel === 'ally' ? '#3b9eff' : '#ff4d3d';
+    const stroke =
+      rel === 'self'
+        ? 'rgba(46,230,192,0.8)'
+        : rel === 'ally'
+          ? 'rgba(59,158,255,0.75)'
+          : 'rgba(255,80,60,0.65)';
     ctx.save();
     ctx.translate(x, y);
-    ctx.strokeStyle = d.isPlayer ? 'rgba(46,230,192,0.8)' : 'rgba(255,80,60,0.65)';
+    ctx.strokeStyle = stroke;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(Math.sin(d.turret) * 7, -Math.cos(d.turret) * 7);
     ctx.stroke();
     ctx.rotate(Math.PI - d.yaw);
-    ctx.fillStyle = d.isPlayer ? '#2ee6c0' : '#ff4d3d';
-    ctx.shadowColor = ctx.fillStyle as string;
+    ctx.fillStyle = fill;
+    ctx.shadowColor = fill;
     ctx.shadowBlur = 6;
     ctx.beginPath();
     ctx.moveTo(0, -4.5);

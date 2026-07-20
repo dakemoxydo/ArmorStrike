@@ -11,13 +11,14 @@
 | [Standard Tank](Standard_Tank.md) | `TankEntity`, components, `simPorts`, systems, factory |
 | [Standard Weapon](Standard_Weapon.md) | `Weapon` strategy, projectiles, `DamageSystem` / `CombatSystem` |
 | [Standard UI & Input](Standard_UI_Input.md) | `GameApi`, HUD, React boundary, input, camera modes |
+| [Standard Match](Standard_Match.md) | `MatchModeId`, teams, respawn, win, kill path |
 
 Новый код и рефакторинг **обязаны** следовать соответствующему standard-файлу.  
 Механики и баланс — только в [Docs/GDD](../GDD/Approved/00_Index.md), не дублировать числа здесь.
 
 ## Overview
 
-**ArmorStrike** — одиночный 3D tank survival (волны) на WebGL.
+**ArmorStrike** — 3D tank arena (classic match modes + bots) на WebGL.
 
 **Stack:** React 19 · TypeScript · Three.js · Vite · Tailwind 4 · Vitest.
 
@@ -53,8 +54,8 @@
 2. `Arena`, `Effects`, `AudioFX`, `ProjectileManager`
 3. `PlayerController`, `RunState`
 4. `CombatSystem` → owns `createDamageSystem`
-5. `WaveManager`, `HudModel`, weapon factory deps
-6. `GameSimulation` + `GameLoop` stages
+5. `CombatSystem`, `BotRoster`, `HudModel`, weapon factory deps
+6. `GameSimulation` (`MatchRuntime`) + `GameLoop` stages
 7. Window handlers (resize, visibility auto-pause)
 
 Подробности: [Core Patterns §2](Core_Patterns.md).
@@ -72,8 +73,8 @@ Ordered stages (`engine/stages.ts`):
 | 5 | FX / nameplates / ambient | presentation-side sim |
 | 6 | `PhysicsSystem` | walls + tank separation |
 | 7 | Projectiles | flight & hits |
-| 8 | Waves | intermission when cleared |
-| 9 | Death / game-over timer | player lifecycle |
+| 8 | Minimap | static collider sync |
+| 9 | Match | respawn + win conditions |
 
 `dt` clamp ~0.05s in game loop.  
 Полный контракт стадий: [Core Patterns §3](Core_Patterns.md).

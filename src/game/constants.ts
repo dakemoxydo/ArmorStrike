@@ -18,18 +18,18 @@ export const BOOST = {
 };
 
 /**
- * AI-only knobs per wave. Combat HP/damage/speed come from createTankEntity
- * healthScale/damageScale (WaveManager) — not from this helper.
+ * AI-only knobs (Normal tier). Combat HP/damage/speed come from createTankEntity
+ * healthScale/damageScale at spawn — not from this helper.
+ * `wave` kept for spawnBot compatibility until match roster (P1) replaces scaling.
  */
 export const botAiForWave = (wave: number) => ({
   sightRange: 46,
+  // Normal: mild skill ramp for legacy spawn path; P1 may pin a fixed tier.
   aimError: Math.max(0.05, 0.14 - wave * 0.012),
 });
 
 /** @deprecated alias — use botAiForWave (only sightRange/aimError are consumed). */
 export const botStatsForWave = botAiForWave;
-
-export const botsForWave = (wave: number) => Math.min(2 + wave, 5);
 
 export const PROJECTILE = {
   speed: 58,
@@ -39,5 +39,4 @@ export const PROJECTILE = {
 
 export const SCORE = {
   kill: 100,
-  waveBonus: (wave: number) => 150 + wave * 50,
 };

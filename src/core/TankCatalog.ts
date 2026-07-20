@@ -1,6 +1,6 @@
 // ===== Каталог танков: корпуса, башни и общие стили окраски =====
 // Единое место для определений HULLS/TURRETS и построения TankStyle,
-// чтобы игрок (PlayerFactory) и боты (WaveManager) не дублировали литералы.
+// чтобы игрок (PlayerFactory) и боты (botSpawn) не дублировали литералы.
 import type { Color } from 'three';
 import { COLORS } from './constants';
 import type { TankStyle } from './types';

@@ -5,7 +5,15 @@ import { bootstrapGame, type GameContext } from './GameBootstrap';
 import { QualityController } from './QualityController';
 import { GameModeController } from './GameModeController';
 import { GarageBinding } from './GarageBinding';
-import type { GameEvent, GameMode, HudSnapshot, MinimapDynamic, MinimapStatic, WaveBuffId } from './types';
+import type {
+  CaptureHudPoint,
+  GameEvent,
+  GameMode,
+  HudSnapshot,
+  MatchModeId,
+  MinimapDynamic,
+  MinimapStatic,
+} from './types';
 import type { QualityLevel } from './graphicsQuality';
 import type { GameSimulation } from './engine/GameSimulation';
 import type { GameApi } from './GameApi';
@@ -60,6 +68,7 @@ export class Game implements GameApi {
   get currentHull() { return this.sim.run.currentHull; }
   get currentTurret() { return this.sim.run.currentTurret; }
   get currentMapId(): MapId { return this.sim.arena.mapId; }
+  get currentMatchMode(): MatchModeId { return this.modes.matchMode; }
   get previewVisual(): TankVisual | null { return this.ctx.previewController.previewVisual; }
 
   setGarageSelection(hullId: HullId, turretId: TurretId) {
@@ -67,9 +76,11 @@ export class Game implements GameApi {
   }
 
   setMode(mode: GameMode) { this.modes.setMode(mode); }
-  startRound(mapId: MapId = DEFAULT_MAP_ID) { this.modes.startRound(mapId); }
+  setMatchMode(mode: MatchModeId) { this.modes.setMatchMode(mode); }
+  startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId) {
+    this.modes.startRound(mapId, matchMode);
+  }
   togglePause() { this.modes.togglePause(); }
-  chooseWaveBuff(id: WaveBuffId) { this.modes.chooseWaveBuff(id); }
 
   toggleMute(): boolean {
     this.sim.audio.setMuted(!this.sim.audio.muted);
@@ -85,6 +96,18 @@ export class Game implements GameApi {
 
   fillMinimapDynamics(out: MinimapDynamic[]): MinimapDynamic[] {
     return this.sim.hudModel.fillDynamics(this.sim.tanks, out);
+  }
+
+  getCaptureMinimap(): CaptureHudPoint[] {
+    if (this.sim.match.mode !== 'capture_point') return [];
+    return this.sim.match.getCaptureZones().map((z) => ({
+      id: z.id,
+      x: z.x,
+      z: z.z,
+      owner: z.owner,
+      progress: z.progress,
+      contested: z.contested,
+    }));
   }
 
   dispose() {

@@ -1,6 +1,7 @@
-// ===== Боевая система: гибель танков, скоринг, эффекты и события боя =====
+// ===== Боевая система: гибель танков, эффекты и события боя =====
 // Владеет damageSystem (через core/createDamageSystem) и надстраивает поверх
-// него визуальные эффекты, звук, скоринг и эмит событий для HUD.
+// него визуальные эффекты, звук и эмит событий для HUD.
+// Match kill credit / respawn — MatchRuntime.
 import * as THREE from 'three';
 import type { GameEvent } from './types';
 import type { Arena } from './Arena';
@@ -9,18 +10,19 @@ import type { AudioPort } from './ports/AudioPort';
 import type { TankLike } from '../core/types';
 import { COLORS } from '../core/constants';
 import { createDamageSystem } from '../core/DamageSystem';
-import type { RunState } from './RunState';
-import { applyPlayerKillScore } from './scoring';
+import type { TankEntity } from './Tank';
+import type { MatchRuntime } from './match/MatchRuntime';
 
 export interface CombatDeps {
   arena: Arena;
   effects: EffectsPort;
   audio: AudioPort;
   emit: (e: GameEvent) => void;
-  /** Run stats (kills/score) updated on player frags. */
-  run: RunState;
-  /** Вызывается при гибели игрока (Game сбрасывает deathT и отпускает захват мыши). */
+  /** Вызывается при гибели игрока (death cam / lock release). */
   onPlayerDeath: () => void;
+  /** Optional until bootstrap wires MatchRuntime. */
+  getMatch?: () => MatchRuntime | null;
+  getTanks?: () => TankEntity[];
 }
 
 export class CombatSystem {
@@ -42,7 +44,6 @@ export class CombatSystem {
     if (target.isPlayer) {
       this.deps.audio.hitPlayer();
       this.deps.effects.addShake(0.3);
-      // направление на атакующего в системе координат экрана (0 = спереди, по часовой)
       const dx = owner.position.x - target.position.x;
       const dz = owner.position.z - target.position.z;
       const fs = Math.sin(target.yaw);
@@ -65,20 +66,25 @@ export class CombatSystem {
     this.deps.effects.debris(p, 0xffa050, 26);
     this.deps.audio.explosion();
 
+    const match = this.deps.getMatch?.() ?? null;
+    const tanks = this.deps.getTanks?.() ?? [];
+    const targetEnt = target as TankEntity;
+    const ownerEnt = owner as TankEntity | null;
+
+    if (match) {
+      match.onTankKilled(targetEnt, ownerEnt, tanks);
+    } else {
+      this.deps.emit({
+        type: 'kill',
+        victim: target.name,
+        byPlayer: owner?.isPlayer ?? false,
+      });
+    }
+
     if (target.isPlayer) {
       this.deps.audio.death();
       this.deps.audio.stopEngine();
       this.deps.onPlayerDeath();
-    } else {
-      const byPlayer = owner?.isPlayer ?? false;
-      // M1 root: kill event was emitted but run.kills/score never mutated (SCORE.kill unused).
-      const next = applyPlayerKillScore(
-        { kills: this.deps.run.kills, score: this.deps.run.score },
-        byPlayer,
-      );
-      this.deps.run.kills = next.kills;
-      this.deps.run.score = next.score;
-      this.deps.emit({ type: 'kill', victim: target.name, byPlayer });
     }
   }
 

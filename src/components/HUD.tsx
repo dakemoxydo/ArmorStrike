@@ -24,7 +24,7 @@ const MemoCrosshair = memo(HudCrosshair);
 
 export default function HUD({ game, active }: HudProps) {
   const {
-    snap, feed, banner, vignette, dmgArc, hitmark, showHint, frag,
+    snap, feed, vignette, dmgArc, hitmark, showHint, frag,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
     flameFillRef,
   } = useGameHud(game, active);
@@ -72,17 +72,74 @@ export default function HUD({ game, active }: HudProps) {
 
       {inGame && (
         <>
-          <MemoRadar mapRef={mapRef} wave={st.wave} botsAlive={st.botsAlive} />
+          <MemoRadar mapRef={mapRef} botsAlive={st.botsAlive} />
 
           <div className="anim-up absolute left-1/2 top-5 -translate-x-1/2" style={{ '--d': '0.15s' } as React.CSSProperties}>
             <div className="hud-panel score-panel px-8 py-2.5 text-center" aria-label={`Счёт ${st.score}`}>
-              <div className="flex items-center justify-center gap-2 text-[11px] tracking-[0.28em] text-cyan-200/75">
-                <Trophy size={11} aria-hidden /> СЧЁТ
-              </div>
-              <div className="score-num">{String(st.score).padStart(6, '0')}</div>
-              <div className="hud-meta mt-0.5">
-                {time} · ФРАГИ {st.kills}
-              </div>
+              {st.matchMode === 'deathmatch' ? (
+                <>
+                  <div className="flex items-center justify-center gap-2 text-[11px] tracking-[0.28em] text-cyan-200/75">
+                    <Trophy size={11} aria-hidden /> СЧЁТ
+                  </div>
+                  <div className="score-num">{String(st.score).padStart(6, '0')}</div>
+                  <div className="hud-meta mt-0.5">
+                    {time} · {st.kills}/{st.winTarget}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center gap-2 text-[11px] tracking-[0.28em] text-cyan-200/75">
+                    <Trophy size={11} aria-hidden />{' '}
+                    {st.matchMode === 'team_deathmatch' ? 'КОМАНДНЫЙ БОЙ' : 'ЗАХВАТ ТОЧКИ'}
+                  </div>
+                  {(() => {
+                    const left = st.matchMode === 'capture_point'
+                      ? Math.floor(st.teamScoreAlpha)
+                      : st.teamKillsAlpha;
+                    const right = st.matchMode === 'capture_point'
+                      ? Math.floor(st.teamScoreBravo)
+                      : st.teamKillsBravo;
+                    return (
+                      <div
+                        className="team-score-line mt-0.5"
+                        aria-label={`Alpha ${left}, Bravo ${right}, цель ${st.winTarget}`}
+                      >
+                        <span className="team-alpha">ALPHA {left}</span>
+                        <span className="team-score-sep">—</span>
+                        <span className="team-bravo">{right} BRAVO</span>
+                      </div>
+                    );
+                  })()}
+                  {st.matchMode === 'capture_point' && st.capturePoints.length > 0 && (
+                    <div className="cp-points mt-1" aria-label="Точки захвата">
+                      {st.capturePoints.map((cp) => (
+                        <span
+                          key={cp.id}
+                          className={[
+                            'cp-point',
+                            cp.contested
+                              ? 'cp-contested'
+                              : cp.owner === 'alpha'
+                                ? 'cp-alpha'
+                                : cp.owner === 'bravo'
+                                  ? 'cp-bravo'
+                                  : 'cp-neutral',
+                          ].join(' ')}
+                          title={`${cp.id}: ${cp.contested ? 'спор' : cp.owner ?? 'нейтраль'}`}
+                        >
+                          {cp.id}
+                          {cp.progress > 0.02 && !cp.contested && (
+                            <i style={{ width: `${Math.round(cp.progress * 100)}%` }} />
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="hud-meta mt-0.5">
+                    {time} · вы {st.kills}/{st.deaths} · до {st.winTarget}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -104,13 +161,6 @@ export default function HUD({ game, active }: HudProps) {
                 <span><b>R</b> МАГАЗИН</span>
                 <span><b>ESC</b> ПАУЗА</span>
               </div>
-            </div>
-          )}
-
-          {banner && (
-            <div key={banner.key} className="wave-banner" role="status" aria-live="polite">
-              <div className="wave-banner-sub">ЗАФИКСИРОВАНО ПРИБЫТИЕ</div>
-              <div className="wave-banner-text">ВОЛНА {banner.n}</div>
             </div>
           )}
 

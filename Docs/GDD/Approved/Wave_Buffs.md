@@ -1,47 +1,24 @@
-# Wave Buffs — Баффы между волнами
+# Wave Buffs — УДАЛЕНЫ (P0)
 
-**Статус:** Approved  
-**Слой:** Meta progression (run-scoped)  
-**Связано:** [[Wave_System]], [[Tank_Movement]], оружие
+**Статус:** Removed  
+**Слой:** —  
+**Связано:** [[Wave_System]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes (Draft)]]
 
-## Когда
+## Что было
 
-После зачистки волны UI intermission (`WaveIntermission`) предлагает **один** бафф на **следующую** волну. Предыдущий бафф сбрасывается при выборе нового.
+Между волнами UI `WaveIntermission` предлагал бафф (`damage` / `speed` / `reload`) через `applyWaveBuff` / `chooseWaveBuff`.
 
-## Опции (`WAVE_BUFF_OPTIONS`)
+## Что удалено
 
-| ID | UI | Эффект | Множители в коде |
-|----|-----|--------|------------------|
-| `damage` | УРОН | +25% урона оружия | `DAMAGE_MUL = 1.25` |
-| `speed` | СКОРОСТЬ | +20% ход, +15% поворот | `SPEED_MUL=1.2`, `TURN_MUL=1.15` |
-| `reload` | ПЕРЕЗАРЯДКА | −30% reload/КД/заряда | `RELOAD_MUL = 1/0.7 ≈ 1.429` |
+| Артефакт | Файл (удалён) |
+|----------|----------------|
+| `applyWaveBuff` / `clearWaveBuff` | `src/game/waveBuffs.ts` |
+| `WAVE_BUFF_OPTIONS` / preview types | `src/game/wavePreview.ts` |
+| `WaveIntermission` UI | `src/components/WaveIntermission.tsx` |
+| API `chooseWaveBuff` | `GameApi` / `GameModeController` |
+| `RunState.intermission` | `RunState` |
+| Events `intermission` / `wave` | `types.ts` |
 
-Описание в UI:
+## Дальше
 
-- damage: `+25% урона оружия на следующую волну`
-- speed: `+20% хода и +15% поворота корпуса`
-- reload: `−30% времени перезарядки / КД / заряда`
-
-## Применение (`applyWaveBuff`)
-
-1. `clearWaveBuff` — восстановить `buffBase` snapshot params, `reloadSpeedMul=1`.
-2. Сохранить новый `buffBase` (damage, speed, reverse, turn, shotCooldown).
-3. Применить выбранный id:
-
-| id | Изменения |
-|----|-----------|
-| `damage` | `params.damage = round(base * 1.25)` |
-| `speed` | speed/reverse ×1.2, turn ×1.15 |
-| `reload` | `reloadSpeedMul = RELOAD_MUL`, `shotCooldown /= RELOAD_MUL` |
-
-Оружие читает `reloadSpeedMul` через `ownerReloadMul` (рельса charge/cooldown, пушка reload, огонь recharge).
-
-## Классы
-
-| Символ | Файл |
-|--------|------|
-| `WaveBuffId`, `WAVE_BUFF_OPTIONS` | `src/game/wavePreview.ts` |
-| `applyWaveBuff`, `clearWaveBuff` | `src/game/waveBuffs.ts` |
-| `TankBuffState` / `buffs` on entity | `src/game/tank/components.ts`, `TankEntity` |
-| `WaveIntermission` | `src/components/WaveIntermission.tsx` |
-| `GameModeController` | `src/game/GameModeController.ts` (выбор → buff → confirm) |
+Мета-прогрессия run-scoped не планируется в классических матчах v1 (loadout только из гаража).

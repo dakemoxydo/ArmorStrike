@@ -3,12 +3,13 @@ import type { HullId, TurretId } from '../core/catalog';
 import type { QualityLevel } from './graphicsQuality';
 import type { MapId } from './maps/mapCatalog';
 import type {
+  CaptureHudPoint,
   GameEvent,
   GameMode,
   HudSnapshot,
+  MatchModeId,
   MinimapDynamic,
   MinimapStatic,
-  WaveBuffId,
 } from './types';
 
 /**
@@ -19,17 +20,17 @@ export interface GameApi {
   readonly currentHull: HullId;
   readonly currentTurret: TurretId;
   readonly currentMapId: MapId;
+  readonly currentMatchMode: MatchModeId;
 
   addListener(fn: (e: GameEvent) => void): void;
   removeListener(fn: (e: GameEvent) => void): void;
   setHudCallback(fn: ((hud: HudSnapshot) => void) | null): void;
 
   setMode(mode: GameMode): void;
+  setMatchMode(mode: MatchModeId): void;
   /** Start a match on the given map (rebuilds arena if map changed). */
-  startRound(mapId?: MapId): void;
+  startRound(mapId?: MapId, matchMode?: MatchModeId): void;
   togglePause(): void;
-  /** Apply between-wave buff and start the next wave. */
-  chooseWaveBuff(id: WaveBuffId): void;
 
   toggleMute(): boolean;
   getQuality(): QualityLevel;
@@ -40,6 +41,8 @@ export interface GameApi {
   getHud(): HudSnapshot;
   getMinimapStatic(): MinimapStatic[];
   fillMinimapDynamics(out: MinimapDynamic[]): MinimapDynamic[];
+  /** CP zone markers for minimap (empty outside capture_point). */
+  getCaptureMinimap(): CaptureHudPoint[];
 
   dispose(): void;
 }
