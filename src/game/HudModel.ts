@@ -18,6 +18,7 @@ export class HudModel {
   private _static: MinimapStatic[] = [];
   private _byId = new Map<number, MinimapStatic>();
   private _emptyBoard: ScoreRow[] = [];
+  private _captureCache: CaptureHudPoint[] = [];
 
   constructor(private deps: {
     run: RunState;
@@ -52,15 +53,22 @@ export class HudModel {
 
   fillDynamics(tanks: HudUnit[], out: MinimapDynamic[]): MinimapDynamic[] {
     out.length = 0;
-    const player = tanks.find((t) => t.isPlayer);
-    const selfTeam = (player?.teamId ?? null) as TeamId;
-    const selfId = player?.id ?? -1;
+    // Single-pass: find player and collect alive tanks simultaneously.
+    let selfTeam: TeamId = null;
+    let selfId = -1;
+    for (const t of tanks) {
+      if (t.isPlayer) {
+        selfTeam = (t.teamId ?? null) as TeamId;
+        selfId = t.id ?? -1;
+        break;
+      }
+    }
     for (const t of tanks) {
       if (!t.alive) continue;
       let relation: MinimapDynamic['relation'] = 'enemy';
       if (t.isPlayer || t.id === selfId) {
         relation = 'self';
-      } else if (player && isAlly(
+      } else if (selfId >= 0 && isAlly(
         { id: selfId, teamId: selfTeam },
         { id: t.id ?? 0, teamId: (t.teamId ?? null) as TeamId },
       )) {
@@ -90,6 +98,7 @@ export class HudModel {
     }) | null,
     tanks: (HudUnit & { kills?: number; deaths?: number })[],
     includeScoreboard = false,
+    out?: HudSnapshot,
   ): HudSnapshot {
     const { run, audio, bots, input } = this.deps;
     const match = this.deps.getMatch();
@@ -137,42 +146,51 @@ export class HudModel {
     if (mode === 'team_deathmatch') winTarget = cfg?.winTeamKills ?? 100;
     if (mode === 'capture_point') winTarget = cfg?.winTeamScore ?? 1000;
 
-    return {
-      mode: run.mode, paused: run.paused,
-      health: player?.health ?? HULLS[run.currentHull].maxHealth,
-      maxHealth: player?.maxHealth ?? HULLS[run.currentHull].maxHealth,
-      ammo, magazine, reloading, reloadProgress, isCharging,
-      boost: player?.boostEnergy ?? 1,
-      score: run.score,
-      kills: player?.kills ?? run.kills,
-      deaths: player?.deaths ?? 0,
-      botsAlive: bots.bots.filter((b) => b.tank.alive).length,
-      alive: player?.alive ?? false, timeSec: run.matchTime,
-      muted: audio.muted,
-      hullId: run.currentHull, turretId: run.currentTurret,
-      weaponName: wmeta.name, weaponLabel: wmeta.label,
-      weaponColor: wmeta.color, weaponAccentClass: wmeta.accentClass,
-      showScore, scoreboard: board,
-      matchMode: mode,
-      winTarget,
-      timeLimitSec: cfg?.timeLimitSec ?? 720,
-      teamKillsAlpha: match?.teamKills.alpha ?? 0,
-      teamKillsBravo: match?.teamKills.bravo ?? 0,
-      teamScoreAlpha: match?.teamScore.alpha ?? 0,
-      teamScoreBravo: match?.teamScore.bravo ?? 0,
-      capturePoints: captureHudPoints(match),
-    };
+    const target = out ?? ({} as HudSnapshot);
+    target.mode = run.mode;
+    target.paused = run.paused;
+    target.health = player?.health ?? HULLS[run.currentHull].maxHealth;
+    target.maxHealth = player?.maxHealth ?? HULLS[run.currentHull].maxHealth;
+    target.ammo = ammo;
+    target.magazine = magazine;
+    target.reloading = reloading;
+    target.reloadProgress = reloadProgress;
+    target.isCharging = isCharging;
+    target.boost = player?.boostEnergy ?? 1;
+    target.score = run.score;
+    target.kills = player?.kills ?? run.kills;
+    target.deaths = player?.deaths ?? 0;
+    target.botsAlive = bots.bots.reduce((n, b) => n + (b.tank.alive ? 1 : 0), 0);
+    target.alive = player?.alive ?? false;
+    target.timeSec = run.matchTime;
+    target.muted = audio.muted;
+    target.hullId = run.currentHull;
+    target.turretId = run.currentTurret;
+    target.weaponName = wmeta.name;
+    target.weaponLabel = wmeta.label;
+    target.weaponColor = wmeta.color;
+    target.weaponAccentClass = wmeta.accentClass;
+    target.showScore = showScore;
+    target.scoreboard = board;
+    target.matchMode = mode;
+    target.winTarget = winTarget;
+    target.timeLimitSec = cfg?.timeLimitSec ?? 720;
+    target.teamKillsAlpha = match?.teamKills.alpha ?? 0;
+    target.teamKillsBravo = match?.teamKills.bravo ?? 0;
+    target.teamScoreAlpha = match?.teamScore.alpha ?? 0;
+    target.teamScoreBravo = match?.teamScore.bravo ?? 0;
+    target.capturePoints = this._fillCapturePoints(match);
+    return target;
   }
-}
 
-function captureHudPoints(match: MatchRuntime | null): CaptureHudPoint[] {
-  if (!match || match.mode !== 'capture_point') return [];
-  return match.getCaptureZones().map((z) => ({
-    id: z.id,
-    x: z.x,
-    z: z.z,
-    owner: z.owner,
-    progress: z.progress,
-    contested: z.contested,
-  }));
+  /** Reusable capture-point snapshot — clears/refills the cache each frame (no .map allocation). */
+  private _fillCapturePoints(match: MatchRuntime | null): CaptureHudPoint[] {
+    const out = this._captureCache;
+    out.length = 0;
+    if (!match || match.mode !== 'capture_point') return out;
+    for (const z of match.getCaptureZones()) {
+      out.push({ id: z.id, x: z.x, z: z.z, owner: z.owner, progress: z.progress, contested: z.contested });
+    }
+    return out;
+  }
 }

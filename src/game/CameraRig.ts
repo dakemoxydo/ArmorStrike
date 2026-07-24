@@ -114,8 +114,17 @@ export class CameraRig {
   avoidObstacles(
     headX: number, headZ: number, dx: number, dz: number, dy: number, colliders: Collider[],
   ): { dx: number; dz: number; dy: number } {
+    // Squared ray length for broad-phase distance cull.
+    const rayLen2 = dx * dx + dz * dz;
+    const rayLen = Math.sqrt(rayLen2);
     for (const c of colliders) {
       if (c.height < 2.5) continue;
+      // Broad-phase: skip colliders too far from ray origin (squared compare).
+      const halfDiag = ((c.maxX - c.minX) + (c.maxZ - c.minZ)) * 0.5 + 0.7;
+      const cx = (c.minX + c.maxX) * 0.5 - headX;
+      const cz = (c.minZ + c.maxZ) * 0.5 - headZ;
+      const reach = rayLen + halfDiag;
+      if (cx * cx + cz * cz > reach * reach) continue;
       const t = segmentHitT(headX, headZ, headX + dx, headZ + dz, c, 0.7);
       if (t >= 0 && t < 1) {
         const tt = Math.max(t * 0.92, 0.18);

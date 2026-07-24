@@ -5,10 +5,11 @@ interface HudVitalsProps {
   healthRef: RefObject<HTMLDivElement | null>;
   healthNumRef: RefObject<HTMLSpanElement | null>;
   boostRef: RefObject<HTMLDivElement | null>;
+  ghostRef: RefObject<HTMLDivElement | null>;
   maxHealth: number;
 }
 
-export default function HudVitals({ healthRef, healthNumRef, boostRef, maxHealth }: HudVitalsProps) {
+export default function HudVitals({ healthRef, healthNumRef, boostRef, ghostRef, maxHealth }: HudVitalsProps) {
   return (
     <div className="anim-up absolute bottom-6 left-6 w-80 max-w-[min(20rem,calc(100vw-3rem))]" style={{ '--d': '0.25s' } as React.CSSProperties}>
       <div className="hud-panel p-4" aria-label="Броня и нитро">
@@ -21,6 +22,8 @@ export default function HudVitals({ healthRef, healthNumRef, boostRef, maxHealth
           </span>
         </div>
         <div className="hp-shell">
+          {/* Ghost bar — показывает недавний урон (белая полоса) */}
+          <div ref={ghostRef} className="hp-ghost" style={{ width: '100%' }} />
           <div ref={healthRef} className="hp-fill" style={{ width: '100%' }} />
           <div className="hp-segments" />
         </div>

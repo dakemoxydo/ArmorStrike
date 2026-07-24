@@ -12,6 +12,7 @@ import { COLORS } from '../core/constants';
 import { createDamageSystem } from '../core/DamageSystem';
 import type { TankEntity } from './Tank';
 import type { MatchRuntime } from './match/MatchRuntime';
+import { KillStreakTracker } from './KillStreakTracker';
 
 export interface CombatDeps {
   arena: Arena;
@@ -23,10 +24,14 @@ export interface CombatDeps {
   /** Optional until bootstrap wires MatchRuntime. */
   getMatch?: () => MatchRuntime | null;
   getTanks?: () => TankEntity[];
+  /** Hit-stop + slow-mo на убийстве (вызывается из onTankDestroyed). */
+  onKillPunch?: (byPlayer: boolean) => void;
 }
 
 export class CombatSystem {
   damageSystem: ReturnType<typeof createDamageSystem>;
+  private streakTracker = new KillStreakTracker();
+  private matchTime = 0;
 
   constructor(private deps: CombatDeps) {
     this.damageSystem = createDamageSystem(deps.arena, {
@@ -34,6 +39,21 @@ export class CombatSystem {
         this.onTankDamaged(target, dmg, source),
       onBlockDestroyed: (pos, size) => this.onBlockDestroyed(pos, size),
     });
+  }
+
+  /** Устанавливает колбэк hit-stop/slow-mo (вызывается из bootstrap после создания GameLoop). */
+  setOnKillPunch(fn: (byPlayer: boolean) => void) {
+    this.deps.onKillPunch = fn;
+  }
+
+  /** Обновляет время матча для streak tracker. */
+  setMatchTime(t: number) {
+    this.matchTime = t;
+  }
+
+  /** Сброс streak tracker (при смерти игрока / смене раунда). */
+  resetStreaks() {
+    this.streakTracker.reset();
   }
 
   /**
@@ -66,6 +86,15 @@ export class CombatSystem {
     this.deps.effects.debris(p, 0xffa050, 26);
     this.deps.audio.explosion();
 
+    // Горящие обломки на месте гибели
+    this.deps.effects.spawnWreck(target.position.clone(), target.yaw, target.isPlayer ? COLORS.player : 0xff7a3d);
+
+    // Hit-stop + slow-mo для драматичности убийства
+    const byPlayer = owner?.isPlayer ?? false;
+    this.deps.onKillPunch?.(byPlayer);
+    // Усиленная тряска камеры на убийстве
+    this.deps.effects.addShake(byPlayer ? 0.55 : 0.35);
+
     const match = this.deps.getMatch?.() ?? null;
     const tanks = this.deps.getTanks?.() ?? [];
     const targetEnt = target as TankEntity;
@@ -81,10 +110,20 @@ export class CombatSystem {
       });
     }
 
+    // Kill streak tracking (только для игрока)
+    if (byPlayer) {
+      const streak = this.streakTracker.registerKill(this.matchTime);
+      if (streak) {
+        this.deps.emit({ type: 'killStreak', count: streak.count, label: streak.label });
+      }
+    }
+
     if (target.isPlayer) {
       this.deps.audio.death();
       this.deps.audio.stopEngine();
       this.deps.onPlayerDeath();
+      // Сбрасываем streak при смерти игрока
+      this.streakTracker.reset();
     }
   }
 

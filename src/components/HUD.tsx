@@ -24,9 +24,9 @@ const MemoCrosshair = memo(HudCrosshair);
 
 export default function HUD({ game, active }: HudProps) {
   const {
-    snap, feed, vignette, dmgArc, hitmark, showHint, frag,
+    snap, feed, vignette, dmgArc, hitmark, showHint, frag, streak,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
-    flameFillRef,
+    flameFillRef, ghostRef,
   } = useGameHud(game, active);
 
   if (!game) return null;
@@ -144,7 +144,7 @@ export default function HUD({ game, active }: HudProps) {
           </div>
 
           <MemoFeed feed={feed} muted={st.muted} onToggleMute={() => game.toggleMute()} />
-          <MemoVitals healthRef={healthRef} healthNumRef={healthNumRef} boostRef={boostRef} maxHealth={st.maxHealth} />
+          <MemoVitals healthRef={healthRef} healthNumRef={healthNumRef} boostRef={boostRef} ghostRef={ghostRef} maxHealth={st.maxHealth} />
           <MemoWeapon
             reloadRef={reloadRef}
             flameFillRef={flameFillRef}
@@ -168,6 +168,13 @@ export default function HUD({ game, active }: HudProps) {
             <div key={frag.key} className="frag-popup" aria-hidden>
               <span className="frag-plus">+ ФРАГ</span>
               <span className="frag-victim">{frag.victim}</span>
+            </div>
+          )}
+
+          {streak && (
+            <div key={streak.key} className="streak-banner" aria-hidden>
+              <span className="streak-label">{streak.label}</span>
+              <span className="streak-count">×{streak.count}</span>
             </div>
           )}
 

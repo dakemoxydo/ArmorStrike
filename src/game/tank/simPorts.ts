@@ -67,14 +67,17 @@ export interface FxBody {
   fx: Pick<TankFxState, 'smokeAcc' | 'dustAcc'>;
 }
 
-/** Анимация ствола, гусениц, death pose. */
+/** Анимация ствола, гусениц, death pose, damage state. */
 export interface AnimBody {
   id: number;
   alive: boolean;
   boostActive: boolean;
   deathT: number;
   speed: number;
-  fx: Pick<TankFxState, 'barrelKick' | 'hitFlash'>;
+  health: number;
+  maxHealth: number;
+  position: THREE.Vector3;
+  fx: Pick<TankFxState, 'barrelKick' | 'hitFlash' | 'smokeAcc'>;
   visual: Pick<TankVisual, 'barrelGroup' | 'turret' | 'bodyMats' | 'ring' | 'trackTex'>;
 }
 

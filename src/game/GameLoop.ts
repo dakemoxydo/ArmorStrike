@@ -6,6 +6,7 @@ import type { RenderWorld } from './RenderWorld';
 import type { HudModel } from './HudModel';
 import type { HudSnapshot, GameEvent } from './types';
 import type { TankVisual } from './Tank';
+import { TimeScale } from './effects/TimeScale';
 
 export interface GameLoopDeps {
   sim: GameSimulation;
@@ -28,6 +29,8 @@ export class GameLoop {
   private lastTs = 0;
   private elapsed = 0;
   private running = false;
+  /** TimeScale для hit-stop и slow-mo. */
+  readonly timeScale = new TimeScale();
 
   constructor(private deps: GameLoopDeps) {}
 
@@ -46,8 +49,11 @@ export class GameLoop {
   private tick = (ts: number) => {
     if (!this.running) return;
     this.raf = requestAnimationFrame(this.tick);
-    const dt = Math.min(0.05, this.lastTs ? (ts - this.lastTs) / 1000 : 0.016);
+    const realDt = Math.min(0.05, this.lastTs ? (ts - this.lastTs) / 1000 : 0.016);
     this.lastTs = ts;
+
+    // Применяем timeScale (hit-stop / slow-mo)
+    const dt = this.timeScale.update(realDt);
     this.elapsed += dt;
 
     const { sim, cameraRig, renderWorld, hudModel, hud, emit, getPreviewVisual, onHud } = this.deps;
@@ -58,7 +64,7 @@ export class GameLoop {
     } else if (sim.tanks.length > 0) {
       // Анимация гибели/затухания мёртвых танков вне боевого шага
       // (step уже обновляет их во время playing — без дубля).
-      TankAnimationSystem.update(sim.tanks.filter((t) => !t.alive), dt);
+      TankAnimationSystem.updateDead(sim.tanks, dt);
     }
 
     sim.arena.update(dt, this.elapsed);
@@ -72,7 +78,7 @@ export class GameLoop {
     if (sim.run.paused) sim.audio.setEngine(0);
     const showScoreboard =
       sim.run.mode === 'playing' && sim.input.scoreHeld && !sim.run.paused;
-    Object.assign(hud, hudModel.getHud(sim.player, sim.tanks, showScoreboard));
+    hudModel.getHud(sim.player, sim.tanks, showScoreboard, hud);
     onHud(hud);
 
     renderWorld.render();

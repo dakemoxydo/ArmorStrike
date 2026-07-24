@@ -69,6 +69,8 @@ function despawn(s: Shot) {
 
 export class ProjectileManager {
   private shots: Shot[] = [];
+  /** Round-robin cursor for O(1) free-slot lookup (replaces Array.find). */
+  private cursor = 0;
 
   constructor(scene: THREE.Scene) {
     const capGeo = new THREE.CapsuleGeometry(PROJECTILE.radius, 1.15, 4, 10);
@@ -107,7 +109,16 @@ export class ProjectileManager {
     owner: TankLike, origin: THREE.Vector3, dir: THREE.Vector3,
     damage: number, weaponType: WeaponType = 'cannon', customRange?: number,
   ) {
-    const s = this.shots.find((x) => !x.alive);
+    // Round-robin search for a free slot (avoids O(n) Array.find on every shot).
+    let s: Shot | undefined;
+    for (let i = 0; i < POOL_SIZE; i++) {
+      const idx = (this.cursor + i) % POOL_SIZE;
+      if (!this.shots[idx].alive) {
+        s = this.shots[idx];
+        this.cursor = (idx + 1) % POOL_SIZE;
+        break;
+      }
+    }
     if (!s) return;
     const beh = BEHAVIORS[weaponType];
     if (!beh) return;

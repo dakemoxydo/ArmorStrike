@@ -41,6 +41,8 @@ export class RailgunWeapon implements Weapon {
 
   private deps: WeaponDeps;
   private _tankMap = new Map<THREE.Object3D, CombatPeer>();
+  private _targetArr: THREE.Object3D[] = [];
+  private _tmpPoint = new THREE.Vector3();
   /** Accumulator for charge micro-shake / ion sparks (player). */
   private chargeFxAcc = 0;
 
@@ -170,7 +172,7 @@ export class RailgunWeapon implements Weapon {
       tmpSpark.copy(tmpMuzzle).addScaledVector(tmpDir, maxHitDist * u);
       this.deps.effects.trailPuff(tmpSpark, BEAM_SPARK_COLOR);
       if (i === Math.ceil(segs / 2)) {
-        this.deps.effects.railgunImpact(tmpSpark.clone(), 0x8fffe8, false);
+        this.deps.effects.railgunImpact(tmpSpark, 0x8fffe8, false);
       }
     }
   }
@@ -183,20 +185,19 @@ export class RailgunWeapon implements Weapon {
     this.raycaster.set(tmpMuzzle, tmpDir);
     this.raycaster.far = this.owner.params.range ?? WEAPON_TUNING.railgun.range;
 
-    const targetObjects: THREE.Object3D[] = [];
-    const tankMap = new Map<THREE.Object3D, CombatPeer>();
+    this._tankMap.clear();
+    this._targetArr.length = 0;
 
     for (const t of tanks) {
       if (t.id !== this.owner.id && t.alive) {
         t.visual.group.traverse((o) => {
-          targetObjects.push(o);
-          tankMap.set(o, t);
+          this._targetArr.push(o);
+          this._tankMap.set(o, t);
         });
       }
     }
 
-    this._tankMap = tankMap;
-    return this.raycaster.intersectObjects(targetObjects, false);
+    return this.raycaster.intersectObjects(this._targetArr, false);
   }
 
   /** Nearest shot-blocking collider along aim ray; builds world hit point for FX/damage. */
@@ -209,7 +210,7 @@ export class RailgunWeapon implements Weapon {
     );
     if (!hit) return null;
     const col = colliders.find((c) => c.id === hit.id);
-    const point = tmpMuzzle.clone().addScaledVector(tmpDir, hit.dist);
+    const point = this._tmpPoint.copy(tmpMuzzle).addScaledVector(tmpDir, hit.dist);
     point.y = col ? Math.min(col.height * 0.5, 2) : 1.6;
     return { dist: hit.dist, id: hit.id, point };
   }

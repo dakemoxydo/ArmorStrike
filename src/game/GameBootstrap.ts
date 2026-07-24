@@ -146,7 +146,7 @@ function registerWindowHandlers(
   window.addEventListener('resize', onResize);
 
   const onVisibility = () => {
-    // TEMP DEBUG [BUGFIX-C1]: visibility auto-pause gated by death cam
+    // Auto-pause on tab hide, gated by death cam (BUGFIX-C1)
     if (
       document.hidden &&
       shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT)
@@ -217,6 +217,7 @@ export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
   // Per-map atmosphere: арена применит пресет текущей карты и будет обновлять при rebuild.
   arena.setRenderWorld(renderWorld);
 
+  // eslint-disable-next-line prefer-const -- assigned after CombatSystem closures capture it
   let sim!: GameSimulation;
   const combat = new CombatSystem({
     arena, effects, audio,
@@ -253,6 +254,12 @@ export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
   const { onResize, onVisibility } = registerWindowHandlers(canvas, renderWorld, sim, input, emitEvent);
   const garageInput = buildGarageInput(canvas, sim, cameraRig);
   const { gameLoop, hudSink } = buildGameLoop(sim, cameraRig, renderWorld, hudModel, emitEvent, previewController);
+
+  // Wire hit-stop / slow-mo на убийствах (после создания gameLoop)
+  combat.setOnKillPunch((byPlayer) => {
+    gameLoop.timeScale.hitStop(0.04);
+    if (byPlayer) gameLoop.timeScale.killSlowMo(0.5, 0.45);
+  });
 
   return {
     canvas,

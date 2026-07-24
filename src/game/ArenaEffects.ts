@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { smokeTexture } from './textures';
+import { loadQuality } from './graphicsQuality';
 
 interface SmokeSprite { s: THREE.Sprite; life: number; maxLife: number; vx: number }
 
@@ -90,13 +91,17 @@ export class ArenaEffects {
     }
     if (this.dust) this.dust.rotation.y = elapsed * 0.012;
 
-    const blink = Math.sin(elapsed * 2.6) > 0 ? 0.9 : 0.18;
-    for (const m of this.beaconMats) m.opacity = blink;
+    // Skip decorative material animations on low quality
+    const quality = loadQuality();
+    if (quality !== 'low') {
+      const blink = Math.sin(elapsed * 2.6) > 0 ? 0.9 : 0.18;
+      for (const m of this.beaconMats) m.opacity = blink;
 
-    const fc = 0.85 + Math.sin(elapsed * 3.1) * 0.28;
-    for (const m of this.furnaceGlowMats) m.emissiveIntensity = fc;
-    const mp = 0.5 + Math.sin(elapsed * 2.7) * 0.16;
-    for (const m of this.moltenMats) m.opacity = mp;
+      const fc = 0.85 + Math.sin(elapsed * 3.1) * 0.28;
+      for (const m of this.furnaceGlowMats) m.emissiveIntensity = fc;
+      const mp = 0.5 + Math.sin(elapsed * 2.7) * 0.16;
+      for (const m of this.moltenMats) m.opacity = mp;
+    }
 
     if (this.craneTrolley) {
       this.craneTrolley.position.x = Math.sin(elapsed * 0.14) * 13;

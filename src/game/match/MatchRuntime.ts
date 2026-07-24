@@ -1,4 +1,5 @@
 // ===== Runtime матча: kills, respawn, win end, capture (CP) =====
+// Тонкий координатор: kill-credit + win conditions; respawn и capture делегированы.
 import type * as THREE from 'three';
 import type { AudioPort } from '../ports/AudioPort';
 import type { PlayerController } from '../PlayerController';
@@ -9,20 +10,12 @@ import type { MapId } from '../maps/mapCatalog';
 import { applyPlayerKillScore } from '../scoring';
 import type { BotRoster } from '../BotRoster';
 import { configForMode, DEFAULT_MATCH_MODE } from './matchConfig';
-import type { MatchConfig, MatchModeId, MatchResult, TeamId } from './matchTypes';
+import type { MatchConfig, MatchModeId, MatchResult } from './matchTypes';
 import { isEnemy } from './teams';
-import { applyRespawnCombat, canRespawn } from './respawn';
 import { evaluateMatchEnd } from './winConditions';
-import { pickRespawnPoint } from './spawnPoints';
-import { respawnPoolFor } from './rosterSpawn';
-import { zonesForMap } from './captureAnchors';
-import {
-  countPresenceInZone,
-  scoreDeltaFromZones,
-  stepCaptureZone,
-  type CaptureZoneState,
-} from './captureLogic';
-import { CaptureMarkers } from './CaptureMarkers';
+import type { CaptureZoneState } from './captureLogic';
+import { RespawnController } from './RespawnController';
+import { CaptureController } from './CaptureController';
 
 export interface MatchRuntimeHooks {
   run: RunState;
@@ -48,29 +41,39 @@ export class MatchRuntime {
   teamKills = { alpha: 0, bravo: 0 };
   teamScore = { alpha: 0, bravo: 0 };
   lastResult: MatchResult | null = null;
-  /** Active CP zones (empty outside capture_point). */
-  zones: CaptureZoneState[] = [];
-  private markers: CaptureMarkers | null = null;
 
-  constructor(private hooks: MatchRuntimeHooks) {}
+  private readonly respawn: RespawnController;
+  private readonly capture = new CaptureController();
+
+  constructor(private hooks: MatchRuntimeHooks) {
+    this.respawn = new RespawnController({
+      run: hooks.run,
+      audio: hooks.audio,
+      input: hooks.input,
+      setDeathT: hooks.setDeathT,
+    });
+  }
 
   get mode(): MatchModeId {
     return this.config.mode;
   }
 
+  /** Active CP zones (empty outside capture_point). */
+  get zones(): CaptureZoneState[] {
+    return this.capture.zones;
+  }
+
   /** Snapshot for HUD/minimap (read-only view). */
   getCaptureZones(): readonly CaptureZoneState[] {
-    return this.zones;
+    return this.capture.getCaptureZones();
   }
 
   disposeVisuals() {
-    this.markers?.dispose();
-    this.markers = null;
-    this.zones = [];
+    this.capture.dispose();
   }
 
   reset(mode: MatchModeId = DEFAULT_MATCH_MODE, opts: MatchResetOpts = {}) {
-    this.disposeVisuals();
+    this.capture.dispose();
     this.config = configForMode(mode);
     this.ended = false;
     this.teamKills = { alpha: 0, bravo: 0 };
@@ -78,9 +81,7 @@ export class MatchRuntime {
     this.lastResult = null;
 
     if (mode === 'capture_point' && opts.mapId && opts.scene) {
-      this.zones = zonesForMap(opts.mapId);
-      this.markers = new CaptureMarkers(opts.scene);
-      this.markers.mount(this.zones);
+      this.capture.reset(opts.mapId, opts.scene);
     }
   }
 
@@ -127,11 +128,7 @@ export class MatchRuntime {
       if (t.invulnT > 0) t.invulnT = Math.max(0, t.invulnT - dt);
     }
 
-    for (const t of tanks) {
-      if (canRespawn(t, this.config.respawnDelaySec)) {
-        this.respawnTank(t, tanks);
-      }
-    }
+    this.respawn.update(dt, tanks, this.config.respawnDelaySec, this.config.spawnInvulnSec);
 
     // Keep shared death cam cell in sync with player.combat.deathT
     if (player && !player.alive) {
@@ -140,8 +137,10 @@ export class MatchRuntime {
       this.hooks.setDeathT(-1);
     }
 
-    if (this.config.mode === 'capture_point' && this.zones.length > 0) {
-      this.updateCapture(dt, tanks);
+    if (this.config.mode === 'capture_point') {
+      const delta = this.capture.update(dt, tanks);
+      this.teamScore.alpha += delta.alpha;
+      this.teamScore.bravo += delta.bravo;
     }
 
     const personals = tanks.map((t) => ({
@@ -179,61 +178,4 @@ export class MatchRuntime {
       this.hooks.requestMatchOver(result);
     }
   }
-
-  private updateCapture(dt: number, tanks: TankEntity[]) {
-    const next: CaptureZoneState[] = [];
-    for (const z of this.zones) {
-      const presence = countPresenceInZone(z, tanks);
-      next.push(stepCaptureZone(z, presence, dt));
-    }
-    this.zones = next;
-
-    const delta = scoreDeltaFromZones(this.zones, dt);
-    this.teamScore.alpha += delta.alpha;
-    this.teamScore.bravo += delta.bravo;
-
-    this.markers?.sync(this.zones);
-  }
-
-  private respawnTank(tank: TankEntity, tanks: TankEntity[]) {
-    const pool = respawnPoolFor(tank.teamId as TeamId);
-    // Prefer rosterSpawn helper (same pools)
-    const points = pool.length ? pool : FFA_fallback();
-    const threats = tanks
-      .filter((t) => t.alive && t.id !== tank.id && isEnemy(tank, t))
-      .map((t) => ({ x: t.position.x, z: t.position.z }));
-
-    const [x, z] = pickRespawnPoint(points, threats);
-    const yaw = Math.atan2(-x, -z);
-
-    applyRespawnCombat(tank, this.config.spawnInvulnSec);
-    tank.visual.group.position.set(x, 0, z);
-    tank.yaw = yaw;
-    tank.aimYaw = yaw;
-    tank.turretYaw = 0;
-    tank.knockback.set(0, 0, 0);
-    restoreDeathVisuals(tank);
-
-    if (tank.isPlayer) {
-      this.hooks.setDeathT(-1);
-      this.hooks.run.paused = false;
-      this.hooks.input.enabled = true;
-      this.hooks.audio.startEngine();
-      this.hooks.input.requestLock();
-    }
-  }
-}
-
-function FFA_fallback(): [number, number][] {
-  return [[0, -120], [128, 128], [-128, 128], [128, -128], [-128, -128]];
-}
-
-/** Undo death animation greying / hide ring. */
-function restoreDeathVisuals(tank: TankEntity) {
-  for (const m of tank.visual.bodyMats) {
-    m.color.setRGB(1, 1, 1);
-    m.emissive.setScalar(0);
-  }
-  tank.visual.ring.visible = true;
-  tank.visual.barrelGroup.rotation.x = 0;
 }

@@ -101,6 +101,7 @@ applyPlayerDeathState:
 | `GameModeController` | `src/game/GameModeController.ts` |
 | `Game` / `GameApi` | `src/game/Game.ts`, `GameApi.ts` |
 | `GameSimulation` | `src/game/engine/GameSimulation.ts` |
+| `stages/` (pipeline) | `src/game/engine/stages/` (per-stage files) |
 | `GameLoop` | `src/game/GameLoop.ts` |
 | `bootstrapGame` | `src/game/GameBootstrap.ts` |
 | `deathLifecycle` | `src/game/deathLifecycle.ts` |

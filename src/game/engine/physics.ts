@@ -164,8 +164,15 @@ export function segmentHitT(
 export function losClear(
   ax: number, az: number, bx: number, bz: number, colliders: Collider[],
 ): boolean {
+  // Segment bounding box for broad-phase reject.
+  const segMinX = ax < bx ? ax : bx;
+  const segMaxX = ax > bx ? ax : bx;
+  const segMinZ = az < bz ? az : bz;
+  const segMaxZ = az > bz ? az : bz;
   for (const c of colliders) {
     if (!c.active || !c.blocksSight) continue;
+    // Broad-phase: skip if segment AABB doesn't overlap collider AABB.
+    if (segMaxX < c.minX || segMinX > c.maxX || segMaxZ < c.minZ || segMinZ > c.maxZ) continue;
     if (segmentHitsCollider(ax, az, bx, bz, c)) return false;
   }
   return true;

@@ -21,6 +21,8 @@ export class SmokeSystem implements ParticleSystem {
   private readonly cap = 42;
   private readonly scene: THREE.Scene;
   private readonly map: THREE.Texture;
+  /** Round-robin cursor for O(1) slot acquisition (replaces Array.find). */
+  private cursor = 0;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -41,8 +43,15 @@ export class SmokeSystem implements ParticleSystem {
   }
 
   private acquire(): SmokePuff {
-    const free = this.pool.find((p) => !p.active);
-    if (free) return free;
+    // Round-robin: try from cursor forward, wrap around.
+    for (let i = 0; i < this.cap; i++) {
+      const idx = (this.cursor + i) % this.cap;
+      if (!this.pool[idx].active) {
+        this.cursor = (idx + 1) % this.cap;
+        return this.pool[idx];
+      }
+    }
+    // All active — steal oldest (lowest remaining life).
     let oldest = this.pool[0];
     let oldestFrac = oldest.life;
     for (let i = 1; i < this.pool.length; i++) {

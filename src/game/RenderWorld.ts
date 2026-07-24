@@ -1,6 +1,9 @@
 // ===== Подсистема рендера: renderer, сцена, камера, свет, небо, окружение =====
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { CameraRig } from './CameraRig';
 import { getQualityPreset, type QualityLevel, type QualityPreset } from './graphicsQuality';
 import type { MapId } from './maps/mapCatalog';
@@ -20,6 +23,11 @@ export class RenderWorld {
   private sky: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   private quality: QualityLevel;
   private atmosphere: MapId = 'factory';
+
+  /** Post-processing: bloom (только на high quality). */
+  private composer: EffectComposer | null = null;
+  private bloomPass: UnrealBloomPass | null = null;
+  private useComposer = false;
 
   constructor(canvas: HTMLCanvasElement) {
     const preset = getQualityPreset();
@@ -104,6 +112,26 @@ export class RenderWorld {
     this.rim = new THREE.DirectionalLight(NIGHT.rimColor, NIGHT.rimIntensity);
     this.rim.position.set(-30, 20, -40);
     this.scene.add(this.rim);
+
+    // Bloom post-processing (только на high quality)
+    this.setupBloom(preset);
+  }
+
+  private setupBloom(preset: QualityPreset) {
+    if (preset.id !== 'high') {
+      this.useComposer = false;
+      return;
+    }
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      0.35,  // strength — мягкий bloom
+      0.6,   // radius
+      0.85,  // threshold — только яркие emissive
+    );
+    this.composer.addPass(this.bloomPass);
+    this.useComposer = true;
   }
 
   getQuality(): QualityLevel {
@@ -162,16 +190,27 @@ export class RenderWorld {
       this.sun.shadow.map?.dispose();
       this.sun.shadow.map = null;
     }
+    // Bloom только на high
+    if (preset.id === 'high' && !this.composer) {
+      this.setupBloom(preset);
+    } else if (preset.id !== 'high') {
+      this.useComposer = false;
+    }
   }
 
   resize(w: number, h: number) {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.composer?.setSize(w, h);
   }
 
   render() {
-    this.renderer.render(this.scene, this.camera);
+    if (this.useComposer && this.composer) {
+      this.composer.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   dispose() {

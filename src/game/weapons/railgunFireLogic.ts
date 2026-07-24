@@ -1,5 +1,5 @@
 // ===== Чистая логика спуска рельсотрона (unit-test without Three.js) =====
-export type RailgunFireState = 'IDLE' | 'CHARGING' | 'FIRING' | 'COOLDOWN';
+// State shape mirrors RailgunState in RailgunWeapon.ts (IDLE/CHARGING/FIRING/COOLDOWN).
 
 /**
  * Whether setFire(active) should begin a charge this call.
@@ -7,7 +7,7 @@ export type RailgunFireState = 'IDLE' | 'CHARGING' | 'FIRING' | 'COOLDOWN';
  */
 export function railgunShouldStartCharge(
   active: boolean,
-  state: RailgunFireState,
+  state: 'IDLE' | 'CHARGING' | 'FIRING' | 'COOLDOWN',
   alive: boolean,
 ): boolean {
   return active && state === 'IDLE' && alive;

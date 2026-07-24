@@ -60,6 +60,7 @@ export type GameEvent =
   | { type: 'enemyHit'; killed: boolean }
   | { type: 'kill'; victim: string; byPlayer: boolean }
   | { type: 'shotFired' }
+  | { type: 'killStreak'; count: number; label: string }
   | {
       type: 'gameOver';
       score: number;

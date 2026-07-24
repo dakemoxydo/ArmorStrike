@@ -35,14 +35,22 @@ export const PhysicsSystem = {
     for (let i = 0; i < tanks.length; i++) {
       const a = tanks[i];
       if (!a.alive) continue;
+      const ax = a.position.x;
+      const az = a.position.z;
+      const ar = a.radius;
       for (let j = i + 1; j < tanks.length; j++) {
         const b = tanks[j];
         if (!b.alive) continue;
-        _pa.x = a.position.x;
-        _pa.z = a.position.z;
+        // Broad-phase: skip if bounding circles cannot overlap (avoids function call overhead).
+        const rr = ar + b.radius;
+        const ddx = b.position.x - ax;
+        const ddz = b.position.z - az;
+        if (ddx * ddx + ddz * ddz >= rr * rr) continue;
+        _pa.x = ax;
+        _pa.z = az;
         _pb.x = b.position.x;
         _pb.z = b.position.z;
-        if (separateTankPair(_pa, _pb, a.radius, b.radius)) {
+        if (separateTankPair(_pa, _pb, ar, b.radius)) {
           a.position.x = _pa.x;
           a.position.z = _pa.z;
           b.position.x = _pb.x;

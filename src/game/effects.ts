@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { ParticleEffects } from './effects/particles';
 import { CameraShake } from './effects/CameraShake';
 import { AmbientDust } from './effects/AmbientDust';
+import { WreckSystem } from './effects/WreckSystem';
 import type { EffectsPort } from './ports/EffectsPort';
 
 export type { EffectsPort } from './ports/EffectsPort';
@@ -13,6 +14,7 @@ export class Effects implements EffectsPort {
   private particles: ParticleEffects;
   private shake: CameraShake;
   private dust: AmbientDust;
+  private wreck: WreckSystem;
   /** Degrees added to FOV (fire punch), damps toward 0. */
   private fovPunch = 0;
   /** Degrees subtracted from FOV (charge zoom), set explicitly. */
@@ -22,6 +24,7 @@ export class Effects implements EffectsPort {
     this.particles = new ParticleEffects(scene);
     this.shake = new CameraShake();
     this.dust = new AmbientDust(scene);
+    this.wreck = new WreckSystem(scene);
   }
 
   muzzle(p: THREE.Vector3, color: number) { this.particles.muzzle(p, color); }
@@ -58,10 +61,16 @@ export class Effects implements EffectsPort {
 
   setAmbientCenter(x: number, z: number) { this.dust.setCenter(x, z); }
 
+  /** Спавнит горящие обломки на месте гибели танка. */
+  spawnWreck(p: THREE.Vector3, yaw: number, color: number) {
+    this.wreck.spawn(p, yaw, color);
+  }
+
   update(dt: number) {
     this.shake.update(dt);
     this.dust.update(dt);
     this.particles.update(dt);
+    this.wreck.update(dt);
     // Fast settle so punch feels snappy
     this.fovPunch = Math.max(0, this.fovPunch - dt * 22);
   }

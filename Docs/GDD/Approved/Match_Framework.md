@@ -37,7 +37,7 @@ Bot difficulty: **Normal** (`BOT_NORMAL` in `matchConfig.ts`).
 | Player death | **not** game over; death cam → respawn + lock |
 | Spawn pick | `pickRespawnPoint` furthest from live threats |
 
-Handled by `MatchRuntime` + `MatchStage` (replaces old DeathTimer→gameOver).
+Handled by `RespawnController` (delegated from `MatchRuntime`) + `MatchStage`.
 
 ## Kill credit
 
@@ -66,11 +66,13 @@ Handled by `MatchRuntime` + `MatchStage` (replaces old DeathTimer→gameOver).
 | Symbol | File |
 |--------|------|
 | `MatchRuntime` | `src/game/match/MatchRuntime.ts` |
+| `RespawnController` | `src/game/match/RespawnController.ts` |
+| `CaptureController` | `src/game/match/CaptureController.ts` |
 | `spawnMatchRoster` | `src/game/match/rosterSpawn.ts` |
 | `configForMode` | `src/game/match/matchConfig.ts` |
 | `evaluateMatchEnd` | `src/game/match/winConditions.ts` |
 | `isEnemy` | `src/game/match/teams.ts` |
-| `MatchStage` | `src/game/engine/stages.ts` |
+| `MatchStage` | `src/game/engine/stages/WorldStages.ts` |
 | `BotRoster` | `src/game/BotRoster.ts` |
 | `GameModeController.startRound` | accepts optional `MatchModeId` |
 | `ModeSelect` | `src/components/ModeSelect.tsx` |
@@ -91,7 +93,7 @@ Multi-target: `pickAiFocus` — FFA and team modes use `isEnemy`. Sticky target;
 
 ## Capture (P4)
 
-Pure zone sim: `captureLogic.ts` → `MatchRuntime.updateCapture` → `teamScore`.  
+Pure zone sim: `captureLogic.ts` → `CaptureController.update` → `teamScore`.  
 Markers: `CaptureMarkers`. Anchors: `captureAnchors.ts`.  
 Win already evaluated via `teamScore` in `evaluateMatchEnd`.
 

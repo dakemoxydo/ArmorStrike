@@ -43,7 +43,5 @@ export function separateTankPair(
   a.z -= nz * half;
   b.x += nx * half;
   b.z += nz * half;
-  if (half >= maxPush - 1e-6 || d < 1e-2) {
-  }
   return true;
 }

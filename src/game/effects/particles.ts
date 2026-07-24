@@ -22,6 +22,8 @@ export class ParticleEffects {
   private muzzle_: MuzzleSystem;
 
   private tmpCol = new THREE.Color();
+  /** Reusable color for burst calls (avoids per-call new THREE.Color()). */
+  private burstCol = new THREE.Color();
 
   constructor(scene: THREE.Scene) {
     const sparkPool = new SparkPool(scene);
@@ -52,7 +54,7 @@ export class ParticleEffects {
   muzzle(p: THREE.Vector3, color: number) {
     this.muzzle_.flash(p, color);
     this.flash.flash(p, color, 60, 0.09);
-    this.sparks.poolRef.burst(p, new THREE.Color(color), 6, { speed: 12, up: 1, life: 0.22, gravity: 2 });
+    this.sparks.poolRef.burst(p, this.burstCol.setHex(color), 6, { speed: 12, up: 1, life: 0.22, gravity: 2 });
   }
 
   private static readonly _cWhite = new THREE.Color(0xffffff);
@@ -75,7 +77,7 @@ export class ParticleEffects {
   }
 
   impact(p: THREE.Vector3, color: number) {
-    this.sparks.poolRef.burst(p, new THREE.Color(color), 16, { speed: 10, up: 5, life: 0.5 });
+    this.sparks.poolRef.burst(p, this.burstCol.setHex(color), 16, { speed: 10, up: 5, life: 0.5 });
     this.flash.flash(p, color, 18, 0.12);
   }
 
@@ -101,7 +103,7 @@ export class ParticleEffects {
   explosion(p: THREE.Vector3, color: number, scale = 1) {
     this.core.spawn(p, 2.6 * scale);
     this.ring.spawn(p, color, 9 * scale);
-    this.sparks.poolRef.burst(p, new THREE.Color(color), Math.round(40 * scale), {
+    this.sparks.poolRef.burst(p, this.burstCol.setHex(color), Math.round(40 * scale), {
       speed: 15 * scale, up: 9, life: 0.9, gravity: 16,
     });
     this.spawnSmoke(p, 7, 1.6 * scale, true);
@@ -130,7 +132,7 @@ export class ParticleEffects {
   }
 
   debris(p: THREE.Vector3, color: number, n = 14) {
-    this.sparks.poolRef.burst(p, new THREE.Color(color), n, { speed: 13, up: 10, life: 1.1, gravity: 26 });
+    this.sparks.poolRef.burst(p, this.burstCol.setHex(color), n, { speed: 13, up: 10, life: 1.1, gravity: 26 });
     this.smoke.spawn(p, 5, 1.4, true);
   }
 

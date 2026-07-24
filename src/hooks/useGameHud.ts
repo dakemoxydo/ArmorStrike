@@ -38,6 +38,7 @@ export function useGameHud(game: GameApi | null, active: boolean) {
   const [hitmark, setHitmark] = useState<{ kill: boolean; key: number } | null>(null);
   const [showHint, setShowHint] = useState(true);
   const [frag, setFrag] = useState<{ victim: string; key: number } | null>(null);
+  const [streak, setStreak] = useState<{ label: string; count: number; key: number } | null>(null);
 
   const healthRef = useRef<HTMLDivElement>(null);
   const healthNumRef = useRef<HTMLSpanElement>(null);
@@ -48,12 +49,15 @@ export function useGameHud(game: GameApi | null, active: boolean) {
   const liveRef = useRef<HTMLDivElement>(null);
   /** Flame energy bar — continuous ammo without React force thrash. */
   const flameFillRef = useRef<HTMLDivElement>(null);
+  /** Ghost HP bar — показывает недавний урон. */
+  const ghostRef = useRef<HTMLDivElement>(null);
   const mmBuf = useRef<MinimapDynamic[]>([]);
   const feedId = useRef(0);
   const lastLiveKey = useRef('');
 
   useEffect(() => {
     if (!game) return;
+    const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
     const onEvent = (e: GameEvent) => {
       if (e.type === 'playerHit') {
         setVignette((v) => v + 1);
@@ -63,8 +67,11 @@ export function useGameHud(game: GameApi | null, active: boolean) {
       } else if (e.type === 'kill') {
         const id = ++feedId.current;
         setFeed((f) => [...f.slice(-4), { id, victim: e.victim, byPlayer: e.byPlayer }]);
-        setTimeout(() => setFeed((f) => f.filter((x) => x.id !== id)), 4200);
+        const t = setTimeout(() => { pendingTimers.delete(t); setFeed((f) => f.filter((x) => x.id !== id)); }, 4200);
+        pendingTimers.add(t);
         if (e.byPlayer) setFrag({ victim: e.victim, key: performance.now() });
+      } else if (e.type === 'killStreak') {
+        setStreak({ label: e.label, count: e.count, key: performance.now() });
       } else if (e.type === 'shotFired') {
         const el = crossRef.current?.querySelector('.cross-core');
         if (el) {
@@ -75,7 +82,7 @@ export function useGameHud(game: GameApi | null, active: boolean) {
       }
     };
     game.addListener(onEvent);
-    return () => game.removeListener(onEvent);
+    return () => { game.removeListener(onEvent); pendingTimers.forEach(clearTimeout); };
   }, [game]);
 
   useEffect(() => {
@@ -95,6 +102,10 @@ export function useGameHud(game: GameApi | null, active: boolean) {
       if (healthRef.current) {
         healthRef.current.style.width = `${pct}%`;
         healthRef.current.classList.toggle('danger', lowHp);
+      }
+      // Ghost bar: обновляем с задержкой (CSS transition делает анимацию)
+      if (ghostRef.current) {
+        ghostRef.current.style.width = `${pct}%`;
       }
       if (healthNumRef.current) {
         healthNumRef.current.textContent = `${Math.ceil(s.health)}`;
@@ -167,10 +178,10 @@ export function useGameHud(game: GameApi | null, active: boolean) {
 
   return {
     snap,
-    feed, vignette, dmgArc, hitmark, showHint, frag,
-    setFeed, setVignette, setDmgArc, setHitmark, setShowHint, setFrag,
+    feed, vignette, dmgArc, hitmark, showHint, frag, streak,
+    setFeed, setVignette, setDmgArc, setHitmark, setShowHint, setFrag, setStreak,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
-    flameFillRef,
+    flameFillRef, ghostRef,
     mmBuf, feedId,
   };
 }

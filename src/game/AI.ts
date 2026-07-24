@@ -98,6 +98,12 @@ export class AIController {
   private hasCover = false;
   private persona: AIPersona;
   private role: AIRole;
+  /** Cached LOS result (updated every frame for engaged, staggered for far patrol). */
+  private _canSee = false;
+  /** LOS stagger: offset so bots don't all raycast on the same frame. */
+  private _losOffset = 0;
+  /** LOD skip counter for far-away patrol bots. */
+  private _lodSkip = 0;
 
   constructor(
     private tank: AIBody,
@@ -106,10 +112,13 @@ export class AIController {
     private aimError: number,
     persona?: AIPersona,
     role: AIRole = 'standard',
+    index?: number,
   ) {
     this.persona = persona ?? DEFAULT_PERSONA;
     this.role = role;
     this.aimError *= aimErrorMulForRole(role);
+    // Stagger LOS checks across bots so they don't all raycast on the same frame.
+    this._losOffset = (index ?? 0) % 2;
     this.pickWaypoint(44);
   }
 
@@ -138,15 +147,22 @@ export class AIController {
     );
   }
 
-  /** Шаг 1: восприятие — дистанция, LOS, видимость игрока. */
+  /** Шаг 1: восприятие — дистанция, LOS, видимость игрока.
+   *  Skips the expensive LOS raycast when player is out of sight range.
+   *  Caller (update) may skip calling this entirely for far patrol bots. */
   private perceive(ctx: AICtx) {
     const p = ctx.player;
     const dx = p.position.x - this.tank.position.x;
     const dz = p.position.z - this.tank.position.z;
     const dist = Math.hypot(dx, dz);
-    const canSee = p.alive && dist < this.sight &&
-      losClear(this.tank.position.x, this.tank.position.z, p.position.x, p.position.z, ctx.colliders);
-    return { canSee, dist, dx, dz };
+    // Short-circuit: beyond sight range → no raycast needed.
+    if (dist >= this.sight) {
+      this._canSee = false;
+    } else {
+      this._canSee = p.alive &&
+        losClear(this.tank.position.x, this.tank.position.z, p.position.x, p.position.z, ctx.colliders);
+    }
+    return { canSee: this._canSee, dist, dx, dz };
   }
 
   /** Шаг 2: конечный автомат смены состояния engage/patrol. */
@@ -305,8 +321,38 @@ export class AIController {
     if (!t.alive) return;
 
     // Шаг 1-2: восприятие + конечный автомат
-    const { canSee, dist, dx, dz } = this.perceive(ctx);
+    // LOS gating: engaged bots + patrol bots within 3× sight always get fresh
+    // perception every frame. Only far patrol bots (>3× sight) stagger to 1/2 rate.
+    const distToPlayer = Math.hypot(
+      ctx.player.position.x - t.position.x,
+      ctx.player.position.z - t.position.z,
+    );
+    const farPatrol = this.state === 'patrol' && distToPlayer > this.sight * 3;
+    let canSee: boolean;
+    let dist: number;
+    let dx: number;
+    let dz: number;
+    if (farPatrol) {
+      this._lodSkip++;
+      if ((this._lodSkip + this._losOffset) % 2 === 0) {
+        const p = this.perceive(ctx);
+        canSee = p.canSee; dist = p.dist; dx = p.dx; dz = p.dz;
+      } else {
+        canSee = this._canSee; dist = distToPlayer;
+        dx = ctx.player.position.x - t.position.x;
+        dz = ctx.player.position.z - t.position.z;
+      }
+    } else {
+      const p = this.perceive(ctx);
+      canSee = p.canSee; dist = p.dist; dx = p.dx; dz = p.dz;
+    }
     this.updateStateMachine(canSee, dt, ctx.player);
+
+    // LOD: far-away patrol bots (beyond 3× sight) skip 3 of 4 frames
+    // for heavy logic (target computation, steering, combat).
+    if (this.state === 'patrol' && distToPlayer > this.sight * 3) {
+      if (this._lodSkip % 4 !== 0) return;
+    }
 
     // Шаг 3-4: целевая точка + предпочтительная дистанция (+ low-HP cover)
     const pref = this.prefRange();

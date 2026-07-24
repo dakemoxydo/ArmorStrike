@@ -117,6 +117,7 @@ function makeBot(
       BOT_NORMAL.aimError,
       persona,
       role,
+      index,
     ),
     // CP roster: ~50% push objectives; harmless flag in DM/TDM.
     objectiveDuty: isObjectiveDuty(index),

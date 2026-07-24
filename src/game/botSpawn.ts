@@ -12,6 +12,8 @@ import { buildBotStyle } from '../core/TankCatalog';
 import { createTankEntity } from './PlayerFactory';
 import { personaForRole, roleForBot, roleLabel } from './aiRoles';
 
+const BOT_COLORS = COLORS.bots.map((h: number) => new THREE.Color(h));
+
 export interface BotEntry {
   tank: TankEntity;
   ai: AIController;
@@ -44,20 +46,31 @@ export function pickSpawnIndex(
   minDist: number = MIN_BOT_SPAWN_DIST,
   rng: () => number = Math.random,
 ): number {
-  const scored = SPAWN_POINTS.map(([x, z], i) => ({
-    i,
-    d: Math.hypot(x - playerX, z - playerZ),
-  }));
+  let bestFarUnused = -1;
+  let farUnusedCount = 0;
+  let bestUnused = -1;
+  let bestUnusedDist = -1;
+  let bestOverall = 0;
+  let bestOverallDist = -1;
 
-  const farUnused = scored.filter((s) => !used.has(s.i) && s.d >= minDist);
-  if (farUnused.length > 0) {
-    return farUnused[Math.floor(rng() * farUnused.length) % farUnused.length].i;
+  for (let i = 0; i < SPAWN_POINTS.length; i++) {
+    const [x, z] = SPAWN_POINTS[i];
+    const d = Math.hypot(x - playerX, z - playerZ);
+
+    if (d > bestOverallDist) { bestOverall = i; bestOverallDist = d; }
+
+    if (!used.has(i)) {
+      if (d >= minDist) {
+        farUnusedCount++;
+        if (rng() < 1 / farUnusedCount) bestFarUnused = i;
+      }
+      if (d > bestUnusedDist) { bestUnused = i; bestUnusedDist = d; }
+    }
   }
 
-  const unused = scored.filter((s) => !used.has(s.i)).sort((a, b) => b.d - a.d);
-  if (unused.length > 0) return unused[0].i;
-
-  return scored.slice().sort((a, b) => b.d - a.d)[0]?.i ?? 0;
+  if (bestFarUnused >= 0) return bestFarUnused;
+  if (bestUnused >= 0) return bestUnused;
+  return bestOverall;
 }
 
 /**
@@ -75,12 +88,11 @@ export function spawnBot(
   const aiTune = botAiForWave(wave);
   const botHulls: HullId[] = HULL_IDS;
   const botTurrets: TurretId[] = TURRET_IDS;
-  const botColors = COLORS.bots.map((h: number) => new THREE.Color(h));
 
   const safeIdx = ((spawnIdx % SPAWN_POINTS.length) + SPAWN_POINTS.length) % SPAWN_POINTS.length;
   const [x, z] = SPAWN_POINTS[safeIdx];
   const yaw = Math.atan2(-x, -z);
-  const c = botColors[index % botColors.length];
+  const c = BOT_COLORS[index % BOT_COLORS.length];
   let bHull = botHulls[index % botHulls.length];
   const bTurret = botTurrets[(index + wave) % botTurrets.length];
   const role = roleForBot(wave, index, bTurret);
@@ -131,6 +143,7 @@ export function spawnBot(
       aiTune.aimError,
       persona,
       role,
+      index,
     ),
   };
 }

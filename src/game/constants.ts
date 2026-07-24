@@ -28,9 +28,6 @@ export const botAiForWave = (wave: number) => ({
   aimError: Math.max(0.05, 0.14 - wave * 0.012),
 });
 
-/** @deprecated alias — use botAiForWave (only sightRange/aimError are consumed). */
-export const botStatsForWave = botAiForWave;
-
 export const PROJECTILE = {
   speed: 58,
   range: 85,

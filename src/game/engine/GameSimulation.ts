@@ -11,7 +11,7 @@ import type { BotRoster } from '../BotRoster';
 import type { CombatSystem } from '../CombatSystem';
 import type { HudModel } from '../HudModel';
 import type { GameEvent } from '../types';
-import { buildSimulationStages, type SimSystem, type SimContext, type ScalarCell } from './stages';
+import { buildSimulationStages, type SimSystem, type FrameContext, type ScalarCell } from './stages';
 import { applyGameOverInputState } from '../deathLifecycle';
 import { MatchRuntime } from '../match/MatchRuntime';
 import type { MatchResult } from '../match/matchTypes';
@@ -22,7 +22,7 @@ export class GameSimulation {
   nameplates = new Map<number, { plate: Nameplate; color: number }>();
   readonly match: MatchRuntime;
 
-  /** Internal cells projected into SimContext by reference. */
+  /** Internal cells projected into FrameContext by reference. */
   private readonly deathCell: ScalarCell<number> = { value: -1 };
   private readonly prevReloadingCell: ScalarCell<boolean> = { value: false };
 
@@ -32,28 +32,17 @@ export class GameSimulation {
   get prevReloading(): boolean { return this.prevReloadingCell.value; }
   set prevReloading(v: boolean) { this.prevReloadingCell.value = v; }
 
-  private systems: SimSystem[] = buildSimulationStages();
+  private systems: SimSystem[];
 
   /** Bound each step for MatchRuntime emit. */
   private stepEmit: (e: GameEvent) => void = () => {};
 
-  /** Long-lived sim context — fields rewritten each step. */
-  private readonly simCtx: SimContext = {
+  /** Long-lived frame context — per-frame fields rewritten each step. */
+  private readonly frameCtx: FrameContext = {
     dt: 0,
     emit: () => {},
     player: null!,
     tanks: [],
-    nameplates: this.nameplates,
-    arena: null!,
-    effects: null!,
-    projectiles: null!,
-    input: null!,
-    audio: null!,
-    run: null!,
-    combat: null!,
-    bots: null!,
-    match: null!,
-    hudModel: null!,
     deathT: this.deathCell,
     prevReloading: this.prevReloadingCell,
     requestGameOver: () => {},
@@ -84,20 +73,18 @@ export class GameSimulation {
       setDeathT: (v) => { this.deathT = v; },
     });
 
-    const c = this.simCtx;
-    c.arena = arena;
-    c.effects = effects;
-    c.projectiles = projectiles;
-    c.input = input;
-    c.audio = audio;
-    c.run = run;
-    c.combat = combat;
-    c.bots = bots;
-    c.match = this.match;
-    c.hudModel = hudModel;
-    c.nameplates = this.nameplates;
-    c.deathT = this.deathCell;
-    c.prevReloading = this.prevReloadingCell;
+    this.systems = buildSimulationStages({
+      arena,
+      effects,
+      projectiles,
+      input,
+      audio,
+      combat,
+      bots,
+      hudModel,
+      match: this.match,
+      nameplates: this.nameplates,
+    });
   }
 
   step(dt: number, emit: (e: GameEvent) => void) {
@@ -105,8 +92,10 @@ export class GameSimulation {
     if (!p) return;
     this.run.matchTime += dt;
     this.stepEmit = emit;
+    // Обновляем время матча для streak tracker
+    this.combat.setMatchTime(this.run.matchTime);
 
-    const ctx = this.simCtx;
+    const ctx = this.frameCtx;
     ctx.dt = dt;
     ctx.emit = emit;
     ctx.player = p;

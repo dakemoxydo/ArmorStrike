@@ -97,6 +97,8 @@ export class SparkPool {
   update(dt: number) {
     if (!this.anyActive) return;
     let alive = false;
+    // Cache drag factor once per frame (was Math.exp per particle).
+    const drag = Math.exp(-2.2 * dt);
     for (let i = 0; i < SPARK_COUNT; i++) {
       if (this.life[i] <= 0) continue;
       this.life[i] -= dt;
@@ -107,7 +109,6 @@ export class SparkPool {
       }
       alive = true;
       this.vel[i * 3 + 1] -= this.grav[i] * dt;
-      const drag = Math.exp(-2.2 * dt);
       this.vel[i * 3] *= drag;
       this.vel[i * 3 + 1] *= drag;
       this.vel[i * 3 + 2] *= drag;

@@ -84,6 +84,6 @@ engage ──(lose sight timeout)──► patrol
 | `AIController` | `src/game/AI.ts` |
 | `pickAiFocus`, `allyLineBlockers` | `src/game/match/aiFocus.ts` |
 | `pickObjectiveZone`, `isObjectiveDuty` | `src/game/match/aiObjective.ts` |
-| `BotAiStage` | `src/game/engine/stages.ts` |
+| `BotAiStage` | `src/game/engine/stages/BotAiStage.ts` |
 | `roleForBot` | `src/game/aiRoles.ts` |
 | `updateTurretAndFire` | `src/game/aiAimFire.ts` |

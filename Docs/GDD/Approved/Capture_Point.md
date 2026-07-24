@@ -58,9 +58,9 @@
 | `stepCaptureZone` / `CAPTURE` | `src/game/match/captureLogic.ts` |
 | `zonesForMap` | `src/game/match/captureAnchors.ts` |
 | `CaptureMarkers` | `src/game/match/CaptureMarkers.ts` |
-| `MatchRuntime.updateCapture` | `src/game/match/MatchRuntime.ts` |
+| `MatchRuntime.updateCapture` | `src/game/match/CaptureController.ts` (delegated) |
 | `pickObjectiveZone` / `isObjectiveDuty` | `src/game/match/aiObjective.ts` |
-| `BotAiStage` (CP branch) | `src/game/engine/stages.ts` |
+| `BotAiStage` (CP branch) | `src/game/engine/stages/BotAiStage.ts` |
 | `getCaptureMinimap` | `src/game/Game.ts` / `GameApi` |
 
 ## Acceptance (P4–P5)

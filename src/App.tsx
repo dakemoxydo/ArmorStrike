@@ -40,7 +40,7 @@ export default function App() {
   const [mapSelectOpen, setMapSelectOpen] = useState(false);
   const [lastMapId, setLastMapId] = useState<MapId>(DEFAULT_MAP_ID);
   const [lastMatchMode, setLastMatchMode] = useState<MatchModeId>('deathmatch');
-  const [, forceUpdate] = useState(0);
+  const [muted, setMuted] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -155,7 +155,10 @@ export default function App() {
         if (uiMode === 'playing') game.togglePause();
         else if (uiMode === 'garage') goMenu();
       }
-      if (e.code === 'KeyM') game.toggleMute();
+      if (e.code === 'KeyM') {
+        const nowMuted = game.toggleMute();
+        setMuted(nowMuted);
+      }
       // Enter opens mode select when focus is not already on a control
       if (e.code === 'Enter' && uiMode === 'menu' && !isInteractiveKeyboardTarget(e.target)) {
         openModeSelect();
@@ -169,8 +172,8 @@ export default function App() {
 
   const toggleMute = useCallback(() => {
     if (!game) return;
-    game.toggleMute();
-    forceUpdate((x) => x + 1);
+    const nowMuted = game.toggleMute();
+    setMuted(nowMuted);
   }, [game]);
 
   const resume = () => {
@@ -198,7 +201,7 @@ export default function App() {
       {uiMode === 'playing' && paused && game && snap && !hideChrome && (
         <PauseMenu
           game={game}
-          muted={snap.muted}
+          muted={muted}
           stats={{ score: snap.score, kills: snap.kills, timeSec: snap.timeSec }}
           onResume={resume}
           onRestart={openModeSelect}
