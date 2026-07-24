@@ -18,7 +18,7 @@ export class PreviewController {
   ) {}
 
   /** Пересобрать модель предпросмотра под текущий выбор корпуса/башни. */
-  rebuild(hullId: HullId, turretId: TurretId) {
+  async rebuild(hullId: HullId, turretId: TurretId) {
     if (this.group) {
       this.scene.remove(this.group);
       disposeObject3D(this.group);
@@ -27,7 +27,7 @@ export class PreviewController {
     }
 
     const style = buildPlayerStyle();
-    const visual = buildTankMesh(style, hullId, turretId);
+    const visual = await buildTankMesh(style, hullId, turretId);
     visual.group.position.copy(PREVIEW_POS);
     this.scene.add(visual.group);
     this.group = visual.group;
@@ -43,7 +43,7 @@ export class PreviewController {
 
   get previewVisual(): TankVisual | null { return this.visual; }
 
-  dispose() {
+  async dispose() {
     if (this.group) {
       this.scene.remove(this.group);
       disposeObject3D(this.group);

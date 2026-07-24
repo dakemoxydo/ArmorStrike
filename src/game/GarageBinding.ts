@@ -17,11 +17,11 @@ export interface GarageBindingDeps {
 export class GarageBinding {
   constructor(private d: GarageBindingDeps) {}
 
-  setSelection(hullId: HullId, turretId: TurretId) {
+  async setSelection(hullId: HullId, turretId: TurretId) {
     const { sim, previewController, emit } = this.d;
     sim.run.currentHull = hullId;
     sim.run.currentTurret = turretId;
-    previewController.rebuild(hullId, turretId);
+    await previewController.rebuild(hullId, turretId);
     sim.audio.click();
     sim.run.save();
     emit({ type: 'garageChanged' });

@@ -210,7 +210,7 @@ function buildGameLoop(
 }
 
 /** Строит и связывает все подсистемы, возвращая готовый контекст. */
-export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
+export async function bootstrapGame(canvas: HTMLCanvasElement): Promise<GameContext> {
   const { renderWorld, scene, cameraRig } = buildRenderWorld(canvas);
   const { emitEvent, addListener, removeListener } = buildEventBus();
   const { arena, effects, projectiles, input, audio, run } = buildCoreSubsystems(scene, canvas);
@@ -248,7 +248,7 @@ export function bootstrapGame(canvas: HTMLCanvasElement): GameContext {
   };
 
   const previewController = new PreviewController(scene, () => sim.run.mode);
-  previewController.rebuild(sim.run.currentHull, sim.run.currentTurret);
+  await previewController.rebuild(sim.run.currentHull, sim.run.currentTurret);
   renderWorld.applyQuality(getQualityPreset(loadQuality()));
 
   const { onResize, onVisibility } = registerWindowHandlers(canvas, renderWorld, sim, input, emitEvent);

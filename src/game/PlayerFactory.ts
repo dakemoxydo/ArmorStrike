@@ -49,7 +49,7 @@ export interface TankBuildInput {
 }
 
 /** Единая точка сборки TankEntity из корпуса + башни (игрок и боты). */
-export function createTankEntity(input: TankBuildInput): TankEntity {
+export async function createTankEntity(input: TankBuildInput): Promise<TankEntity> {
   const hull = HULLS[input.hullId];
   const turret = TURRETS[input.turretId];
   const params: TankParams = {
@@ -60,15 +60,15 @@ export function createTankEntity(input: TankBuildInput): TankEntity {
     shotCooldown: turret.shotCooldown * (input.shotCooldownScale ?? 1),
     weaponType: turret.weaponType, range: turret.range,
   };
-  const visual = buildTankMesh(input.style, input.hullId, input.turretId);
+  const visual = await buildTankMesh(input.style, input.hullId, input.turretId);
   const entity = new TankEntity(input.name, input.isPlayer, params, visual);
   entity.hullId = input.hullId;
   entity.turretId = input.turretId;
   return entity;
 }
 
-export function buildPlayerTank(hullId: HullId, turretId: TurretId): TankEntity {
-  const entity = createTankEntity({
+export async function buildPlayerTank(hullId: HullId, turretId: TurretId): Promise<TankEntity> {
+  const entity = await createTankEntity({
     name: 'ВЫ', isPlayer: true, hullId, turretId, style: buildPlayerStyle(),
   });
   entity.visual.group.position.set(0, 0, -120);

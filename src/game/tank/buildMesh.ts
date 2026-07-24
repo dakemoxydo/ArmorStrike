@@ -1,59 +1,19 @@
 import * as THREE from 'three';
 import type { HullId, TurretId } from '../../core/catalog';
-import { camoTexture, trackTexture } from '../textures';
 import type { TankStyle } from '../../core/types';
 import type { TankVisual } from './types';
-import type { TankBuildContext } from './context';
-import { buildHull } from './hull';
-import { buildTurret } from './turret';
+import { TankFactory } from './TankFactory';
 
-export function buildTankMesh(
+export async function buildTankMesh(
   style: TankStyle,
   hullId: HullId = 'hunter',
   turretId: TurretId = 'railgun',
-): TankVisual {
-  const group = new THREE.Group();
-  const hull = new THREE.Group();
-  group.add(hull);
+): Promise<TankVisual> {
+  const result = await TankFactory.build(hullId, turretId, style);
+  const { hull, turret, group, barrelGroup, muzzle, bodyMats, trackTex } = result;
 
-  const bodyMats: THREE.MeshStandardMaterial[] = [];
-  const bodyMat = new THREE.MeshStandardMaterial({
-    map: camoTexture(style.body, style.dark, style.light),
-    roughness: 0.5, metalness: 0.45, emissive: 0x000000,
-  });
-  bodyMats.push(bodyMat);
-  const turretMat = bodyMat.clone();
-  turretMat.map = camoTexture(style.light, style.body, style.dark);
-  bodyMats.push(turretMat);
-  const metalMat = new THREE.MeshStandardMaterial({
-    color: style.accent, roughness: 0.35, metalness: 0.75,
-  });
-  bodyMats.push(metalMat);
-
+  const metalMat = bodyMats[2] ?? bodyMats[0];
   const lampMat = new THREE.MeshBasicMaterial({ color: style.glow });
-
-  const trackTex = trackTexture();
-  const trackMat = new THREE.MeshStandardMaterial({
-    map: trackTex, roughness: 0.9, metalness: 0.15,
-  });
-
-  const turret = new THREE.Group();
-  const turretY = hullId === 'viking' ? 1.5 : hullId === 'mammoth' ? 2.3 : 1.9;
-  turret.position.set(0, turretY, -0.1);
-  hull.add(turret);
-
-  const barrelGroup = new THREE.Group();
-  const muzzle = new THREE.Object3D();
-
-  const ctx: TankBuildContext = {
-    style, bodyMats, bodyMat, turretMat, metalMat,
-    lampMat, trackTex, trackMat,
-    group, hull, turret, barrelGroup, muzzle,
-    railGlowMat: undefined,
-  };
-
-  buildHull(ctx, hullId);
-  buildTurret(ctx, turretId);
 
   if (style.antenna) {
     const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 1.5, 6), metalMat);
@@ -67,8 +27,12 @@ export function buildTankMesh(
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(2.1, 2.5, 36),
     new THREE.MeshBasicMaterial({
-      color: style.glow, transparent: true, opacity: 0.65,
-      side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending,
+      color: style.glow,
+      transparent: true,
+      opacity: 0.65,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
     }),
   );
   ring.rotation.x = -Math.PI / 2;
@@ -82,5 +46,15 @@ export function buildTankMesh(
     }
   });
 
-  return { group, hull, turret, barrelGroup, muzzle, ring, bodyMats, trackTex, railGlowMat: ctx.railGlowMat };
+  return {
+    group,
+    hull,
+    turret,
+    barrelGroup,
+    muzzle,
+    ring,
+    bodyMats,
+    trackTex,
+    railGlowMat: result.railGlowMat,
+  };
 }

@@ -42,50 +42,64 @@ export default function App() {
   const [lastMatchMode, setLastMatchMode] = useState<MatchModeId>('deathmatch');
   const [muted, setMuted] = useState(false);
 
+  // Boot: Game.create awaits async tank mesh / systems; listeners are safe pre/post ready.
   useEffect(() => {
-    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     let g: GameApi | null = null;
-    try {
-      g = new Game(canvasRef.current);
-    } catch (err) {
-      const e = err instanceof Error ? err : new Error(String(err));
-      const webgl = /webgl|WebGL|context/i.test(e.message);
-      setBootError({
-        message: webgl
-          ? 'WebGL недоступен или не удалось создать графический контекст.'
-          : 'Ошибка инициализации игры.',
-        detail: e.message,
-      });
-      return;
-    }
+    let cancelled = false;
 
-    g.addListener((e) => {
-      if (e.type === 'modeChanged') {
-        setUiMode(e.mode);
-        if (e.mode !== 'playing') {
-          setPaused(false);
+    (async () => {
+      try {
+        const instance = await Game.create(canvas);
+        if (cancelled) {
+          instance.dispose();
+          return;
         }
-      }
-      if (e.type === 'gameOver') {
-        setFinalStats({
-          score: e.score,
-          kills: e.kills,
-          deaths: e.deaths,
-          playerWon: e.playerWon,
-          winnerName: e.winnerName,
-          winnerTeam: e.winnerTeam,
-          reason: e.reason,
-          mode: e.mode,
-          matchTimeSec: e.matchTimeSec,
-          teamKills: e.teamKills,
-          teamScore: e.teamScore,
+        g = instance;
+        g.addListener((e) => {
+          if (e.type === 'modeChanged') {
+            setUiMode(e.mode);
+            if (e.mode !== 'playing') {
+              setPaused(false);
+            }
+          }
+          if (e.type === 'gameOver') {
+            setFinalStats({
+              score: e.score,
+              kills: e.kills,
+              deaths: e.deaths,
+              playerWon: e.playerWon,
+              winnerName: e.winnerName,
+              winnerTeam: e.winnerTeam,
+              reason: e.reason,
+              mode: e.mode,
+              matchTimeSec: e.matchTimeSec,
+              teamKills: e.teamKills,
+              teamScore: e.teamScore,
+            });
+            setPaused(false);
+          }
+          if (e.type === 'pauseChanged') setPaused(e.value);
         });
-        setPaused(false);
+        setGame(g);
+      } catch (err) {
+        if (cancelled) return;
+        const e = err instanceof Error ? err : new Error(String(err));
+        const webgl = /webgl|WebGL|context/i.test(e.message);
+        setBootError({
+          message: webgl
+            ? 'WebGL недоступен или не удалось создать графический контекст.'
+            : 'Ошибка инициализации игры.',
+          detail: e.message,
+        });
       }
-      if (e.type === 'pauseChanged') setPaused(e.value);
-    });
-    setGame(g);
-    return () => g?.dispose();
+    })();
+
+    return () => {
+      cancelled = true;
+      g?.dispose();
+    };
   }, []);
 
   /** Flow: ModeSelect → MapSelect → startRound. */

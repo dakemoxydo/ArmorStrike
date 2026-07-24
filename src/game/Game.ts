@@ -21,86 +21,135 @@ import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './maps/mapCatalog';
 
 export class Game implements GameApi {
-  /** Внутренний доступ к симуляции — не часть GameApi (UI не видит). */
-  private readonly sim: GameSimulation;
+  /** Local event bus — safe to use before async bootstrap finishes. */
+  private readonly listeners = new Set<(e: GameEvent) => void>();
 
-  private ctx: GameContext;
-  private quality: QualityController;
-  private modes: GameModeController;
-  private garage: GarageBinding;
+  private ctx: GameContext | null = null;
+  private sim: GameSimulation | null = null;
+  private quality: QualityController | null = null;
+  private modes: GameModeController | null = null;
+  private garage: GarageBinding | null = null;
 
   private hudCallback: ((hud: HudSnapshot) => void) | null = null;
-  private hud: HudSnapshot;
+  private hud: HudSnapshot | null = null;
+  private disposed = false;
+  private readonly ready: Promise<void>;
 
   constructor(private canvas: HTMLCanvasElement) {
-    this.ctx = bootstrapGame(canvas);
-    this.sim = this.ctx.sim;
-
-    this.quality = new QualityController(this.ctx.renderWorld, this.ctx.audio);
-    this.modes = new GameModeController({
-      sim: this.ctx.sim,
-      scene: this.ctx.scene,
-      cameraRig: this.ctx.cameraRig,
-      renderWorld: this.ctx.renderWorld,
-      previewController: this.ctx.previewController,
-      canvas: this.canvas,
-      weaponDeps: this.ctx.weaponDeps,
-      emit: this.ctx.emitEvent,
-      onArenaRebuilt: () => this.ctx.sim.hudModel.rebuildMinimap(this.ctx.sim.arena),
-    });
-    this.garage = new GarageBinding({
-      sim: this.ctx.sim,
-      previewController: this.ctx.previewController,
-      emit: this.ctx.emitEvent,
-    });
-
-    this.hud = this.ctx.sim.hudModel.getHud(null, []);
-    this.ctx.hudSink.current = (hud) => this.hudCallback?.(hud);
-    this.ctx.gameLoop.start();
+    this.ready = this.boot();
   }
 
-  addListener(fn: (e: GameEvent) => void) { this.ctx.addListener(fn); }
-  removeListener(fn: (e: GameEvent) => void) { this.ctx.removeListener(fn); }
+  /**
+   * Prefer this from UI: returns only after bootstrap (meshes, event bus, loop).
+   */
+  static async create(canvas: HTMLCanvasElement): Promise<Game> {
+    const game = new Game(canvas);
+    await game.ready;
+    if (game.disposed) {
+      throw new Error('Game was disposed during bootstrap');
+    }
+    return game;
+  }
+
+  private async boot(): Promise<void> {
+    const ctx = await bootstrapGame(this.canvas);
+    if (this.disposed) {
+      this.teardownContext(ctx);
+      return;
+    }
+
+    this.ctx = ctx;
+    this.sim = ctx.sim;
+
+    this.quality = new QualityController(ctx.renderWorld, ctx.audio);
+    this.modes = new GameModeController({
+      sim: ctx.sim,
+      scene: ctx.scene,
+      cameraRig: ctx.cameraRig,
+      renderWorld: ctx.renderWorld,
+      previewController: ctx.previewController,
+      canvas: this.canvas,
+      weaponDeps: ctx.weaponDeps,
+      emit: ctx.emitEvent,
+      onArenaRebuilt: () => {
+        const c = this.ctx;
+        if (c) c.sim.hudModel.rebuildMinimap(c.sim.arena);
+      },
+    });
+    this.garage = new GarageBinding({
+      sim: ctx.sim,
+      previewController: ctx.previewController,
+      emit: ctx.emitEvent,
+    });
+
+    this.hud = ctx.sim.hudModel.getHud(null, []);
+    ctx.hudSink.current = (hud) => this.hudCallback?.(hud);
+
+    // Flush listeners registered before ctx was ready
+    for (const fn of this.listeners) {
+      ctx.addListener(fn);
+    }
+
+    ctx.gameLoop.start();
+  }
+
+  addListener(fn: (e: GameEvent) => void) {
+    this.listeners.add(fn);
+    this.ctx?.addListener(fn);
+  }
+
+  removeListener(fn: (e: GameEvent) => void) {
+    this.listeners.delete(fn);
+    this.ctx?.removeListener(fn);
+  }
 
   /** Единый источник обновлений HUD: вызывается из игрового цикла (GameLoop). */
   setHudCallback(fn: ((hud: HudSnapshot) => void) | null) { this.hudCallback = fn; }
 
-  get currentHull() { return this.sim.run.currentHull; }
-  get currentTurret() { return this.sim.run.currentTurret; }
-  get currentMapId(): MapId { return this.sim.arena.mapId; }
-  get currentMatchMode(): MatchModeId { return this.modes.matchMode; }
-  get previewVisual(): TankVisual | null { return this.ctx.previewController.previewVisual; }
+  get currentHull() { return this.requireSim().run.currentHull; }
+  get currentTurret() { return this.requireSim().run.currentTurret; }
+  get currentMapId(): MapId { return this.requireSim().arena.mapId; }
+  get currentMatchMode(): MatchModeId { return this.requireModes().matchMode; }
+  get previewVisual(): TankVisual | null {
+    return this.ctx?.previewController.previewVisual ?? null;
+  }
 
   setGarageSelection(hullId: HullId, turretId: TurretId) {
-    this.garage.setSelection(hullId, turretId);
+    this.requireGarage().setSelection(hullId, turretId);
   }
 
-  setMode(mode: GameMode) { this.modes.setMode(mode); }
-  setMatchMode(mode: MatchModeId) { this.modes.setMatchMode(mode); }
+  setMode(mode: GameMode) { this.requireModes().setMode(mode); }
+  setMatchMode(mode: MatchModeId) { this.requireModes().setMatchMode(mode); }
   startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId) {
-    this.modes.startRound(mapId, matchMode);
+    this.requireModes().startRound(mapId, matchMode);
   }
-  togglePause() { this.modes.togglePause(); }
+  togglePause() { this.requireModes().togglePause(); }
 
   toggleMute(): boolean {
-    this.sim.audio.setMuted(!this.sim.audio.muted);
-    return this.sim.audio.muted;
+    const sim = this.requireSim();
+    sim.audio.setMuted(!sim.audio.muted);
+    return sim.audio.muted;
   }
 
-  getQuality(): QualityLevel { return this.quality.getQuality(); }
-  cycleQuality(): QualityLevel { return this.quality.cycleQuality(); }
-  setQuality(level: QualityLevel): QualityLevel { return this.quality.setQuality(level); }
+  getQuality(): QualityLevel { return this.requireQuality().getQuality(); }
+  cycleQuality(): QualityLevel { return this.requireQuality().cycleQuality(); }
+  setQuality(level: QualityLevel): QualityLevel { return this.requireQuality().setQuality(level); }
 
-  getHud(): HudSnapshot { return this.hud; }
-  getMinimapStatic(): MinimapStatic[] { return this.sim.hudModel.getStatic(); }
+  getHud(): HudSnapshot {
+    if (!this.hud) throw new Error('Game not ready yet — use Game.create()');
+    return this.hud;
+  }
+  getMinimapStatic(): MinimapStatic[] { return this.requireSim().hudModel.getStatic(); }
 
   fillMinimapDynamics(out: MinimapDynamic[]): MinimapDynamic[] {
-    return this.sim.hudModel.fillDynamics(this.sim.tanks, out);
+    const sim = this.requireSim();
+    return sim.hudModel.fillDynamics(sim.tanks, out);
   }
 
   getCaptureMinimap(): CaptureHudPoint[] {
-    if (this.sim.match.mode !== 'capture_point') return [];
-    return this.sim.match.getCaptureZones().map((z) => ({
+    const sim = this.requireSim();
+    if (sim.match.mode !== 'capture_point') return [];
+    return sim.match.getCaptureZones().map((z) => ({
       id: z.id,
       x: z.x,
       z: z.z,
@@ -111,14 +160,43 @@ export class Game implements GameApi {
   }
 
   dispose() {
-    this.ctx.gameLoop.stop();
-    window.removeEventListener('resize', this.ctx.onResize);
-    document.removeEventListener('visibilitychange', this.ctx.onVisibility);
-    this.ctx.garageInput.detach();
-    this.sim.input.detach();
-    this.sim.audio.stopEngine();
-    this.sim.clearTanks(this.ctx.scene);
-    this.ctx.previewController.dispose();
-    this.ctx.renderWorld.dispose();
+    this.disposed = true;
+    this.listeners.clear();
+    if (!this.ctx) return;
+    this.teardownContext(this.ctx);
+    this.ctx = null;
+    this.sim = null;
+    this.quality = null;
+    this.modes = null;
+    this.garage = null;
+  }
+
+  private teardownContext(ctx: GameContext) {
+    ctx.gameLoop.stop();
+    window.removeEventListener('resize', ctx.onResize);
+    document.removeEventListener('visibilitychange', ctx.onVisibility);
+    ctx.garageInput.detach();
+    ctx.sim.input.detach();
+    ctx.sim.audio.stopEngine();
+    ctx.sim.clearTanks(ctx.scene);
+    void ctx.previewController.dispose();
+    ctx.renderWorld.dispose();
+  }
+
+  private requireSim(): GameSimulation {
+    if (!this.sim) throw new Error('Game not ready yet — use Game.create()');
+    return this.sim;
+  }
+  private requireModes(): GameModeController {
+    if (!this.modes) throw new Error('Game not ready yet — use Game.create()');
+    return this.modes;
+  }
+  private requireGarage(): GarageBinding {
+    if (!this.garage) throw new Error('Game not ready yet — use Game.create()');
+    return this.garage;
+  }
+  private requireQuality(): QualityController {
+    if (!this.quality) throw new Error('Game not ready yet — use Game.create()');
+    return this.quality;
   }
 }

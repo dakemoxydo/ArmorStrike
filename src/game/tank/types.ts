@@ -15,6 +15,9 @@ export interface TankVisual {
   railGlowMat?: THREE.MeshStandardMaterial;
 }
 
+export type TankStyle = any; // from original, kept for compatibility
+
+
 export interface TankParams {
   maxHealth: number;
   speed: number;

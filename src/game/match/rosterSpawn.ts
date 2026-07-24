@@ -56,13 +56,13 @@ function applyTeamRing(tank: TankEntity, teamId: TeamId) {
   mat.color.setHex(teamId === 'alpha' ? COLORS.teamAlpha : COLORS.teamBravo);
 }
 
-function makeBot(
+async function makeBot(
   index: number,
   teamId: TeamId,
   x: number,
   z: number,
   ctx: RosterSpawnCtx,
-): BotEntry {
+): Promise<BotEntry> {
   const botHulls: HullId[] = HULL_IDS;
   const botTurrets: TurretId[] = TURRET_IDS;
 
@@ -79,7 +79,7 @@ function makeBot(
     ? `${teamTag}-${roleLabel(role).toUpperCase()}-${index + 1}`
     : `${roleLabel(role).toUpperCase()}-${index + 1}`;
 
-  const bot = createTankEntity({
+  const bot = await createTankEntity({
     name,
     isPlayer: false,
     hullId: bHull,
@@ -128,13 +128,13 @@ function makeBot(
  * Build full match roster: player + bots for config.mode.
  * Clears nothing — caller must clear tanks first.
  */
-export function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): RosterSpawnResult {
+export async function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): Promise<RosterSpawnResult> {
   const bots: BotEntry[] = [];
   const used = new Set<number>();
   const team = isTeamMode(cfg.mode);
 
   // --- Player ---
-  const player = createTankEntity({
+  const player = await createTankEntity({
     name: 'ВЫ',
     isPlayer: true,
     hullId: ctx.hullId,
@@ -172,7 +172,7 @@ export function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): RosterS
       );
       used.add(idx);
       const [x, z] = FFA_SPAWN_POINTS[idx];
-      bots.push(makeBot(i, null, x, z, ctx));
+      bots.push(await makeBot(i, null, x, z, ctx));
     }
     return { player, bots };
   }
@@ -193,14 +193,14 @@ export function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): RosterS
     );
     alphaUsed.add(idx);
     const [x, z] = ALPHA_SPAWN_POINTS[idx];
-    bots.push(makeBot(i, 'alpha', x, z, ctx));
+    bots.push(await makeBot(i, 'alpha', x, z, ctx));
   }
 
   for (let i = 0; i < enemyCount; i++) {
     const idx = pickPointIndex(BRAVO_SPAWN_POINTS, bravoUsed, 0, 0, 0);
     bravoUsed.add(idx);
     const [x, z] = BRAVO_SPAWN_POINTS[idx];
-    bots.push(makeBot(allyCount + i, 'bravo', x, z, ctx));
+    bots.push(await makeBot(allyCount + i, 'bravo', x, z, ctx));
   }
 
   return { player, bots };

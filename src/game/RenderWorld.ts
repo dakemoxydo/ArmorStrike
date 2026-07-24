@@ -40,7 +40,7 @@ export class RenderWorld {
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, preset.pixelRatioMax));
     this.renderer.shadowMap.enabled = preset.shadows;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = NIGHT.exposure;
 
@@ -94,7 +94,9 @@ export class RenderWorld {
     this.scene.add(this.sky);
 
     const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.06).texture;
+    // sigma=0: no pre-blur (official RoomEnvironment pattern). sigma>0.04 hits PMREM MAX_SAMPLES=20 warn.
+    const envRT = pmrem.fromScene(new RoomEnvironment(), 0);
+    this.scene.environment = envRT.texture;
     pmrem.dispose();
 
     this.hemi = new THREE.HemisphereLight(NIGHT.hemiSky, NIGHT.hemiGround, NIGHT.hemiIntensity);

@@ -66,7 +66,7 @@ export class GameModeController {
     this.matchMode = mode;
   }
 
-  startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId) {
+  async startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId) {
     const { sim, scene, previewController, cameraRig, weaponDeps, emit, onArenaRebuilt } = this.d;
     const mode = matchMode ?? this.matchMode;
 
@@ -85,7 +85,7 @@ export class GameModeController {
     sim.prevReloading = false;
     sim.match.reset(mode, { mapId: id, scene });
 
-    const { player, bots } = spawnMatchRoster(sim.match.config, {
+    const { player, bots } = await spawnMatchRoster(sim.match.config, {
       scene,
       weaponDeps,
       tanks: sim.tanks,

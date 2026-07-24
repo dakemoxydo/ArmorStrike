@@ -77,14 +77,14 @@ export function pickSpawnIndex(
  * Создаёт одного бота: entity, mesh, nameplate, weapon, AI с ролью.
  * Match scoring / events — вне этой функции (match controller, P1+).
  */
-export function spawnBot(
+export async function spawnBot(
   wave: number,
   index: number,
   spawnIdx: number,
   deps: BotSpawnDeps,
   tanks: TankEntity[],
   nameplates: Map<number, { plate: Nameplate; color: number }>,
-): BotEntry {
+): Promise<BotEntry> {
   const aiTune = botAiForWave(wave);
   const botHulls: HullId[] = HULL_IDS;
   const botTurrets: TurretId[] = TURRET_IDS;
@@ -114,7 +114,7 @@ export function spawnBot(
     if (bHull === 'viking') bHull = 'hunter';
   }
 
-  const bot = createTankEntity({
+  const bot = await createTankEntity({
     name, isPlayer: false,
     hullId: bHull, turretId: bTurret, style: buildBotStyle(c),
     healthScale,
