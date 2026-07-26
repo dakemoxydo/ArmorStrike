@@ -17,6 +17,7 @@ function makeVisual(): TankVisual {
     muzzle: new THREE.Object3D(),
     ring: new THREE.Mesh(),
     bodyMats: [],
+    bodyBaseColors: [],
     trackTex: null as unknown as THREE.CanvasTexture,
   };
 }

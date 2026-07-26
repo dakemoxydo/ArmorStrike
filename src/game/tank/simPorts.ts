@@ -78,7 +78,10 @@ export interface AnimBody {
   maxHealth: number;
   position: THREE.Vector3;
   fx: Pick<TankFxState, 'barrelKick' | 'hitFlash' | 'smokeAcc'>;
-  visual: Pick<TankVisual, 'barrelGroup' | 'turret' | 'bodyMats' | 'ring' | 'trackTex'>;
+  visual: Pick<
+    TankVisual,
+    'barrelGroup' | 'turret' | 'bodyMats' | 'bodyBaseColors' | 'ring' | 'trackTex'
+  >;
 }
 
 /** Владелец оружия для WeaponSystem. */

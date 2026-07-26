@@ -245,11 +245,9 @@ export class WreckSystem {
       (s.material as THREE.Material).dispose();
     }
     this.smokePool.length = 0;
-    // Dispose shared geometries on system teardown.
-    HULL_GEO.dispose();
-    TURRET_GEO.dispose();
-    TRACK_GEO.dispose();
-    EMBER_GEO.dispose();
-    CHAR_MAT.dispose();
+    // HULL_GEO / TURRET_GEO / TRACK_GEO / EMBER_GEO / CHAR_MAT — модульные
+    // синглтоны на весь процесс: их не пересоздают, и следующий WreckSystem
+    // (пересоздание Game / StrictMode) работал бы на освобождённых ресурсах.
+    // Освобождать их здесь нельзя — как и общий smokeTexture().
   }
 }

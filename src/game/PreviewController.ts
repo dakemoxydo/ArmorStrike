@@ -11,6 +11,12 @@ import type { HullId, TurretId } from '../core/catalog';
 export class PreviewController {
   private group: THREE.Group | null = null;
   private visual: TankVisual | null = null;
+  /**
+   * Bumped on every rebuild/dispose. `buildTankMesh` асинхронен (GLB), поэтому
+   * устаревшая сборка обязана выбросить свой результат, иначе быстрые клики в
+   * гараже оставляют вторую модель в сцене навсегда.
+   */
+  private buildSeq = 0;
 
   constructor(
     private scene: THREE.Scene,
@@ -19,15 +25,18 @@ export class PreviewController {
 
   /** Пересобрать модель предпросмотра под текущий выбор корпуса/башни. */
   async rebuild(hullId: HullId, turretId: TurretId) {
-    if (this.group) {
-      this.scene.remove(this.group);
-      disposeObject3D(this.group);
-      this.group = null;
-      this.visual = null;
-    }
+    const seq = ++this.buildSeq;
+    this.clearCurrent();
 
     const style = buildPlayerStyle();
     const visual = await buildTankMesh(style, hullId, turretId);
+
+    if (seq !== this.buildSeq) {
+      // Superseded while loading — drop this build instead of leaking it.
+      disposeObject3D(visual.group);
+      return;
+    }
+
     visual.group.position.copy(PREVIEW_POS);
     this.scene.add(visual.group);
     this.group = visual.group;
@@ -37,6 +46,14 @@ export class PreviewController {
     );
   }
 
+  private clearCurrent() {
+    if (!this.group) return;
+    this.scene.remove(this.group);
+    disposeObject3D(this.group);
+    this.group = null;
+    this.visual = null;
+  }
+
   setVisible(visible: boolean) {
     if (this.group) this.group.visible = visible;
   }
@@ -44,11 +61,8 @@ export class PreviewController {
   get previewVisual(): TankVisual | null { return this.visual; }
 
   async dispose() {
-    if (this.group) {
-      this.scene.remove(this.group);
-      disposeObject3D(this.group);
-      this.group = null;
-      this.visual = null;
-    }
+    // Bump: in-flight rebuild must not re-add itself after teardown.
+    this.buildSeq += 1;
+    this.clearCurrent();
   }
 }

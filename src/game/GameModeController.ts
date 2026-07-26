@@ -32,11 +32,24 @@ export class GameModeController {
   /** Last selected match mode (ModeSelect UI → setMatchMode). */
   matchMode: MatchModeId = DEFAULT_MATCH_MODE;
 
+  /**
+   * Serializes async startRound calls. Bumped on each call; stale jobs exit
+   * before mutating mode / player after await spawnMatchRoster.
+   */
+  private startSeq = 0;
+  private startChain: Promise<void> = Promise.resolve();
+
   constructor(private d: GameModeControllerDeps) {}
 
   setMode(mode: GameMode) {
     const { sim, cameraRig, previewController, canvas, emit } = this.d;
     const wasPlaying = sim.run.mode === 'playing' || sim.run.mode === 'over';
+    if (mode === 'menu' || mode === 'garage') {
+      // Invalidate any in-flight startRound so it cannot re-apply after leave.
+      // Не под `wasPlaying`: раунд стартуют из меню/гаража, и во время загрузки
+      // GLB режим ещё не 'playing' — иначе старт «дотягивается» и выкидывает в бой.
+      this.startSeq += 1;
+    }
     if (wasPlaying && (mode === 'menu' || mode === 'garage')) {
       sim.clearTanks(this.d.scene);
       sim.projectiles.clear();
@@ -66,7 +79,26 @@ export class GameModeController {
     this.matchMode = mode;
   }
 
-  async startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId) {
+  /**
+   * Start match on map. Concurrent calls are queued; only the latest sequence
+   * applies roster + playing mode (avoids double tanks during GLB load).
+   */
+  startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId): Promise<void> {
+    const seq = ++this.startSeq;
+    const job = this.startChain.then(() => this.executeStartRound(seq, mapId, matchMode));
+    // Keep chain alive so later starts still run after a failed start.
+    this.startChain = job.catch(() => undefined);
+    return job;
+  }
+
+  private async executeStartRound(
+    seq: number,
+    mapId: MapId,
+    matchMode?: MatchModeId,
+  ): Promise<void> {
+    // Superseded while waiting in the queue — skip entirely.
+    if (seq !== this.startSeq) return;
+
     const { sim, scene, previewController, cameraRig, weaponDeps, emit, onArenaRebuilt } = this.d;
     const mode = matchMode ?? this.matchMode;
 
@@ -93,6 +125,14 @@ export class GameModeController {
       hullId: sim.run.currentHull,
       turretId: sim.run.currentTurret,
     });
+
+    // Another startRound or leave-to-menu invalidated us after async spawn.
+    if (seq !== this.startSeq) {
+      // Roster was pushed into sim.tanks during spawn — drop it; winner will rebuild.
+      sim.clearTanks(scene);
+      sim.projectiles.clear();
+      return;
+    }
 
     sim.player = player;
     sim.bots.bots = bots;

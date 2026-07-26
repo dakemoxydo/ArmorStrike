@@ -16,22 +16,26 @@ function captureStripKey(pts: readonly CaptureHudPoint[]): string {
 }
 
 const _defaultWeapon = WEAPONS.railgun;
-const SNAP_INIT: HudSnapshot = {
-  mode: 'menu', paused: false, health: 100, maxHealth: 100, ammo: 0, magazine: 0,
-  reloading: false, reloadProgress: 0, boost: 1, score: 0, kills: 0, deaths: 0, botsAlive: 0,
-  alive: false, timeSec: 0, muted: false, hullId: 'hunter', turretId: 'railgun',
-  weaponName: _defaultWeapon.name, weaponLabel: _defaultWeapon.label,
-  weaponColor: _defaultWeapon.color, weaponAccentClass: _defaultWeapon.accentClass,
-  showScore: false, scoreboard: [],
-  matchMode: 'deathmatch', winTarget: 30, timeLimitSec: 720,
-  teamKillsAlpha: 0, teamKillsBravo: 0,
-  teamScoreAlpha: 0, teamScoreBravo: 0,
-  capturePoints: [],
-};
+
+/** Фабрика, а не константа: снапшот мутируется через Object.assign каждый кадр. */
+function createSnapInit(): HudSnapshot {
+  return {
+    mode: 'menu', paused: false, health: 100, maxHealth: 100, ammo: 0, magazine: 0,
+    reloading: false, reloadProgress: 0, boost: 1, score: 0, kills: 0, deaths: 0, botsAlive: 0,
+    alive: false, timeSec: 0, muted: false, hullId: 'hunter', turretId: 'railgun',
+    weaponName: _defaultWeapon.name, weaponLabel: _defaultWeapon.label,
+    weaponColor: _defaultWeapon.color, weaponAccentClass: _defaultWeapon.accentClass,
+    showScore: false, scoreboard: [],
+    matchMode: 'deathmatch', winTarget: 30, timeLimitSec: 720,
+    teamKillsAlpha: 0, teamKillsBravo: 0,
+    teamScoreAlpha: 0, teamScoreBravo: 0,
+    capturePoints: [],
+  };
+}
 
 export function useGameHud(game: GameApi | null, active: boolean) {
   const [, force] = useReducer((x: number) => x + 1, 0);
-  const snap = useRef<HudSnapshot>(SNAP_INIT);
+  const snap = useRef<HudSnapshot>(createSnapInit());
   const [feed, setFeed] = useState<FeedEntry[]>([]);
   const [vignette, setVignette] = useState(0);
   const [dmgArc, setDmgArc] = useState<{ dir: number; key: number } | null>(null);
@@ -54,6 +58,12 @@ export function useGameHud(game: GameApi | null, active: boolean) {
   const mmBuf = useRef<MinimapDynamic[]>([]);
   const feedId = useRef(0);
   const lastLiveKey = useRef('');
+  /**
+   * HudModel переиспользует один массив capturePoints, а Object.assign делает
+   * snap.current.capturePoints тем же объектом — сравнить «до/после» по снапшоту
+   * невозможно. Держим ключ прошлого кадра отдельно.
+   */
+  const lastCaptureKey = useRef('');
 
   useEffect(() => {
     if (!game) return;
@@ -153,7 +163,12 @@ export function useGameHud(game: GameApi | null, active: boolean) {
         }
       }
 
+      const captureKey = captureStripKey(s.capturePoints);
+      const captureChanged = captureKey !== lastCaptureKey.current;
+      lastCaptureKey.current = captureKey;
+
       if (
+        captureChanged ||
         ammoForcesHudRender(c.turretId, s.turretId, c.ammo, s.ammo) ||
         c.reloading !== s.reloading || c.isCharging !== s.isCharging ||
         c.score !== s.score || c.kills !== s.kills || c.deaths !== s.deaths ||
@@ -164,7 +179,6 @@ export function useGameHud(game: GameApi | null, active: boolean) {
         c.teamKillsBravo !== s.teamKillsBravo || c.matchMode !== s.matchMode ||
         Math.floor(c.teamScoreAlpha) !== Math.floor(s.teamScoreAlpha) ||
         Math.floor(c.teamScoreBravo) !== Math.floor(s.teamScoreBravo) ||
-        captureStripKey(c.capturePoints) !== captureStripKey(s.capturePoints) ||
         c.turretId !== s.turretId || c.magazine !== s.magazine || c.weaponName !== s.weaponName ||
         Math.floor(s.timeSec) !== Math.floor(c.timeSec)
       ) {

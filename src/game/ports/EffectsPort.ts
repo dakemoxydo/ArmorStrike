@@ -29,4 +29,6 @@ export interface EffectsPort {
   /** Спавнит горящие обломки на месте гибели танка. */
   spawnWreck(p: THREE.Vector3, yaw: number, color: number): void;
   update(dt: number): void;
+  /** Full teardown (game dispose / HMR). */
+  dispose(): void;
 }

@@ -20,10 +20,10 @@ Match combat scales: `BOT_NORMAL` in `matchConfig.ts` (fixed Normal difficulty).
 
 `pickAiFocus` (`src/game/match/aiFocus.ts`) + `BotAiStage`:
 
-| Mode | Focus |
-|------|--------|
+| Mode     | Focus                                                       |
+| -------- | ----------------------------------------------------------- |
 | DM (FFA) | nearest / sticky **hostile** (any other tank via `isEnemy`) |
-| TDM / CP | nearest / sticky enemy team |
+| TDM / CP | nearest / sticky enemy team                                 |
 
 - Prefer **visible** (LoS + sightRange) hostiles, else hunt nearest.
 - **Sticky** target with slack (~14 u) to reduce thrash.
@@ -31,13 +31,13 @@ Match combat scales: `BOT_NORMAL` in `matchConfig.ts` (fixed Normal difficulty).
 
 ## CP objective duty (P5)
 
-| | |
-|--|--|
-| Flag | `BotEntry.objectiveDuty` from `isObjectiveDuty(index)` (~50%) |
-| Zone pick | `pickObjectiveZone` — contested → neutral → enemy → own |
-| Drive | `AICtx.moveHint` = zone center; `AIController` overrides path unless close fight |
-| Fight | clear moveHint when `shouldFightNearObjective` (range / enemy on point) |
-| Hunters | remaining bots: normal focus only |
+|           |                                                                                  |
+| --------- | -------------------------------------------------------------------------------- |
+| Flag      | `BotEntry.objectiveDuty` from `isObjectiveDuty(index)` (~50%)                    |
+| Zone pick | `pickObjectiveZone` — contested → neutral → enemy → own                          |
+| Drive     | `AICtx.moveHint` = zone center; `AIController` overrides path unless close fight |
+| Fight     | clear moveHint when `shouldFightNearObjective` (range / enemy on point)          |
+| Hunters   | remaining bots: normal focus only                                                |
 
 See [[Capture_Point]].
 

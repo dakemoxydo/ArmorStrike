@@ -59,7 +59,7 @@
 - [x] ModeSelect: можно выбрать TDM и стартовать матч
 - [x] 5v5 roster, player Alpha
 - [x] Friendly fire off
-- [x] Team kills 100 → end; time → leader
+- [x] Team kills **75** → end; time → leader
 - [x] HUD ALPHA—BRAVO + personal K/D
 - [x] Tab two columns
 - [x] Minimap ally/enemy colors

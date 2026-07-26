@@ -62,7 +62,7 @@
 
 ## Simulation pipeline
 
-Ordered stages (`engine/stages.ts`):
+Ordered stages (`engine/stages/` — `buildSimulationStages` in `index.ts`):
 
 | # | Stage | Purpose |
 |---|-------|---------|

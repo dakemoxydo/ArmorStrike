@@ -15,7 +15,8 @@ function makeVisual(): TankVisual {
   return {
     group, hull: new THREE.Group(), turret: new THREE.Group(),
     barrelGroup: new THREE.Group(), muzzle, ring,
-    bodyMats: [], trackTex: null as unknown as THREE.CanvasTexture,
+    bodyMats: [], bodyBaseColors: [],
+    trackTex: null as unknown as THREE.CanvasTexture,
   };
 }
 

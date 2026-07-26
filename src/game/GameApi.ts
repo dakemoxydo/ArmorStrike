@@ -28,8 +28,8 @@ export interface GameApi {
 
   setMode(mode: GameMode): void;
   setMatchMode(mode: MatchModeId): void;
-  /** Start a match on the given map (rebuilds arena if map changed). */
-  startRound(mapId?: MapId, matchMode?: MatchModeId): void;
+  /** Start a match on the given map (rebuilds arena if map changed). Serialized; latest call wins. */
+  startRound(mapId?: MapId, matchMode?: MatchModeId): Promise<void>;
   togglePause(): void;
 
   toggleMute(): boolean;

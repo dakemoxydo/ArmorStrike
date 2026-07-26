@@ -1,10 +1,13 @@
 // ===== Spawn tables for FFA and team modes =====
-import { SPAWN_POINTS as FFA_POINTS, MIN_BOT_SPAWN_DIST } from '../botSpawn';
 
-export { MIN_BOT_SPAWN_DIST };
+/** Min planar distance from player so bots never drop on top of them. */
+export const MIN_BOT_SPAWN_DIST = 32;
 
-/** FFA / DM — shared edge points. */
-export const FFA_SPAWN_POINTS = FFA_POINTS;
+/** FFA / DM — shared edge points (player start z ≈ -120). */
+export const FFA_SPAWN_POINTS: [number, number][] = [
+  [128, 128], [-128, 128], [128, -128], [-128, -128],
+  [0, 132], [134, 0], [-135, 36],
+];
 
 /** Alpha base (south / negative Z) — player side. */
 export const ALPHA_SPAWN_POINTS: [number, number][] = [

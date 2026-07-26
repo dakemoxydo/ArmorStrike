@@ -16,6 +16,8 @@ export interface TankBuildResult {
   barrelGroup: THREE.Group;
   muzzle: THREE.Object3D;
   bodyMats: THREE.MeshStandardMaterial[];
+  /** Accent-материал (антенна и процедурные детали) — не искать по индексу. */
+  metalMat: THREE.MeshStandardMaterial;
   trackTex: THREE.CanvasTexture;
   railGlowMat?: THREE.MeshStandardMaterial;
   /** Local Y for turret on hull (model or procedural table). */
@@ -154,6 +156,7 @@ export class TankFactory {
       barrelGroup: ctx.barrelGroup,
       muzzle: ctx.muzzle,
       bodyMats,
+      metalMat: mats.metalMat,
       trackTex: mats.trackTex,
       railGlowMat: ctx.railGlowMat,
       turretY,

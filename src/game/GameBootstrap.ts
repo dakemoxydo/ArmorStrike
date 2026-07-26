@@ -43,6 +43,8 @@ export interface GameContext {
   onResize: () => void;
   onVisibility: () => void;
   hudSink: { current: ((hud: import('./types').HudSnapshot) => void) | null };
+  /** Live HUD object mutated every frame by GameLoop — same ref as getHud(). */
+  hud: import('./types').HudSnapshot;
 }
 
 // ---- Builder: рендер и сцена ----
@@ -194,19 +196,22 @@ function buildGameLoop(
 ): {
   gameLoop: GameLoop;
   hudSink: { current: ((hud: import('./types').HudSnapshot) => void) | null };
+  hud: import('./types').HudSnapshot;
 } {
   const hudSink: { current: ((hud: import('./types').HudSnapshot) => void) | null } = { current: null };
+  // Single snapshot instance: GameLoop mutates it; Game.getHud() returns the same ref.
+  const hud = hudModel.getHud(null, []);
   const gameLoop = new GameLoop({
     sim,
     cameraRig,
     renderWorld,
     hudModel,
-    hud: hudModel.getHud(null, []),
+    hud,
     emit: emitEvent,
     getPreviewVisual: () => previewController.previewVisual,
-    onHud: (hud) => hudSink.current?.(hud),
+    onHud: (h) => hudSink.current?.(h),
   });
-  return { gameLoop, hudSink };
+  return { gameLoop, hudSink, hud };
 }
 
 /** Строит и связывает все подсистемы, возвращая готовый контекст. */
@@ -253,7 +258,7 @@ export async function bootstrapGame(canvas: HTMLCanvasElement): Promise<GameCont
 
   const { onResize, onVisibility } = registerWindowHandlers(canvas, renderWorld, sim, input, emitEvent);
   const garageInput = buildGarageInput(canvas, sim, cameraRig);
-  const { gameLoop, hudSink } = buildGameLoop(sim, cameraRig, renderWorld, hudModel, emitEvent, previewController);
+  const { gameLoop, hudSink, hud } = buildGameLoop(sim, cameraRig, renderWorld, hudModel, emitEvent, previewController);
 
   // Wire hit-stop / slow-mo на убийствах (после создания gameLoop)
   combat.setOnKillPunch((byPlayer) => {
@@ -278,5 +283,6 @@ export async function bootstrapGame(canvas: HTMLCanvasElement): Promise<GameCont
     onResize,
     onVisibility,
     hudSink,
+    hud,
   };
 }

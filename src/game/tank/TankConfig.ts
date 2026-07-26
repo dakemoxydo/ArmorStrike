@@ -4,8 +4,17 @@ export type RenderType = 'code' | 'model';
 
 export interface RenderConfig {
   type: RenderType;
-  /** Absolute public URL (e.g. `/models/tanks/foo.glb`). Only for type: 'model'. */
+  /** Public URL for type: 'model' — стройте через `assetUrl` (учитывает base). */
   path?: string;
+}
+
+/**
+ * Путь к файлу в `public/` с учётом `base` сборки — иначе деплой в подпапку
+ * (`/game/`) ломает загрузку моделей абсолютным `/models/...`.
+ */
+function assetUrl(relative: string): string {
+  const base = import.meta.env.BASE_URL || '/';
+  return `${base.replace(/\/$/, '')}/${relative.replace(/^\//, '')}`;
 }
 
 /**
@@ -14,7 +23,7 @@ export interface RenderConfig {
  */
 export const HULL_CONFIG: Record<HullId, RenderConfig> = {
   hunter: { type: 'code' },
-  viking: { type: 'model', path: '/models/tanks/LightTankHullTextured.glb' },
+  viking: { type: 'model', path: assetUrl('models/tanks/LightTankHullTextured.glb') },
   mammoth: { type: 'code' },
 };
 

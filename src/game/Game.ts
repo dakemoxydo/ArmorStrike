@@ -82,7 +82,8 @@ export class Game implements GameApi {
       emit: ctx.emitEvent,
     });
 
-    this.hud = ctx.sim.hudModel.getHud(null, []);
+    // Same object GameLoop mutates every frame (pause menu / getHud stay live).
+    this.hud = ctx.hud;
     ctx.hudSink.current = (hud) => this.hudCallback?.(hud);
 
     // Flush listeners registered before ctx was ready
@@ -120,8 +121,8 @@ export class Game implements GameApi {
 
   setMode(mode: GameMode) { this.requireModes().setMode(mode); }
   setMatchMode(mode: MatchModeId) { this.requireModes().setMatchMode(mode); }
-  startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId) {
-    this.requireModes().startRound(mapId, matchMode);
+  startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId): Promise<void> {
+    return this.requireModes().startRound(mapId, matchMode);
   }
   togglePause() { this.requireModes().togglePause(); }
 
@@ -179,8 +180,14 @@ export class Game implements GameApi {
     ctx.sim.input.detach();
     ctx.sim.audio.stopEngine();
     ctx.sim.clearTanks(ctx.scene);
+    ctx.sim.projectiles.dispose();
+    ctx.sim.effects.dispose();
+    ctx.sim.arena.dispose(ctx.scene);
     void ctx.previewController.dispose();
     ctx.renderWorld.dispose();
+    // assetManager НЕ чистим: это process-level кэш ассетов. Под StrictMode
+    // teardown первого экземпляра выполняется уже после старта второго и
+    // выбил бы у него геометрию/текстуры GLB (а заодно перекачал бы модели).
   }
 
   private requireSim(): GameSimulation {

@@ -12,7 +12,8 @@ export async function buildTankMesh(
   const result = await TankFactory.build(hullId, turretId, style);
   const { hull, turret, group, barrelGroup, muzzle, bodyMats, trackTex } = result;
 
-  const metalMat = bodyMats[2] ?? bodyMats[0];
+  // Явно из фабрики: индекс в bodyMats плавает (у model-корпуса впереди мат. модели).
+  const metalMat = result.metalMat;
   const lampMat = new THREE.MeshBasicMaterial({ color: style.glow });
 
   if (style.antenna) {
@@ -54,6 +55,8 @@ export async function buildTankMesh(
     muzzle,
     ring,
     bodyMats,
+    // Снимок до первого кадра FX — материалы уже финальные.
+    bodyBaseColors: bodyMats.map((m) => m.color.getHex()),
     trackTex,
     railGlowMat: result.railGlowMat,
   };

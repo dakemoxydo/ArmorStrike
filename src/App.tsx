@@ -41,6 +41,8 @@ export default function App() {
   const [lastMapId, setLastMapId] = useState<MapId>(DEFAULT_MAP_ID);
   const [lastMatchMode, setLastMatchMode] = useState<MatchModeId>('deathmatch');
   const [muted, setMuted] = useState(false);
+  /** startRound асинхронен (GLB-корпуса) — без этого арена молча пустует. */
+  const [roundLoading, setRoundLoading] = useState(false);
 
   // Boot: Game.create awaits async tank mesh / systems; listeners are safe pre/post ready.
   useEffect(() => {
@@ -121,6 +123,18 @@ export default function App() {
     setModeSelectOpen(false);
   }, []);
 
+  /** Единая точка старта: держит индикатор загрузки и глотает гонку stale-старта. */
+  const runStartRound = useCallback(async (game: GameApi, mapId: MapId) => {
+    setRoundLoading(true);
+    try {
+      await game.startRound(mapId);
+    } catch (err) {
+      console.error('[ArmorStrike] startRound failed', err);
+    } finally {
+      setRoundLoading(false);
+    }
+  }, []);
+
   const confirmMap = useCallback((mapId: MapId) => {
     if (!game) return;
     setLastMapId(mapId);
@@ -128,8 +142,8 @@ export default function App() {
     setModeSelectOpen(false);
     // Leaving pause/over UI before round starts.
     setPaused(false);
-    game.startRound(mapId);
-  }, [game]);
+    void runStartRound(game, mapId);
+  }, [game, runStartRound]);
 
   const cancelMapSelect = useCallback(() => {
     setMapSelectOpen(false);
@@ -143,8 +157,8 @@ export default function App() {
     setModeSelectOpen(false);
     setMapSelectOpen(false);
     setPaused(false);
-    game.startRound(lastMapId);
-  }, [game, lastMapId]);
+    void runStartRound(game, lastMapId);
+  }, [game, lastMapId, runStartRound]);
 
   const goGarage = useCallback(() => {
     if (!game) return;
@@ -201,7 +215,8 @@ export default function App() {
 
   const currHull = HULLS[game?.currentHull ?? 'hunter'];
   const currTurret = TURRETS[game?.currentTurret ?? 'railgun'];
-  const hideChrome = mapSelectOpen || modeSelectOpen;
+  // Во время загрузки раунда режим ещё прежний — прячем меню под оверлей.
+  const hideChrome = mapSelectOpen || modeSelectOpen || roundLoading;
 
   return (
     <div className={`relative h-screen w-screen overflow-hidden bg-[#04060b] text-white ${uiMode === 'playing' && !paused && !hideChrome ? 'ingame' : ''}`}>
@@ -272,6 +287,19 @@ export default function App() {
           onConfirm={confirmMap}
           onCancel={cancelMapSelect}
         />
+      )}
+
+      {roundLoading && (
+        <div
+          className="absolute inset-0 z-40 flex items-center justify-center bg-[#04060b]/85"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[var(--accent,#2ee6c0)]" />
+            <span className="text-sm tracking-[0.3em] text-white/70">ЗАГРУЗКА</span>
+          </div>
+        </div>
       )}
     </div>
   );

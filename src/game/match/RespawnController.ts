@@ -65,9 +65,11 @@ const FFA_FALLBACK: [number, number][] = [
 
 /** Undo death animation greying / hide ring. */
 function restoreDeathVisuals(tank: TankEntity) {
-  for (const m of tank.visual.bodyMats) {
-    m.color.setRGB(1, 1, 1);
-    m.emissive.setScalar(0);
+  const { bodyMats, bodyBaseColors } = tank.visual;
+  for (let i = 0; i < bodyMats.length; i++) {
+    // Возврат к базе материала, а не к белому (иначе теряется accent).
+    bodyMats[i].color.setHex(bodyBaseColors[i] ?? 0xffffff);
+    bodyMats[i].emissive.setScalar(0);
   }
   tank.visual.ring.visible = true;
   tank.visual.barrelGroup.rotation.x = 0;

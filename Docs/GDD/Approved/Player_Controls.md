@@ -40,7 +40,7 @@
 |----------------|------|------|
 | `PlayerController` | `src/game/PlayerController.ts` | Клавиши, мышь, fire, reload |
 | `CameraLookState` | `src/game/camera/CameraLookState.ts` | Yaw/pitch взгляда |
-| `PlayerInputStage` | `src/game/engine/stages.ts` | Тик: `input.update` → `weapon.setFire` |
+| `PlayerInputStage` | `src/game/engine/stages/PlayerInputStage.ts` | Тик: `input.update` → `weapon.setFire` |
 | `PlayingCameraMode` | `src/game/camera/PlayingCameraMode.ts` | Камера в бою |
 
 ## Состояния

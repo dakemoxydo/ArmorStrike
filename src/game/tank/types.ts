@@ -11,12 +11,15 @@ export interface TankVisual {
   muzzle: THREE.Object3D;
   ring: THREE.Mesh;
   bodyMats: THREE.MeshStandardMaterial[];
+  /**
+   * Исходный `color` каждого материала из `bodyMats` (hex, тот же порядок).
+   * FX (hit-flash, damage darkening, death fade) масштабируют базу, а не
+   * затирают её белым — иначе accent-металл терял бы свой цвет навсегда.
+   */
+  bodyBaseColors: number[];
   trackTex: THREE.CanvasTexture;
   railGlowMat?: THREE.MeshStandardMaterial;
 }
-
-export type TankStyle = any; // from original, kept for compatibility
-
 
 export interface TankParams {
   maxHealth: number;

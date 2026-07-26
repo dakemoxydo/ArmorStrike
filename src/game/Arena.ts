@@ -131,6 +131,19 @@ export class Arena {
       }
     }
   }
+
+  /** Full teardown for game dispose (not used between map rebuilds). */
+  dispose(scene: THREE.Scene) {
+    this.effects.resetForRebuild();
+    disposeArenaSubtree(this.group);
+    while (this.group.children.length > 0) {
+      this.group.remove(this.group.children[0]);
+    }
+    this.colliders.length = 0;
+    this.blocks.clear();
+    invalidateSolidColliderCache();
+    scene.remove(this.group);
+  }
 }
 
 /** Dispose geometries/materials/textures once each (shared refs are common in arena shell). */

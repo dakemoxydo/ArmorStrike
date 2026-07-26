@@ -74,4 +74,10 @@ export class Effects implements EffectsPort {
     // Fast settle so punch feels snappy
     this.fovPunch = Math.max(0, this.fovPunch - dt * 22);
   }
+
+  dispose() {
+    this.particles.dispose();
+    this.dust.dispose();
+    this.wreck.dispose();
+  }
 }

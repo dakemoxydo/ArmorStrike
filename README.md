@@ -1,6 +1,6 @@
 # ArmorStrike
 
-3D tank survival (waves) — React 19 + TypeScript + Three.js + Vite + Tailwind.
+3D tank arena (DM / TDM / Capture Point) — React 19 + TypeScript + Three.js + Vite + Tailwind.
 
 ## Quick start
 
@@ -13,10 +13,12 @@ npm run dev
 npm run typecheck   # tsc --noEmit
 npm run lint        # eslint src
 npm test            # vitest
-npm run build       # single-file dist/index.html
+npm run build       # inlines JS/CSS into dist/index.html; copies public/ (e.g. GLB models) next to it
 ```
 
 Windows: `start.bat` starts the Vite dev server.
+
+**Deploy note:** `dist/index.html` is self-contained for app code, but hull GLBs live under `dist/models/`. Serve the whole `dist/` folder (not only the HTML file).
 
 ## Controls
 

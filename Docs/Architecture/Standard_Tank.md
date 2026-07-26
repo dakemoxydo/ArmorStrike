@@ -49,6 +49,46 @@ createWeapon(owner, type, deps)  →  Railgun | Flamethrower | Cannon
 - Игрок / боты: `spawnMatchRoster` → `createTankEntity` + `createWeapon`
 - Match bot scales: `BOT_NORMAL` (`healthScale`, `damageScale`, `shotCooldownScale`) — только factory input
 
+## 3.1 Hybrid mesh: процедурный код + GLB
+
+`TankFactory.build` **асинхронна**: корпус и башня независимо выбираются по
+`HULL_CONFIG` / `TURRET_CONFIG` (`tank/TankConfig.ts`).
+
+| `type` | Путь сборки | Сейчас |
+| ------ | ----------- | ------ |
+| `'code'` | `buildHull` / `buildTurret` на style-материалах | `hunter`, `mammoth`; все башни |
+| `'model'` | `assetManager.load(path)` → `normalizeHullModel` → `prepareTexturedModel` | `viking` |
+
+- Путь модели строится через `assetUrl` (учитывает `import.meta.env.BASE_URL`).
+- `normalizeHullModel` масштабирует по длинной горизонтальной оси до
+  `MODEL_HULL_TARGET_LENGTH`, центрирует XZ, ставит низ на Y=0 и возвращает
+  высоту палубы → `turretY = max(0.9, deckY * 0.82)`.
+- Ошибка загрузки не фатальна: `catch` → процедурный fallback + `console.error`.
+- `bodyMats` у model-корпуса пересобирается как `[...modelMats, turretMat, metalMat]`.
+  **Не искать материал по индексу** — accent берётся из `TankBuildResult.metalMat`.
+
+## 3.2 Владение GPU-ресурсами (общие vs per-instance)
+
+`Object3D.clone()` копирует **ссылки** на geometry/material. Отсюда правило:
+
+| Ресурс | Владелец | Кто освобождает |
+| ------ | -------- | --------------- |
+| geometry / textures мастера GLB | `AssetManager` (кэш на процесс) | только `clearCache()` |
+| материалы экземпляра | танк | `Tank.dispose` → `disposeObject3D` |
+
+- `cloneWithOwnMaterials` даёт каждому танку свои материалы: per-tank FX
+  (`hitFlash`, затемнение по HP, посмертное затухание) пишут в `color`/`emissive`,
+  и общий материал заставил бы все танки одной модели мигать синхронно.
+- Общие ресурсы помечаются `markShared` (`resources/sharedResources.ts`);
+  `disposeObject3D` их пропускает. Тот же приём у `smokeTexture()` в `Arena`.
+- `Game.dispose()` **не** зовёт `assetManager.clearCache()`: кэш переживает
+  пересоздание `Game` (StrictMode монтирует дважды).
+- Модульные синглтоны (`WreckSystem` HULL_GEO/CHAR_MAT и т.п.) не диспозятся в
+  `dispose()` экземпляра — их никто не пересоздаёт.
+
+`bodyBaseColors` в `TankVisual` — снимок исходных цветов `bodyMats`. FX умножают
+базу (`tintBody`), а не выставляют белый, иначе accent-металл терял бы цвет.
+
 ## 4. Sim systems (ISP)
 
 Порты: `src/game/tank/simPorts.ts`.
@@ -78,7 +118,12 @@ createWeapon(owner, type, deps)  →  Railgun | Flamethrower | Cannon
 ## 6. Lifecycle / dispose
 
 `dispose(scene)`: `weapon?.dispose()`, remove group, `disposeObject3D`.  
-Новые runtime-ресурсы (pools, listeners) обязаны чиститься здесь или в weapon.dispose.
+Новые runtime-ресурсы (pools, listeners) обязаны чиститься здесь или в weapon.dispose.  
+Общие ресурсы (`markShared`) — не здесь, см. §3.2.
+
+Асинхронная сборка обязана быть отменяемой: `PreviewController.rebuild` и
+`GameModeController.startRound` держат seq-счётчик и выбрасывают устаревший
+результат вместо того, чтобы добавить его в сцену.
 
 ## 7. Checklist нового tank-related кода
 
@@ -87,3 +132,5 @@ createWeapon(owner, type, deps)  →  Railgun | Flamethrower | Cannon
 - [ ] Factory path для player и bot общий
 - [ ] Нет импорта `core` ← `game` наоборот
 - [ ] Unit-test на pure helper, если есть формула
+- [ ] FX не мутирует общий ресурс; новый общий ресурс помечен `markShared`
+- [ ] Новый `await` в сборке визуала прикрыт seq-проверкой

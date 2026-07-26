@@ -18,12 +18,12 @@
 
 ## 2. Pure helpers + thin runtime
 
-| Pure (unit-test first) | Runtime (sim) |
-|------------------------|---------------|
-| `isEnemy` / `isAlly` (`match/teams.ts`) | `MatchRuntime` |
-| `evaluateMatchEnd` (`match/winConditions.ts`) | `MatchStage` |
-| `canRespawn` / `applyRespawnCombat` | `spawnMatchRoster` |
-| `pickAiFocus` (hostile target) | `BotAiStage` wiring |
+| Pure (unit-test first)                        | Runtime (sim)       |
+| --------------------------------------------- | ------------------- |
+| `isEnemy` / `isAlly` (`match/teams.ts`)       | `MatchRuntime`      |
+| `evaluateMatchEnd` (`match/winConditions.ts`) | `MatchStage`        |
+| `canRespawn` / `applyRespawnCombat`           | `spawnMatchRoster`  |
+| `pickAiFocus` (hostile target)                | `BotAiStage` wiring |
 
 Новые win/respawn/team правила — **сначала pure function + тест**, потом вызов из runtime.
 

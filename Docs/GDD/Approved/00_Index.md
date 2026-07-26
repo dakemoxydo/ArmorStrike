@@ -56,5 +56,6 @@
 | Арена, boost, score | `src/game/constants.ts` |
 | Match win/roster/time | `src/game/match/matchConfig.ts` |
 | Heal, knockback decay, damp | `src/game/tuning.ts` |
-| Порядок тика симуляции | `src/game/engine/stages.ts` |
+| Порядок тика симуляции | `src/game/engine/stages/` (`index.ts`) |
 | Bootstrap | `src/game/GameBootstrap.ts` |
+| Модель vs код для корпуса/башни | `src/game/tank/TankConfig.ts` |

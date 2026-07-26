@@ -9,6 +9,18 @@ const DAMAGE_VISUAL_THRESHOLD = 0.5;
 /** Accumulated elapsed time for ring pulse (avoids performance.now() per tank per frame). */
 let _elapsed = 0;
 
+/**
+ * Тонирование корпуса: база материала × k (1 = исходный цвет).
+ * Раньше здесь стоял `setScalar(k)`, из-за чего accent-металл затирался в белый.
+ */
+function tintBody(visual: AnimBody['visual'], k: number) {
+  const { bodyMats, bodyBaseColors } = visual;
+  for (let i = 0; i < bodyMats.length; i++) {
+    const base = bodyBaseColors[i] ?? 0xffffff;
+    bodyMats[i].color.setHex(base).multiplyScalar(k);
+  }
+}
+
 /** Анимация гибели/затухания: наклон ствола, вращение башни, потемнение корпуса. */
 function animateDeath(t: AnimBody, dt: number) {
   t.boostActive = false;
@@ -16,10 +28,8 @@ function animateDeath(t: AnimBody, dt: number) {
   t.visual.barrelGroup.rotation.x = dampTo(t.visual.barrelGroup.rotation.x, 0.3, 4, dt);
   t.visual.turret.rotation.y += dt * 0.15;
   const k = clamp(1 - t.deathT * 0.5, 0.15, 1);
-  for (const m of t.visual.bodyMats) {
-    m.color.setScalar(k);
-    m.emissive.setScalar(0);
-  }
+  tintBody(t.visual, k);
+  for (const m of t.visual.bodyMats) m.emissive.setScalar(0);
   t.visual.ring.visible = false;
 }
 
@@ -43,23 +53,14 @@ export const TankAnimationSystem = {
       }
 
       // Damage state: затемнение корпуса при низком HP
-      const hpFrac = t.health / t.maxHealth;
-      if (hpFrac < DAMAGE_VISUAL_THRESHOLD) {
-        // Линейно темнее от 1.0 (50% HP) до 0.55 (0% HP)
-        const darkK = 0.55 + 0.45 * (hpFrac / DAMAGE_VISUAL_THRESHOLD);
-        for (const m of t.visual.bodyMats) {
-          // Применяем затемнение только если нет hitFlash
-          if (t.fx.hitFlash <= 0) {
-            m.color.setScalar(darkK);
-          }
-        }
-      } else {
-        // Восстановление нормального цвета
-        for (const m of t.visual.bodyMats) {
-          if (t.fx.hitFlash <= 0) {
-            m.color.setScalar(1);
-          }
-        }
+      // Применяем только если нет hitFlash (он владеет цветом в свой момент).
+      if (t.fx.hitFlash <= 0) {
+        const hpFrac = t.health / t.maxHealth;
+        // Линейно темнее от 1.0 (50% HP) до 0.55 (0% HP), затем обратно к базе.
+        const darkK = hpFrac < DAMAGE_VISUAL_THRESHOLD
+          ? 0.55 + 0.45 * (hpFrac / DAMAGE_VISUAL_THRESHOLD)
+          : 1;
+        tintBody(t.visual, darkK);
       }
 
       const ringMat = t.visual.ring.material as THREE.MeshBasicMaterial;

@@ -44,6 +44,15 @@ export class AmbientDust {
     this.ambient.visible = v;
   }
 
+  dispose() {
+    this.ambient.parent?.remove(this.ambient);
+    this.ambient.geometry.dispose();
+    const mat = this.ambient.material as THREE.PointsMaterial;
+    // glowTexture() is not a shared singleton — safe to dispose map here.
+    mat.map?.dispose();
+    mat.dispose();
+  }
+
   update(dt: number) {
     if (!this.ambient.visible) return;
     const cx = this.ambCenter.x, cz = this.ambCenter.z, R = this.ambRange;

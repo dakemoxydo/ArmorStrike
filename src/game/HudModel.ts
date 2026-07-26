@@ -143,7 +143,7 @@ export class HudModel {
     const cfg = match?.config;
     const mode = cfg?.mode ?? 'deathmatch';
     let winTarget = cfg?.winKills ?? 30;
-    if (mode === 'team_deathmatch') winTarget = cfg?.winTeamKills ?? 100;
+    if (mode === 'team_deathmatch') winTarget = cfg?.winTeamKills ?? 75;
     if (mode === 'capture_point') winTarget = cfg?.winTeamScore ?? 1000;
 
     const target = out ?? ({} as HudSnapshot);

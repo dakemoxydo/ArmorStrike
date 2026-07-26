@@ -71,20 +71,24 @@ export class ProjectileManager {
   private shots: Shot[] = [];
   /** Round-robin cursor for O(1) free-slot lookup (replaces Array.find). */
   private cursor = 0;
+  private readonly scene: THREE.Scene;
+  private readonly capGeo: THREE.BufferGeometry;
+  private readonly glowTex: THREE.Texture;
 
   constructor(scene: THREE.Scene) {
-    const capGeo = new THREE.CapsuleGeometry(PROJECTILE.radius, 1.15, 4, 10);
-    capGeo.rotateX(Math.PI / 2);
-    const gTex = glowTexture();
+    this.scene = scene;
+    this.capGeo = new THREE.CapsuleGeometry(PROJECTILE.radius, 1.15, 4, 10);
+    this.capGeo.rotateX(Math.PI / 2);
+    this.glowTex = glowTexture();
 
     for (let i = 0; i < POOL_SIZE; i++) {
       const mat = new THREE.MeshStandardMaterial({
         color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 3.5,
         roughness: 0.3, metalness: 0,
       });
-      const coreMesh = new THREE.Mesh(capGeo, mat);
+      const coreMesh = new THREE.Mesh(this.capGeo, mat);
       const glowMat = new THREE.SpriteMaterial({
-        map: gTex, transparent: true, depthWrite: false,
+        map: this.glowTex, transparent: true, depthWrite: false,
         blending: THREE.AdditiveBlending, opacity: 0.85,
       });
       const glow = new THREE.Sprite(glowMat);
@@ -218,5 +222,18 @@ export class ProjectileManager {
 
   clear() {
     for (const s of this.shots) despawn(s);
+  }
+
+  /** Remove pool from scene and free GPU resources (game dispose). */
+  dispose() {
+    this.clear();
+    for (const s of this.shots) {
+      this.scene.remove(s.group);
+      s.mat.dispose();
+      s.glowMat.dispose();
+    }
+    this.shots = [];
+    this.capGeo.dispose();
+    this.glowTex.dispose();
   }
 }
