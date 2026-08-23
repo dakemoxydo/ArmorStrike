@@ -9,21 +9,32 @@ export interface RenderConfig {
 }
 
 /**
+ * Глобальный выключатель системы GLTF-моделей.
+ *
+ * Единственная модель (`LightTankHullTextured.glb`) удалена — система
+ * (AssetManager, modelUtils, ветки TankFactory) сохранена, но отключена:
+ * все юниты рендерятся процедурно. Чтобы включить обратно: вернуть файл(ы)
+ * в `public/models/…`, прописать их в конфигах ниже и поставить `true`.
+ */
+export const MODELS_ENABLED = false;
+
+/**
  * Путь к файлу в `public/` с учётом `base` сборки — иначе деплой в подпапку
  * (`/game/`) ломает загрузку моделей абсолютным `/models/...`.
+ * Экспортирован для возврата моделей: см. шаблон в HULL_CONFIG.
  */
-function assetUrl(relative: string): string {
+export function assetUrl(relative: string): string {
   const base = import.meta.env.BASE_URL || '/';
   return `${base.replace(/\/$/, '')}/${relative.replace(/^\//, '')}`;
 }
 
 /**
- * Hull visuals. `viking` = light / high-speed hull → textured GLB.
- * Turrets stay procedural until dedicated models exist.
+ * Hull visuals. Пока MODELS_ENABLED=false все корпуса процедурные.
+ * Шаблон для возврата: `{ type: 'model', path: assetUrl('models/tanks/<name>.glb') }`.
  */
 export const HULL_CONFIG: Record<HullId, RenderConfig> = {
   hunter: { type: 'code' },
-  viking: { type: 'model', path: assetUrl('models/tanks/LightTankHullTextured.glb') },
+  viking: { type: 'code' },
   mammoth: { type: 'code' },
 };
 

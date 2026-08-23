@@ -4,7 +4,7 @@ import type { TankStyle } from '../../core/types';
 import { camoTexture, trackTexture } from '../textures';
 import { buildHull } from './hull';
 import { buildTurret as buildTurretProcedural } from './turret';
-import { HULL_CONFIG, TURRET_CONFIG, HULL_TURRET_Y } from './TankConfig';
+import { HULL_CONFIG, TURRET_CONFIG, HULL_TURRET_Y, MODELS_ENABLED } from './TankConfig';
 import { assetManager } from './AssetManager';
 import type { TankBuildContext } from './context';
 import { normalizeHullModel, prepareTexturedModel } from './modelUtils';
@@ -106,7 +106,8 @@ export class TankFactory {
     const bodyMats = [...mats.bodyMats];
 
     // --- Hull ---
-    if (hullConfig.type === 'model' && hullConfig.path) {
+    // MODELS_ENABLED=false (см. TankConfig) — система GLTF отключена, всегда процедурный путь.
+    if (MODELS_ENABLED && hullConfig.type === 'model' && hullConfig.path) {
       try {
         const model = await assetManager.load(hullConfig.path);
         const deckY = normalizeHullModel(model);
@@ -129,7 +130,7 @@ export class TankFactory {
     }
 
     // --- Turret (procedural unless a model is configured) ---
-    if (turretConfig.type === 'model' && turretConfig.path) {
+    if (MODELS_ENABLED && turretConfig.type === 'model' && turretConfig.path) {
       try {
         const model = await assetManager.load(turretConfig.path);
         const modelMats = prepareTexturedModel(model);

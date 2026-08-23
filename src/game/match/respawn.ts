@@ -1,5 +1,4 @@
 // ===== Pure respawn helpers =====
-import type { MatchConfig } from './matchTypes';
 
 export interface Respawnable {
   alive: boolean;
@@ -30,12 +29,4 @@ export function applyRespawnCombat(tank: Respawnable, invulnSec: number): void {
   tank.speed = 0;
   tank.boostEnergy = 1;
   tank.fireTimer = 0;
-}
-
-export function respawnDelayOf(cfg: MatchConfig): number {
-  return cfg.respawnDelaySec;
-}
-
-export function invulnOf(cfg: MatchConfig): number {
-  return cfg.spawnInvulnSec;
 }

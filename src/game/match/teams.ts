@@ -22,11 +22,6 @@ export function isAlly(a: TeamTagged, b: TeamTagged): boolean {
   return a.teamId === b.teamId;
 }
 
-/** Team modes disable friendly fire; FFA has no allies. */
-export function friendlyFireEnabled(modeTeamAware: boolean): boolean {
-  return !modeTeamAware;
-}
-
 export function isTeamMode(mode: string): boolean {
   return mode === 'team_deathmatch' || mode === 'capture_point';
 }

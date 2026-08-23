@@ -915,8 +915,8 @@
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Game_Lifecycle.md": {
-    "mtime": 1785060548.3836794,
-    "ast_hash": "ec3676528d4db6081fe95df7a60d9920",
+    "mtime": 1787461762.9514616,
+    "ast_hash": "e5002eca26470783cf07930cc52d4bc0",
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/Garage_Loadout.md": {
@@ -1050,8 +1050,8 @@
     "semantic_hash": ""
   },
   "Docs/Architecture/Standard_Tank.md": {
-    "mtime": 1785060526.1746764,
-    "ast_hash": "867031d51b06f2e061bc12fe6390f0c6",
+    "mtime": 1787461762.9649606,
+    "ast_hash": "df838287cf2250cd732a6ea048719c95",
     "semantic_hash": ""
   },
   "Docs/Architecture/Standard_UI_Input.md": {
@@ -1280,13 +1280,13 @@
     "semantic_hash": ""
   },
   "src/game/tank/TankConfig.ts": {
-    "mtime": 1785060360.3846076,
-    "ast_hash": "37c4ee17614c636206e8cd0b7ac32713",
+    "mtime": 1787461599.6813922,
+    "ast_hash": "d3812dd43a9060dc836707b8d2c469f7",
     "semantic_hash": ""
   },
   "src/game/tank/TankFactory.ts": {
-    "mtime": 1785060079.6910114,
-    "ast_hash": "f4dc453dc9cb6079b05643a264a2557a",
+    "mtime": 1787461548.0849037,
+    "ast_hash": "80341b17fa8c26835040349a7e404080",
     "semantic_hash": ""
   },
   "AGENTS.md": {

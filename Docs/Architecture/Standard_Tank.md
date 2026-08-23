@@ -49,16 +49,25 @@ createWeapon(owner, type, deps)  →  Railgun | Flamethrower | Cannon
 - Игрок / боты: `spawnMatchRoster` → `createTankEntity` + `createWeapon`
 - Match bot scales: `BOT_NORMAL` (`healthScale`, `damageScale`, `shotCooldownScale`) — только factory input
 
-## 3.1 Hybrid mesh: процедурный код + GLB
+## 3.1 Hybrid mesh: процедурный код + GLB (система отключена)
 
 `TankFactory.build` **асинхронна**: корпус и башня независимо выбираются по
 `HULL_CONFIG` / `TURRET_CONFIG` (`tank/TankConfig.ts`).
 
+> **Статус:** система GLTF-моделей сохранена, но **отключена** флагом
+> `MODELS_ENABLED = false` в `TankConfig.ts`. Единственная модель
+> (`LightTankHullTextured.glb`, корпус viking) удалена из `public/models/`;
+> все корпуса и башни рендерятся процедурно. Возврат: вернуть файл(ы) в
+> `public/models/…`, прописать `{ type: 'model', path: assetUrl(...) }`
+> в конфигах и поставить `MODELS_ENABLED = true`.
+
 | `type` | Путь сборки | Сейчас |
 | ------ | ----------- | ------ |
-| `'code'` | `buildHull` / `buildTurret` на style-материалах | `hunter`, `mammoth`; все башни |
-| `'model'` | `assetManager.load(path)` → `normalizeHullModel` → `prepareTexturedModel` | `viking` |
+| `'code'` | `buildHull` / `buildTurret` на style-материалах | все корпуса и башни |
+| `'model'` | `assetManager.load(path)` → `normalizeHullModel` → `prepareTexturedModel` | недоступен (`MODELS_ENABLED = false`) |
 
+- Код model-веток в `TankFactory` / `AssetManager` / `modelUtils` не удалён:
+  при выключенном флаге всегда выполняется процедурный путь.
 - Путь модели строится через `assetUrl` (учитывает `import.meta.env.BASE_URL`).
 - `normalizeHullModel` масштабирует по длинной горизонтальной оси до
   `MODEL_HULL_TARGET_LENGTH`, центрирует XZ, ставит низ на Y=0 и возвращает

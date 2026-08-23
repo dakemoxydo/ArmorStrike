@@ -61,14 +61,6 @@ export interface AIPersona {
   lead: number;
 }
 
-export function randomPersona(wave: number): AIPersona {
-  return {
-    aggro: Math.random(),
-    react: Math.max(0.1, 0.15 + Math.random() * 0.35 - wave * 0.02),
-    lead: 0.6 + Math.random() * 0.6,
-  };
-}
-
 const DEFAULT_PERSONA: AIPersona = { aggro: 0.5, react: 0.25, lead: 0.9 };
 
 type AIState = 'patrol' | 'engage';

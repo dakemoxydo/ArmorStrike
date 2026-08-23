@@ -36,6 +36,12 @@ export const TankMotionSystem = {
     t.position.x += (fx * t.speed + t.knockback.x) * dt;
     t.position.z += (fz * t.speed + t.knockback.z) * dt;
     t.knockback.multiplyScalar(Math.exp(-KNOCKBACK_DECAY * dt));
-    t.vel.set((t.position.x - px) / dt, 0, (t.position.z - pz) / dt);
+    // dt=0 (hit-stop TimeScale): позиция не изменилась — vel должен остаться конечным,
+    // иначе NaN/Inf расходится по AI lead и HUD.
+    if (dt > 1e-6) {
+      t.vel.set((t.position.x - px) / dt, 0, (t.position.z - pz) / dt);
+    } else {
+      t.vel.set(0, 0, 0);
+    }
   },
 };

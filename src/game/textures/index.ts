@@ -1,5 +1,4 @@
 export {
-  groundTexture,
   factoryGroundTexture,
   villageGroundTexture,
   cityGroundTexture,

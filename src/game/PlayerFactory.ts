@@ -11,7 +11,6 @@ import type { Weapon, WeaponDeps, WeaponOwner, DamageSystem } from './weapons/ty
 import type { EffectsPort } from './ports/EffectsPort';
 import type { AudioPort } from './ports/AudioPort';
 import type { ProjectileManager } from './engine/Projectile';
-import { buildPlayerStyle } from '../core/TankCatalog';
 
 export interface WeaponFactoryDeps {
   scene: THREE.Scene;
@@ -64,15 +63,5 @@ export async function createTankEntity(input: TankBuildInput): Promise<TankEntit
   const entity = new TankEntity(input.name, input.isPlayer, params, visual);
   entity.hullId = input.hullId;
   entity.turretId = input.turretId;
-  return entity;
-}
-
-export async function buildPlayerTank(hullId: HullId, turretId: TurretId): Promise<TankEntity> {
-  const entity = await createTankEntity({
-    name: 'ВЫ', isPlayer: true, hullId, turretId, style: buildPlayerStyle(),
-  });
-  entity.visual.group.position.set(0, 0, -120);
-  entity.yaw = 0;
-  entity.aimYaw = 0;
   return entity;
 }
