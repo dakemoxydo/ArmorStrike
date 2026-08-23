@@ -60,8 +60,8 @@
     "semantic_hash": ""
   },
   "src/game/Arena.ts": {
-    "mtime": 1787497154.647065,
-    "ast_hash": "70669fd8bc038fa3d8df2e7a1f1a42f1",
+    "mtime": 1787512370.3173368,
+    "ast_hash": "364ddd6a206325a02d07b39b88d5195c",
     "semantic_hash": ""
   },
   "src/game/ArenaBuilder.ts": {
@@ -70,8 +70,8 @@
     "semantic_hash": "b14872aa397db64d0758b51d27fb8ca6"
   },
   "src/game/ArenaEffects.ts": {
-    "mtime": 1787505675.1999717,
-    "ast_hash": "13720e366fffb3ce56099c647f914dce",
+    "mtime": 1787512360.5942523,
+    "ast_hash": "e6b04a6855e7e6722f0f53ec702b5133",
     "semantic_hash": ""
   },
   "src/game/CameraRig.ts": {
@@ -85,8 +85,8 @@
     "semantic_hash": ""
   },
   "src/game/Game.ts": {
-    "mtime": 1787497154.6480417,
-    "ast_hash": "bce5e21fde5443749e27765d460dc343",
+    "mtime": 1787512573.9355693,
+    "ast_hash": "286a59bebd0bd5ef2f34075820db054f",
     "semantic_hash": ""
   },
   "src/game/GameLoop.ts": {
@@ -95,8 +95,8 @@
     "semantic_hash": ""
   },
   "src/game/HudModel.ts": {
-    "mtime": 1787497154.6506774,
-    "ast_hash": "81b4075733f9e6ad68e16466044e7dbf",
+    "mtime": 1787512607.366467,
+    "ast_hash": "bda764a167b0c52b0e548b3acffb1c9b",
     "semantic_hash": ""
   },
   "src/game/PlayerController.ts": {
@@ -1185,9 +1185,9 @@
     "semantic_hash": "992f4465aca7a5d387dafc22688651bb"
   },
   "src/game/match/captureLogic.ts": {
-    "mtime": 1784508875.356893,
-    "ast_hash": "7b685408269fbfa4b193ed3a63f8be5d",
-    "semantic_hash": "7b685408269fbfa4b193ed3a63f8be5d"
+    "mtime": 1787512412.888574,
+    "ast_hash": "37247eac038aeba5bef1353b2482f989",
+    "semantic_hash": ""
   },
   "Docs/GDD/Approved/Capture_Point.md": {
     "mtime": 1784766225.2448103,
@@ -1200,9 +1200,9 @@
     "semantic_hash": "afe5c1b76a4dc3a3e31751c5ac348157"
   },
   "src/game/match/aiObjective.ts": {
-    "mtime": 1784509542.8061385,
-    "ast_hash": "5dfad05edd258e0a00a936ab43e9e80f",
-    "semantic_hash": "5dfad05edd258e0a00a936ab43e9e80f"
+    "mtime": 1787512561.8049242,
+    "ast_hash": "857f9b0d407a621264931db1628a860a",
+    "semantic_hash": ""
   },
   "src/__tests__/resultsText.test.ts": {
     "mtime": 1784509875.9306505,
@@ -1230,8 +1230,8 @@
     "semantic_hash": ""
   },
   "src/game/engine/stages/BotAiStage.ts": {
-    "mtime": 1787509473.6066206,
-    "ast_hash": "89d4b02697051813b5f751b493d2adfc",
+    "mtime": 1787512646.8056989,
+    "ast_hash": "f2d9859e92199703e75eff1aaa9b1b48",
     "semantic_hash": ""
   },
   "src/game/engine/stages/PlayerInputStage.ts": {
@@ -1260,8 +1260,8 @@
     "semantic_hash": ""
   },
   "src/game/match/CaptureController.ts": {
-    "mtime": 1784766063.250607,
-    "ast_hash": "18004aa99861d55e42a6b3c69359eedd",
+    "mtime": 1787512688.0064168,
+    "ast_hash": "f3d021d022ac66a1804cafff8f24c804",
     "semantic_hash": ""
   },
   "src/game/match/RespawnController.ts": {
@@ -1330,8 +1330,8 @@
     "semantic_hash": ""
   },
   "audit.md": {
-    "mtime": 1787510702.875561,
-    "ast_hash": "3ec5c005baaa8bf96c12ebf21525d01c",
+    "mtime": 1787512785.1735034,
+    "ast_hash": "9cb5924d58e87493a2419f863c57dde4",
     "semantic_hash": ""
   },
   "src/__tests__/zoneViewCache.test.ts": {
