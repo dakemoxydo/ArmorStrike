@@ -1,8 +1,8 @@
 {
   "package.json": {
-    "mtime": 1784225683.298223,
-    "ast_hash": "36e70f456e75f2930963dad85179105a",
-    "semantic_hash": "36e70f456e75f2930963dad85179105a"
+    "mtime": 1787464748.0198994,
+    "ast_hash": "2864917cfb7286addc7c75d55a8453e0",
+    "semantic_hash": ""
   },
   "src/App.tsx": {
     "mtime": 1785060272.2493267,
@@ -55,8 +55,8 @@
     "semantic_hash": "57c552ebb8997413b4aeae921b475966"
   },
   "src/game/AI.ts": {
-    "mtime": 1784827633.5606182,
-    "ast_hash": "315f682483c4cc929ea1df3027392991",
+    "mtime": 1787464572.2694538,
+    "ast_hash": "26a2e224e132fcace06f82bd8dbb324b",
     "semantic_hash": ""
   },
   "src/game/Arena.ts": {
@@ -105,8 +105,8 @@
     "semantic_hash": "58afe588704b96370cdfdfb895c5cf97"
   },
   "src/game/PlayerFactory.ts": {
-    "mtime": 1784863388.8260524,
-    "ast_hash": "374c5a523b8540a961037017707cc65e",
+    "mtime": 1787464640.987769,
+    "ast_hash": "4bee66c7491d7a8867cedcfa08b849a8",
     "semantic_hash": ""
   },
   "src/game/PreviewController.ts": {
@@ -333,11 +333,6 @@
     "mtime": 1784164077.9888148,
     "ast_hash": "3a6de1133fe70a89aefa0753a5aaf783",
     "semantic_hash": "3a6de1133fe70a89aefa0753a5aaf783"
-  },
-  "src/utils/cn.ts": {
-    "mtime": 1784130420.0,
-    "ast_hash": "d9837f38cc05303254571985e3164050",
-    "semantic_hash": "d9837f38cc05303254571985e3164050"
   },
   "tsconfig.json": {
     "mtime": 1785060387.9456327,
@@ -625,9 +620,9 @@
     "semantic_hash": "baf03df23a9b0794f8bd237e523eca06"
   },
   "src/game/textures/index.ts": {
-    "mtime": 1784345850.2555113,
-    "ast_hash": "aa8354c139cb273ef2fac3c1d2a19269",
-    "semantic_hash": "aa8354c139cb273ef2fac3c1d2a19269"
+    "mtime": 1787464707.825158,
+    "ast_hash": "a148cf1cd70330a4c6e0878778481493",
+    "semantic_hash": ""
   },
   "src/game/textures/shared.ts": {
     "mtime": 1784244593.4805956,
@@ -680,9 +675,9 @@
     "semantic_hash": "d0fcf03a042290052bde2d5662f0f9f2"
   },
   "src/game/engine/systems/TankMotionSystem.ts": {
-    "mtime": 1784334079.721293,
-    "ast_hash": "4f7a490c9a3630b60f8f6e7dc2e15342",
-    "semantic_hash": "4f7a490c9a3630b60f8f6e7dc2e15342"
+    "mtime": 1787464440.362121,
+    "ast_hash": "c2c73413445aaef07461c8c44f86c5ea",
+    "semantic_hash": ""
   },
   "src/game/engine/systems/TankPresentationSystem.ts": {
     "mtime": 1784334079.721293,
@@ -1120,9 +1115,9 @@
     "semantic_hash": "d9723d1cc9299fcc5b2a7b7fe57fb9ba"
   },
   "src/game/match/respawn.ts": {
-    "mtime": 1784507637.0546072,
-    "ast_hash": "b4c9552d9f21e369fd9be0e9b2632d37",
-    "semantic_hash": "b4c9552d9f21e369fd9be0e9b2632d37"
+    "mtime": 1787464600.7142348,
+    "ast_hash": "91374f4aa2c9f0b132a210f000d8e469",
+    "semantic_hash": ""
   },
   "src/game/match/rosterSpawn.ts": {
     "mtime": 1784869534.0724132,
@@ -1135,9 +1130,9 @@
     "semantic_hash": ""
   },
   "src/game/match/teams.ts": {
-    "mtime": 1784507670.1031196,
-    "ast_hash": "6a6a0e802d8e714c3fccc7f4362ad7d9",
-    "semantic_hash": "6a6a0e802d8e714c3fccc7f4362ad7d9"
+    "mtime": 1787464663.1691527,
+    "ast_hash": "88e4e4bd08353cb96855e04c28b08a48",
+    "semantic_hash": ""
   },
   "src/game/match/winConditions.ts": {
     "mtime": 1784507637.0546072,
@@ -1327,6 +1322,11 @@
   "src/game/resources/sharedResources.ts": {
     "mtime": 1785060015.5811102,
     "ast_hash": "c1a4f8de175afbacef1d99234ef63a91",
+    "semantic_hash": ""
+  },
+  "src/__tests__/motionDtZero.test.ts": {
+    "mtime": 1787464517.8768272,
+    "ast_hash": "f5b96f3d5177045d71b099ba0594a7ae",
     "semantic_hash": ""
   }
 }
