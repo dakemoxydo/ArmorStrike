@@ -1,7 +1,10 @@
 import * as THREE from 'three';
-import { makeCanvas, toTexture, noise } from './shared';
+import { cachedTexture, cachedTextureEvict, cachedTextureHas, makeCanvas, toTexture, noise } from './shared';
 
 export function groundTexture(): THREE.CanvasTexture {
+  // LRU-1: only the last ground texture is retained (three 2048/3072² canvases
+  // would pin tens of MB of VRAM if all were cached at once).
+  return cachedTexture('ground:base', () => {
   const S = 1024;
   const { c, ctx } = makeCanvas(S);
   ctx.fillStyle = '#10151d';
@@ -36,10 +39,12 @@ export function groundTexture(): THREE.CanvasTexture {
     ctx.lineTo(x + (Math.random() - 0.5) * 260, y + (Math.random() - 0.5) * 260);
     ctx.stroke();
   }
-  return toTexture(c, 7);
+    return toTexture(c, 7);
+  });
 }
 
 export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
+  return cachedTexture(`ground:factory:${arenaSize}`, () => {
   const S = 2048;
   const K = S / arenaSize;
   const half = arenaSize / 2;
@@ -173,14 +178,18 @@ export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
 
   noise(ctx, S, 5000, 0.04);
 
-  const t = new THREE.CanvasTexture(c);
-  t.anisotropy = 8;
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+    const t = new THREE.CanvasTexture(c);
+    t.anisotropy = 8;
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  });
 }
 
-/** Earthy packed-dirt ground for Village map. */
+/** Earthy packed-dirt ground for Village map (LRU-1 slot: 'ground:last'). */
 export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
+  // LRU-1: evicts the previous 'ground:last' entry (and its GPU texture)
+  // before building this one — see cachedGround() below.
+  return cachedGround('ground:village', arenaSize, () => {
   const S = 3072;
   const K = S / arenaSize;
   const half = arenaSize / 2;
@@ -322,15 +331,18 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
   }
 
   noise(ctx, S, 6000, 0.04);
-  const t = new THREE.CanvasTexture(c);
-  t.anisotropy = 8;
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+    const t = new THREE.CanvasTexture(c);
+    t.anisotropy = 8;
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  });
 }
 
 /** Asphalt city grid for City map. */
 /** City ground: orthogonal main cross + secondary ring, synced to cityMap layout. */
 export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
+  // LRU-1: evicts the previous 'ground:last' entry (and its GPU texture).
+  return cachedGround('ground:city', arenaSize, () => {
   const S = 3072;
   const K = S / arenaSize;
   const half = arenaSize / 2;
@@ -459,8 +471,25 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
   ctx.stroke();
 
   noise(ctx, S, 3500, 0.035);
-  const t = new THREE.CanvasTexture(c);
-  t.anisotropy = 8;
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+    const t = new THREE.CanvasTexture(c);
+    t.anisotropy = 8;
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  });
+}
+
+/**
+ * LRU-1 слот для больших ground-канвасов: перед сборкой новой текстуры
+ * выгружает предыдущую 'ground:last' (dispose GPU-текстуры), чтобы три
+ * карты не держали одновременно десятки МБ VRAM. Сама запись помечена
+ * markShared — поштучный teardown её не тронет до выгрузки здесь.
+ */
+function cachedGround(
+  key: 'ground:village' | 'ground:city',
+  arenaSize: number,
+  build: () => THREE.CanvasTexture,
+): THREE.CanvasTexture {
+  const fullKey = `${key}:${arenaSize}`;
+  if (!cachedTextureHas(fullKey)) cachedTextureEvict('ground:last');
+  return cachedTexture(fullKey, build);
 }

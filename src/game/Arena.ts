@@ -9,9 +9,8 @@ import type { BlockInfo } from './arena/types';
 import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './maps/mapCatalog';
 import { invalidateSolidColliderCache } from './engine/solidColliderCache';
+import { isShared } from './resources/sharedResources';
 import type { RenderWorld } from './RenderWorld';
-
-import { smokeTexture } from './textures';
 
 export type { BlockInfo } from './arena/types';
 
@@ -171,12 +170,17 @@ function disposeArenaSubtree(root: THREE.Object3D) {
     }
   });
 
-  const sharedSmoke = smokeTexture();
-  for (const g of geos) g.dispose();
-  for (const m of mats) m.dispose();
+  for (const g of geos) {
+    if (!isShared(g)) g.dispose();
+  }
+  for (const m of mats) {
+    if (isShared(m)) continue;
+    m.dispose();
+  }
   for (const t of maps) {
-    // Combat + arena smoke share one GPU texture — never dispose it here.
-    if (t === sharedSmoke) continue;
+    // Texture-cache singletons (smoke/scorch/glow/wall/...) are marked shared
+    // and owned by textures/shared.ts until process end — never disposed here.
+    if (isShared(t)) continue;
     t.dispose();
   }
 }

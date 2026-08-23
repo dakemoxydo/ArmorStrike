@@ -139,3 +139,27 @@
 **Проверено — НЕ тронуто (осознанный отказ):** кэш `_tankById` между кадрами (протухшие ссылки после `clearTanks` при равном размере ростера); early-out в `resolveCircle` по dx/dz против r (меняет порядок итераций выталкивания → микрошатание физики); двойной `Math.hypot` до игрока в `AIController.update` (шум); `zonesAsView`/`syncZoneViews` уже оптимальны после F-1.
 
 *Граф graphify обновлён тем же проходом.*
+
+---
+
+## 8. Третий перф-проход (2026-08-23, ночь) — texture cache + HUD/миникарта
+
+Закрывает все 4 «remaining leads» из перф-аудита. Порядок критичен и соблюдён: сначала
+реестр защиты (R-2), затем кэширование (R-1). Контракт: **любая текстура из
+`textures/shared.ts::cachedTexture` помечена `markShared` и живёт до конца процесса —
+никто, кроме владельца кэша (`cachedTextureEvict`), не имеет права её диспозить.**
+
+| ID | Где | Что сделано |
+|---|---|---|
+| R-1 | `src/game/textures/*` | Все фабрики мемоизированы через `cachedTexture(key)`: glow/smoke/scorch/hex/wall/structure/track + параметрические crate/container/barrel/sign/camo (ключ = аргументы). Большие ground-канвасы — LRU-слот `'ground:last'` (`cachedGround` в `ground.ts`): перед сборкой village/city предыдущий слот выгружается владельцем (`cachedTextureEvict`: unmark + dispose). Базовый `groundTexture` — обычный кэш (1024²). |
+| R-2 | `Arena.disposeArenaSubtree`, `resources/sharedResources.ts` | Хардкод `sharedSmoke` заменён универсальным фильтром `isShared()` по geos/mats/maps (реестр уже существовал для GLB-мастеров). AmbientDust.dispose больше не диспозит свою map; ProjectileManager.dispose не трогает `glowTex`. Устраняет класс регрессии «кэш вернул диспознутую текстуру → чёрные поверхности после смены карты». |
+| R-3 | `effects.ts` | `glowTexture()` стал синглтоном кэша: 4 независимых канваса за матч (AmbientDust/MuzzleSystem/SparkPool/Projectile) → один GPU-текстур. |
+| R-4 | `components/hud/minimapDraw.ts` | Conic-градиент радара запекается один раз в offscreen `sweepCv` (в кэше миникарты); каждый кадр — только rotate+drawImage вместо createConicGradient+fillRect с градиентом. |
+| R-5 | `components/GameOverScreen.tsx` | `CountUp` пишет цифры через `ref.textContent` из RAF (~78 ре-рендеров React на экране результатов → 0). Тот же паттерн, что HUD-бары. |
+
+**Тесты:** новый `textureCache.test.ts` (7) — мемоизация по ключу, markShared-флаг,
+has/evict-семантика владельца (evict диспозит и снимает флаг), no-op evict.
+Проверено и НЕ тронуто: строковые ключи `staticLayerKey`/`captureStripKey` каждый кадр
+(O(n), n≈сотня — шум); villageMap/cityMap ~800 строк — декларативные сборщики, когезивны.
+
+*Ручная проверка после мерджа: 2× смена карты (Factory→Village→City→Factory) — текстуры стен/земли живые, хичч рестарта матча заметно меньше.*

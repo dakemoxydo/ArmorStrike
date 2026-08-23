@@ -48,8 +48,8 @@ export class AmbientDust {
     this.ambient.parent?.remove(this.ambient);
     this.ambient.geometry.dispose();
     const mat = this.ambient.material as THREE.PointsMaterial;
-    // glowTexture() is not a shared singleton — safe to dispose map here.
-    mat.map?.dispose();
+    // glowTexture() is a markShared cache singleton (textures/shared.ts) —
+    // its map must NOT be disposed here; only the material goes.
     mat.dispose();
   }
 

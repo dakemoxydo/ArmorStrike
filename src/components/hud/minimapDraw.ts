@@ -42,11 +42,32 @@ interface CanvasCache {
   staticCv: HTMLCanvasElement;
   staticCtx: CanvasRenderingContext2D;
   staticKey: string;
+  /** Pre-baked conic radar sweep (R-4) — rotated per frame instead of rebuilt. */
+  sweepCv: HTMLCanvasElement;
   w: number;
   h: number;
 }
 
 const cacheByCanvas = new WeakMap<HTMLCanvasElement, CanvasCache>();
+
+/** Bake the rotating radar gradient once; drawMinimap only rotates it. */
+function bakeSweep(S: number): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = S;
+  cv.height = S;
+  const c = cv.getContext('2d')!;
+  const grad = c.createConicGradient
+    ? c.createConicGradient(0, S / 2, S / 2)
+    : null;
+  if (grad) {
+    grad.addColorStop(0, 'rgba(46,230,192,0.10)');
+    grad.addColorStop(0.15, 'rgba(46,230,192,0)');
+    grad.addColorStop(1, 'rgba(46,230,192,0)');
+    c.fillStyle = grad;
+    c.fillRect(0, 0, S, S);
+  }
+  return cv;
+}
 
 function getCache(cv: HTMLCanvasElement): CanvasCache | null {
   const ctx = cv.getContext('2d');
@@ -58,7 +79,7 @@ function getCache(cv: HTMLCanvasElement): CanvasCache | null {
     staticCv.height = cv.height;
     const staticCtx = staticCv.getContext('2d');
     if (!staticCtx) return null;
-    c = { ctx, staticCv, staticCtx, staticKey: '', w: cv.width, h: cv.height };
+    c = { ctx, staticCv, staticCtx, staticKey: '', sweepCv: bakeSweep(cv.width), w: cv.width, h: cv.height };
     cacheByCanvas.set(cv, c);
   }
   return c;
@@ -85,14 +106,15 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
   ctx.fillStyle = 'rgba(5,12,18,0.72)';
   ctx.fillRect(0, 0, S, S);
 
+  // Radar sweep (R-4): pre-baked conic gradient, rotated per frame —
+  // no createConicGradient + full-canvas gradient rebuild per tick.
   const t = performance.now() * 0.0012;
-  const grad = ctx.createConicGradient ? ctx.createConicGradient(t, S / 2, S / 2) : null;
-  if (grad) {
-    grad.addColorStop(0, 'rgba(46,230,192,0.10)');
-    grad.addColorStop(0.15, 'rgba(46,230,192,0)');
-    grad.addColorStop(1, 'rgba(46,230,192,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, S, S);
+  if (cache.sweepCv.width > 0) {
+    ctx.save();
+    ctx.translate(S / 2, S / 2);
+    ctx.rotate(t);
+    ctx.drawImage(cache.sweepCv, -S / 2, -S / 2);
+    ctx.restore();
   }
 
   ctx.drawImage(cache.staticCv, 0, 0);

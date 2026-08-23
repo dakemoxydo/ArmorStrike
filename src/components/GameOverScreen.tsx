@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Clock3, Layers, RefreshCcw, Skull, Target, Trophy, Users, Wrench } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { MatchEndReason, MatchModeId, TeamId } from '../game/types';
@@ -30,20 +30,22 @@ interface GameOverScreenProps {
 }
 
 function CountUp({ value, duration = 1300 }: { value: number; duration?: number }) {
-  const [display, setDisplay] = useState(0);
+  // R-5: same pattern as HUD bars — RAF writes textContent directly, React
+  // never re-renders per animation frame.
+  const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     let raf = 0;
     const start = performance.now();
     const loop = (t: number) => {
       const k = Math.min(1, (t - start) / duration);
       const ease = 1 - Math.pow(1 - k, 3);
-      setDisplay(Math.round(value * ease));
+      if (ref.current) ref.current.textContent = `${Math.round(value * ease)}`;
       if (k < 1) raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
-  return <>{display}</>;
+  return <span ref={ref}>{value}</span>;
 }
 
 export default function GameOverScreen({

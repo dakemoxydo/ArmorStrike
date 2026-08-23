@@ -234,6 +234,7 @@ export class ProjectileManager {
     }
     this.shots = [];
     this.capGeo.dispose();
-    this.glowTex.dispose();
+    // glowTex is a markShared cache singleton (textures/shared.ts) — the cache
+    // owns it for the process lifetime, so it is NOT disposed here.
   }
 }
