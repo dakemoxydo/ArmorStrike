@@ -120,3 +120,22 @@
 - `npm run build` → dist ≈ 1.09 MB single-file
 
 *Поведенческие изменения — только исправления регрессий дифа и дефектов из аудита; баланс/математики не тронуты.*
+
+---
+
+## 7. Второй перф-проход (2026-08-23, вечер) — остаточные аллокации кадра
+
+Все ворота зелёные до и после: 42 файла / **189/189** тестов, lint, typecheck, `dist ≈ 1.09 MB` (gzip ≈ 301 KB). Изменения shape-preserving: ни один тест не правился, gameplay-математики перенесены 1:1.
+
+| ID | Где | Что сделано |
+|---|---|---|
+| P-1 | `ArenaEffects.update` ← `graphicsQuality.loadQuality()` | Убрано чтение localStorage + try/catch каждый кадр (60+/с): `ArenaEffects.setQualitySource(() => renderWorld.getQuality())`, подключается в `Arena.setRenderWorld`. Дефолт остался `loadQuality` — поведение без RenderWorld не меняется. |
+| P-2 | `CaptureController.update` → `captureLogic.ts` | CP-тик больше не создаёт массив + N spread-копий зон каждый кадр: новое мутатирующее ядро `stepCaptureZoneInto` (единый источник истины), pure-`stepCaptureZone` теперь обёртка над ним (`{...zone}` → into). Пул таргетов пересеивается только при смене набора зон (reset → новый массив). Объекты зон стабильны между тиками → меньше давления на GC и копирование в HUD/minimap. |
+| P-3 | `aiObjective.pickObjectiveZone` | Вместо map-обёрток + sort на каждого objective-бота каждый кадр — однопроходный min-поиск с сохранением tie-break стабильной сортировки (priority → distance → порядок списка). |
+| P-4 | `Game.getCaptureMinimap` | `.map()` новых объектов на каждый кадр миникарты заменён переиспользуемым буфером `_cpMinimapBuf`. |
+| P-5 | `HudModel.fillDynamics` | Blip-объекты миникарты переведены на пул строк `_dynPool`, мутируемый in place (паттерн `MatchRuntime._personals`). |
+| P-6 | `BotAiStage.update` | Литерал `[]` вне CP заменён общим `_emptyZones`. |
+
+**Проверено — НЕ тронуто (осознанный отказ):** кэш `_tankById` между кадрами (протухшие ссылки после `clearTanks` при равном размере ростера); early-out в `resolveCircle` по dx/dz против r (меняет порядок итераций выталкивания → микрошатание физики); двойной `Math.hypot` до игрока в `AIController.update` (шум); `zonesAsView`/`syncZoneViews` уже оптимальны после F-1.
+
+*Граф graphify обновлён тем же проходом.*

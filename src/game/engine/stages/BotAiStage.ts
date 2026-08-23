@@ -40,6 +40,8 @@ export class BotAiStage implements SimSystem {
    * on stable ticks — no per-frame allocation.
    */
   private _zoneViews: ObjectiveZoneView[] | null = null;
+  /** Shared empty zone list for non-CP modes (no per-frame literal). */
+  private readonly _emptyZones: ObjectiveZoneView[] = [];
 
   constructor(
     private bots: BotRoster,
@@ -62,7 +64,7 @@ export class BotAiStage implements SimSystem {
     const p = ctx.player;
     const bounds = this.arena.half - 6;
     const cpMode = this.match.mode === 'capture_point';
-    const zoneViews = cpMode ? this.zonesAsView() : [];
+    const zoneViews = cpMode ? this.zonesAsView() : this._emptyZones;
 
     // Rebuild id→entity lookup once per frame.
     this._tankById.clear();

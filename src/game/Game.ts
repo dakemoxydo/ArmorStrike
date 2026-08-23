@@ -147,17 +147,25 @@ export class Game implements GameApi {
     return sim.hudModel.fillDynamics(sim.tanks, out);
   }
 
+  /** Reusable CP minimap snapshot buffer (no per-frame object churn). */
+  private _cpMinimapBuf: CaptureHudPoint[] = [];
+
   getCaptureMinimap(): CaptureHudPoint[] {
     const sim = this.requireSim();
     if (sim.match.mode !== 'capture_point') return [];
-    return sim.match.getCaptureZones().map((z) => ({
-      id: z.id,
-      x: z.x,
-      z: z.z,
-      owner: z.owner,
-      progress: z.progress,
-      contested: z.contested,
-    }));
+    const out = this._cpMinimapBuf;
+    out.length = 0;
+    for (const z of sim.match.getCaptureZones()) {
+      out.push({
+        id: z.id,
+        x: z.x,
+        z: z.z,
+        owner: z.owner,
+        progress: z.progress,
+        contested: z.contested,
+      });
+    }
+    return out;
   }
 
   dispose() {

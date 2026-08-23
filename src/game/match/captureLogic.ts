@@ -76,48 +76,62 @@ export function resolveActor(
 }
 
 /**
- * Step one zone. Neutral-first:
- * progress → 1 while exclusive capturer → owner set (or cleared if neutralizing).
- * Contested / empty: freeze progress (no decay in v1).
+ * Step one zone into a mutable target (hot path: no per-frame allocation).
+ * Single source of truth for capture semantics. Neutral-first:
+ * progress → 1 while exclusive capturer → owner set (or cleared if
+ * neutralizing). Contested / empty: freeze progress (no decay in v1).
  */
-export function stepCaptureZone(
-  zone: CaptureZoneState,
+export function stepCaptureZoneInto(
+  target: CaptureZoneState,
   presence: ZonePresence,
   dt: number,
   captureSec: number = CAPTURE.captureSec,
 ): CaptureZoneState {
-  const { actor, contested } = resolveActor(zone.owner, presence);
+  const { actor, contested } = resolveActor(target.owner, presence);
 
   if (contested || actor === null) {
-    return { ...zone, contested, actor: contested ? null : zone.actor };
+    target.contested = contested;
+    target.actor = contested ? null : target.actor;
+    return target;
   }
 
   // Actor switched → restart bar.
-  let progress = zone.progress;
-  if (zone.actor !== actor) progress = 0;
+  let progress = target.progress;
+  if (target.actor !== actor) progress = 0;
 
   const rate = captureSec > 0 ? 1 / captureSec : 1;
   progress = Math.min(1, progress + dt * rate);
 
+  target.actor = actor;
+  target.contested = false;
+
   if (progress < 1) {
-    return { ...zone, progress, actor, contested: false };
+    target.progress = progress;
+    return target;
   }
 
   // Flip ownership step.
-  let owner = zone.owner;
+  let owner = target.owner;
   if (owner === null) {
     owner = actor;
   } else if (actor !== owner) {
     owner = null; // neutralize first
   }
 
-  return {
-    ...zone,
-    owner,
-    progress: 0,
-    actor: null,
-    contested: false,
-  };
+  target.owner = owner;
+  target.progress = 0;
+  target.actor = null;
+  return target;
+}
+
+/** Pure variant: returns a fresh snapshot (HUD/minimap may hold zones immutably). */
+export function stepCaptureZone(
+  zone: CaptureZoneState,
+  presence: ZonePresence,
+  dt: number,
+  captureSec: number = CAPTURE.captureSec,
+): CaptureZoneState {
+  return stepCaptureZoneInto({ ...zone }, presence, dt, captureSec);
 }
 
 /** Score delta this frame from owned zones. */

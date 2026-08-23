@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { smokeTexture } from './textures';
-import { loadQuality } from './graphicsQuality';
+import { loadQuality, type QualityLevel } from './graphicsQuality';
 
 interface SmokeSprite { s: THREE.Sprite; life: number; maxLife: number; vx: number }
 
@@ -19,6 +19,18 @@ export class ArenaEffects {
   smokeEmitters: THREE.Vector3[] = [];
   /** Generic-анимации (ветряк, флаги, трава и т.п.) — обновляются каждый кадр. */
   animNodes: AnimNodeFn[] = [];
+
+  /**
+   * Per-frame quality source (hot path: update runs every frame).
+   * Defaults to loadQuality(), но Arena подключает синхронный источник из
+   * RenderWorld, чтобы не читать localStorage 60×/с (см. Arena.setRenderWorld).
+   */
+  private qualitySource: () => QualityLevel = loadQuality;
+
+  /** Подключить быстрый источник пресета качества (вызывается из Arena). */
+  setQualitySource(source: () => QualityLevel) {
+    this.qualitySource = source;
+  }
 
   private smokePool: SmokeSprite[] = [];
   private smokeT = 0;
@@ -95,7 +107,8 @@ export class ArenaEffects {
     if (this.dust) this.dust.rotation.y = elapsed * 0.012;
 
     // Skip decorative material animations on low quality
-    const quality = loadQuality();
+    // (qualitySource is a cheap in-memory getter — no localStorage on the frame path)
+    const quality = this.qualitySource();
     if (quality !== 'low') {
       const blink = Math.sin(elapsed * 2.6) > 0 ? 0.9 : 0.18;
       for (const m of this.beaconMats) m.opacity = blink;

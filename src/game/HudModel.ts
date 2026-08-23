@@ -19,6 +19,8 @@ export class HudModel {
   private _byId = new Map<number, MinimapStatic>();
   private _emptyBoard: ScoreRow[] = [];
   private _captureCache: CaptureHudPoint[] = [];
+  /** Reusable dynamic-blip rows — mutated in place each frame. */
+  private readonly _dynPool: MinimapDynamic[] = [];
 
   constructor(private deps: {
     run: RunState;
@@ -63,6 +65,8 @@ export class HudModel {
         break;
       }
     }
+    const pool = this._dynPool;
+    let n = 0;
     for (const t of tanks) {
       if (!t.alive) continue;
       let relation: MinimapDynamic['relation'] = 'enemy';
@@ -74,14 +78,19 @@ export class HudModel {
       )) {
         relation = 'ally';
       }
-      out.push({
-        x: t.position.x,
-        z: t.position.z,
-        yaw: t.yaw,
-        turret: t.yaw + t.turretYaw,
-        isPlayer: t.isPlayer,
-        relation,
+      // Reuse pooled row objects — no per-frame allocation per blip
+      // (same pattern as MatchRuntime._personals).
+      const row = pool[n] ?? (pool[n] = {
+        x: 0, z: 0, yaw: 0, turret: 0, isPlayer: false, relation: 'enemy',
       });
+      n++;
+      row.x = t.position.x;
+      row.z = t.position.z;
+      row.yaw = t.yaw;
+      row.turret = t.yaw + t.turretYaw;
+      row.isPlayer = t.isPlayer;
+      row.relation = relation;
+      out.push(row);
     }
     return out;
   }

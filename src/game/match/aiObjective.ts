@@ -33,7 +33,9 @@ export function zonePriority(
 }
 
 /**
- * Pick best zone for an objective bot. Sticky keeps same id if still competitive.
+ * Pick best zone for a bot. Single pass — no per-bot array/sort allocation.
+ * Tie-break mirrors the previous stable-sort order: lower priority first,
+ * then nearer zone, then earlier in the zones list.
  */
 export function pickObjectiveZone(
   self: { x: number; z: number; teamId: Exclude<TeamId, null> },
@@ -43,24 +45,36 @@ export function pickObjectiveZone(
 ): ObjectiveZoneView | null {
   if (zones.length === 0) return null;
 
-  type Scored = { z: ObjectiveZoneView; p: number; d: number };
-  const scored: Scored[] = zones.map((z) => ({
-    z,
-    p: zonePriority(z, self.teamId),
-    d: Math.hypot(z.x - self.x, z.z - self.z),
-  }));
-  scored.sort((a, b) => a.p - b.p || a.d - b.d);
-  const best = scored[0];
+  let best: ObjectiveZoneView | null = null;
+  let bestP = 0;
+  let bestD = 0;
+  let sticky: ObjectiveZoneView | null = null;
+  let stickyP = 0;
+  let stickyD = 0;
 
-  if (stickyId) {
-    const sticky = scored.find((s) => s.z.id === stickyId);
-    if (sticky) {
-      // Keep sticky if better priority, or same priority within slack distance.
-      if (sticky.p < best.p) return sticky.z;
-      if (sticky.p === best.p && sticky.d <= best.d + stickySlack) return sticky.z;
+  for (let i = 0; i < zones.length; i++) {
+    const z = zones[i];
+    const p = zonePriority(z, self.teamId);
+    const d = Math.hypot(z.x - self.x, z.z - self.z);
+    if (
+      best === null ||
+      p < bestP ||
+      (p === bestP && d < bestD)
+    ) {
+      best = z; bestP = p; bestD = d;
+    }
+    if (stickyId !== null && z.id === stickyId) {
+      sticky = z; stickyP = p; stickyD = d;
     }
   }
-  return best.z;
+  if (best === null) return null;
+
+  if (sticky) {
+    // Keep sticky if better priority, or same priority within slack distance.
+    if (stickyP < bestP) return sticky;
+    if (stickyP === bestP && stickyD <= bestD + stickySlack) return sticky;
+  }
+  return best;
 }
 
 /**

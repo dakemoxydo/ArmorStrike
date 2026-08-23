@@ -38,6 +38,9 @@ export class Arena {
     this.renderWorld = renderWorld;
     // Применить атмосферу текущей карты немедленно (конструктор уже собрал арену).
     this.renderWorld.applyAtmosphere(this.mapId);
+    // Per-frame quality gate for ArenaEffects reads the live preset from
+    // RenderWorld instead of localStorage every frame.
+    this.effects.setQualitySource(() => renderWorld.getQuality());
   }
 
   /**
