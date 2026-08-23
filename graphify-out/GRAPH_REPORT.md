@@ -1,7 +1,7 @@
 # Graph Report - ArmorStrike  (2026-08-23)
 
 ## Corpus Check
-- 267 files · ~96,539 words
+- 267 files · ~96,546 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `aa9689b6`
+- Built from commit: `257c23c1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -18,11 +18,11 @@
 - textures/index.ts
 - CameraRig.ts
 - RenderWorld.ts
-- disposeObject3D
+- HUD.tsx
 - Projectile.ts
 - Game.ts
 - AI.ts
-- rosterSpawn.ts
+- disposeObject3D
 - Effects
 - TankEntity
 - GameApi
@@ -52,16 +52,16 @@
 - TankFactory.ts
 - Game
 - ParticleEffects
-- 00_Index.md
+- Standard_Weapon.md
 - captureLogic.ts
-- HUD.tsx
+- rosterSpawn.ts
 - MatchModeId
 - glowTexture
 - stages/index.ts
 - KillStreakTracker.ts
 - dependencies
 - Capture Point — Захват точки
-- Standard_Weapon.md
+- TurretId
 - Standard Match — каркас матча
 - simPorts.ts
 - scripts
@@ -71,7 +71,7 @@
 - Tank Movement — Движение корпуса
 - Village Level Design — Square + Barns + Paddocks
 - Tank Aim — Наведение башни
-- TurretId
+- 00_Index.md
 - Collider
 - ArmorStrike — Audit (ошибки и недочёты)
 - AIController
@@ -85,7 +85,7 @@
 - Standard: Tank Entity & Systems
 - RailgunWeapon.ts
 - Player Controls — Управление игроком
-- Standard_Tank.md
+- RenderWorld
 - Nameplate
 - TankAnimationSystem.ts
 - tuning.ts
@@ -100,7 +100,7 @@
 - weapons/types.ts
 - Weapon
 - GDD — Approved Mechanics (ArmorStrike)
-- Arena & Physics — Арена и коллизии
+- Standard_Tank.md
 - globals
 - Engage State (FSM)
 - tailwindcss
@@ -112,12 +112,12 @@
 - FlashSystem
 - vite.config.ts
 - aiObstacle Module (computeObstacleAvoidance)
-- RenderWorld
+- eslint-plugin-react-hooks
 - FlamethrowerWeapon
 - HudModel
 - WeaponCatalog.ts
 - game/effects.ts
-- eslint
+- Arena & Physics — Арена и коллизии
 - AI Bots System
 - Assault Role
 - Combat System
@@ -188,9 +188,9 @@ Nodes (19): AIM_SENS_X, AIM_SENS_Y, CameraLookState, DEFAULT_CAM_PITCH, PITCH_MA
 Cohesion: 0.18
 Nodes (9): getQualityPreset(), loadQuality(), nextQuality(), ORDER, QUALITY_PRESETS, QualityLevel, saveQuality(), QualityController (+1 more)
 
-### Community 3 - "disposeObject3D"
-Cohesion: 0.17
-Nodes (9): disposeObject3D(), isShared(), markShared(), Shared, unmarkShared(), AssetManager, cloneWithOwnMaterials(), matsOf() (+1 more)
+### Community 3 - "HUD.tsx"
+Cohesion: 0.05
+Nodes (44): React 19, HUD(), HudCrosshair(), HudCrosshairProps, FeedEntry, HudFeed(), HudFeedProps, HudProps (+36 more)
 
 ### Community 4 - "Projectile.ts"
 Cohesion: 0.10
@@ -204,9 +204,9 @@ Nodes (11): GameSimulation, buildSimulationStages(), GameContext, GameModeContro
 Cohesion: 0.20
 Nodes (16): WeaponType, AIBody, AICtx, AIPersona, AIState, AITarget, DEFAULT_PERSONA, AimFireState (+8 more)
 
-### Community 7 - "rosterSpawn.ts"
-Cohesion: 0.24
-Nodes (15): buildBotStyle(), applyTeamRing(), botStyleColor(), makeBot(), placeTank(), spawnMatchRoster(), ALPHA_SPAWN_POINTS, BRAVO_SPAWN_POINTS (+7 more)
+### Community 7 - "disposeObject3D"
+Cohesion: 0.17
+Nodes (9): disposeObject3D(), isShared(), markShared(), Shared, unmarkShared(), AssetManager, cloneWithOwnMaterials(), matsOf() (+1 more)
 
 ### Community 9 - "TankEntity"
 Cohesion: 0.07
@@ -242,7 +242,7 @@ Nodes (25): 1. Intent, 2.1 Deathmatch (DM) — «Бой насмерть», 2.2 
 
 ### Community 17 - "devDependencies"
 Cohesion: 0.13
-Nodes (15): @eslint/js, eslint-plugin-react-hooks, devDependencies, @eslint/js, eslint-plugin-react-hooks, @types/node, typescript-eslint, vite-plugin-singlefile (+7 more)
+Nodes (15): eslint, @eslint/js, devDependencies, eslint, @eslint/js, @types/node, typescript-eslint, vite-plugin-singlefile (+7 more)
 
 ### Community 18 - "RespawnController.ts"
 Cohesion: 0.24
@@ -292,20 +292,20 @@ Nodes (6): Arena, CombatDeps, CombatSystem, ProjectileManager, StageDeps, Projec
 Cohesion: 0.15
 Nodes (16): TankStyle, TankBuildContext, buildHull(), normalizeHullModel(), prepareTexturedModel(), HULL_CONFIG, HULL_TURRET_Y, MODEL_HULL_TARGET_LENGTH (+8 more)
 
-### Community 37 - "00_Index.md"
-Cohesion: 0.34
-Nodes (3): Team Deathmatch Game Design Document, Wave Buffs Feature, Wave System — Волны и спавн
+### Community 37 - "Standard_Weapon.md"
+Cohesion: 0.23
+Nodes (11): Arena Physics, Damage System, Projectile System — Пул снарядов, Weapon Cannon «Смоки», Weapon Flamethrower Firebird, Railgun Weapon (Рельсотрон), Match Framework, PROJECTILE Constants (speed=58, range=85, radius=0.18) (+3 more)
 
 ### Community 38 - "captureLogic.ts"
 Cohesion: 0.13
 Nodes (19): COLORS, CAPTURE_ANCHORS, CaptureAnchor, zonesForMap(), CaptureController, CAPTURE, CaptureOwner, CapturePointId (+11 more)
 
-### Community 39 - "HUD.tsx"
-Cohesion: 0.05
-Nodes (44): React 19, HUD(), HudCrosshair(), HudCrosshairProps, FeedEntry, HudFeed(), HudFeedProps, HudProps (+36 more)
+### Community 39 - "rosterSpawn.ts"
+Cohesion: 0.24
+Nodes (15): buildBotStyle(), applyTeamRing(), botStyleColor(), makeBot(), placeTank(), spawnMatchRoster(), ALPHA_SPAWN_POINTS, BRAVO_SPAWN_POINTS (+7 more)
 
 ### Community 40 - "MatchModeId"
-Cohesion: 0.15
+Cohesion: 0.22
 Nodes (6): ModeOption, MODES, ModeSelect(), ModeSelectProps, GameModeController, MatchModeId
 
 ### Community 42 - "stages/index.ts"
@@ -324,17 +324,17 @@ Nodes (9): lucide-react, dependencies, lucide-react, react, react-dom, three, re
 Cohesion: 0.29
 Nodes (7): Acceptance (P4–P5), Capture Point — Захват точки, Classes, Objective AI (P5), Per-map anchors, Визуал / UI, Правила (as shipped)
 
-### Community 46 - "Standard_Weapon.md"
-Cohesion: 0.23
-Nodes (11): Arena Physics, Damage System, Projectile System — Пул снарядов, Weapon Cannon «Смоки», Weapon Flamethrower Firebird, Railgun Weapon (Рельсотрон), Match Framework, PROJECTILE Constants (speed=58, range=85, radius=0.18) (+3 more)
+### Community 46 - "TurretId"
+Cohesion: 0.27
+Nodes (7): HullCard(), HullCardProps, HullId, TurretId, buildPlayerStyle(), RosterSpawnCtx, TankBuildInput
 
 ### Community 47 - "Standard Match — каркас матча"
 Cohesion: 0.17
 Nodes (12): 10. CP objective AI (P5), 11. Results & balance (P6), 1. App GameMode ≠ MatchModeId, 2. Pure helpers + thin runtime, 3. Damage gates (central), 4. Kill credit path, 5. Lifecycle, 6. Roster (+4 more)
 
 ### Community 48 - "simPorts.ts"
-Cohesion: 0.22
-Nodes (10): TankAimSystem, TankMotionSystem, TankPresentationSystem, LiveTank, AimBody, CombatTimerBody, MotionBody, PresentationBody (+2 more)
+Cohesion: 0.27
+Nodes (9): TankAimSystem, TankCombatTimersSystem, TankPresentationSystem, LiveTank, AimBody, CombatTimerBody, PresentationBody, HEAL_DELAY (+1 more)
 
 ### Community 49 - "scripts"
 Cohesion: 0.29
@@ -356,9 +356,9 @@ Nodes (11): Animated nodes (ArenaEffects), Code map, Cover hierarchy, Implemente
 Cohesion: 0.33
 Nodes (6): Tank Aim — Наведение башни, Входы, Классы, Назначение, Направление выстрела, Формула (TankAimSystem)
 
-### Community 56 - "TurretId"
-Cohesion: 0.27
-Nodes (7): HullCard(), HullCardProps, HullId, TurretId, buildPlayerStyle(), RosterSpawnCtx, TankBuildInput
+### Community 56 - "00_Index.md"
+Cohesion: 0.34
+Nodes (3): Team Deathmatch Game Design Document, Wave Buffs Feature, Wave System — Волны и спавн
 
 ### Community 57 - "Collider"
 Cohesion: 0.07
@@ -366,7 +366,7 @@ Nodes (43): GameOverScreen(), GameOverScreenProps, Collider, BotAiStage, deadStu
 
 ### Community 58 - "ArmorStrike — Audit (ошибки и недочёты)"
 Cohesion: 0.15
-Nodes (12): 1. Базлайн верификации, 2. Ошибки, 3. Недочёты (гигиена), 4. Проверено — НЕ проблемы (чтобы не переисследовать), 5. Рекомендованный порядок работ, 6. Итог работ (2026-08-23) — все пункты FIXED, ArmorStrike — Audit (ошибки и недочёты), F-1 · HIGH — кэш CP-зон ботов не инвалидируется при смене карты (+4 more)
+Nodes (12): 1. Базлайн верификации, 2. Ошибки, 3. Недочёты (гигиена), 4. Проверено — НЕ проблемы (чтобы не переисследовать), 5. Рекомендованный порядок работ, 6. Итог работ (2026-08-23) — исправлены все пункты (детали в таблице; H-3/H-4 — с оговорками), ArmorStrike — Audit (ошибки и недочёты), F-1 · HIGH — кэш CP-зон ботов не инвалидируется при смене карты (+4 more)
 
 ### Community 59 - "AIController"
 Cohesion: 0.20
@@ -412,17 +412,13 @@ Nodes (13): BARREL_REST_Y, applyRailgunChargingFx(), applyRailgunCooldownChargeF
 Cohesion: 0.25
 Nodes (8): Player Controls — Управление игроком, Pointer Lock, Заметки дизайна, Классы и файлы, Логика прицела, Назначение, Состояния, Схема управления
 
-### Community 70 - "Standard_Tank.md"
-Cohesion: 0.43
-Nodes (3): Health & Regen — Прочность и саморемонт, Game Lifecycle, Tank Movement
-
 ### Community 72 - "TankAnimationSystem.ts"
 Cohesion: 0.32
 Nodes (4): animateDeath(), tintBody(), AnimBody, BARREL_REST_Z
 
 ### Community 73 - "tuning.ts"
-Cohesion: 0.26
-Nodes (9): TankCombatTimersSystem, tmpV, BOOST_JET_HEIGHT, BOOST_JET_OFFSET, DUST_HEIGHT, DUST_SPREAD, HEAL_DELAY, HEAL_PER_SEC (+1 more)
+Cohesion: 0.19
+Nodes (10): tmpV, TankMotionSystem, MotionBody, BOOST_JET_HEIGHT, BOOST_JET_OFFSET, DUST_HEIGHT, DUST_SPREAD, KNOCKBACK_DECAY (+2 more)
 
 ### Community 76 - "Garage Loadout — Сборка танка"
 Cohesion: 0.33
@@ -444,9 +440,9 @@ Nodes (3): _wctx, WeaponHost, Weapon
 Cohesion: 0.40
 Nodes (5): GDD — Approved Mechanics (ArmorStrike), Архитектура, Жанр и петля, Источники истины в коде, Навигация
 
-### Community 85 - "Arena & Physics — Арена и коллизии"
-Cohesion: 0.33
-Nodes (6): Arena & Physics — Арена и коллизии, Collider model, Destructible blocks, Resolve, Арена, Классы
+### Community 85 - "Standard_Tank.md"
+Cohesion: 0.43
+Nodes (3): Health & Regen — Прочность и саморемонт, Game Lifecycle, Tank Movement
 
 ### Community 87 - "Engage State (FSM)"
 Cohesion: 0.50
@@ -468,6 +464,10 @@ Nodes (7): GameLoop, GameLoopDeps, HudModel, HudUnit, CaptureHudPoint, HudSnapsh
 Cohesion: 0.32
 Nodes (6): TurretCard(), TurretCardProps, getWeaponMeta(), WeaponId, WeaponMeta, WEAPONS
 
+### Community 103 - "Arena & Physics — Арена и коллизии"
+Cohesion: 0.33
+Nodes (6): Arena & Physics — Арена и коллизии, Collider model, Destructible blocks, Resolve, Арена, Классы
+
 ### Community 117 - "catalog.ts"
 Cohesion: 0.17
 Nodes (14): BootError(), BootErrorProps, Garage(), MainMenu(), MainMenuProps, PauseMenu(), PauseMenuProps, HULL_IDS (+6 more)
@@ -482,7 +482,7 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `typescript` connect `typescript` to `catalog.ts`?**
   _High betweenness centrality (0.049) - this node is a cross-community bridge._
-- **Why does `devDependencies` connect `devDependencies` to `@types/react`, `vite`, `eslint`, `eslint-plugin-react-refresh`, `globals`, `tailwindcss`, `typescript`, `package.json`, `@types/react-dom`, `@types/three`, `@tailwindcss/vite`?**
+- **Why does `devDependencies` connect `devDependencies` to `@types/react`, `vite`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `globals`, `tailwindcss`, `typescript`, `package.json`, `@types/react-dom`, `@types/three`, `@tailwindcss/vite`?**
   _High betweenness centrality (0.049) - this node is a cross-community bridge._
 - **Why does `typescript` connect `typescript` to `devDependencies`?**
   _High betweenness centrality (0.048) - this node is a cross-community bridge._
@@ -492,5 +492,5 @@ _Questions this graph is uniquely positioned to answer:_
   _Cohesion score 0.0573675688179505 - nodes in this community are weakly interconnected._
 - **Should `CameraRig.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.09142857142857143 - nodes in this community are weakly interconnected._
-- **Should `Projectile.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.09951690821256039 - nodes in this community are weakly interconnected._
+- **Should `HUD.tsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.054098360655737705 - nodes in this community are weakly interconnected._

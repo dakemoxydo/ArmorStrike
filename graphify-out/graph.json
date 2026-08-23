@@ -449,8 +449,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "package_devdependencies_eslint",
-      "community": 103,
-      "community_name": "eslint",
+      "community": 17,
+      "community_name": "devDependencies",
       "norm_label": "eslint"
     },
     {
@@ -460,8 +460,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "eslint",
-      "community": 103,
-      "community_name": "eslint",
+      "community": 17,
+      "community_name": "devDependencies",
       "norm_label": "eslint"
     },
     {
@@ -471,8 +471,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "package_devdependencies_eslint_plugin_react_hooks",
-      "community": 17,
-      "community_name": "devDependencies",
+      "community": 98,
+      "community_name": "eslint-plugin-react-hooks",
       "norm_label": "eslint-plugin-react-hooks"
     },
     {
@@ -482,8 +482,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "eslint_plugin_react_hooks",
-      "community": 17,
-      "community_name": "devDependencies",
+      "community": 98,
+      "community_name": "eslint-plugin-react-hooks",
       "norm_label": "eslint-plugin-react-hooks"
     },
     {
@@ -1169,7 +1169,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_tests_minimapdraw_test",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "minimapdraw.test.ts"
     },
@@ -1181,7 +1181,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_tests_minimapdraw_test_entry",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "entry()"
     },
@@ -1192,7 +1192,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_tests_modelinstancing_test",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "modelinstancing.test.ts"
     },
@@ -1204,7 +1204,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_tests_modelinstancing_test_makemaster",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "makemaster()"
     },
@@ -1215,8 +1215,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_tests_motiondtzero_test",
-      "community": 48,
-      "community_name": "simPorts.ts",
+      "community": 73,
+      "community_name": "tuning.ts",
       "norm_label": "motiondtzero.test.ts"
     },
     {
@@ -1227,8 +1227,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_tests_motiondtzero_test_makebody",
-      "community": 48,
-      "community_name": "simPorts.ts",
+      "community": 73,
+      "community_name": "tuning.ts",
       "norm_label": "makebody()"
     },
     {
@@ -1239,8 +1239,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_tests_motiondtzero_test_finite",
-      "community": 48,
-      "community_name": "simPorts.ts",
+      "community": 73,
+      "community_name": "tuning.ts",
       "norm_label": "finite()"
     },
     {
@@ -1362,7 +1362,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_tests_spawnpoints_test",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "spawnpoints.test.ts"
     },
@@ -1373,7 +1373,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_tests_spawnpoints_test_player_start",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "player_start"
     },
@@ -1487,7 +1487,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_tests_uiuxpresentation_test",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "uiuxpresentation.test.ts"
     },
@@ -1498,7 +1498,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_tests_uiuxpresentation_test_root",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "root"
     },
@@ -1510,7 +1510,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_tests_uiuxpresentation_test_readsrc",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "readsrc()"
     },
@@ -1749,7 +1749,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_garage",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "garage.tsx"
     },
@@ -1785,7 +1785,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_hud",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hud.tsx"
     },
@@ -1798,7 +1798,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_components_hud_hudprops",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudprops"
     },
@@ -1809,7 +1809,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_hud_memoradar",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "memoradar"
     },
@@ -1820,7 +1820,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_components_hud_memovitals",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "memovitals"
     },
@@ -1831,7 +1831,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_components_hud_memoweapon",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "memoweapon"
     },
@@ -1842,7 +1842,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_components_hud_memofeed",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "memofeed"
     },
@@ -1853,7 +1853,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_components_hud_memoscoreboard",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "memoscoreboard"
     },
@@ -1864,7 +1864,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_hud_memocrosshair",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "memocrosshair"
     },
@@ -1876,7 +1876,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hud",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hud()"
     },
@@ -1887,7 +1887,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_hullcard",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "hullcard.tsx"
     },
@@ -1900,7 +1900,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_components_hullcard_hullcardprops",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "hullcardprops"
     },
@@ -1912,7 +1912,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hullcard_hullcard",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "hullcard()"
     },
@@ -2150,7 +2150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_hud_hudcrosshair",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudcrosshair.tsx"
     },
@@ -2163,7 +2163,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_components_hud_hudcrosshair_hudcrosshairprops",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudcrosshairprops"
     },
@@ -2175,7 +2175,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hudcrosshair_hudcrosshair",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudcrosshair()"
     },
@@ -2186,7 +2186,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_hud_hudfeed",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudfeed.tsx"
     },
@@ -2199,7 +2199,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_components_hud_hudfeed_feedentry",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "feedentry"
     },
@@ -2212,7 +2212,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_components_hud_hudfeed_hudfeedprops",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudfeedprops"
     },
@@ -2224,7 +2224,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hudfeed_hudfeed",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudfeed()"
     },
@@ -2235,7 +2235,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_hud_hudradar",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudradar.tsx"
     },
@@ -2248,7 +2248,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_components_hud_hudradar_hudradarprops",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudradarprops"
     },
@@ -2260,7 +2260,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hudradar_hudradar",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudradar()"
     },
@@ -2271,7 +2271,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_hud_hudscoreboard",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudscoreboard.tsx"
     },
@@ -2284,7 +2284,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_components_hud_hudscoreboard_hudscoreboardprops",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudscoreboardprops"
     },
@@ -2296,7 +2296,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hudscoreboard_teamtable",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "teamtable()"
     },
@@ -2308,7 +2308,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hudscoreboard_flattable",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "flattable()"
     },
@@ -2320,7 +2320,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hudscoreboard_isteamboard",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "isteamboard()"
     },
@@ -2332,7 +2332,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hudscoreboard_byteam",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "byteam()"
     },
@@ -2344,7 +2344,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hudscoreboard_hudscoreboard",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudscoreboard()"
     },
@@ -2355,7 +2355,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_hud_hudvitals",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudvitals.tsx"
     },
@@ -2368,7 +2368,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_components_hud_hudvitals_hudvitalsprops",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudvitalsprops"
     },
@@ -2380,7 +2380,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hudvitals_hudvitals",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudvitals()"
     },
@@ -2391,7 +2391,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_hud_hudweapon",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudweapon.tsx"
     },
@@ -2404,7 +2404,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_components_hud_hudweapon_hudweaponprops",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudweaponprops"
     },
@@ -2416,7 +2416,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_hudweapon_hudweapon",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudweapon()"
     },
@@ -2427,7 +2427,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_hud_minimapdraw",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "minimapdraw.ts"
     },
@@ -2438,7 +2438,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_hud_minimapdraw_map_size",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "map_size"
     },
@@ -2449,7 +2449,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_hud_minimapdraw_map_half",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "map_half"
     },
@@ -2461,7 +2461,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_minimapdraw_staticlayerkey",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "staticlayerkey()"
     },
@@ -2473,7 +2473,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_minimapdraw_paintstatics",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "paintstatics()"
     },
@@ -2486,7 +2486,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_components_hud_minimapdraw_canvascache",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "canvascache"
     },
@@ -2497,7 +2497,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_components_hud_minimapdraw_cachebycanvas",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "cachebycanvas"
     },
@@ -2509,7 +2509,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_minimapdraw_getcache",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "getcache()"
     },
@@ -2521,7 +2521,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_components_hud_minimapdraw_drawminimap",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "drawminimap()"
     },
@@ -2555,7 +2555,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_core_tankcatalog",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "tankcatalog.ts"
     },
@@ -2567,7 +2567,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_core_tankcatalog_buildplayerstyle",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "buildplayerstyle()"
     },
@@ -2579,7 +2579,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_core_tankcatalog_buildbotstyle",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "buildbotstyle()"
     },
@@ -2753,7 +2753,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_core_catalogtypes_hullid",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "hullid"
     },
@@ -2779,7 +2779,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_core_catalogtypes_turretid",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "turretid"
     },
@@ -3182,7 +3182,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_arena_arena_setrenderworld",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".setrenderworld()"
     },
@@ -3230,7 +3230,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_arena_arena_damageblock",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": ".damageblock()"
     },
@@ -3856,8 +3856,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_game_game_currentmatchmode",
-      "community": 40,
-      "community_name": "MatchModeId",
+      "community": 35,
+      "community_name": "Game",
       "norm_label": ".currentmatchmode()"
     },
     {
@@ -3892,8 +3892,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_game_game_setmode",
-      "community": 40,
-      "community_name": "MatchModeId",
+      "community": 35,
+      "community_name": "Game",
       "norm_label": ".setmode()"
     },
     {
@@ -3904,8 +3904,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_game_game_setmatchmode",
-      "community": 40,
-      "community_name": "MatchModeId",
+      "community": 35,
+      "community_name": "Game",
       "norm_label": ".setmatchmode()"
     },
     {
@@ -3916,8 +3916,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_game_game_startround",
-      "community": 40,
-      "community_name": "MatchModeId",
+      "community": 35,
+      "community_name": "Game",
       "norm_label": ".startround()"
     },
     {
@@ -3928,8 +3928,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_game_game_togglepause",
-      "community": 40,
-      "community_name": "MatchModeId",
+      "community": 35,
+      "community_name": "Game",
       "norm_label": ".togglepause()"
     },
     {
@@ -4072,8 +4072,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_game_game_requiremodes",
-      "community": 40,
-      "community_name": "MatchModeId",
+      "community": 35,
+      "community_name": "Game",
       "norm_label": ".requiremodes()"
     },
     {
@@ -4107,7 +4107,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_game_gameapi",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "gameapi.ts"
     },
@@ -4276,7 +4276,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_gameapi_gameapi_getminimapstatic",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": ".getminimapstatic()"
     },
@@ -4288,7 +4288,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_gameapi_gameapi_fillminimapdynamics",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": ".fillminimapdynamics()"
     },
@@ -4300,7 +4300,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_gameapi_gameapi_getcaptureminimap",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": ".getcaptureminimap()"
     },
@@ -4687,7 +4687,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_garagebinding_garagebinding_setselection",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": ".setselection()"
     },
@@ -5082,7 +5082,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_game_playerfactory",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "playerfactory.ts"
     },
@@ -5107,7 +5107,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_playerfactory_createweapon",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "createweapon()"
     },
@@ -5120,7 +5120,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_game_playerfactory_tankbuildinput",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "tankbuildinput"
     },
@@ -5132,7 +5132,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_playerfactory_createtankentity",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "createtankentity()"
     },
@@ -5143,7 +5143,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_game_previewcontroller",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "previewcontroller.ts"
     },
@@ -5180,7 +5180,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_previewcontroller_previewcontroller_rebuild",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": ".rebuild()"
     },
@@ -5192,7 +5192,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_previewcontroller_previewcontroller_clearcurrent",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": ".clearcurrent()"
     },
@@ -5204,7 +5204,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_previewcontroller_previewcontroller_setvisible",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": ".setvisible()"
     },
@@ -5228,7 +5228,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_previewcontroller_previewcontroller_dispose",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": ".dispose()"
     },
@@ -5264,7 +5264,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_qualitycontroller_qualitycontroller_constructor",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".constructor()"
     },
@@ -5335,7 +5335,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_game_renderworld_renderworld",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": "renderworld"
     },
@@ -5347,7 +5347,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_renderworld_renderworld_constructor",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".constructor()"
     },
@@ -5359,7 +5359,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_renderworld_renderworld_setupbloom",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".setupbloom()"
     },
@@ -5383,7 +5383,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_renderworld_renderworld_getatmosphere",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".getatmosphere()"
     },
@@ -5395,7 +5395,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_renderworld_renderworld_applyatmosphere",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".applyatmosphere()"
     },
@@ -5407,7 +5407,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_renderworld_renderworld_applyquality",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".applyquality()"
     },
@@ -5419,7 +5419,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_renderworld_renderworld_resizecomposer",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".resizecomposer()"
     },
@@ -5431,7 +5431,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_renderworld_renderworld_disposebloom",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".disposebloom()"
     },
@@ -5455,7 +5455,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_renderworld_renderworld_render",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".render()"
     },
@@ -5467,7 +5467,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_renderworld_renderworld_dispose",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": ".dispose()"
     },
@@ -5923,7 +5923,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_tank_tankentity_dispose",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": ".dispose()"
     },
@@ -11308,8 +11308,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_game_engine_systems_tankcombattimerssystem",
-      "community": 73,
-      "community_name": "tuning.ts",
+      "community": 48,
+      "community_name": "simPorts.ts",
       "norm_label": "tankcombattimerssystem.ts"
     },
     {
@@ -11319,8 +11319,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_game_engine_systems_tankcombattimerssystem_tankcombattimerssystem",
-      "community": 73,
-      "community_name": "tuning.ts",
+      "community": 48,
+      "community_name": "simPorts.ts",
       "norm_label": "tankcombattimerssystem"
     },
     {
@@ -11363,8 +11363,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_game_engine_systems_tankmotionsystem",
-      "community": 48,
-      "community_name": "simPorts.ts",
+      "community": 73,
+      "community_name": "tuning.ts",
       "norm_label": "tankmotionsystem.ts"
     },
     {
@@ -11374,8 +11374,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_game_engine_systems_tankmotionsystem_tankmotionsystem",
-      "community": 48,
-      "community_name": "simPorts.ts",
+      "community": 73,
+      "community_name": "tuning.ts",
       "norm_label": "tankmotionsystem"
     },
     {
@@ -11537,7 +11537,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_game_graphicsquality_qualitypreset",
-      "community": 98,
+      "community": 70,
       "community_name": "RenderWorld",
       "norm_label": "qualitypreset"
     },
@@ -12764,7 +12764,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_game_match_rosterspawn",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "rosterspawn.ts"
     },
@@ -12777,7 +12777,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_game_match_rosterspawn_rosterspawnctx",
-      "community": 56,
+      "community": 46,
       "community_name": "TurretId",
       "norm_label": "rosterspawnctx"
     },
@@ -12802,7 +12802,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_match_rosterspawn_placetank",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "placetank()"
     },
@@ -12814,7 +12814,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_match_rosterspawn_botstylecolor",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "botstylecolor()"
     },
@@ -12826,7 +12826,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_match_rosterspawn_applyteamring",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "applyteamring()"
     },
@@ -12838,7 +12838,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_match_rosterspawn_makebot",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "makebot()"
     },
@@ -12850,7 +12850,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_match_rosterspawn_spawnmatchroster",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "spawnmatchroster()"
     },
@@ -12873,7 +12873,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_game_match_spawnpoints",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "spawnpoints.ts"
     },
@@ -12884,7 +12884,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_game_match_spawnpoints_min_bot_spawn_dist",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "min_bot_spawn_dist"
     },
@@ -12895,7 +12895,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_game_match_spawnpoints_ffa_spawn_points",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "ffa_spawn_points"
     },
@@ -12906,7 +12906,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_game_match_spawnpoints_alpha_spawn_points",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "alpha_spawn_points"
     },
@@ -12917,7 +12917,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_game_match_spawnpoints_bravo_spawn_points",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "bravo_spawn_points"
     },
@@ -12929,7 +12929,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_match_spawnpoints_pickpointindex",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "pickpointindex()"
     },
@@ -13686,7 +13686,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_game_resources_disposeobject3d",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "disposeobject3d.ts"
     },
@@ -13698,7 +13698,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_resources_disposeobject3d_disposeobject3d",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "disposeobject3d()"
     },
@@ -13709,7 +13709,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_game_resources_sharedresources",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "sharedresources.ts"
     },
@@ -13722,7 +13722,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_game_resources_sharedresources_shared",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "shared"
     },
@@ -13734,7 +13734,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_resources_sharedresources_markshared",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "markshared()"
     },
@@ -13746,7 +13746,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_resources_sharedresources_isshared",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "isshared()"
     },
@@ -13758,7 +13758,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_resources_sharedresources_unmarkshared",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "unmarkshared()"
     },
@@ -13805,7 +13805,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_game_tank_assetmanager",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "assetmanager.ts"
     },
@@ -13818,7 +13818,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_game_tank_assetmanager_assetmanager",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "assetmanager"
     },
@@ -13830,7 +13830,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_tank_assetmanager_assetmanager_load",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": ".load()"
     },
@@ -13842,7 +13842,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_tank_assetmanager_assetmanager_startload",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": ".startload()"
     },
@@ -13854,7 +13854,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_tank_assetmanager_assetmanager_markmastershared",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": ".markmastershared()"
     },
@@ -13866,7 +13866,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_tank_assetmanager_assetmanager_instantiate",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": ".instantiate()"
     },
@@ -13878,7 +13878,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_tank_assetmanager_assetmanager_clearcache",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": ".clearcache()"
     },
@@ -13890,7 +13890,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_tank_assetmanager_clonewithownmaterials",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "clonewithownmaterials()"
     },
@@ -13902,7 +13902,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_tank_assetmanager_matsof",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "matsof()"
     },
@@ -13914,7 +13914,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_tank_assetmanager_texturesof",
-      "community": 3,
+      "community": 7,
       "community_name": "disposeObject3D",
       "norm_label": "texturesof()"
     },
@@ -14102,7 +14102,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_game_tank_buildmesh_buildtankmesh",
-      "community": 7,
+      "community": 39,
       "community_name": "rosterSpawn.ts",
       "norm_label": "buildtankmesh()"
     },
@@ -14307,8 +14307,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_game_tank_simports_motionbody",
-      "community": 48,
-      "community_name": "simPorts.ts",
+      "community": 73,
+      "community_name": "tuning.ts",
       "norm_label": "motionbody"
     },
     {
@@ -14905,8 +14905,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_game_tuning_speed_damp",
-      "community": 48,
-      "community_name": "simPorts.ts",
+      "community": 73,
+      "community_name": "tuning.ts",
       "norm_label": "speed_damp"
     },
     {
@@ -14916,8 +14916,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_game_tuning_knockback_decay",
-      "community": 48,
-      "community_name": "simPorts.ts",
+      "community": 73,
+      "community_name": "tuning.ts",
       "norm_label": "knockback_decay"
     },
     {
@@ -14927,8 +14927,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_game_tuning_heal_per_sec",
-      "community": 73,
-      "community_name": "tuning.ts",
+      "community": 48,
+      "community_name": "simPorts.ts",
       "norm_label": "heal_per_sec"
     },
     {
@@ -14949,8 +14949,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_game_tuning_heal_delay",
-      "community": 73,
-      "community_name": "tuning.ts",
+      "community": 48,
+      "community_name": "simPorts.ts",
       "norm_label": "heal_delay"
     },
     {
@@ -16520,7 +16520,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_usegamehud",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "usegamehud.ts"
     },
@@ -16532,7 +16532,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_hooks_usegamehud_capturestripkey",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "capturestripkey()"
     },
@@ -16544,7 +16544,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_hooks_usegamehud_createsnapinit",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "createsnapinit()"
     },
@@ -16556,7 +16556,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_hooks_usegamehud_usegamehud",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "usegamehud()"
     },
@@ -16710,7 +16710,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_ui_hudpresentation",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "hudpresentation.ts"
     },
@@ -16722,7 +16722,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_ui_hudpresentation_ammoforceshudrender",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "ammoforceshudrender()"
     },
@@ -16734,7 +16734,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_ui_hudpresentation_scoreboardhpclass",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "scoreboardhpclass()"
     },
@@ -16747,7 +16747,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "src_ui_hudpresentation_weaponstatuskind",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "weaponstatuskind"
     },
@@ -16759,7 +16759,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "src_ui_hudpresentation_islowhealth",
-      "community": 39,
+      "community": 3,
       "community_name": "HUD.tsx",
       "norm_label": "islowhealth()"
     },
@@ -17277,7 +17277,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_architecture_core",
-      "community": 70,
+      "community": 85,
       "community_name": "Standard_Tank.md",
       "norm_label": "core.md"
     },
@@ -17508,7 +17508,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_architecture_core_patterns",
-      "community": 70,
+      "community": 85,
       "community_name": "Standard_Tank.md",
       "norm_label": "core_patterns.md"
     },
@@ -17618,7 +17618,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_architecture_standard_match",
-      "community": 70,
+      "community": 85,
       "community_name": "Standard_Tank.md",
       "norm_label": "standard_match.md"
     },
@@ -17761,7 +17761,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_architecture_standard_tank",
-      "community": 70,
+      "community": 85,
       "community_name": "Standard_Tank.md",
       "norm_label": "standard_tank.md"
     },
@@ -17882,7 +17882,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_architecture_standard_ui_input",
-      "community": 70,
+      "community": 85,
       "community_name": "Standard_Tank.md",
       "norm_label": "standard_ui_input.md"
     },
@@ -17992,7 +17992,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_architecture_standard_weapon",
-      "community": 46,
+      "community": 37,
       "community_name": "Standard_Weapon.md",
       "norm_label": "standard_weapon.md"
     },
@@ -18102,7 +18102,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_00_index",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "00_index.md"
     },
@@ -18168,7 +18168,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_arena_physics",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "arena_physics.md"
     },
@@ -18179,7 +18179,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_arena_physics_arena_physics_\u0430\u0440\u0435\u043d\u0430_\u0438_\u043a\u043e\u043b\u043b\u0438\u0437\u0438\u0438",
-      "community": 85,
+      "community": 103,
       "community_name": "Arena & Physics \u2014 \u0410\u0440\u0435\u043d\u0430 \u0438 \u043a\u043e\u043b\u043b\u0438\u0437\u0438\u0438",
       "norm_label": "arena & physics \u2014 \u0430\u0440\u0435\u043d\u0430 \u0438 \u043a\u043e\u043b\u043b\u0438\u0437\u0438\u0438"
     },
@@ -18190,7 +18190,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "docs_gdd_approved_arena_physics_\u0430\u0440\u0435\u043d\u0430",
-      "community": 85,
+      "community": 103,
       "community_name": "Arena & Physics \u2014 \u0410\u0440\u0435\u043d\u0430 \u0438 \u043a\u043e\u043b\u043b\u0438\u0437\u0438\u0438",
       "norm_label": "\u0430\u0440\u0435\u043d\u0430"
     },
@@ -18201,7 +18201,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "docs_gdd_approved_arena_physics_collider_model",
-      "community": 85,
+      "community": 103,
       "community_name": "Arena & Physics \u2014 \u0410\u0440\u0435\u043d\u0430 \u0438 \u043a\u043e\u043b\u043b\u0438\u0437\u0438\u0438",
       "norm_label": "collider model"
     },
@@ -18212,7 +18212,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "docs_gdd_approved_arena_physics_resolve",
-      "community": 85,
+      "community": 103,
       "community_name": "Arena & Physics \u2014 \u0410\u0440\u0435\u043d\u0430 \u0438 \u043a\u043e\u043b\u043b\u0438\u0437\u0438\u0438",
       "norm_label": "resolve"
     },
@@ -18223,7 +18223,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "docs_gdd_approved_arena_physics_destructible_blocks",
-      "community": 85,
+      "community": 103,
       "community_name": "Arena & Physics \u2014 \u0410\u0440\u0435\u043d\u0430 \u0438 \u043a\u043e\u043b\u043b\u0438\u0437\u0438\u0438",
       "norm_label": "destructible blocks"
     },
@@ -18234,7 +18234,7 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "docs_gdd_approved_arena_physics_\u043a\u043b\u0430\u0441\u0441\u044b",
-      "community": 85,
+      "community": 103,
       "community_name": "Arena & Physics \u2014 \u0410\u0440\u0435\u043d\u0430 \u0438 \u043a\u043e\u043b\u043b\u0438\u0437\u0438\u0438",
       "norm_label": "\u043a\u043b\u0430\u0441\u0441\u044b"
     },
@@ -18245,7 +18245,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_capture_point",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "capture_point.md"
     },
@@ -18333,7 +18333,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_city_level_design",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "city_level_design.md"
     },
@@ -18454,7 +18454,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_damage_system",
-      "community": 46,
+      "community": 37,
       "community_name": "Standard_Weapon.md",
       "norm_label": "damage_system.md"
     },
@@ -18575,7 +18575,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_garage_loadout",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "garage_loadout.md"
     },
@@ -18652,7 +18652,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_maps",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "maps.md"
     },
@@ -18751,7 +18751,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_match_framework",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "match_framework.md"
     },
@@ -18894,7 +18894,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_player_controls",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "player_controls.md"
     },
@@ -18993,7 +18993,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_tank_aim",
-      "community": 46,
+      "community": 37,
       "community_name": "Standard_Weapon.md",
       "norm_label": "tank_aim.md"
     },
@@ -19070,7 +19070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_tank_movement",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "tank_movement.md"
     },
@@ -19202,7 +19202,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_approved_village_level_design",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "village_level_design.md"
     },
@@ -19334,7 +19334,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_gdd_drafts_classic_match_modes",
-      "community": 37,
+      "community": 56,
       "community_name": "00_Index.md",
       "norm_label": "classic_match_modes.md"
     },
@@ -19735,15 +19735,15 @@
       "norm_label": "5. \u0440\u0435\u043a\u043e\u043c\u0435\u043d\u0434\u043e\u0432\u0430\u043d\u043d\u044b\u0438 \u043f\u043e\u0440\u044f\u0434\u043e\u043a \u0440\u0430\u0431\u043e\u0442"
     },
     {
-      "label": "6. \u0418\u0442\u043e\u0433 \u0440\u0430\u0431\u043e\u0442 (2026-08-23) \u2014 \u0432\u0441\u0435 \u043f\u0443\u043d\u043a\u0442\u044b FIXED",
+      "label": "6. \u0418\u0442\u043e\u0433 \u0440\u0430\u0431\u043e\u0442 (2026-08-23) \u2014 \u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u044b \u0432\u0441\u0435 \u043f\u0443\u043d\u043a\u0442\u044b (\u0434\u0435\u0442\u0430\u043b\u0438 \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435; H-3/H-4 \u2014 \u0441 \u043e\u0433\u043e\u0432\u043e\u0440\u043a\u0430\u043c\u0438)",
       "file_type": "document",
       "source_file": "audit.md",
       "source_location": "L102",
       "_origin": "ast",
-      "id": "audit_6_\u0438\u0442\u043e\u0433_\u0440\u0430\u0431\u043e\u0442_2026_08_23_\u0432\u0441\u0435_\u043f\u0443\u043d\u043a\u0442\u044b_fixed",
+      "id": "audit_6_\u0438\u0442\u043e\u0433_\u0440\u0430\u0431\u043e\u0442_2026_08_23_\u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u044b_\u0432\u0441\u0435_\u043f\u0443\u043d\u043a\u0442\u044b_\u0434\u0435\u0442\u0430\u043b\u0438_\u0432_\u0442\u0430\u0431\u043b\u0438\u0446\u0435_h_3_h_4_\u0441_\u043e\u0433\u043e\u0432\u043e\u0440\u043a\u0430\u043c\u0438",
       "community": 58,
       "community_name": "ArmorStrike \u2014 Audit (\u043e\u0448\u0438\u0431\u043a\u0438 \u0438 \u043d\u0435\u0434\u043e\u0447\u0451\u0442\u044b)",
-      "norm_label": "6. \u0438\u0442\u043e\u0433 \u0440\u0430\u0431\u043e\u0442 (2026-08-23) \u2014 \u0432\u0441\u0435 \u043f\u0443\u043d\u043a\u0442\u044b fixed"
+      "norm_label": "6. \u0438\u0442\u043e\u0433 \u0440\u0430\u0431\u043e\u0442 (2026-08-23) \u2014 \u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u044b \u0432\u0441\u0435 \u043f\u0443\u043d\u043a\u0442\u044b (\u0434\u0435\u0442\u0430\u043b\u0438 \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435; h-3/h-4 \u2014 \u0441 \u043e\u0433\u043e\u0432\u043e\u0440\u043a\u0430\u043c\u0438)"
     },
     {
       "label": "\u0412\u0435\u0440\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u044f \u043f\u043e\u0441\u043b\u0435 \u0432\u0441\u0435\u0445 \u0444\u0438\u043a\u0441\u043e\u0432",
@@ -19762,7 +19762,7 @@
       "source_file": "README.md",
       "source_location": null,
       "captured_at": null,
-      "community": 39,
+      "community": 3,
       "norm_label": "react 19",
       "community_name": "HUD.tsx",
       "_origin": "semantic",
@@ -19786,7 +19786,7 @@
       "source_file": "README.md",
       "source_location": null,
       "captured_at": null,
-      "community": 39,
+      "community": 3,
       "norm_label": "game.ts (presentation layer)",
       "community_name": "HUD.tsx",
       "_origin": "semantic",
@@ -19798,7 +19798,7 @@
       "source_file": "README.md",
       "source_location": null,
       "captured_at": null,
-      "community": 39,
+      "community": 3,
       "norm_label": "pause component",
       "community_name": "HUD.tsx",
       "_origin": "semantic",
@@ -19867,7 +19867,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "projectile system \u2014 \u043f\u0443\u043b \u0441\u043d\u0430\u0440\u044f\u0434\u043e\u0432",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -19882,7 +19882,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "weapon cannon \u00ab\u0441\u043c\u043e\u043a\u0438\u00bb",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -19897,7 +19897,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "arena physics",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -19912,7 +19912,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "projectile constants (speed=58, range=85, radius=0.18)",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -19924,7 +19924,7 @@
       "source_file": "Docs/GDD/Approved/Wave_System.md",
       "captured_at": null,
       "author": null,
-      "community": 37,
+      "community": 56,
       "norm_label": "wave system \u2014 \u0432\u043e\u043b\u043d\u044b \u0438 \u0441\u043f\u0430\u0432\u043d",
       "community_name": "00_Index.md",
       "_origin": "semantic",
@@ -20179,7 +20179,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 70,
+      "community": 85,
       "norm_label": "health & regen \u2014 \u043f\u0440\u043e\u0447\u043d\u043e\u0441\u0442\u044c \u0438 \u0441\u0430\u043c\u043e\u0440\u0435\u043c\u043e\u043d\u0442",
       "community_name": "Standard_Tank.md",
       "_origin": "semantic",
@@ -20194,7 +20194,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "damage system",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -20209,7 +20209,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 70,
+      "community": 85,
       "norm_label": "tank movement",
       "community_name": "Standard_Tank.md",
       "_origin": "semantic",
@@ -20224,7 +20224,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 70,
+      "community": 85,
       "norm_label": "game lifecycle",
       "community_name": "Standard_Tank.md",
       "_origin": "semantic",
@@ -20239,7 +20239,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 37,
+      "community": 56,
       "norm_label": "team deathmatch game design document",
       "community_name": "00_Index.md",
       "_origin": "semantic",
@@ -20284,7 +20284,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "match framework",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -20299,7 +20299,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 37,
+      "community": 56,
       "norm_label": "wave buffs feature",
       "community_name": "00_Index.md",
       "_origin": "semantic",
@@ -20329,7 +20329,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "projectile system",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -20344,7 +20344,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "railgun weapon (\u0440\u0435\u043b\u044c\u0441\u043e\u0442\u0440\u043e\u043d)",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -20359,7 +20359,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "weapon_tuning cannon config",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -20374,7 +20374,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "weapon flamethrower firebird",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -20389,7 +20389,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 46,
+      "community": 37,
       "norm_label": "tank aim",
       "community_name": "Standard_Weapon.md",
       "_origin": "semantic",
@@ -69828,7 +69828,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "audit_armorstrike_audit_\u043e\u0448\u0438\u0431\u043a\u0438_\u0438_\u043d\u0435\u0434\u043e\u0447\u0451\u0442\u044b",
-      "target": "audit_6_\u0438\u0442\u043e\u0433_\u0440\u0430\u0431\u043e\u0442_2026_08_23_\u0432\u0441\u0435_\u043f\u0443\u043d\u043a\u0442\u044b_fixed",
+      "target": "audit_6_\u0438\u0442\u043e\u0433_\u0440\u0430\u0431\u043e\u0442_2026_08_23_\u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u044b_\u0432\u0441\u0435_\u043f\u0443\u043d\u043a\u0442\u044b_\u0434\u0435\u0442\u0430\u043b\u0438_\u0432_\u0442\u0430\u0431\u043b\u0438\u0446\u0435_h_3_h_4_\u0441_\u043e\u0433\u043e\u0432\u043e\u0440\u043a\u0430\u043c\u0438",
       "confidence_score": 1.0
     },
     {
@@ -69882,7 +69882,7 @@
       "source_location": "L116",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "audit_6_\u0438\u0442\u043e\u0433_\u0440\u0430\u0431\u043e\u0442_2026_08_23_\u0432\u0441\u0435_\u043f\u0443\u043d\u043a\u0442\u044b_fixed",
+      "source": "audit_6_\u0438\u0442\u043e\u0433_\u0440\u0430\u0431\u043e\u0442_2026_08_23_\u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u044b_\u0432\u0441\u0435_\u043f\u0443\u043d\u043a\u0442\u044b_\u0434\u0435\u0442\u0430\u043b\u0438_\u0432_\u0442\u0430\u0431\u043b\u0438\u0446\u0435_h_3_h_4_\u0441_\u043e\u0433\u043e\u0432\u043e\u0440\u043a\u0430\u043c\u0438",
       "target": "audit_\u0432\u0435\u0440\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u044f_\u043f\u043e\u0441\u043b\u0435_\u0432\u0441\u0435\u0445_\u0444\u0438\u043a\u0441\u043e\u0432",
       "confidence_score": 1.0
     },
@@ -70127,5 +70127,5 @@
       "source_file": "README.md"
     }
   ],
-  "built_at_commit": "aa9689b624b368095ca78da2c742ddc3649a0bd3"
+  "built_at_commit": "257c23c19dbb05e807c63c39f25dc0c807af3f1e"
 }
