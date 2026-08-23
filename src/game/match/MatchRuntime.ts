@@ -14,6 +14,7 @@ import type { MatchConfig, MatchModeId, MatchResult } from './matchTypes';
 import { isEnemy } from './teams';
 import { evaluateMatchEnd } from './winConditions';
 import type { CaptureZoneState } from './captureLogic';
+import type { PersonalStanding } from './winConditions';
 import { RespawnController } from './RespawnController';
 import { CaptureController } from './CaptureController';
 
@@ -44,6 +45,11 @@ export class MatchRuntime {
 
   private readonly respawn: RespawnController;
   private readonly capture = new CaptureController();
+  /**
+   * Reusable standings buffer for evaluateMatchEnd — refilled each tick
+   * (was: fresh array of N objects allocated every simulation step).
+   */
+  private readonly _personals: PersonalStanding[] = [];
 
   constructor(private hooks: MatchRuntimeHooks) {
     this.respawn = new RespawnController({
@@ -143,12 +149,20 @@ export class MatchRuntime {
       this.teamScore.bravo += delta.bravo;
     }
 
-    const personals = tanks.map((t) => ({
-      id: t.id,
-      name: t.name,
-      kills: t.kills,
-      isPlayer: t.isPlayer,
-    }));
+    // Reuse the standings buffer: pooled row objects mutated in place instead
+    // of allocating a fresh array of N objects on every simulation tick.
+    const personals = this._personals;
+    for (let i = 0; i < tanks.length; i++) {
+      const t = tanks[i];
+      const row = personals[i] ?? (personals[i] = {
+        id: 0, name: '', kills: 0, isPlayer: false,
+      });
+      row.id = t.id;
+      row.name = t.name;
+      row.kills = t.kills;
+      row.isPlayer = t.isPlayer;
+    }
+    personals.length = tanks.length;
 
     const win = evaluateMatchEnd({
       config: this.config,

@@ -64,8 +64,11 @@ export class ArenaEffects {
       slot = { s, life: 0, maxLife: 1, vx: 0 };
       this.smokePool.push(slot);
       if (this.smokePool.length > 44) {
+        // Evict the oldest slot: remove from scene AND dispose its material
+        // (the map is the shared smokeTexture — material.dispose() does not free it).
         const old = this.smokePool.shift()!;
         this.group.remove(old.s);
+        old.s.material.dispose();
       }
     }
     slot.life = slot.maxLife = 3.2 + Math.random() * 1.6;

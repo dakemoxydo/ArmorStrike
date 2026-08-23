@@ -55,7 +55,7 @@ export function pickPointIndex(
   return scored.slice().sort((a, b) => b.d - a.d)[0]?.i ?? 0;
 }
 
-/** Respawn: furthest from nearest threat among pool. */
+/** Respawn: furthest from nearest threat among pool (random among top-3). */
 export function pickRespawnPoint(
   points: readonly [number, number][],
   threats: readonly { x: number; z: number }[],
@@ -67,9 +67,6 @@ export function pickRespawnPoint(
     return points[i];
   }
 
-  let best = points[0];
-  let bestMin = -1;
-  // Shuffle-ish pick among top candidates for variety
   const ranked = points
     .map(([x, z]) => {
       let minD = Infinity;
@@ -83,8 +80,5 @@ export function pickRespawnPoint(
 
   const top = ranked.slice(0, Math.min(3, ranked.length));
   const pick = top[Math.floor(rng() * top.length) % top.length];
-  best = [pick.x, pick.z];
-  bestMin = pick.minD;
-  void bestMin;
-  return best;
+  return [pick.x, pick.z];
 }

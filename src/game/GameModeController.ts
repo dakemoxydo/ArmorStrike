@@ -115,6 +115,9 @@ export class GameModeController {
     sim.run.resetRun();
     sim.deathT = -1;
     sim.prevReloading = false;
+    // Kill-streak window survives matchTime reset otherwise (negative time
+    // deltas never expire) — stale streaks would suppress labels next round.
+    sim.combat.resetStreaks();
     sim.match.reset(mode, { mapId: id, scene });
 
     const { player, bots } = await spawnMatchRoster(sim.match.config, {

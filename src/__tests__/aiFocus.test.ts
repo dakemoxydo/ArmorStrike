@@ -68,6 +68,50 @@ describe('pickAiFocus (multi-target)', () => {
     expect(target?.id).toBe(2);
   });
 
+  it('sticky canSee reflects own LoS even when not the nearest visible (F-2)', () => {
+    const self = { id: 1, teamId: null as null, position: { x: 0, z: 0 } };
+    // Two CLEARLY visible enemies; sticky is the farther one. Contract:
+    // canSee must describe LoS to the RETURNED (sticky) target — true here,
+    // even though a closer enemy is also visible. (Was `false` after the perf
+    // rewrite, which returned `visible === sticky` instead.)
+    const r = pickAiFocus({
+      self,
+      candidates: [
+        cand(2, null, 0, -20), // sticky — visible, d=20
+        cand(3, null, 0, 10),  // nearest visible, d=10
+      ],
+      colliders: emptyColliders,
+      sightRange: 46,
+      stickyId: 2,
+      stickySlack: 14,
+    });
+    expect(r.target?.id).toBe(2);
+    expect(r.canSee).toBe(true);
+  });
+
+  it('sticky canSee is false when its own LoS is blocked', () => {
+    const self = { id: 1, teamId: null as null, position: { x: 0, z: 0 } };
+    const wall: Collider = {
+      id: 1, minX: 8, maxX: 12, minZ: -50, maxZ: 50,
+      height: 3, blocksShots: true, blocksSight: true,
+      destructible: false, active: true, kind: 'wall',
+    };
+    const r = pickAiFocus({
+      self,
+      candidates: [
+        cand(2, null, 20, 0),  // sticky behind the wall, d=20
+        cand(3, null, -15, 0), // nearest, clear, d=15
+      ],
+      colliders: [wall],
+      sightRange: 46,
+      stickyId: 2,
+      stickySlack: 14,
+    });
+    // 20 <= 15 + 14 → sticky kept, but its own LoS is walled.
+    expect(r.target?.id).toBe(2);
+    expect(r.canSee).toBe(false);
+  });
+
   it('sticky drops when far worse than nearest', () => {
     const self = { id: 1, teamId: null as null, position: { x: 0, z: 0 } };
     const { target } = pickAiFocus({

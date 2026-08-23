@@ -45,7 +45,8 @@ export class GameSimulation {
     tanks: [],
     deathT: this.deathCell,
     prevReloading: this.prevReloadingCell,
-    requestGameOver: () => {},
+    // Stable closure (was: re-created every simulation step).
+    requestGameOver: () => this.requestGameOverLegacy(),
   };
 
   /** Колбэк гибели игрока (устанавливается Game после создания sim). */
@@ -100,24 +101,27 @@ export class GameSimulation {
     ctx.emit = emit;
     ctx.player = p;
     ctx.tanks = this.tanks;
-    ctx.requestGameOver = () => {
-      // Legacy path: treat as time-forfeit with player loss (should be rare).
-      const result: MatchResult = {
-        reason: 'time',
-        mode: this.match.mode,
-        winnerName: null,
-        winnerTeam: null,
-        playerWon: false,
-        playerKills: p.kills,
-        playerDeaths: p.deaths,
-        playerScore: this.run.score,
-        teamKills: { ...this.match.teamKills },
-        teamScore: { ...this.match.teamScore },
-        matchTimeSec: this.run.matchTime,
-      };
-      this.requestMatchOver(result);
-    };
     for (const s of this.systems) s.update(ctx);
+  }
+
+  /** Legacy path: treat as time-forfeit with player loss (should be rare). */
+  private requestGameOverLegacy() {
+    const p = this.player;
+    if (!p) return;
+    const result: MatchResult = {
+      reason: 'time',
+      mode: this.match.mode,
+      winnerName: null,
+      winnerTeam: null,
+      playerWon: false,
+      playerKills: p.kills,
+      playerDeaths: p.deaths,
+      playerScore: this.run.score,
+      teamKills: { ...this.match.teamKills },
+      teamScore: { ...this.match.teamScore },
+      matchTimeSec: this.run.matchTime,
+    };
+    this.requestMatchOver(result);
   }
 
   /** Match win / time limit — single exit to game over UI. */

@@ -55,8 +55,8 @@
     "semantic_hash": "57c552ebb8997413b4aeae921b475966"
   },
   "src/game/AI.ts": {
-    "mtime": 1787497154.6460874,
-    "ast_hash": "f51572eb98eeec5a1c69f0a73c2d633f",
+    "mtime": 1787509385.7540703,
+    "ast_hash": "c1d102ff521d5f114234e41a00e5733a",
     "semantic_hash": ""
   },
   "src/game/Arena.ts": {
@@ -70,8 +70,8 @@
     "semantic_hash": "b14872aa397db64d0758b51d27fb8ca6"
   },
   "src/game/ArenaEffects.ts": {
-    "mtime": 1784827586.34507,
-    "ast_hash": "bad9a1e0326b8289c48d3476cbbbbf22",
+    "mtime": 1787505675.1999717,
+    "ast_hash": "13720e366fffb3ce56099c647f914dce",
     "semantic_hash": ""
   },
   "src/game/CameraRig.ts": {
@@ -115,8 +115,8 @@
     "semantic_hash": ""
   },
   "src/game/RenderWorld.ts": {
-    "mtime": 1784923052.6367366,
-    "ast_hash": "d464ff9e1c488f433b21a13a61fbd146",
+    "mtime": 1787508908.140585,
+    "ast_hash": "a1b2c007b267eab5a9e88ad0a911190b",
     "semantic_hash": ""
   },
   "src/game/RunState.ts": {
@@ -195,9 +195,9 @@
     "semantic_hash": "f95ed30df89fa6f3d2673fd2b933a9db"
   },
   "src/game/audio.ts": {
-    "mtime": 1784334021.4094741,
-    "ast_hash": "1fa08495ba03fa71d8d79b1243261aea",
-    "semantic_hash": "1fa08495ba03fa71d8d79b1243261aea"
+    "mtime": 1787509693.2040927,
+    "ast_hash": "1782205497cea17c8ac681ed1ea680a7",
+    "semantic_hash": ""
   },
   "src/game/constants.ts": {
     "mtime": 1787497154.65414,
@@ -210,8 +210,8 @@
     "semantic_hash": ""
   },
   "src/game/engine/GameSimulation.ts": {
-    "mtime": 1784770289.6581738,
-    "ast_hash": "e5643ce0e2663fce8ab9b22548bdfc34",
+    "mtime": 1787509197.544389,
+    "ast_hash": "3c80b6f1ed325402235b6d42f49a1812",
     "semantic_hash": ""
   },
   "src/game/engine/Projectile.ts": {
@@ -500,8 +500,8 @@
     "semantic_hash": ""
   },
   "src/game/GameModeController.ts": {
-    "mtime": 1787497154.6506774,
-    "ast_hash": "9d27c4d5fdd1a129790b953eae174ba4",
+    "mtime": 1787508967.5638592,
+    "ast_hash": "0d1da30ffadaefc8b46e0a05eb08ccbb",
     "semantic_hash": ""
   },
   "src/game/GarageBinding.ts": {
@@ -520,19 +520,19 @@
     "semantic_hash": "ab554370f3b69ccb6d2624ce21b8e605"
   },
   "src/game/camera/GarageCameraMode.ts": {
-    "mtime": 1784237758.3895676,
-    "ast_hash": "e64413877213744015454178278d6024",
-    "semantic_hash": "e64413877213744015454178278d6024"
+    "mtime": 1787505736.1977801,
+    "ast_hash": "7f613b02c84cec99cc282362f2e0db54",
+    "semantic_hash": ""
   },
   "src/game/camera/MenuCameraMode.ts": {
-    "mtime": 1784237750.9857671,
-    "ast_hash": "bfa9f08f91ecba9a386c553199f96549",
-    "semantic_hash": "bfa9f08f91ecba9a386c553199f96549"
+    "mtime": 1787505736.1702878,
+    "ast_hash": "43355893bb097bb0d5f713ef85ff4835",
+    "semantic_hash": ""
   },
   "src/game/camera/OverCameraMode.ts": {
-    "mtime": 1784334079.7047088,
-    "ast_hash": "f2e4e1d8bd9189199068b0c1cb249613",
-    "semantic_hash": "f2e4e1d8bd9189199068b0c1cb249613"
+    "mtime": 1787509080.3648782,
+    "ast_hash": "7bc44ea572051f7bc15db21ceed9361d",
+    "semantic_hash": ""
   },
   "src/game/camera/PlayingCameraMode.ts": {
     "mtime": 1784334079.7047088,
@@ -1100,8 +1100,8 @@
     "semantic_hash": "418ac815b8969308c508d85bf206eab8"
   },
   "src/game/match/MatchRuntime.ts": {
-    "mtime": 1784766111.957382,
-    "ast_hash": "de3c31157f72147735140e64edd82c51",
+    "mtime": 1787505598.0684023,
+    "ast_hash": "174625eb31ac0f4fc17339174b384f64",
     "semantic_hash": ""
   },
   "src/game/match/matchConfig.ts": {
@@ -1125,8 +1125,8 @@
     "semantic_hash": ""
   },
   "src/game/match/spawnPoints.ts": {
-    "mtime": 1787497154.6622324,
-    "ast_hash": "548293f73c4077ac69de7a3e294c08a5",
+    "mtime": 1787509025.7531903,
+    "ast_hash": "c61b464ad365dc1e4defadf813dd3a26",
     "semantic_hash": ""
   },
   "src/game/match/teams.ts": {
@@ -1145,14 +1145,14 @@
     "semantic_hash": ""
   },
   "src/__tests__/aiFocus.test.ts": {
-    "mtime": 1784508141.8296328,
-    "ast_hash": "de42cb0b8f663588781bfc5b8a2462bc",
-    "semantic_hash": "de42cb0b8f663588781bfc5b8a2462bc"
+    "mtime": 1787508729.456601,
+    "ast_hash": "1dec90ce19c8d34fb76351a65a4a9af6",
+    "semantic_hash": ""
   },
   "src/game/match/aiFocus.ts": {
-    "mtime": 1784508163.8643656,
-    "ast_hash": "6a94b6032a78a1ab29a50ca7b5ca8153",
-    "semantic_hash": "6a94b6032a78a1ab29a50ca7b5ca8153"
+    "mtime": 1787509268.6105394,
+    "ast_hash": "cfc2ab939e12564021bc77328575d75c",
+    "semantic_hash": ""
   },
   "Docs/Architecture/Standard_Match.md": {
     "mtime": 1787497154.6170723,
@@ -1230,8 +1230,8 @@
     "semantic_hash": ""
   },
   "src/game/engine/stages/BotAiStage.ts": {
-    "mtime": 1784828531.1413412,
-    "ast_hash": "77c23be9f0201ace7f46e0490887c931",
+    "mtime": 1787509473.6066206,
+    "ast_hash": "89d4b02697051813b5f751b493d2adfc",
     "semantic_hash": ""
   },
   "src/game/engine/stages/PlayerInputStage.ts": {
@@ -1327,6 +1327,21 @@
   "src/__tests__/motionDtZero.test.ts": {
     "mtime": 1787497154.6431594,
     "ast_hash": "c76e2af6dd41be6617f7768737f7dc82",
+    "semantic_hash": ""
+  },
+  "audit.md": {
+    "mtime": 1787509765.1931422,
+    "ast_hash": "361f26f12939914cbd22aedbfaf0ee52",
+    "semantic_hash": ""
+  },
+  "src/__tests__/zoneViewCache.test.ts": {
+    "mtime": 1787508476.3972318,
+    "ast_hash": "b36d32f704168fc0420d16cce2ce56dd",
+    "semantic_hash": ""
+  },
+  "src/game/engine/stages/zoneViewCache.ts": {
+    "mtime": 1787508432.5455227,
+    "ast_hash": "0f7ad9cc78b317aaf3439c8dd63ff756",
     "semantic_hash": ""
   }
 }

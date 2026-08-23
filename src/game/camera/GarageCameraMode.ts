@@ -6,21 +6,23 @@ import type { CameraUpdateParams } from '../CameraRig';
 import { PREVIEW_POS } from '../CameraRig';
 
 export class GarageCameraMode implements CameraMode {
+  /** Reused scratch vectors — update() runs every frame (was: 2 allocs/frame). */
+  private readonly tmpV = new THREE.Vector3();
+  private readonly tmpV2 = new THREE.Vector3();
+
   update(dt: number, p: CameraUpdateParams, rig: CameraRig): void {
-    const tmpV = new THREE.Vector3();
-    const tmpV2 = new THREE.Vector3();
     // Авто-вращение, пока пользователь не взял управление мышью
     if (rig.garageAutoSpin) rig.garageYaw += dt * 0.45;
 
     const horiz = Math.cos(rig.garagePitch) * rig.garageDist;
     const vert = Math.sin(rig.garagePitch) * rig.garageDist;
-    tmpV.set(
+    this.tmpV.set(
       PREVIEW_POS.x + Math.sin(rig.garageYaw) * horiz,
       rig.garageTargetY + 1.6 + vert,
       PREVIEW_POS.z + Math.cos(rig.garageYaw) * horiz,
     );
-    rig.camPos.lerp(tmpV, 1 - Math.exp(-9 * dt));
-    rig.camLook.lerp(tmpV2.set(PREVIEW_POS.x, rig.garageTargetY, PREVIEW_POS.z), 1 - Math.exp(-9 * dt));
+    rig.camPos.lerp(this.tmpV, 1 - Math.exp(-9 * dt));
+    rig.camLook.lerp(this.tmpV2.set(PREVIEW_POS.x, rig.garageTargetY, PREVIEW_POS.z), 1 - Math.exp(-9 * dt));
 
     if (p.previewVisual) {
       // Танк стоит неподвижно, а камера облетает вокруг него; башня слёгка поворачивается

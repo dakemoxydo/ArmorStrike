@@ -18,6 +18,13 @@ export class AudioFX implements AudioPort {
   private chargeOscs: OscillatorNode[] = [];
   private chargeGains: GainNode[] = [];
   private chargeTickTimers: number[] = [];
+  /**
+   * Engine voice state. The oscillator is created once and NEVER stopped —
+   * stop/start just ramps its gain, so rapid transitions can't spawn a second
+   * overlapping voice (H-5) and setEngine can't creep volume back up behind a
+   * stopEngine (death-cam hum).
+   */
+  private engineOn = false;
   muted = false;
 
   ensure() {
@@ -261,21 +268,27 @@ export class AudioFX implements AudioPort {
   }
 
   startEngine() {
-    if (!this.ctx || !this.master || this.engineOsc) return;
-    this.engineOsc = this.ctx.createOscillator();
-    this.engineOsc.type = 'sawtooth';
-    this.engineOsc.frequency.value = 42;
-    this.engineFilter = this.ctx.createBiquadFilter();
-    this.engineFilter.type = 'lowpass';
-    this.engineFilter.frequency.value = 260;
-    this.engineGain = this.ctx.createGain();
-    this.engineGain.gain.value = 0.0;
-    this.engineOsc.connect(this.engineFilter).connect(this.engineGain).connect(this.master);
-    this.engineOsc.start();
+    if (!this.ctx || !this.master) return;
+    if (this.engineOn) return;
+    if (!this.engineOsc) {
+      this.engineOsc = this.ctx.createOscillator();
+      this.engineOsc.type = 'sawtooth';
+      this.engineOsc.frequency.value = 42;
+      this.engineFilter = this.ctx.createBiquadFilter();
+      this.engineFilter.type = 'lowpass';
+      this.engineFilter.frequency.value = 260;
+      this.engineGain = this.ctx.createGain();
+      this.engineGain.gain.value = 0.0;
+      this.engineOsc.connect(this.engineFilter).connect(this.engineGain).connect(this.master);
+      this.engineOsc.start();
+    }
+    // Cancel any pending fade-out from a previous stopEngine.
+    this.engineGain!.gain.cancelScheduledValues(this.ctx.currentTime);
+    this.engineOn = true;
   }
 
   setEngine(ratio: number, boost = false) {
-    if (!this.ctx || !this.engineOsc || !this.engineGain) return;
+    if (!this.ctx || !this.engineOsc || !this.engineGain || !this.engineOn) return;
     const t = this.ctx.currentTime;
     const b = boost ? 1 : 0;
     this.engineOsc.frequency.setTargetAtTime(42 + ratio * 46 + b * 30, t, 0.08);
@@ -283,12 +296,10 @@ export class AudioFX implements AudioPort {
   }
 
   stopEngine() {
-    if (!this.ctx || !this.engineOsc || !this.engineGain) return;
-    const osc = this.engineOsc;
+    if (!this.ctx || !this.engineGain || !this.engineOn) return;
+    // Fade to silence; the oscillator keeps running muted — restarting later
+    // just ramps the same voice back up (no overlapping engines, H-5).
     this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
-    osc.stop(this.ctx.currentTime + 0.5);
-    this.engineOsc = null;
-    this.engineGain = null;
-    this.engineFilter = null;
+    this.engineOn = false;
   }
 }

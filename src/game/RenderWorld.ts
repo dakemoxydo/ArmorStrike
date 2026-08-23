@@ -192,12 +192,31 @@ export class RenderWorld {
       this.sun.shadow.map?.dispose();
       this.sun.shadow.map = null;
     }
-    // Bloom только на high
-    if (preset.id === 'high' && !this.composer) {
+    // Bloom only on 'high'. Tear the composer down on every downgrade (frees
+    // its full-size render targets) and rebuild on return — a fresh composer
+    // picks up the current pixelRatio and canvas size, so post-processing
+    // never renders at stale DPI/size after quality cycling.
+    if (preset.id !== 'high') {
+      this.disposeBloom();
+    } else if (!this.composer) {
       this.setupBloom(preset);
-    } else if (preset.id !== 'high') {
-      this.useComposer = false;
+      this.resizeComposer();
     }
+  }
+
+  /** Align the bloom composer to the canvas CSS size (fallback: window). */
+  private resizeComposer() {
+    if (!this.composer) return;
+    const el = this.renderer.domElement;
+    this.composer.setSize(el.clientWidth || window.innerWidth, el.clientHeight || window.innerHeight);
+  }
+
+  private disposeBloom() {
+    this.bloomPass?.dispose();
+    this.bloomPass = null;
+    this.composer?.dispose();
+    this.composer = null;
+    this.useComposer = false;
   }
 
   resize(w: number, h: number) {
@@ -216,6 +235,7 @@ export class RenderWorld {
   }
 
   dispose() {
+    this.disposeBloom();
     this.renderer.dispose();
   }
 }

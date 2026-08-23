@@ -15,6 +15,7 @@ import {
   type ObjectiveZoneView,
 } from '../../match/aiObjective';
 import { BOT_NORMAL } from '../../match/matchConfig';
+import { syncZoneViews } from './zoneViewCache';
 
 function deadStub(player: TankEntity): AITarget {
   return { position: player.position, alive: false, vel: player.vel };
@@ -29,6 +30,16 @@ export class BotAiStage implements SimSystem {
   private readonly _objSticky = new Map<number, string>();
   /** Reusable id→entity map rebuilt once per frame (avoids tanks.find per bot). */
   private readonly _tankById = new Map<number, TankEntity>();
+  /** Per-bot reusable blocker buffers for allyLineBlockers (keyed by tank id). */
+  private readonly _blockerBufs = new Map<number, TankEntity[]>();
+  /** Last seen roster size — swap detector for the per-bot maps above. */
+  private _rosterSize = 0;
+  /**
+   * Cached zone views for CP mode. Rebuilt by syncZoneViews when the zone set
+   * changes (map switch / match reset); owner/contested are refreshed in place
+   * on stable ticks — no per-frame allocation.
+   */
+  private _zoneViews: ObjectiveZoneView[] | null = null;
 
   constructor(
     private bots: BotRoster,
@@ -37,6 +48,17 @@ export class BotAiStage implements SimSystem {
   ) {}
 
   update(ctx: FrameContext): void {
+    // Roster swap guard: tank ids grow monotonically across rounds, so stale
+    // per-bot entries (sticky focus, objective sticky, blocker buffers) would
+    // otherwise accumulate forever. Cheap O(bots) check per frame.
+    const rosterSize = this.bots.bots.length;
+    if (this._rosterSize !== rosterSize) {
+      this._rosterSize = rosterSize;
+      this._aiSticky.clear();
+      this._objSticky.clear();
+      this._blockerBufs.clear();
+    }
+
     const p = ctx.player;
     const bounds = this.arena.half - 6;
     const cpMode = this.match.mode === 'capture_point';
@@ -88,10 +110,15 @@ export class BotAiStage implements SimSystem {
       }
 
       // Line-of-fire block: allies only (empty in FFA → free fire through peers).
-      const allyBlockers = allyLineBlockers(b.tank, ctx.tanks);
+      let blockers = this._blockerBufs.get(b.tank.id);
+      if (!blockers) {
+        blockers = [];
+        this._blockerBufs.set(b.tank.id, blockers);
+      }
+      allyLineBlockers(b.tank, ctx.tanks, blockers);
       b.ai.update(ctx.dt, {
         player: focus,
-        bots: allyBlockers,
+        bots: blockers,
         colliders: this.arena.colliders,
         bounds,
         moveHint,
@@ -129,13 +156,7 @@ export class BotAiStage implements SimSystem {
   }
 
   private zonesAsView(): ObjectiveZoneView[] {
-    return this.match.getCaptureZones().map((z) => ({
-      id: z.id,
-      x: z.x,
-      z: z.z,
-      radius: z.radius,
-      owner: z.owner,
-      contested: z.contested,
-    }));
+    this._zoneViews = syncZoneViews(this._zoneViews, this.match.getCaptureZones());
+    return this._zoneViews;
   }
 }

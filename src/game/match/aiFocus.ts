@@ -42,6 +42,11 @@ export interface PickAiFocusResult {
  * 1) Prefer nearest **visible** (LoS + sight) enemy.
  * 2) Else nearest alive enemy (hunt).
  * 3) Sticky: keep previous target if still enemy and within slack of best.
+ *
+ * Single pass over candidates; LoS is raycast lazily — for the running best
+ * visible candidate, plus at most once more for the sticky target (was:
+ * raycast to every hostile + two sorts + three intermediate arrays per bot
+ * per frame).
  */
 export function pickAiFocus(opts: PickAiFocusOpts): PickAiFocusResult {
   const {
@@ -53,45 +58,76 @@ export function pickAiFocus(opts: PickAiFocusOpts): PickAiFocusResult {
     stickySlack = 14,
   } = opts;
 
-  const hostiles = candidates.filter((c) => c.alive && isEnemy(self, c));
-  if (hostiles.length === 0) return { target: null, canSee: false };
+  let nearest: FocusCandidate | null = null;
+  let nearestD = Infinity;
+  let visible: FocusCandidate | null = null;
+  let visibleD = Infinity;
+  let sticky: FocusCandidate | null = null;
+  let stickyD = Infinity;
+  // Own LoS fact for the sticky target — returned as canSee even when sticky
+  // is NOT the nearest visible one (contract: canSee = "LoS to the returned
+  // target", not "target is the nearest visible").
+  let stickySee = false;
 
-  type Scored = { c: FocusCandidate; d: number; see: boolean };
-  const scored: Scored[] = hostiles.map((c) => {
+  for (const c of candidates) {
+    if (!c.alive || !isEnemy(self, c)) continue;
     const d = Math.hypot(c.position.x - self.position.x, c.position.z - self.position.z);
+    if (d < nearestD) {
+      nearestD = d;
+      nearest = c;
+    }
+    // Lazy LoS gate first: only raycast the running best visible target.
+    const inSight = d <= sightRange && d < visibleD;
     const see =
-      d <= sightRange &&
-      losClear(
-        self.position.x,
-        self.position.z,
-        c.position.x,
-        c.position.z,
-        colliders as Collider[],
-      );
-    return { c, d, see };
-  });
-
-  const visible = scored.filter((s) => s.see).sort((a, b) => a.d - b.d);
-  const byDist = scored.slice().sort((a, b) => a.d - b.d);
-  const preferred = visible[0] ?? byDist[0];
-
-  if (stickyId >= 0) {
-    const sticky = scored.find((s) => s.c.id === stickyId);
-    if (sticky) {
-      // Keep sticky if still competitive with preferred.
-      if (sticky.d <= preferred.d + stickySlack) {
-        return { target: sticky.c, canSee: sticky.see };
-      }
+      inSight &&
+      losClear(self.position.x, self.position.z, c.position.x, c.position.z, colliders as Collider[]);
+    if (see) {
+      visibleD = d;
+      visible = c;
+    }
+    if (c.id === stickyId) {
+      sticky = c;
+      stickyD = d;
+      // LoS for sticky is evaluated independently of the visible-best gate,
+      // but reuses a raycast already made for this candidate above.
+      stickySee = see || (d <= sightRange &&
+        losClear(self.position.x, self.position.z, c.position.x, c.position.z, colliders as Collider[]));
     }
   }
 
-  return { target: preferred.c, canSee: preferred.see };
+  const preferred = visible ?? nearest;
+  if (!preferred) return { target: null, canSee: false };
+
+  if (sticky) {
+    const preferredD = visible ? visibleD : nearestD;
+    // Keep sticky if still competitive with preferred.
+    if (stickyD <= preferredD + stickySlack) {
+      return { target: sticky, canSee: stickySee };
+    }
+  }
+
+  return { target: preferred, canSee: visible === preferred };
+}
+
+/** Single source of truth for "t blocks this shooter's line of fire". */
+function isLineBlocker(
+  self: { id: number; teamId: TeamId },
+  t: { id: number; teamId: TeamId; alive: boolean },
+): boolean {
+  return t.alive && t.id !== self.id && isAlly(self, t);
 }
 
 /** Bodies that block shots for this shooter (allies only — never FFA peers). */
 export function allyLineBlockers<T extends { id: number; teamId: TeamId; alive: boolean }>(
   self: { id: number; teamId: TeamId },
   tanks: readonly T[],
+  /** Pass a reusable array to avoid per-call allocation in hot loops. */
+  out?: T[],
 ): T[] {
-  return tanks.filter((t) => t.alive && t.id !== self.id && isAlly(self, t));
+  if (!out) return tanks.filter((t) => isLineBlocker(self, t));
+  out.length = 0;
+  for (const t of tanks) {
+    if (isLineBlocker(self, t)) out.push(t);
+  }
+  return out;
 }

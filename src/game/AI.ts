@@ -10,7 +10,7 @@ import {
   type AIRole,
 } from './aiRoles';
 import { computeObstacleAvoidance } from './aiObstacle';
-import { updateTurretAndFire } from './aiAimFire';
+import { updateTurretAndFire, type AimFireState } from './aiAimFire';
 import { preferredRange, steeringFromAngle } from './aiTuning';
 
 export { preferredRange, aimTolerance, steeringFromAngle } from './aiTuning';
@@ -80,9 +80,6 @@ export class AIController {
   private scanT = Math.random() * Math.PI * 2;
   private patrolN = 0;
   private reactT = 0;
-  /** M11: hold aim noise so turret can settle within aimTol (was re-rolled every frame). */
-  private aimNoise = 0;
-  private aimNoiseT = 0;
   /** Low-HP cover seek: re-pick point on timer. */
   private coverT = 0;
   private coverX = 0;
@@ -96,6 +93,13 @@ export class AIController {
   private _losOffset = 0;
   /** LOD skip counter for far-away patrol bots. */
   private _lodSkip = 0;
+  /**
+   * Reusable aim-state bag for updateTurretAndFire (was: fresh object per bot
+   * per frame). Also the persistent home of aimNoise/aimNoiseT (M11 servo).
+   */
+  private readonly _aimState: AimFireState = {
+    aimNoise: 0, aimNoiseT: 0, reactT: 0, scanT: 0, wantsFire: false,
+  };
 
   constructor(
     private tank: AIBody,
@@ -409,19 +413,14 @@ export class AIController {
     t.boosting = this.computeBoost(diff, dist, pref, tx, tz, t.position);
 
     // Шаг 12: башня + огонь
-    const aimState = {
-      aimNoise: this.aimNoise,
-      aimNoiseT: this.aimNoiseT,
-      reactT: this.reactT,
-      scanT: this.scanT,
-      wantsFire: false,
-    };
+    const aimState = this._aimState;
+    aimState.reactT = this.reactT;
+    aimState.scanT = this.scanT;
+    aimState.wantsFire = false;
     updateTurretAndFire(
       aimState, dt, this.state === 'engage', canSee, dist,
       this.fireRange, this.aimError, this.persona, t, ctx.player, ctx.bots,
     );
-    this.aimNoise = aimState.aimNoise;
-    this.aimNoiseT = aimState.aimNoiseT;
     this.scanT = aimState.scanT;
     this.wantsFire = aimState.wantsFire;
   }
