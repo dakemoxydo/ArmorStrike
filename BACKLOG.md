@@ -11,7 +11,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 
 ## [B] PERFORMANCE
 - [x] B1: Draw-call census per map: count meshes vs instanced in RenderWorld scene graph; instance the worst repeated prop category; record before/after numbers. — iter 4 `38171ba` (census tool; baseline factory 327 / village 940 / city 753 est. DC)
-- [ ] B1b: Instance village fence rails (`villageMap.ts:426`, 108 identical boxes) into one InstancedMesh following the foliage pattern (`buildVillageFoliage`); re-run census — expect village ≈940→≈830 est. draw calls.
+- [x] B1b: Instance village fence rails (`villageMap.ts:426`, 108 identical boxes) into one InstancedMesh following the foliage pattern (`buildVillageFoliage`); re-run census — expect village ≈940→≈830 est. draw calls. — iter 5 `4c7ff44` (village 940→845 est. DC)
 - [ ] B2: Texture-factory memoization coverage: list factories not yet registered via markShared; register stragglers.
 - [ ] B3: Confirm HudModel has zero per-frame setState; trace HUD subscription updates to render batches.
 - [ ] B4: Bundle census: identify largest contributors inside dist single-file bundle from build output; name top-3 trim candidates.

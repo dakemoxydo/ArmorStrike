@@ -17,6 +17,41 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 5 — 2026-08-24 · [B] PERFORMANCE
+
+**Task:** BACKLOG B1b — instance village fence posts (follow-up from census).
+
+**Diagnosis + plan (written before editing):**
+- `buildVillageFences` (`villageMap.ts:415`): each of 14 segments spawns `max(4, len/3)`
+  individual post Meshes (identical geometry + shared postMat) → 108 draw calls.
+- Lifecycle verified first: per-segment destructibles → InstancedMesh must be **per segment**
+  with its own BoxGeometry (destroying one fence disposes only its own geometry, never a
+  sibling's); `damageBlock` flash/tilt traverses materials (InstancedMesh extends Mesh);
+  `disposeObject3D` handles InstancedMesh explicitly.
+
+**Change:** posts → one InstancedMesh per segment (setMatrixAt via dummy Object3D,
+castShadow/receiveShadow preserved), following the existing foliage pattern.
+**Metrics (census):** village est. draw calls **940 → 845**; plain boxes 733 → 625;
+instanced 13 × 528. Gates: typecheck/lint clean, 211/211 tests, bundle 1,097,013 →
+1,097,159 B (+146 B). Visual: boot capture `screenshots/iter-5-fence-instancing.png`
+(689 KB — non-blank render OK; vision_analyze unavailable this session: aux-model key 401).
+Commits: `4c7ff44`, helper `cd6ee46`, graph `92a9477`.
+
+**Ops notes:** headless Edge lingers after --screenshot (hangs the chained shell) — added
+`scripts/kill-headless-edge.ps1` (targets ONLY --headless processes); killing the bash
+wrapper orphans vite's node child on the strict port — verify CommandLine ownership, then
+Stop-Process. Port freed cleanly.
+
+**Next:** [B1c] same instancing treatment for city block boxes (607 plain boxes left),
+or [A1] length-based cache sweep for remaining F-1-class bugs.
+
+### Micro-reflection (iter 5)
+- Moved forward? Yes — first measurable perf delta landed (−95 est. DC on heaviest map).
+- Time lost? Screenshot teardown ate several minutes; the new cleanup script prevents recurrence.
+- Highest-leverage next task: extend instancing to city boxes — census tool makes every step verifiable.
+
+---
+
 ## Iteration 4 — 2026-08-24 · [B] PERFORMANCE
 
 **Task:** BACKLOG B1 — draw-call census per map.
