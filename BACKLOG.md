@@ -57,7 +57,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 - [x] J4: Document texture-memoization + zoneViewCache patterns into Docs/Architecture/ (from commits 6ad7740/257c23c). — iter 7: `Docs/Architecture/Standard_Resources.md` + Core.md index
 
 ## [K] ACCESSIBILITY & POLISH
-- [ ] K1: Document graphics preset matrix (low/med/high: pixel ratio, shadows, bloom, particles) and fill parity gaps.
+- [x] K1: Document graphics preset matrix (low/med/high: pixel ratio, shadows, bloom, particles) and fill parity gaps. — iter 11 `90f0cd9`: `Docs/Architecture/Graphics_Presets_Matrix.md`; no code gaps — non-scaling dims documented as deliberate
 - [ ] K2: Team-color palette colorblind-safety check (HUD + minimap blips).
 
 ---

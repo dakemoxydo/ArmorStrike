@@ -17,6 +17,39 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 11 — 2026-08-24 · [K] ACCESSIBILITY & POLISH — K1 PRESET MATRIX
+
+**Task:** BACKLOG K1 — document graphics preset matrix and fill parity gaps.
+
+**Evidence gathered first (all code-verified):**
+- Presets (`graphicsQuality.ts`): pixelRatioMax 1/1.5/2 · shadowMapSize 512/1024/2048 ·
+  `shadows: true` on ALL tiers (only resolution scales) · bloom only on high.
+- Application: `RenderWorld.applyQuality` — bloom dispose-on-downgrade / fresh-composer-
+  on-return (covered by iter 2 tests); shadow map dispose when size changes.
+- Frame-path gate: `ArenaEffects.update` skips decorative beacon/furnace/molten animations
+  on low; quality read from in-memory RenderWorld getter, never localStorage per frame.
+- Non-scaling dimensions documented explicitly: particle pools are fixed budgets
+  (smoke ≤44, sparks 800, flame 160, wrecks ≤6); MSAA fixed at renderer creation
+  (`antialias: preset !== 'low'`, no runtime change).
+- Switching: PauseMenu cycles low→medium→high; persisted in localStorage `as2_quality`.
+
+**Parity gaps found:** none requiring code change — the matrix is coherent; the "gaps"
+(unchanged particle budgets, always-on shadows) are deliberate design choices, now
+documented as such rather than left implicit.
+
+**Output:** `Docs/Architecture/Graphics_Presets_Matrix.md` + Core.md index row.
+Gates: 214/214 tests. Commits: `90f0cd9`, graph `e4db1a3`. K1 closed.
+
+**Next:** [A4] teardown-path audit (Game.teardownContext / StrictMode guard), then [E1]
+atmosphere preset gap check.
+
+### Micro-reflection (iter 11)
+- Moved forward? Yes — implicit design decisions became explicit documentation.
+- Time lost? No.
+- Highest-leverage next task: A4 teardown audit — last unverified lifecycle path.
+
+---
+
 ## Iteration 10 — 2026-08-24 · [B] PERFORMANCE — BUNDLE CENSUS (B4)
 
 **Task:** BACKLOG B4 — identify largest contributors inside the dist single-file bundle.
