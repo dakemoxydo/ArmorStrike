@@ -1005,9 +1005,9 @@
     "semantic_hash": "337e3c9e1c555013fbf1f72367d57a32"
   },
   "src/game/arena/villageMap.ts": {
-    "mtime": 1784426644.8994544,
-    "ast_hash": "131bb400d214297c18305165d7cfb7b6",
-    "semantic_hash": "131bb400d214297c18305165d7cfb7b6"
+    "mtime": 1787593035.299587,
+    "ast_hash": "a8fa919a26afabbef8bdb128e9bd4475",
+    "semantic_hash": ""
   },
   "src/game/maps/mapCatalog.ts": {
     "mtime": 1784426710.1514,
@@ -1365,13 +1365,13 @@
     "semantic_hash": ""
   },
   "BACKLOG.md": {
-    "mtime": 1787592772.1568604,
-    "ast_hash": "59701979164ae9de33ed529a9fbebc45",
+    "mtime": 1787593640.6224189,
+    "ast_hash": "db6b4ca565250aa14c99be176196725a",
     "semantic_hash": ""
   },
   "PROGRESS.md": {
-    "mtime": 1787592763.485389,
-    "ast_hash": "f1d584a1c5038aeb764090605f38f4da",
+    "mtime": 1787593629.966301,
+    "ast_hash": "4aab2ea5014868daea8e029dacd93540",
     "semantic_hash": ""
   },
   "src/__tests__/renderWorldQuality.test.ts": {
@@ -1387,6 +1387,16 @@
   "scripts/draw-call-census.ts": {
     "mtime": 1787592623.7153678,
     "ast_hash": "54d989a37c6f2985e02f1c82ec39e429",
+    "semantic_hash": ""
+  },
+  "scripts/kill-headless-edge.ps1": {
+    "mtime": 1787593441.6582105,
+    "ast_hash": "37b652412709cb70ba87a141bf5e7fcb",
+    "semantic_hash": ""
+  },
+  "screenshots/iter-5-fence-instancing.png": {
+    "mtime": 1787593223.7100835,
+    "ast_hash": "ab94c42a2b538a71e24453b16363bb3e",
     "semantic_hash": ""
   }
 }
