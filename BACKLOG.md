@@ -4,7 +4,7 @@ Prioritized pool for the autonomous loop. Categories A–K (see AUTONOMOUS_PROMP
 Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstrap when open < 10.
 
 ## [A] BUGS & STABILITY
-- [ ] A1: Sweep `src/game` for remaining length-based caches of the F-1 class (cache keyed on array length instead of content/reference) and add a regression test for any found.
+- [x] A1: Sweep `src/game` for remaining length-based caches of the F-1 class (cache keyed on array length instead of content/reference) and add a regression test for any found. — iter 6: CLEAN, no remaining sites; all candidates verified identity/content-guarded (see PROGRESS iter 6)
 - [x] A2: Unit-test `KillStreakTracker` window expiry incl. negative time deltas (stale stamps from a previous match must never suppress new streaks). — iter 1 `622eca3` (+5 tests, predicate fix)
 - [ ] A3: Verify full match lifecycle resets (DM→TDM→CP across village/city/factory) leave no cross-mode state (score, streaks, capture zones, rosters) — lifecycle test.
 - [ ] A4: Audit teardown path (`Game.teardownContext`, App StrictMode guard) for dangling listeners/timers after unmount.
@@ -13,7 +13,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 - [x] B1: Draw-call census per map: count meshes vs instanced in RenderWorld scene graph; instance the worst repeated prop category; record before/after numbers. — iter 4 `38171ba` (census tool; baseline factory 327 / village 940 / city 753 est. DC)
 - [x] B1b: Instance village fence rails (`villageMap.ts:426`, 108 identical boxes) into one InstancedMesh following the foliage pattern (`buildVillageFoliage`); re-run census — expect village ≈940→≈830 est. draw calls. — iter 5 `4c7ff44` (village 940→845 est. DC)
 - [ ] B2: Texture-factory memoization coverage: list factories not yet registered via markShared; register stragglers.
-- [ ] B3: Confirm HudModel has zero per-frame setState; trace HUD subscription updates to render batches.
+- [x] B3: Confirm HudModel has zero per-frame setState; trace HUD subscription updates to render batches. — iter 6: VERIFIED clean (refs for continuous channels; thresholded force() only — see PROGRESS iter 6)
 - [ ] B4: Bundle census: identify largest contributors inside dist single-file bundle from build output; name top-3 trim candidates.
 
 ## [C] CORE GAMEPLAY

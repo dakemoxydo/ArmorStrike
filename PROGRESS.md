@@ -17,6 +17,38 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 6 — 2026-08-24 · [A]+[B] AUDITS (both clean)
+
+**Tasks:** BACKLOG A1 (F-1-class cache sweep) + B3 (HudModel render-pressure check).
+
+**A1 — no remaining F-1-class caches.** Swept `.length !==/===`, `_last*`, `cached*`,
+`_cache` across `src/game`. Every suspicious site verified sound:
+- `zoneViewCache.syncZoneViews` — length check ANDed with per-anchor scalar compare.
+- `CaptureController.update` — pool seeded by ARRAY IDENTITY (`_pool !== zones`),
+  reset()/dispose() assign fresh arrays; steady-state in-place mutation is documented
+  intended semantics (zones IS the pool).
+- Remaining matches are plain empty-array guards (aiObjective, spawnPoints, winConditions,
+  audio chargeOscs). No action needed.
+
+**B3 — HudModel has zero per-frame setState.** Verified chain GameLoop.onHud (60/s,
+mutated singleton snapshot) → useGameHud.onHud: continuous channels (health/ghost bars,
+boost, reload conic-gradient, flame fill, minimap canvas) are direct ref/DOM writes;
+React re-render fires only through `force()` guarded by ~20 discrete comparisons
+(thresholded time/team scores via Math.floor, capture-strip key, ammo gate) plus
+event-driven states (feed/vignette/hitmark/streak). No action needed.
+
+Negative results recorded deliberately (audit.md §4 convention) to prevent re-investigation.
+
+**Next:** [B1c] city box instancing (607 plain boxes; census-attributed hotspots at
+cityMap.ts:218/175/178), then [J4] architecture docs.
+
+### Micro-reflection (iter 6)
+- Moved forward? Modestly — two items verified-closed with evidence; no code risk taken without a finding.
+- Time lost? No.
+- Highest-leverage next task: B1c city instancing — biggest remaining quantified perf target.
+
+---
+
 ## Iteration 5 — 2026-08-24 · [B] PERFORMANCE
 
 **Task:** BACKLOG B1b — instance village fence posts (follow-up from census).
