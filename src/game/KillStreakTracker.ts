@@ -27,8 +27,12 @@ export class KillStreakTracker {
    * @returns StreakLabel если серия >= 2, иначе null
    */
   registerKill(currentTime: number): StreakLabel | null {
-    // Удаляем старые убийства вне окна
-    this.killTimes = this.killTimes.filter((t) => currentTime - t < STREAK_WINDOW);
+    // Drop kills outside the window; also drop stamps from the future
+    // (negative delta), which are leftovers from a matchTime reset —
+    // otherwise stale streaks survive into the next round.
+    this.killTimes = this.killTimes.filter(
+      (t) => currentTime >= t && currentTime - t < STREAK_WINDOW,
+    );
     this.killTimes.push(currentTime);
 
     const count = this.killTimes.length;
