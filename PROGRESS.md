@@ -17,6 +17,36 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 9 — 2026-08-24 · [A]+[C] LIFECYCLE TEST + REGEN AUDIT
+
+**Tasks:** BACKLOG A3 (match-lifecycle reset sequence test) + partial C1 (regen math vs GDD).
+
+**C1 (partial):** `TankCombatTimersSystem.updateOne` regen matches
+`Docs/GDD/Approved/Health_And_Regen.md` exactly — HEAL_DELAY=10, HEAL_PER_SEC=3.5,
+threshold+clamp identical to the GDD pseudocode; SMOKE_HEALTH_FRAC=0.32 also per GDD.
+Full C1 (capture contest/decay) remains open.
+
+**A3:** new `src/__tests__/gameModeLifecycle.test.ts` (3 tests) pins the full
+`executeStartRound` reset chain: clearTanks → projectiles.clear → arena.rebuild(mapId) →
+onArenaRebuilt → run.resetRun (score/kills zeroed) → deathT=-1 → prevReloading=false →
+combat.resetStreaks → match.reset(mode, mapId), plus ORDERING (rebuild before resets,
+resets before roster) and repeat-start re-running every reset. Uses real async
+startSeq/startChain queue; spawnMatchRoster module-mocked. Harness notes: sim stub needs
+audio.startEngine/click and the bots holder (`sim.bots.bots`) — read the full consumer
+before stubbing.
+
+**Result:** 211→214 tests (+3). Gates: typecheck/lint clean, build ✓ bundle unchanged at
+1,097,159 B. Commits: `1b750b3`, graph `57c5bb7`. A3 closed.
+
+**Next:** [B4] bundle census (top-3 trim candidates from build output), then [K1] preset matrix doc.
+
+### Micro-reflection (iter 9)
+- Moved forward? Yes — controller-level regression guard for the highest-severity bug class.
+- Time lost? Two harness gaps in one stub; enumerate every dep method before first run.
+- Highest-leverage next task: B4 bundle census — quantified trim candidates.
+
+---
+
 ## Iteration 8 — 2026-08-24 · [J] CODE QUALITY
 
 **Task:** BACKLOG J3 — dead-export scan after the perf passes.
