@@ -13,6 +13,7 @@
 | [Standard UI & Input](Standard_UI_Input.md) | `GameApi`, HUD, React boundary, input, camera modes |
 | [Standard Match](Standard_Match.md) | `MatchModeId`, teams, respawn, win, kill path |
 | [Standard Resources](Standard_Resources.md) | Текстуры (`cachedTexture`/`markShared`), кэш CP-зон, draw-call census |
+| [Graphics Presets Matrix](Graphics_Presets_Matrix.md) | low/medium/high: pixel ratio, тени, bloom, frame-path gate; что НЕ масштабируется |
 
 Новый код и рефакторинг **обязаны** следовать соответствующему standard-файлу.  
 Механики и баланс — только в [Docs/GDD](../GDD/Approved/00_Index.md), не дублировать числа здесь.
