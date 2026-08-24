@@ -17,6 +17,46 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 12 — 2026-08-24 · [A] STABILITY — A4 TEARDOWN AUDIT (clean, one hardening note)
+
+**Task:** BACKLOG A4 — audit teardown path (`Game.teardownContext` / StrictMode unmount guard).
+
+**Verified chain (all code-read):**
+- App boot guard (`App.tsx:48–105`): `cancelled` flag + `instance.dispose()` if unmount
+  wins the race against `Game.create`; cleanup disposes `g`.
+- Double-boot guard: `Game.boot()` checks `this.disposed` after async bootstrap and
+  tears down the fresh ctx instead of adopting it; `Game.create` throws
+  'disposed during bootstrap' — no zombie loop.
+- `teardownContext` order is sound: gameLoop.stop → window/document listeners removed →
+  garageInput/input detach → audio engine ramp-down → clearTanks → projectiles/effects/
+  arena dispose → preview dispose (async-safe via buildSeq bump; in-flight rebuild drops
+  its result) → renderWorld.dispose (incl. composer). Asset cache deliberately survives
+  (process-level, documented inline).
+- PlayerController.detach removes every attach-time listener incl. dom-scoped ones.
+
+**Findings:**
+1. **No leak:** all listeners/timers accounted for. `hudSink.current` closure is per-ctx;
+   a stale sink from a torn-down ctx can only fire while its own GameLoop lives, and
+   stop() precedes everything else.
+2. **Theoretical only (NOT fixed):** post-dispose calls to public API
+   (`setMode`/`startRound`/`getHud`) would throw via requireSim/requireModes rather than
+   no-op — React never does this today (state cleared with the instance), so adding
+   guards now would be speculative surface. Noted for API consumers outside App.tsx.
+3. `PreviewController.dispose` bumps buildSeq before clearing — in-flight rebuild cannot
+   resurrect meshes post-teardown (verified rebuild()'s seq check).
+
+Verdict: teardown path CLEAN. Gates: 214/214 tests. No code change; A4 closed as audited-clean.
+Commits follow (docs log + graph sync).
+
+**Next:** [E1] atmosphere preset gap check across maps, then [C1] capture math vs GDD (remainder).
+
+### Micro-reflection (iter 12)
+- Moved forward? Yes — last unverified lifecycle path confirmed sound with evidence.
+- Time lost? No.
+- Highest-leverage next task: E1 — cheap content-polish check with screenshot-verifiable output.
+
+---
+
 ## Iteration 11 — 2026-08-24 · [K] ACCESSIBILITY & POLISH — K1 PRESET MATRIX
 
 **Task:** BACKLOG K1 — document graphics preset matrix and fill parity gaps.
