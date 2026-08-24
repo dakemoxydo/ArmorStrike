@@ -5,12 +5,12 @@
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1818 nodes · 4391 edges · 139 communities (85 shown, 54 thin omitted)
+- 1818 nodes · 4380 edges · 126 communities (80 shown, 46 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 11 edges (avg confidence: 0.84)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `707416ca`
+- Built from commit: `5f103002`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,12 +20,12 @@
 - RenderWorld
 - Game
 - Projectile.ts
-- matchConfig.ts
 - physics.ts
+- AI.ts
 - rosterSpawn.ts
 - Effects
 - TankEntity
-- shared.ts
+- sharedResources.ts
 - compilerOptions
 - WEAPON_TUNING
 - textures/index.ts
@@ -44,17 +44,17 @@
 - EffectsPort
 - Nameplate
 - City Level Design — Grid + Districts + Overpass
-- GameOverScreen.tsx
+- AIController
 - Maps — Мульти-карты и выбор арены
 - MatchRuntime.ts
 - vite
 - AudioPort
 - AUTONOMOUS_PROMPT.md
-- RespawnController.ts
+- Standard_Weapon.md
 - ParticleEffects
 - FlamethrowerWeapon.ts
 - captureLogic.ts
-- SparkPool
+- PhysicsSystem.ts
 - weapons/types.ts
 - CannonWeapon
 - KillStreakTracker.ts
@@ -67,23 +67,20 @@
 - scripts
 - Wave System
 - PlayerController
-- TimeScale
 - Tank Movement — Движение корпуса
 - Village Level Design — Square + Barns + Paddocks
 - Tank Aim — Наведение башни
-- Standard Resources — ArmorStrike
-- WorldStages.ts
+- Standard_Tank.md
+- Arena.ts
 - ArmorStrike — Audit (ошибки и недочёты)
 - RailgunWeapon
 - Damage System — Централизованный урон
 - Core Patterns — ArmorStrike
 - Standard: UI, HUD & Input
 - Standard: Weapons, Projectiles & Damage
-- catalog.ts
+- PlayerFactory.ts
 - WeaponDeps
-- MuzzleSystem
 - Standard: Tank Entity & Systems
-- ScorchSystem
 - Player Controls — Управление игроком
 - 00_Index.md
 - stages/index.ts
@@ -92,16 +89,13 @@
 - Weapon
 - eslint-plugin-react-refresh
 - Garage Loadout — Сборка танка
-- App.tsx
+- catalog.ts
 - CoreSystem
-- BotAiStage.ts
-- RingSystem
 - SmokeSystem
 - RailgunWeapon.ts
 - ArmorStrike — Autonomous Progress Log
 - GDD — Approved Mechanics (ArmorStrike)
 - @types/react
-- Capture Point — Захват точки
 - Engage State (FSM)
 - tailwindcss
 - package.json
@@ -113,10 +107,9 @@
 - vite.config.ts
 - aiObstacle Module (computeObstacleAvoidance)
 - globals
-- TeamId
-- tuning.ts
+- BotAiStage.ts
 - villageMap.ts
-- MapId
+- App.tsx
 - ArenaBuilder.ts
 - AI Bots System
 - Assault Role
@@ -130,7 +123,6 @@
 - CI Workflow Configuration
 - ArmorStrike — 3D Бронетанковый Штурм (HTML)
 - MapSelect Overlay
-- HudSnapshot
 - Railgun Finite State Machine
 - Auto-pause Policy Function
 - Sniper Role
@@ -139,17 +131,12 @@
 - Standard Role
 - WEAPON_TUNING Flamethrower Config
 - @tailwindcss/vite
-- CombatSystem
-- TankAnimationSystem.ts
-- Arena_Physics.md
-- Tank.ts
+- ProjectileManager
+- Arena & Physics — Арена и коллизии
 - Approved Documentation Directory
 - Loadout Data (localStorage)
 - Graphics Quality Preset (localStorage)
-- game/constants.ts
 - Three.js
-- TankVisual
-- disposeObject3D
 - hexTexture
 
 ## God Nodes (most connected - your core abstractions)
@@ -165,16 +152,16 @@
 10. `CameraRig` - 30 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `GarageProps` --references--> `GameApi`  [EXTRACTED]
+  src/components/Garage.tsx → src/game/GameApi.ts
 - `HudProps` --references--> `GameApi`  [EXTRACTED]
   src/components/HUD.tsx → src/game/GameApi.ts
-- `ModeOption` --references--> `MatchModeId`  [EXTRACTED]
-  src/components/ModeSelect.tsx → src/game/match/matchTypes.ts
-- `ModeSelectProps` --references--> `MatchModeId`  [EXTRACTED]
-  src/components/ModeSelect.tsx → src/game/match/matchTypes.ts
 - `PauseMenuProps` --references--> `GameApi`  [EXTRACTED]
   src/components/PauseMenu.tsx → src/game/GameApi.ts
 - `HudWeaponProps` --references--> `HudSnapshot`  [EXTRACTED]
   src/components/hud/HudWeapon.tsx → src/game/types.ts
+- `PickAiFocusOpts` --references--> `Collider`  [EXTRACTED]
+  src/game/match/aiFocus.ts → src/game/engine/physics.ts
 
 ## Import Cycles
 - None detected.
@@ -183,11 +170,11 @@
 - **ArmorStrike Frontend Technology Stack** — react_19, typescript, three_js, vite [EXTRACTED 1.00]
 - **Game Architecture Layer Separation** — src_core_catalog, src_game_game_ts, src_components_hud, src_components_garage, src_components_pause [EXTRACTED 0.90]
 
-## Communities (139 total, 54 thin omitted)
+## Communities (126 total, 46 thin omitted)
 
 ### Community 0 - "GameSimulation"
-Cohesion: 0.11
-Nodes (8): GameSimulation, buildSimulationStages(), GameContext, GameLoop, GameLoopDeps, GameModeControllerDeps, GarageBindingDeps, GameEvent
+Cohesion: 0.08
+Nodes (10): TimeScale, GameSimulation, buildSimulationStages(), TankAnimationSystem, GameContext, GameLoop, GameLoopDeps, GameModeControllerDeps (+2 more)
 
 ### Community 1 - "CameraRig.ts"
 Cohesion: 0.09
@@ -201,29 +188,29 @@ Nodes (20): AtmospherePreset, ATMOSPHERES, DUSK, getAtmosphere(), NIGHT, getQual
 Cohesion: 0.09
 Nodes (21): createDamageSystem(), ArenaLike, DamageSystem, DamageSystemHooks, TankLike, applyHit(), applySplashHit(), HitEffect (+13 more)
 
-### Community 5 - "matchConfig.ts"
-Cohesion: 0.23
-Nodes (9): BASE, configForMode(), DEFAULT_MATCH_MODE, MatchConfig, evaluateMatchEnd(), leadingPersonal(), teamLead(), WinEvalInput (+1 more)
+### Community 5 - "physics.ts"
+Cohesion: 0.16
+Nodes (15): AI_LOW_HP_FRAC, findCoverPoint(), AvoidState, computeObstacleAvoidance(), dirFree(), _circleOut, Collider, ColliderKind (+7 more)
 
-### Community 6 - "physics.ts"
-Cohesion: 0.07
-Nodes (44): WeaponType, AIBody, AIController, AICtx, AIPersona, AIState, AITarget, DEFAULT_PERSONA (+36 more)
+### Community 6 - "AI.ts"
+Cohesion: 0.19
+Nodes (17): WeaponType, AIBody, AICtx, AIPersona, AIState, AITarget, DEFAULT_PERSONA, AimFireState (+9 more)
 
 ### Community 7 - "rosterSpawn.ts"
-Cohesion: 0.19
-Nodes (19): buildBotStyle(), aimErrorMulForRole(), personaForRole(), ROLE_LABEL, roleForBot(), roleLabel(), applyTeamRing(), botStyleColor() (+11 more)
+Cohesion: 0.26
+Nodes (14): buildBotStyle(), isObjectiveDuty(), applyTeamRing(), botStyleColor(), makeBot(), placeTank(), spawnMatchRoster(), ALPHA_SPAWN_POINTS (+6 more)
 
 ### Community 8 - "Effects"
 Cohesion: 0.05
 Nodes (10): AmbientDust, CameraShake, Effects, CHAR_MAT, EMBER_GEO, HULL_GEO, TRACK_GEO, TURRET_GEO (+2 more)
 
 ### Community 9 - "TankEntity"
-Cohesion: 0.07
-Nodes (3): BotEntry, RosterSpawnResult, TankEntity
+Cohesion: 0.06
+Nodes (14): BotEntry, RosterSpawnResult, disposeObject3D(), isShared(), BuffBaseSnapshot, createTankFxState(), TankBuffState, TankCombatState (+6 more)
 
-### Community 10 - "shared.ts"
-Cohesion: 0.21
-Nodes (10): markShared(), Shared, unmarkShared(), AssetManager, cloneWithOwnMaterials(), matsOf(), texturesOf(), cache (+2 more)
+### Community 10 - "sharedResources.ts"
+Cohesion: 0.27
+Nodes (7): markShared(), Shared, unmarkShared(), AssetManager, cloneWithOwnMaterials(), matsOf(), texturesOf()
 
 ### Community 11 - "compilerOptions"
 Cohesion: 0.07
@@ -234,8 +221,8 @@ Cohesion: 0.20
 Nodes (6): WEAPON_TUNING, makeBeamMesh(), RailgunBeamFx, tmpEnd, tmpLook, tmpMid
 
 ### Community 13 - "textures/index.ts"
-Cohesion: 0.21
-Nodes (21): buildScattered(), createStyleMaterials(), barrelTexture(), containerTexture(), crateTexture(), glowTexture(), scorchTexture(), smokeTexture() (+13 more)
+Cohesion: 0.19
+Nodes (23): createStyleMaterials(), barrelTexture(), containerTexture(), crateTexture(), glowTexture(), scorchTexture(), smokeTexture(), cachedGround() (+15 more)
 
 ### Community 14 - "ArmorStrike — Project Rules"
 Cohesion: 0.15
@@ -266,44 +253,48 @@ Cohesion: 0.06
 Nodes (41): React 19, HUD(), HudCrosshair(), HudCrosshairProps, FeedEntry, HudFeed(), HudFeedProps, HudProps (+33 more)
 
 ### Community 22 - "game/types.ts"
-Cohesion: 0.18
-Nodes (13): bakeSweep(), cacheByCanvas, CanvasCache, drawMinimap(), getCache(), MAP_HALF, paintStatics(), staticLayerKey() (+5 more)
+Cohesion: 0.12
+Nodes (16): bakeSweep(), cacheByCanvas, CanvasCache, drawMinimap(), getCache(), MAP_HALF, paintStatics(), staticLayerKey() (+8 more)
 
 ### Community 23 - "particles.ts"
-Cohesion: 0.23
-Nodes (6): CoreAnim, FlashLight, ParticleSystem, RingAnim, ScorchMark, SmokePuff
+Cohesion: 0.09
+Nodes (10): CoreAnim, FlashLight, MuzzleSystem, ParticleSystem, RingAnim, ScorchMark, ScorchSystem, SmokePuff (+2 more)
 
 ### Community 24 - "Core Architecture — ArmorStrike"
 Cohesion: 0.10
 Nodes (20): 1. Entity + systems, 2. Weapon strategy, 3. Damage ports, 4. Ports for I/O, 5. Event bus, 6. Run state, 7. Match modes (not app modes), Bootstrap composition (+12 more)
 
 ### Community 25 - "factoryMap.ts"
-Cohesion: 0.20
-Nodes (15): buildCentralHall(), buildContainerYard(), ArenaBuildContext, buildFactoryContent(), buildFoundry(), buildGantryCrane(), buildPipeRack(), buildRamps() (+7 more)
+Cohesion: 0.17
+Nodes (17): buildCentralHall(), buildContainerYard(), ArenaBuildContext, buildFactoryContent(), buildFoundry(), buildGantryCrane(), buildPipeRack(), buildRamps() (+9 more)
+
+### Community 27 - "Nameplate"
+Cohesion: 0.25
+Nodes (3): NameplateEntry, NameplateSubject, Nameplate
 
 ### Community 28 - "City Level Design — Grid + Districts + Overpass"
 Cohesion: 0.20
 Nodes (10): City Level Design — Grid + Districts + Overpass, Code map, Cover hierarchy, Districts (flavor props, cover density balanced ±20%), Implemented layout (code), Overpass (EW spine south of center), Shared scale (arena 300), Street graph (world, arena half = 150) (+2 more)
 
-### Community 29 - "GameOverScreen.tsx"
-Cohesion: 0.31
-Nodes (9): GameOverScreen(), GameOverScreenProps, MatchEndReason, formatKd(), formatMatchClock(), modeLabelRu(), resultsHeadline(), ResultsHeadlineInput (+1 more)
+### Community 29 - "AIController"
+Cohesion: 0.21
+Nodes (8): AIController, aimErrorMulForRole(), AIRole, coverHpFracForRole(), personaForRole(), ROLE_LABEL, roleForBot(), roleLabel()
 
 ### Community 30 - "Maps — Мульти-карты и выбор арены"
 Cohesion: 0.25
 Nodes (8): Known gaps / balance notes, Map IDs, Maps — Мульти-карты и выбор арены, Выбор карты (UI), Классы / API, Пересборка, Размер арены (глобальный), Структура сборки
 
 ### Community 31 - "MatchRuntime.ts"
-Cohesion: 0.19
+Cohesion: 0.18
 Nodes (7): BotRoster, MatchRuntime, MatchRuntimeHooks, MatchResult, RespawnHooks, PersonalStanding, RunState
 
 ### Community 34 - "AUTONOMOUS_PROMPT.md"
 Cohesion: 0.09
 Nodes (21): ANTI-PATTERNS YOU MUST AVOID, BACKLOG BOOTSTRAP (run once at the very start), BASELINE (verify at iteration #1, record actual numbers in PROGRESS.md), CORE RULES (NON-NEGOTIABLE), EMERGENCY PROCEDURES, FIRST ACTION (only when PROGRESS.md does not exist yet), GDD GUARDRAILS (autonomy boundary — hard limit), PHASE 1 — ORIENT (≤2 min) (+13 more)
 
-### Community 35 - "RespawnController.ts"
-Cohesion: 0.25
-Nodes (8): applyRespawnCombat(), canRespawn(), Respawnable, FFA_FALLBACK, RespawnController, restoreDeathVisuals(), respawnPoolFor(), pickRespawnPoint()
+### Community 35 - "Standard_Weapon.md"
+Cohesion: 0.23
+Nodes (11): Arena Physics, Damage System, Projectile System — Пул снарядов, Weapon Cannon «Смоки», Weapon Flamethrower Firebird, Railgun Weapon (Рельсотрон), Match Framework, PROJECTILE Constants (speed=58, range=85, radius=0.18) (+3 more)
 
 ### Community 37 - "FlamethrowerWeapon.ts"
 Cohesion: 0.23
@@ -313,9 +304,13 @@ Nodes (6): inFlameConeXZ(), tmpDir, tmpMuzzle, tmpMuzzleQuat, tmpTargetVec, reso
 Cohesion: 0.11
 Nodes (20): COLORS, CAPTURE_ANCHORS, CaptureAnchor, zonesForMap(), CaptureController, CAPTURE, CaptureOwner, CapturePointId (+12 more)
 
+### Community 39 - "PhysicsSystem.ts"
+Cohesion: 0.24
+Nodes (8): _solid, solidColliders(), _pa, _pb, resolveWalls(), separateTankPair(), TankXZ, PhysicsBody
+
 ### Community 40 - "weapons/types.ts"
-Cohesion: 0.21
-Nodes (7): tmpDir, tmpMuzzle, ownerReloadMul(), buildAmmoState(), WeaponAmmoState, WeaponOwnerParams, WeaponOwnerVisual
+Cohesion: 0.16
+Nodes (9): _wctx, WeaponHost, tmpDir, tmpMuzzle, ownerReloadMul(), buildAmmoState(), WeaponAmmoState, WeaponOwnerParams (+1 more)
 
 ### Community 41 - "CannonWeapon"
 Cohesion: 0.20
@@ -346,8 +341,8 @@ Cohesion: 0.17
 Nodes (12): 10. CP objective AI (P5), 11. Results & balance (P6), 1. App GameMode ≠ MatchModeId, 2. Pure helpers + thin runtime, 3. Damage gates (central), 4. Kill credit path, 5. Lifecycle, 6. Roster (+4 more)
 
 ### Community 48 - "ErrorBoundary"
-Cohesion: 0.25
-Nodes (4): ErrorBoundary, Props, State, root
+Cohesion: 0.29
+Nodes (3): ErrorBoundary, Props, State
 
 ### Community 49 - "scripts"
 Cohesion: 0.29
@@ -365,13 +360,13 @@ Nodes (11): Animated nodes (ArenaEffects), Code map, Cover hierarchy, Implemente
 Cohesion: 0.33
 Nodes (6): Tank Aim — Наведение башни, Входы, Классы, Назначение, Направление выстрела, Формула (TankAimSystem)
 
-### Community 56 - "Standard Resources — ArmorStrike"
-Cohesion: 0.50
-Nodes (4): 1. Textures: memoized factories + `markShared` ownership, 2. Zone views: anchor-keyed invalidation, 3. Draw-call census: измеряй перед тем как оптимизировать, Standard Resources — ArmorStrike
+### Community 56 - "Standard_Tank.md"
+Cohesion: 0.23
+Nodes (7): 1. Textures: memoized factories + `markShared` ownership, 2. Zone views: anchor-keyed invalidation, 3. Draw-call census: измеряй перед тем как оптимизировать, Standard Resources — ArmorStrike, Health & Regen — Прочность и саморемонт, Game Lifecycle, Tank Movement
 
-### Community 57 - "WorldStages.ts"
-Cohesion: 0.09
-Nodes (16): Arena, disposeArenaSubtree(), ProjectileManager, invalidateSolidColliderCache(), StageDeps, NameplateMap, _bd, _bv (+8 more)
+### Community 57 - "Arena.ts"
+Cohesion: 0.17
+Nodes (5): Arena, disposeArenaSubtree(), invalidateSolidColliderCache(), MinimapSystem, HudModel
 
 ### Community 58 - "ArmorStrike — Audit (ошибки и недочёты)"
 Cohesion: 0.13
@@ -393,9 +388,9 @@ Nodes (9): 1. React ↛ Simulation, 2. Two channels: events + HUD snapshot, 3. C
 Cohesion: 0.22
 Nodes (9): 1. Weapon strategy (единый интерфейс), 2. Owner & context ports, 3. Fire pipeline (кадр), 4. Projectiles, 5. Shared hit helpers, 6. DamageSystem split, 7. Catalog boundary, 8. Checklist нового оружия (+1 more)
 
-### Community 64 - "catalog.ts"
-Cohesion: 0.17
-Nodes (16): HullCardProps, MainMenuProps, TurretCardProps, HULL_IDS, TURRET_IDS, HullDef, HullId, TurretDef (+8 more)
+### Community 64 - "PlayerFactory.ts"
+Cohesion: 0.15
+Nodes (12): HullId, TurretId, buildPlayerStyle(), TankStyle, GarageBinding, RosterSpawnCtx, createTankEntity(), TankBuildInput (+4 more)
 
 ### Community 65 - "WeaponDeps"
 Cohesion: 0.17
@@ -410,32 +405,24 @@ Cohesion: 0.25
 Nodes (8): Player Controls — Управление игроком, Pointer Lock, Заметки дизайна, Классы и файлы, Логика прицела, Назначение, Состояния, Схема управления
 
 ### Community 70 - "00_Index.md"
-Cohesion: 0.17
-Nodes (13): Health & Regen — Прочность и саморемонт, Team Deathmatch Game Design Document, Wave Buffs Feature, Wave System — Волны и спавн, Weapon Cannon «Смоки», Weapon Flamethrower Firebird, Railgun Weapon (Рельсотрон), Game Lifecycle (+5 more)
+Cohesion: 0.18
+Nodes (10): Acceptance (P4–P5), Capture Point — Захват точки, Classes, Objective AI (P5), Per-map anchors, Визуал / UI, Правила (as shipped), Team Deathmatch Game Design Document (+2 more)
 
 ### Community 71 - "stages/index.ts"
-Cohesion: 0.13
-Nodes (18): PlayerInputStage, TankAnimationSystemStage, TankFxSystemStage, TankSystemStage, WeaponSystemStage, FrameContext, ScalarCell, SimSystem (+10 more)
+Cohesion: 0.11
+Nodes (25): rearPoint(), PlayerInputStage, TankAnimationSystemStage, TankFxSystemStage, TankSystemStage, WeaponSystemStage, FrameContext, NameplateMap (+17 more)
 
 ### Community 72 - "FlameParticlePool.ts"
 Cohesion: 0.20
 Nodes (6): FlameParticle, FlameParticlePool, localDir, tmpColor, tmpMatrix, tmpScaleVec
 
-### Community 74 - "Weapon"
-Cohesion: 0.20
-Nodes (3): _wctx, WeaponHost, Weapon
-
 ### Community 76 - "Garage Loadout — Сборка танка"
 Cohesion: 0.33
 Nodes (6): Garage Loadout — Сборка танка, UI / persistence, Классы, Модель сборки, Параметры entity, Стили
 
-### Community 77 - "App.tsx"
-Cohesion: 0.13
-Nodes (15): BootError(), BootErrorProps, Garage(), HullCard(), MainMenu(), ModeOption, MODES, ModeSelect() (+7 more)
-
-### Community 79 - "BotAiStage.ts"
-Cohesion: 0.25
-Nodes (11): BotAiStage, deadStub(), syncZoneViews(), pickAiFocus(), isObjectiveDuty(), moveHintForZone(), ObjectiveZoneView, pickObjectiveZone() (+3 more)
+### Community 77 - "catalog.ts"
+Cohesion: 0.16
+Nodes (15): Garage(), GarageProps, HullCard(), HullCardProps, MainMenu(), MainMenuProps, TurretCard(), TurretCardProps (+7 more)
 
 ### Community 82 - "RailgunWeapon.ts"
 Cohesion: 0.15
@@ -449,10 +436,6 @@ Nodes (16): ArmorStrike — Autonomous Progress Log, Baseline (recorded 2026-08-
 Cohesion: 0.40
 Nodes (5): GDD — Approved Mechanics (ArmorStrike), Архитектура, Жанр и петля, Источники истины в коде, Навигация
 
-### Community 86 - "Capture Point — Захват точки"
-Cohesion: 0.29
-Nodes (7): Acceptance (P4–P5), Capture Point — Захват точки, Classes, Objective AI (P5), Per-map anchors, Визуал / UI, Правила (as shipped)
-
 ### Community 87 - "Engage State (FSM)"
 Cohesion: 0.50
 Nodes (4): aiCover Module (findCoverPoint), aiTuning Module (preferredRange, aimTolerance, steering), Engage State (FSM), losClear Module (line of sight через colliders)
@@ -461,76 +444,60 @@ Nodes (4): aiCover Module (findCoverPoint), aiTuning Module (preferredRange, aim
 Cohesion: 0.40
 Nodes (4): name, private, type, version
 
-### Community 99 - "TeamId"
-Cohesion: 0.20
-Nodes (12): allyLineBlockers(), FocusCandidate, FocusSelf, isLineBlocker(), PickAiFocusOpts, PickAiFocusResult, TeamId, isAlly() (+4 more)
-
-### Community 100 - "tuning.ts"
-Cohesion: 0.26
-Nodes (9): TankCombatTimersSystem, tmpV, BOOST_JET_HEIGHT, BOOST_JET_OFFSET, DUST_HEIGHT, DUST_SPREAD, HEAL_DELAY, HEAL_PER_SEC (+1 more)
+### Community 99 - "BotAiStage.ts"
+Cohesion: 0.06
+Nodes (48): GameOverScreen(), GameOverScreenProps, BotAiStage, deadStub(), syncZoneViews(), allyLineBlockers(), FocusCandidate, FocusSelf (+40 more)
 
 ### Community 101 - "villageMap.ts"
 Cohesion: 0.22
 Nodes (22): buildVillageBanners(), buildVillageBarns(), buildVillageContent(), buildVillageFences(), buildVillageFireflies(), buildVillageFoliage(), buildVillageHayPlatform(), buildVillageHouses() (+14 more)
 
-### Community 102 - "MapId"
-Cohesion: 0.17
-Nodes (12): ICONS, MapSelect(), MapSelectProps, GameModeController, DEFAULT_MAP_ID, isMapId(), MAP_IDS, MapDef (+4 more)
+### Community 102 - "App.tsx"
+Cohesion: 0.11
+Nodes (22): BootError(), BootErrorProps, ICONS, MapSelect(), MapSelectProps, ModeOption, MODES, ModeSelect() (+14 more)
 
 ### Community 103 - "ArenaBuilder.ts"
 Cohesion: 0.14
 Nodes (7): ArenaShellTheme, buildArenaShell(), buildArena(), makeContext(), ArenaEffects, SmokeSprite, ARENA
 
 ### Community 108 - "GameApi"
-Cohesion: 0.27
-Nodes (3): App(), GarageProps, GameApi
-
-### Community 118 - "HudSnapshot"
-Cohesion: 0.22
-Nodes (5): TurretCard(), getWeaponMeta(), buildGameLoop(), HudUnit, HudSnapshot
+Cohesion: 0.24
+Nodes (3): App(), GameApi, root
 
 ### Community 123 - "simPorts.ts"
-Cohesion: 0.22
-Nodes (10): TankAimSystem, TankMotionSystem, TankPresentationSystem, LiveTank, AimBody, CombatTimerBody, MotionBody, PresentationBody (+2 more)
+Cohesion: 0.08
+Nodes (30): BOOST, PROJECTILE, SCORE, TANK, TankAimSystem, animateDeath(), tintBody(), TankCombatTimersSystem (+22 more)
 
-### Community 128 - "TankAnimationSystem.ts"
-Cohesion: 0.38
-Nodes (3): animateDeath(), tintBody(), AnimBody
+### Community 127 - "ProjectileManager"
+Cohesion: 0.23
+Nodes (4): CombatDeps, CombatSystem, ProjectileManager, StageDeps
 
-### Community 129 - "Arena_Physics.md"
-Cohesion: 0.18
-Nodes (10): Arena Physics, Damage System, Arena & Physics — Арена и коллизии, Collider model, Destructible blocks, Resolve, Арена, Классы (+2 more)
-
-### Community 130 - "Tank.ts"
-Cohesion: 0.21
-Nodes (9): BuffBaseSnapshot, createTankFxState(), TankBuffState, TankCombatState, TankMotionState, FxBody, TankFxState, TankParams (+1 more)
-
-### Community 134 - "game/constants.ts"
-Cohesion: 0.27
-Nodes (7): BOOST, PROJECTILE, SCORE, TANK, BOT_NORMAL, applyPlayerKillScore(), KillScoreState
+### Community 129 - "Arena & Physics — Арена и коллизии"
+Cohesion: 0.33
+Nodes (6): Arena & Physics — Арена и коллизии, Collider model, Destructible blocks, Resolve, Арена, Классы
 
 ### Community 138 - "hexTexture"
 Cohesion: 0.52
 Nodes (4): buildAtmosphere(), buildCityAtmosphere(), buildVillageAtmosphere(), hexTexture()
 
 ## Knowledge Gaps
-- **441 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+436 more)
+- **441 isolated node(s):** `_pa`, `_pb`, `name`, `private`, `version` (+436 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **54 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **46 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `typescript` connect `typescript` to `catalog.ts`?**
-  _High betweenness centrality (0.046) - this node is a cross-community bridge._
 - **Why does `devDependencies` connect `devDependencies` to `vite`, `globals`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `@types/react`, `tailwindcss`, `typescript`, `package.json`, `@types/react-dom`, `@types/three`, `@tailwindcss/vite`?**
-  _High betweenness centrality (0.046) - this node is a cross-community bridge._
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **Why does `typescript` connect `typescript` to `catalog.ts`?**
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
 - **Why does `typescript` connect `typescript` to `devDependencies`?**
-  _High betweenness centrality (0.045) - this node is a cross-community bridge._
-- **What connects `name`, `private`, `version` to the rest of the system?**
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **What connects `_pa`, `_pb`, `name` to the rest of the system?**
   _441 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `GameSimulation` be split into smaller, more focused modules?**
-  _Cohesion score 0.11396011396011396 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08095238095238096 - nodes in this community are weakly interconnected._
 - **Should `CameraRig.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.09268707482993198 - nodes in this community are weakly interconnected._
 - **Should `RenderWorld` be split into smaller, more focused modules?**
