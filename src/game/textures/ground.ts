@@ -1,47 +1,5 @@
 import * as THREE from 'three';
-import { cachedTexture, cachedTextureEvict, cachedTextureHas, makeCanvas, toTexture, noise } from './shared';
-
-export function groundTexture(): THREE.CanvasTexture {
-  // LRU-1: only the last ground texture is retained (three 2048/3072² canvases
-  // would pin tens of MB of VRAM if all were cached at once).
-  return cachedTexture('ground:base', () => {
-  const S = 1024;
-  const { c, ctx } = makeCanvas(S);
-  ctx.fillStyle = '#10151d';
-  ctx.fillRect(0, 0, S, S);
-  noise(ctx, S, 6000, 0.05);
-
-  const cell = 128;
-  for (let i = 0; i <= S; i += cell) {
-    ctx.strokeStyle = 'rgba(150,190,220,0.07)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, S); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(S, i); ctx.stroke();
-  }
-  for (let i = 0; i <= S; i += cell * 4) {
-    ctx.strokeStyle = 'rgba(46,230,192,0.16)';
-    ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, S); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(S, i); ctx.stroke();
-  }
-  ctx.fillStyle = 'rgba(200,220,240,0.10)';
-  for (let x = cell; x < S; x += cell) {
-    for (let y = cell; y < S; y += cell) {
-      ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
-    }
-  }
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  for (let i = 0; i < 30; i++) {
-    ctx.lineWidth = 1 + Math.random() * 2;
-    const x = Math.random() * S, y = Math.random() * S;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + (Math.random() - 0.5) * 260, y + (Math.random() - 0.5) * 260);
-    ctx.stroke();
-  }
-    return toTexture(c, 7);
-  });
-}
+import { cachedTexture, cachedTextureEvict, cachedTextureHas, makeCanvas, noise } from './shared';
 
 export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
   return cachedTexture(`ground:factory:${arenaSize}`, () => {

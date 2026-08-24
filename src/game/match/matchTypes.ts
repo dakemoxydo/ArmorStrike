@@ -41,8 +41,3 @@ export interface MatchResult {
   teamScore: { alpha: number; bravo: number };
   matchTimeSec: number;
 }
-
-export interface TankMatchStats {
-  kills: number;
-  deaths: number;
-}

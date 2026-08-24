@@ -5,9 +5,6 @@ import type { PhysicsBody } from '../../tank/simPorts';
 import { separateTankPair, type TankXZ } from '../tankSeparation';
 import { solidColliders } from '../solidColliderCache';
 
-/** Re-export: Arena.rebuild calls the leaf module; keep path for tests/docs. */
-export { invalidateSolidColliderCache } from '../solidColliderCache';
-
 
 const _pa: TankXZ = { x: 0, z: 0 };
 const _pb: TankXZ = { x: 0, z: 0 };

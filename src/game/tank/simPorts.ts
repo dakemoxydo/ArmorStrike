@@ -4,7 +4,6 @@
 import type * as THREE from 'three';
 import type { Weapon } from '../weapons/types';
 import type { TankFxState, TankParams, TankVisual } from './types';
-import type { BuffBaseSnapshot } from './components';
 
 /** Движение корпуса + boost + knockback. */
 export interface MotionBody {
@@ -97,21 +96,6 @@ export interface ControllableTank {
   boosting: boolean;
   aimYaw: number;
   weapon?: Weapon;
-}
-
-/** Временные волновые баффы (flat view; entity projects from `buffs`). */
-export interface BuffableTank {
-  buffBase: BuffBaseSnapshot | null;
-  reloadSpeedMul: number;
-  boostDrainMul: number;
-  boostRechargeMul: number;
-  params: {
-    damage: number;
-    speed: number;
-    reverseSpeed: number;
-    turnSpeed: number;
-    shotCooldown: number;
-  };
 }
 
 /** Строка scoreboard / HUD без полного entity. */
