@@ -17,6 +17,39 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 3 — 2026-08-24 · [J] CODE QUALITY
+
+**Task:** BACKLOG J2 — unit-test ArenaEffects smoke eviction under cap pressure (last H-4 remainder).
+
+**Diagnosis + plan (written before editing):**
+- `spawnStackSmoke` (ArenaEffects.ts:67–91): reuse dead slot → else create; past 44 slots
+  evict oldest (scene removal + material dispose; shared smoke map must survive).
+- Tuning fact discovered: spawn cadence 0.13 s × max life 4.8 s ⇒ peak concurrency ≈37 < 44,
+  so the eviction guard is defensive-only — unreachable via `update()` under current tuning.
+- Plan: reachable paths through public `update()`/`resetForRebuild` with real THREE +
+  canvas stub (smokeSystem.test.ts pattern); eviction driven directly via the private
+  spawner (`fx['spawnStackSmoke'].call`) with SpriteMaterial.dispose spied and
+  cachedTexture('smoke').dispose asserted never called. No prod-code change.
+
+**Result:** `src/__tests__/arenaEffectsSmoke.test.ts` — 4 tests green: throttle cadence,
+reuse-before-grow identity, >44 cap + oldest-evicted/material-disposed/map-alive,
+reset detach/clear/respawn. Harness lesson: node vitest has NO `document` — seed the
+stub from `{}` when absent (existing suite pre-seeds; new suite handles both).
+
+**Metrics:** tests 207→211 (+4); typecheck/lint clean; bundle unchanged at 1,097,019 B.
+Commits: `a215ae7` (test), graph `650525b`. **Audit H-4 coverage debt now fully closed**
+(zoneViewCache, aiFocus, bloom lifecycle, smoke pool).
+
+**Next:** [B1] draw-call census per map (first measurable perf task), or [A1] length-based
+cache sweep for remaining F-1-class bugs.
+
+### Micro-reflection (iter 3)
+- Moved forward? Yes — H-4 closed entirely; eviction semantics are now pinned against tuning drift.
+- Time lost? Minor: assumed jsdom-like document exists in node vitest; check environment globals before stubbing.
+- Highest-leverage next task: B1 draw-call census — first task where the win is a number, not just safety.
+
+---
+
 ## Iteration 2 — 2026-08-24 · [J] CODE QUALITY
 
 **Task:** BACKLOG J1 — unit-test `RenderWorld.applyQuality` bloom lifecycle (audit H-4 remainder, guards the F-3 fix).
