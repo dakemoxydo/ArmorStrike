@@ -5,7 +5,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 
 ## [A] BUGS & STABILITY
 - [ ] A1: Sweep `src/game` for remaining length-based caches of the F-1 class (cache keyed on array length instead of content/reference) and add a regression test for any found.
-- [ ] A2: Unit-test `KillStreakTracker` window expiry incl. negative time deltas (stale stamps from a previous match must never suppress new streaks).
+- [x] A2: Unit-test `KillStreakTracker` window expiry incl. negative time deltas (stale stamps from a previous match must never suppress new streaks). — iter 1 `622eca3` (+5 tests, predicate fix)
 - [ ] A3: Verify full match lifecycle resets (DM→TDM→CP across village/city/factory) leave no cross-mode state (score, streaks, capture zones, rosters) — lifecycle test.
 - [ ] A4: Audit teardown path (`Game.teardownContext`, App StrictMode guard) for dangling listeners/timers after unmount.
 
