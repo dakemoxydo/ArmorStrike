@@ -1365,13 +1365,13 @@
     "semantic_hash": ""
   },
   "BACKLOG.md": {
-    "mtime": 1787591348.2434714,
-    "ast_hash": "b28cca370b57b783cd05dc8227d132f0",
+    "mtime": 1787591875.6666372,
+    "ast_hash": "c7352119eb59833e321ed3df48067610",
     "semantic_hash": ""
   },
   "PROGRESS.md": {
-    "mtime": 1787591342.2441432,
-    "ast_hash": "e67d1b48667ecba70fa7a2124a31cf2f",
+    "mtime": 1787591869.5057135,
+    "ast_hash": "6f6ef3d4d0001ebfdac0b8eb4fc2ae72",
     "semantic_hash": ""
   },
   "src/__tests__/renderWorldQuality.test.ts": {
@@ -1382,6 +1382,11 @@
   "src/__tests__/arenaEffectsSmoke.test.ts": {
     "mtime": 1787591726.482824,
     "ast_hash": "7006a44bfb85598ea66ae3e56e2e95b3",
+    "semantic_hash": ""
+  },
+  "scripts/draw-call-census.ts": {
+    "mtime": 1787592623.7153678,
+    "ast_hash": "54d989a37c6f2985e02f1c82ec39e429",
     "semantic_hash": ""
   }
 }
