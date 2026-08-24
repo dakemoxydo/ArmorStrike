@@ -17,6 +17,46 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 10 — 2026-08-24 · [B] PERFORMANCE — BUNDLE CENSUS (B4)
+
+**Task:** BACKLOG B4 — identify largest contributors inside the dist single-file bundle.
+
+**Method:** vite-bundle-visualizer's stats.html carries an EMPTY tree when
+vite-plugin-singlefile inlines everything (no per-module data) — fell back to a
+sourcemap census: `npm run build -- --sourcemap`, then per-source gzipped size
+from `sourcesContent` in dist/*.js.map, aggregated by package. Map artifact
+deleted afterwards; final `npm run build` restored clean dist.
+
+**Findings (approx per-source gzip of 1.10 MB / 301.7 KB gz bundle):**
+
+| Package | own-gz share | Verdict |
+|---|---|---|
+| three | ≈418 KB src-gz | unavoidable core; tree-shaken addons only |
+| app src | ≈212 KB src-gz | villageMap/cityMap data-heavy but acceptable |
+| react-dom | ≈96 KB src-gz | required by React UI |
+| lucide-react | ≈16 KB src-gz | already tree-shaken (only used icons) |
+| react + scheduler | ≈8 KB | required |
+
+**Top-3 trim candidates + verdict:**
+1. three (~55% incl. addons): no safe win without dropping features — SKIP.
+2. App source (~28%): map-data files dominate; splitting would hurt cohesion for ~KBs — SKIP.
+3. lucide-react (~5%): verify named-icon imports remain the pattern; already minimal — MONITOR.
+Conclusion: current 301.7 KB gz single-file is near its practical floor for this stack;
+no action justified at present risk/benefit.
+
+**Gates:** typecheck/lint/tests untouched (no code change); build ✓ 1,097,159 B unchanged.
+Tooling kept: `$LOCALAPPDATA/Temp/sourcemap-census.mjs` is throwaway; the METHOD is
+documented here. B4 closed as "investigated, no trim action justified".
+
+**Next:** [K1] graphics preset matrix doc, then [A4] teardown audit.
+
+### Micro-reflection (iter 10)
+- Moved forward? Yes — negative result with numbers prevents future speculative bundling work.
+- Time lost? Two dead ends (empty visualizer tree; heredoc escaping). Probe artifact formats before parsing them.
+- Highest-leverage next task: K1 preset matrix (small doc closing an audit gap).
+
+---
+
 ## Iteration 9 — 2026-08-24 · [A]+[C] LIFECYCLE TEST + REGEN AUDIT
 
 **Tasks:** BACKLOG A3 (match-lifecycle reset sequence test) + partial C1 (regen math vs GDD).

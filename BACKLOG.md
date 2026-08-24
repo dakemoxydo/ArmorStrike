@@ -14,7 +14,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 - [x] B1b: Instance village fence rails (`villageMap.ts:426`, 108 identical boxes) into one InstancedMesh following the foliage pattern (`buildVillageFoliage`); re-run census — expect village ≈940→≈830 est. draw calls. — iter 5 `4c7ff44` (village 940→845 est. DC)
 - [x] B2: Texture-factory memoization coverage: list factories not yet registered via markShared; register stragglers. — iter 7: FULL coverage confirmed (all textures/* via cachedTexture; direct CanvasTexture only in per-instance nameplate/CaptureMarkers)
 - [x] B3: Confirm HudModel has zero per-frame setState; trace HUD subscription updates to render batches. — iter 6: VERIFIED clean (refs for continuous channels; thresholded force() only — see PROGRESS iter 6)
-- [ ] B4: Bundle census: identify largest contributors inside dist single-file bundle from build output; name top-3 trim candidates.
+- [x] B4: Bundle census: identify largest contributors inside dist single-file bundle from build output; name top-3 trim candidates. — iter 10: three ≈55% src-gz / app ≈28% / react-dom ≈32%; verdict NO trim action justified (see PROGRESS iter 10)
 
 ## [C] CORE GAMEPLAY
 - [ ] C1: Verify capture-point contest/decay math against Docs/GDD/Approved/Capture_Point.md constants; reconcile mismatches.
