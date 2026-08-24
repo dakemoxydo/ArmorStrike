@@ -41,4 +41,13 @@ describe('atmospherePresets', () => {
       expect(p.skySunDir).toHaveLength(3);
     }
   });
+
+  // Absolute pins: exposure values were globally retuned in 14478e1
+  // (NIGHT 1.08->0.92, DUSK 1.14->1.0); GDD now documents 1.0. Pin them so
+  // accidental drift in either direction fails loudly.
+  it('exposure values match documented tuning', () => {
+    expect(getAtmosphere('factory').exposure).toBe(0.92);
+    expect(getAtmosphere('city').exposure).toBe(0.92);
+    expect(getAtmosphere('village').exposure).toBe(1.0);
+  });
 });

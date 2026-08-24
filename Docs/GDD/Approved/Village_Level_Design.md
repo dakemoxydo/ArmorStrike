@@ -16,7 +16,7 @@ Village рендерится в **тёплом закатном свете**, а
 
 - **Пресеты:** `src/game/atmospherePresets.ts` (`getAtmosphere`, `ATMOSPHERES`). `factory`/`city` = `NIGHT`, `village` = `DUSK`.
 - **Поля пресета:** background, fog (color/near/far), exposure, hemi (sky/ground/intensity), sun (color/intensity/position), rim (color/intensity), sky uniforms (zenith/horizon/cloud/sunDir/sunDisc/sunGlow).
-- **Village DUSK:** sun `[185,78,118]` (ниже → длинные тени), fog `#6b4a34`, rim `#ff9a4d`, exposure `1.14`, sky horizon `#f58c4d`-подобный тёплый.
+- **Village DUSK:** sun `[185,78,118]` (ниже → длинные тени), fog `#6b4a34`, rim `#ff9a4d`, exposure `1.0`, sky horizon `#f58c4d`-подобный тёплый.
 - **Применение:** `RenderWorld.applyAtmosphere(mapId)` вызывается из `buildArena(arena, effects, mapId, renderWorld)`; `Arena.setRenderWorld(renderWorld)` пробрасывает ссылку из `GameBootstrap`. Правило C3 — без циклических импортов.
 
 ## Visual detail pass (geometry, non-gameplay)
