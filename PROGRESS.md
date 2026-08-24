@@ -17,6 +17,39 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 7 — 2026-08-24 · [B2]+[J4] RESOURCES AUDIT + ARCHITECTURE DOC
+
+**Tasks:** BACKLOG B2 (texture memoization coverage) + J4 (architecture docs for
+texture-memoization + zoneViewCache patterns). B1c (city instancing) deferred — see note.
+
+**B1c deferral rationale:** city's 607 remaining boxes split into (a) destructible props
+(jersey/cars/planters/kiosks) where per-instance materials are FUNCTIONAL — damage-flash
+collects each block's own materials via traverse, merging would break flash/tilt; and
+(b) unique-sized buildings where only geometry-baking (BufferGeometryUtils.mergeGeometries)
+would pay off — a multi-file visual rewrite while screenshot verification is degraded
+(vision_analyze 401) is not a safe autonomous trade. Revisit when visual verification works.
+
+**B2 — full coverage confirmed.** All factories under `src/game/textures/*`
+(crates/effects/ground/signs/walls/tank) route through `cachedTexture`; keys include all
+draw params; ground uses documented LRU-1 eviction (`ground:last` ↔ `ground:<map>:<size>`).
+Only direct `new THREE.CanvasTexture` sites are per-instance lifecycles with explicit
+dispose: nameplate.ts, match/CaptureMarkers.ts — correctly NOT memoized. Registry already
+tested by `textureCache.test.ts`. No stragglers.
+
+**J4 — new doc:** `Docs/Architecture/Standard_Resources.md` — cachedTexture/markShared
+ownership rules (5 rules incl. LRU-1 policy + the "no direct CanvasTexture in shared
+factories" boundary), zoneViewCache anchor-scalar invalidation contract (F-1 lesson),
+census-first instancing workflow with measured numbers. Indexed in Core.md standards table.
+Content limited to code-verifiable facts. Gates: 211/211 tests.
+**Next:** [J3] dead-export scan after perf passes, or [A3] match-lifecycle reset test.
+
+### Micro-reflection (iter 7)
+- Moved forward? Yes — audit closed with evidence + patterns documented for future sessions.
+- Time lost? No; B1c deferral was deliberate scope protection, not drift.
+- Highest-leverage next task: J3 dead-export scan (cheap, quantifiable).
+
+---
+
 ## Iteration 6 — 2026-08-24 · [A]+[B] AUDITS (both clean)
 
 **Tasks:** BACKLOG A1 (F-1-class cache sweep) + B3 (HudModel render-pressure check).

@@ -12,7 +12,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 ## [B] PERFORMANCE
 - [x] B1: Draw-call census per map: count meshes vs instanced in RenderWorld scene graph; instance the worst repeated prop category; record before/after numbers. — iter 4 `38171ba` (census tool; baseline factory 327 / village 940 / city 753 est. DC)
 - [x] B1b: Instance village fence rails (`villageMap.ts:426`, 108 identical boxes) into one InstancedMesh following the foliage pattern (`buildVillageFoliage`); re-run census — expect village ≈940→≈830 est. draw calls. — iter 5 `4c7ff44` (village 940→845 est. DC)
-- [ ] B2: Texture-factory memoization coverage: list factories not yet registered via markShared; register stragglers.
+- [x] B2: Texture-factory memoization coverage: list factories not yet registered via markShared; register stragglers. — iter 7: FULL coverage confirmed (all textures/* via cachedTexture; direct CanvasTexture only in per-instance nameplate/CaptureMarkers)
 - [x] B3: Confirm HudModel has zero per-frame setState; trace HUD subscription updates to render batches. — iter 6: VERIFIED clean (refs for continuous channels; thresholded force() only — see PROGRESS iter 6)
 - [ ] B4: Bundle census: identify largest contributors inside dist single-file bundle from build output; name top-3 trim candidates.
 
@@ -54,7 +54,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 - [x] J1: Unit-test `applyQuality` bloom dispose/recreate path with lightweight THREE stubs (audit H-4 remainder). — iter 2 `fe14685` (+6 tests)
 - [x] J2: Unit-test ArenaEffects smoke eviction under cap pressure (audit H-4 remainder). — iter 3 `a215ae7` (+4 tests; guard is defensive-only at current tuning)
 - [ ] J3: Dead-export scan after the two perf passes; remove unreferenced symbols.
-- [ ] J4: Document texture-memoization + zoneViewCache patterns into Docs/Architecture/ (from commits 6ad7740/257c23c).
+- [x] J4: Document texture-memoization + zoneViewCache patterns into Docs/Architecture/ (from commits 6ad7740/257c23c). — iter 7: `Docs/Architecture/Standard_Resources.md` + Core.md index
 
 ## [K] ACCESSIBILITY & POLISH
 - [ ] K1: Document graphics preset matrix (low/med/high: pixel ratio, shadows, bloom, particles) and fill parity gaps.
