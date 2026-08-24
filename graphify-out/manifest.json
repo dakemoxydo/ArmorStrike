@@ -1365,18 +1365,23 @@
     "semantic_hash": ""
   },
   "BACKLOG.md": {
-    "mtime": 1787590764.688215,
-    "ast_hash": "465a08fb1f502085e7c440e34212573c",
+    "mtime": 1787591348.2434714,
+    "ast_hash": "b28cca370b57b783cd05dc8227d132f0",
     "semantic_hash": ""
   },
   "PROGRESS.md": {
-    "mtime": 1787590759.0094137,
-    "ast_hash": "338924daa8806ad01b5a7f527bb80f9a",
+    "mtime": 1787591342.2441432,
+    "ast_hash": "e67d1b48667ecba70fa7a2124a31cf2f",
     "semantic_hash": ""
   },
   "src/__tests__/renderWorldQuality.test.ts": {
     "mtime": 1787591213.3968437,
     "ast_hash": "53e2ccc6ff6c21397c5ada67eda87abe",
+    "semantic_hash": ""
+  },
+  "src/__tests__/arenaEffectsSmoke.test.ts": {
+    "mtime": 1787591726.482824,
+    "ast_hash": "7006a44bfb85598ea66ae3e56e2e95b3",
     "semantic_hash": ""
   }
 }
