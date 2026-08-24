@@ -17,6 +17,43 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 4 — 2026-08-24 · [B] PERFORMANCE
+
+**Task:** BACKLOG B1 — draw-call census per map.
+
+**Diagnosis + plan (written before editing):**
+- Arena props are built by `arena/*.ts` content builders via `ctx.box`/`addColliderBlock`
+  wrappers; village already uses one InstancedMesh for foliage (420 instances), everything
+  else is per-object meshes → draw calls scale with prop count.
+- No browser APIs under `src/game/arena/` → headless census possible without WebGL.
+- Plan: standalone `scripts/draw-call-census.ts` (npx tsx, zero deps) — build each map with
+  real THREE + Proxy-based 2d-context stub, count Mesh/Points/Sprite/InstancedMesh, list
+  repeated plain geometries, attribute plain boxes to builder functions via V8 stack sniffing.
+
+**Results (est. draw calls, deterministic — builders have no Math.random):**
+
+| Map | est. DC | plain boxes | top attribution |
+|---|---|---|---|
+| factory | 327 | 170 | shell 20, scattered 10, pipeRack 6 |
+| village | **940** | **733** | fences 108 (`villageMap.ts:426`), house/barn frames ~280 (lines 122–199) |
+| city | 753 | 607 | `cityMap.ts:218/175/178` (~64), plaza blocks |
+
+Village ≈3× heavier than factory. Instancing candidates: fence rails (108 identical boxes,
+single material family — ideal first target), house wall boxes, city block boxes.
+Tooling lessons: wrap `Arena.prototype.box` BEFORE construction; skip Arena/ArenaBuilder
+plumbing frames in stack attribution. Gates: typecheck/lint clean, 211/211 tests,
+bundle unchanged at 1,097,019 B. Commits: `38171ba`, graph `2440cb0`.
+
+**Next:** [B1 follow-up] instance village fence rails into one InstancedMesh (measurable:
+expect −100+ draw calls on village), then re-run census for before/after.
+
+### Micro-reflection (iter 4)
+- Moved forward? Yes — first quantified perf baseline; the tool is reusable for every future map change.
+- Time lost? Two iterations on stack-frame attribution (wrapper frame caught, plumbing frames); probe raw stacks early next time.
+- Highest-leverage next task: fence-rail instancing — concrete, measurable, low-risk win on the heaviest map.
+
+---
+
 ## Iteration 3 — 2026-08-24 · [J] CODE QUALITY
 
 **Task:** BACKLOG J2 — unit-test ArenaEffects smoke eviction under cap pressure (last H-4 remainder).
