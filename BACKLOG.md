@@ -53,7 +53,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 ## [J] CODE QUALITY
 - [x] J1: Unit-test `applyQuality` bloom dispose/recreate path with lightweight THREE stubs (audit H-4 remainder). — iter 2 `fe14685` (+6 tests)
 - [x] J2: Unit-test ArenaEffects smoke eviction under cap pressure (audit H-4 remainder). — iter 3 `a215ae7` (+4 tests; guard is defensive-only at current tuning)
-- [ ] J3: Dead-export scan after the two perf passes; remove unreferenced symbols.
+- [x] J3: Dead-export scan after the two perf passes; remove unreferenced symbols. — iter 8 `0d66c54` (4 removals, −67 lines; assetUrl/applyMaterialToModel kept as documented dormant API)
 - [x] J4: Document texture-memoization + zoneViewCache patterns into Docs/Architecture/ (from commits 6ad7740/257c23c). — iter 7: `Docs/Architecture/Standard_Resources.md` + Core.md index
 
 ## [K] ACCESSIBILITY & POLISH

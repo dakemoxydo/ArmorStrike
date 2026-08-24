@@ -17,6 +17,37 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 8 — 2026-08-24 · [J] CODE QUALITY
+
+**Task:** BACKLOG J3 — dead-export scan after the perf passes.
+
+**Method:** `npx -y ts-prune -p tsconfig.json` (ephemeral, no package.json dep). Filtered
+`(used in module)` type-only re-export noise and barrel false positives, then verified each
+remaining candidate with repo-wide reference searches INCLUDING tests and Docs.
+
+**Removed (4):** `groundTexture()` legacy base ground (~40 lines canvas code; maps use
+per-map variants) · `BuffableTank` interface + orphaned `BuffBaseSnapshot` import ·
+`TankMatchStats` interface · `invalidateSolidColliderCache` re-export in PhysicsSystem
+(Arena imports the leaf; GDD Maps.md documents only the leaf path).
+
+**Kept deliberately:** `assetUrl`/`applyMaterialToModel` — documented dormant GLTF pipeline
+(`MODELS_ENABLED=false`, comments explicitly say "kept for re-enabling"); all textures
+barrel exports verified live.
+
+**Fallout handling:** two TS6133 unused-import errors after deletion (expected), fixed in
+same iteration. Gates: typecheck/lint clean, 211/211 tests, bundle unchanged at 1,097,159 B
+(tree-shaking had already excluded dead code — hygiene win, not bundle win).
+Commits: `0d66c54` (−67 lines net), graph `5f10300`.
+
+**Next:** [A3] match-lifecycle reset test (cross-mode state), then [B4] bundle census.
+
+### Micro-reflection (iter 8)
+- Moved forward? Yes — source surface shrank; every removal individually justified.
+- Time lost? One patch misfired (old_string matched wrong block in matchTypes.ts) — caught and repaired immediately; keep patches tightly scoped.
+- Highest-leverage next task: A3 lifecycle test guards the F-4/A2 class from regressing.
+
+---
+
 ## Iteration 7 — 2026-08-24 · [B2]+[J4] RESOURCES AUDIT + ARCHITECTURE DOC
 
 **Tasks:** BACKLOG B2 (texture memoization coverage) + J4 (architecture docs for
