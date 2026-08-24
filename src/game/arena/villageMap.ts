@@ -421,12 +421,23 @@ function buildVillageFences(ctx: ArenaBuildContext) {
     ctx.addColliderBlock(x, z, Math.max(w, 0.8), Math.max(d, 0.8), 1.5, true, () => {
       const g = new THREE.Group();
       const posts = Math.max(4, Math.round(len / 3));
+      // Identical posts -> one InstancedMesh per segment instead of N meshes
+      // (~108 plain box draws -> 14 instanced draws; see draw-call census).
+      // Geometry is per-segment: destroying one segment disposes its own
+      // geometry, never a sibling's.
+      const postGeo = new THREE.BoxGeometry(0.3, 1.45, 0.3);
+      const inst = new THREE.InstancedMesh(postGeo, postMat, posts);
+      inst.castShadow = true;
+      inst.receiveShadow = true;
+      const dummy = new THREE.Object3D();
       for (let i = 0; i < posts; i++) {
         const t = (i / (posts - 1) - 0.5) * len;
-        const post = ctx.box(0.3, 1.45, 0.3, postMat);
-        post.position.set(Math.cos(yaw) * t, 0.72, Math.sin(yaw) * t);
-        g.add(post);
+        dummy.position.set(Math.cos(yaw) * t, 0.72, Math.sin(yaw) * t);
+        dummy.updateMatrix();
+        inst.setMatrixAt(i, dummy.matrix);
       }
+      inst.instanceMatrix.needsUpdate = true;
+      g.add(inst);
       for (const hy of [0.5, 1.1]) {
         const rail = new THREE.Mesh(new THREE.BoxGeometry(len, 0.14, 0.14), railMat);
         rail.position.y = hy;
