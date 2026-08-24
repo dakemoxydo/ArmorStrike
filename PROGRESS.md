@@ -17,6 +17,35 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 2 — 2026-08-24 · [J] CODE QUALITY
+
+**Task:** BACKLOG J1 — unit-test `RenderWorld.applyQuality` bloom lifecycle (audit H-4 remainder, guards the F-3 fix).
+
+**Diagnosis + plan (written before editing):**
+- The F-3 fix (dispose-on-downgrade / fresh-composer-on-return) had zero coverage; a
+  regression would silently restore stale-DPI bloom or leak render targets.
+- Constructor needs WebGL+PMREM → not unit-instantiable. Seam: `Object.create(RenderWorld.prototype)`
+  + `Reflect.set` for private fields (`renderer`, `sun`, composer slots), `vi.mock` on the
+  three postprocessing addons (recording fakes), real `graphicsQuality` presets. No prod-code change.
+- Six scenarios: downgrade teardown, shadow-map resize/dispose, canvas-sized rebuild,
+  full high→low→high cycle (exactly one replacement rig), repeated-high idempotence, DPR clamp ladder.
+
+**Result:** `src/__tests__/renderWorldQuality.test.ts` — 6 tests, all green first run after
+harness fixes (composer fake needed addPass; window stub owns dpr). No prod code touched.
+
+**Metrics:** tests 201→207 (+6); typecheck/lint clean; bundle unchanged at 1,097,019 B.
+Commits: `fe14685` (test), graph `e2a3ebf`.
+
+**Next:** [J2] ArenaEffects smoke eviction under cap pressure (last H-4 remainder), or [B1]
+draw-call census if J2's internals prove WebGL-bound.
+
+### Micro-reflection (iter 2)
+- Moved forward? Yes — the most regression-prone perf path now has a contract test.
+- Time lost? Mock shape was incomplete (addPass) and dpr plumbing doubled up; read call sites fully before writing fakes.
+- Highest-leverage next task: J2 smoke eviction, finishing the H-4 audit debt entirely.
+
+---
+
 ## Iteration 1 — 2026-08-24 · [A] BUGS & STABILITY
 
 **Diagnosis + plan (written before editing):**

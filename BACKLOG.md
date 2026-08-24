@@ -50,7 +50,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 - [ ] I3: CP anchor symmetry: capture-point distances from both team spawns roughly equal per map.
 
 ## [J] CODE QUALITY
-- [ ] J1: Unit-test `applyQuality` bloom dispose/recreate path with lightweight THREE stubs (audit H-4 remainder).
+- [x] J1: Unit-test `applyQuality` bloom dispose/recreate path with lightweight THREE stubs (audit H-4 remainder). — iter 2 `fe14685` (+6 tests)
 - [ ] J2: Unit-test ArenaEffects smoke eviction under cap pressure (audit H-4 remainder).
 - [ ] J3: Dead-export scan after the two perf passes; remove unreferenced symbols.
 - [ ] J4: Document texture-memoization + zoneViewCache patterns into Docs/Architecture/ (from commits 6ad7740/257c23c).
