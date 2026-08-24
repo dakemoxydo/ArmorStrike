@@ -27,7 +27,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 - [ ] D3: Review aiCover distances vs weapon range classes (railgun long-range covers vs flamer brawling).
 
 ## [E] RENDERING & BEAUTY
-- [ ] E1: Atmosphere-preset gap check across all maps; give any bare map a fitting preset.
+- [x] E1: Atmosphere-preset gap check across all maps; give any bare map a fitting preset. — iter 13 `0b6feed`: all maps covered; found+fixed GDD exposure drift (1.14→1.0) with absolute test pins
 - [ ] E2: Nameplate fade/scale clamp at long distance — readability pass with screenshot evidence.
 - [ ] E3: Particle budget parity (smoke/flame/explosion caps) across low/med/high quality tiers.
 

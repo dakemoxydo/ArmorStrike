@@ -17,6 +17,41 @@ added regression tests (zoneViewCache, aiFocus). No action needed; baseline reco
 
 ---
 
+## Iteration 13 — 2026-08-24 · [E] RENDERING — E1 ATMOSPHERE AUDIT + GDD DRIFT FIX
+
+**Task:** BACKLOG E1 — atmosphere-preset gap check across maps.
+
+**Audit result:** every catalog map has a fitting preset — factory/city share the legacy
+cold-night NIGHT (intentional zero-regression per GDD), village uses golden-hour DUSK.
+Coverage is test-enforced (`atmospherePresets.test.ts` iterates MAP_IDS). No bare maps.
+
+**Real finding — doc/code drift:** approved GDD `Village_Level_Design.md:19` documented
+DUSK exposure **1.14**, code had **1.0**. Git archaeology: presets commit `a751231`
+(Jul 19) introduced 1.14 matching the GDD; the global tone-mapping retune `14478e1`
+(Jul 24) lowered NIGHT 1.08→0.92 and DUSK 1.14→1.0 and synced other GDD files but missed
+this line. Code was intentional; the doc line was stale residue (AGENTS.md rule: user
+says GDD wins over code EXCEPT when GDD is outdated — here history proved the doc stale).
+
+**Fixes:**
+- GDD line updated to exposure 1.0.
+- New test pins absolute exposures (factory/city 0.92, village 1.0) so future drift in
+  either direction fails loudly instead of hiding behind relative-only assertions
+  (`v.exposure > f.exposure` passed throughout the drift window).
+- E1 closed: no missing presets; drift reconciled.
+
+**Gates:** typecheck/lint clean, 215/215 tests (+1), build ✓ bundle unchanged at
+1,097,159 B. Commits: `0b6feed`, graph `ff9e44a`.
+
+**Next:** [C1] capture contest/decay math vs Capture_Point.md (remaining half), then [D1]
+bot duty distribution table-test.
+
+### Micro-reflection (iter 13)
+- Moved forward? Yes — caught real GDD drift the relative assertions were blind to; audit class (doc-vs-code) now proven valuable.
+- Time lost? No.
+- Highest-leverage next task: C1 remainder — same audit method on capture math.
+
+---
+
 ## Iteration 12 — 2026-08-24 · [A] STABILITY — A4 TEARDOWN AUDIT (clean, one hardening note)
 
 **Task:** BACKLOG A4 — audit teardown path (`Game.teardownContext` / StrictMode unmount guard).
