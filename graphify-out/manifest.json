@@ -885,8 +885,8 @@
     "semantic_hash": "2985e823e9dd10f0cbb4445afb599b0c"
   },
   "Docs/Architecture/Core.md": {
-    "mtime": 1787497154.6160958,
-    "ast_hash": "f1924c4e5da6e3bc98e62a1e759c70a2",
+    "mtime": 1787594351.189355,
+    "ast_hash": "57d69351cad8aeb59a180b2a9912531d",
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/00_Index.md": {
@@ -1365,13 +1365,13 @@
     "semantic_hash": ""
   },
   "BACKLOG.md": {
-    "mtime": 1787593640.6224189,
-    "ast_hash": "db6b4ca565250aa14c99be176196725a",
+    "mtime": 1787593971.8675413,
+    "ast_hash": "ec2e0852ef3c665e300f67b82ccfc1ab",
     "semantic_hash": ""
   },
   "PROGRESS.md": {
-    "mtime": 1787593629.966301,
-    "ast_hash": "4aab2ea5014868daea8e029dacd93540",
+    "mtime": 1787593951.2338822,
+    "ast_hash": "15098530efda9d7554bee1b07c622617",
     "semantic_hash": ""
   },
   "src/__tests__/renderWorldQuality.test.ts": {
@@ -1397,6 +1397,11 @@
   "screenshots/iter-5-fence-instancing.png": {
     "mtime": 1787593223.7100835,
     "ast_hash": "ab94c42a2b538a71e24453b16363bb3e",
+    "semantic_hash": ""
+  },
+  "Docs/Architecture/Standard_Resources.md": {
+    "mtime": 1787594339.228395,
+    "ast_hash": "120a325db0ce0606b6f5a05b368f598a",
     "semantic_hash": ""
   }
 }
