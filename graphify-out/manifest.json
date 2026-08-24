@@ -1403,5 +1403,10 @@
     "mtime": 1787594339.228395,
     "ast_hash": "120a325db0ce0606b6f5a05b368f598a",
     "semantic_hash": ""
+  },
+  "src/__tests__/gameModeLifecycle.test.ts": {
+    "mtime": 1787595565.256749,
+    "ast_hash": "8a35593657fa004adce1447cb0e4f482",
+    "semantic_hash": ""
   }
 }
