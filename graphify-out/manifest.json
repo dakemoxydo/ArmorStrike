@@ -885,8 +885,8 @@
     "semantic_hash": "2985e823e9dd10f0cbb4445afb599b0c"
   },
   "Docs/Architecture/Core.md": {
-    "mtime": 1787594351.189355,
-    "ast_hash": "57d69351cad8aeb59a180b2a9912531d",
+    "mtime": 1787596569.1525936,
+    "ast_hash": "7f7facaecbbaf007f6239dea8d55dbcc",
     "semantic_hash": ""
   },
   "Docs/GDD/Approved/00_Index.md": {
@@ -1407,6 +1407,11 @@
   "src/__tests__/gameModeLifecycle.test.ts": {
     "mtime": 1787595565.256749,
     "ast_hash": "8a35593657fa004adce1447cb0e4f482",
+    "semantic_hash": ""
+  },
+  "Docs/Architecture/Graphics_Presets_Matrix.md": {
+    "mtime": 1787596560.1504993,
+    "ast_hash": "0acbaee980011acc32fbcbc2f7f95dfa",
     "semantic_hash": ""
   }
 }
