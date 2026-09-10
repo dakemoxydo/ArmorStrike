@@ -8,6 +8,7 @@ import { CameraRig } from './CameraRig';
 import { getQualityPreset, type QualityLevel, type QualityPreset } from './graphicsQuality';
 import type { MapId } from './maps/mapCatalog';
 import { getAtmosphere } from './atmospherePresets';
+import { disposeObject3D } from './resources/disposeObject3D';
 
 const NIGHT = getAtmosphere('factory');
 
@@ -28,6 +29,12 @@ export class RenderWorld {
   private composer: EffectComposer | null = null;
   private bloomPass: UnrealBloomPass | null = null;
   private useComposer = false;
+  /**
+   * PMREM render target backing `scene.environment`. Owned by this class —
+   * `renderer.dispose()` does NOT free render targets, so it must be released
+   * explicitly in `dispose()`.
+   */
+  private envRT: THREE.WebGLRenderTarget | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     const preset = getQualityPreset();
@@ -95,9 +102,13 @@ export class RenderWorld {
 
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     // sigma=0: no pre-blur (official RoomEnvironment pattern). sigma>0.04 hits PMREM MAX_SAMPLES=20 warn.
-    const envRT = pmrem.fromScene(new RoomEnvironment(), 0);
-    this.scene.environment = envRT.texture;
+    const roomEnv = new RoomEnvironment();
+    this.envRT = pmrem.fromScene(roomEnv, 0);
+    this.scene.environment = this.envRT.texture;
     pmrem.dispose();
+    // RoomEnvironment is a throwaway scene that never joins our scene graph,
+    // so its geometries/materials would otherwise leak for the process lifetime.
+    disposeObject3D(roomEnv);
 
     this.hemi = new THREE.HemisphereLight(NIGHT.hemiSky, NIGHT.hemiGround, NIGHT.hemiIntensity);
     this.scene.add(this.hemi);
@@ -234,8 +245,30 @@ export class RenderWorld {
     }
   }
 
+  /**
+   * Full teardown. `renderer.dispose()` alone releases only the WebGL context —
+   * it does NOT free scene-owned GL resources. Every GPU resource created here
+   * (PMREM env target, sky program, shadow map) is therefore released
+   * explicitly; otherwise each Game instance leaks them (React StrictMode mounts
+   * the boot effect twice in dev, so the first instance's leak is observable).
+   */
   dispose() {
     this.disposeBloom();
+
+    this.scene.environment = null;
+    this.envRT?.dispose();
+    this.envRT = null;
+
+    this.sky.geometry.dispose();
+    this.sky.material.dispose();
+
+    this.sun.shadow.map?.dispose();
+    this.sun.shadow.map = null;
+
+    // Lights + sky are the only children left (Arena/preview removed their own
+    // groups during teardown) — drop them so nothing keeps them alive.
+    this.scene.clear();
+
     this.renderer.dispose();
   }
 }

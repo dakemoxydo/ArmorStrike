@@ -194,3 +194,82 @@ describe('RenderWorld.applyQuality bloom lifecycle', () => {
     expect(deps.getPixelRatio()).toBe(2);
   });
 });
+
+/**
+ * Full-teardown coverage for RenderWorld.dispose (leak fix).
+ *
+ * `renderer.dispose()` releases the WebGL context but NOT scene-owned GL
+ * resources, so the PMREM env target, the sky program and the shadow map must
+ * be released explicitly. Otherwise each Game instance leaks them — observable
+ * in dev, where React StrictMode mounts the boot effect twice and the first
+ * instance is disposed while the second keeps running.
+ */
+function makeDisposableWorld() {
+  const envRT = { dispose: vi.fn() };
+  const skyGeo = { dispose: vi.fn() };
+  const skyMat = { dispose: vi.fn() };
+  const shadowMapTex = { dispose: vi.fn() };
+  const scene = { environment: { isTexture: true } as unknown, clear: vi.fn() };
+  const renderer = { dispose: vi.fn() };
+  const sun = {
+    castShadow: false,
+    shadow: { mapSize: { x: 2048, y: 2048, set: vi.fn() }, map: shadowMapTex },
+  };
+
+  const rw = Object.create(RenderWorld.prototype) as RenderWorld;
+  Reflect.set(rw, 'envRT', envRT);
+  Reflect.set(rw, 'sky', { geometry: skyGeo, material: skyMat });
+  Reflect.set(rw, 'scene', scene);
+  Reflect.set(rw, 'renderer', renderer);
+  Reflect.set(rw, 'sun', sun);
+  Reflect.set(rw, 'composer', null);
+  Reflect.set(rw, 'bloomPass', null);
+  Reflect.set(rw, 'useComposer', false);
+
+  return { rw, envRT, skyGeo, skyMat, shadowMapTex, scene, renderer, sun };
+}
+
+describe('RenderWorld.dispose full teardown', () => {
+  it('releases env target, sky program and shadow map before the renderer', () => {
+    const { rw, envRT, skyGeo, skyMat, shadowMapTex, scene, renderer, sun } =
+      makeDisposableWorld();
+
+    rw.dispose();
+
+    expect(envRT.dispose).toHaveBeenCalledTimes(1);
+    expect(Reflect.get(rw, 'envRT')).toBeNull();
+    expect(scene.environment).toBeNull();
+    expect(skyGeo.dispose).toHaveBeenCalledTimes(1);
+    expect(skyMat.dispose).toHaveBeenCalledTimes(1);
+    expect(shadowMapTex.dispose).toHaveBeenCalledTimes(1);
+    expect(sun.shadow.map).toBeNull();
+    expect(scene.clear).toHaveBeenCalledTimes(1);
+    expect(renderer.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('is idempotent — second call throws nothing and never re-disposes the env target', () => {
+    const { rw, envRT, renderer } = makeDisposableWorld();
+
+    rw.dispose();
+    expect(() => rw.dispose()).not.toThrow();
+
+    // Nulled after the first pass, so the guarded call is a no-op.
+    expect(envRT.dispose).toHaveBeenCalledTimes(1);
+    expect(renderer.dispose).toHaveBeenCalledTimes(2);
+  });
+
+  it('tears down a live bloom rig in the same call', () => {
+    const { rw, renderer } = makeDisposableWorld();
+    const composer = { setSize: vi.fn(), dispose: vi.fn() };
+    const bloomPass = { dispose: vi.fn() };
+    Reflect.set(rw, 'composer', composer);
+    Reflect.set(rw, 'bloomPass', bloomPass);
+    Reflect.set(rw, 'useComposer', true);
+
+    rw.dispose();
+
+    expect(bloomPass.dispose).toHaveBeenCalledTimes(1);
+    expect(composer.dispose).toHaveBeenCalledTimes(1);
+    expect(renderer.dispose).toHaveBeenCalledTimes(1);
+  });
+});
