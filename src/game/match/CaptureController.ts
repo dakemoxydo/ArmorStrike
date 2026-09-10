@@ -38,9 +38,21 @@ export class CaptureController {
 
   /** Очистка визуалов (при смене матча / dispose). */
   dispose() {
+    this.disposeMarkers();
+    this.zones = [];
+    this._pool = [];
+  }
+
+  /** Drop markers only, keep zone data (L-4: clearTanks path). */
+  disposeMarkers() {
     this.markers?.dispose();
     this.markers = null;
+  }
+
+  /** Drop zone data (leaving CP); markers already gone. */
+  clearZones() {
     this.zones = [];
+    this._pool = [];
   }
 
   /**

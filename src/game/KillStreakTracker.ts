@@ -55,4 +55,9 @@ export class KillStreakTracker {
     this.killTimes = [];
     this.lastStreakCount = 0;
   }
+
+  /** Current in-window kill count (for best-of-match tracking). */
+  get windowCount(): number {
+    return this.killTimes.length;
+  }
 }

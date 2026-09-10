@@ -10,6 +10,8 @@ import type { GameModeControllerDeps } from '../game/GameModeController';
  *   clearTanks → projectiles.clear → arena.rebuild(mapId) → onArenaRebuilt →
  *   run.resetRun (score/kills/matchTime=0) → deathT=-1 → prevReloading=false →
  *   combat.resetStreaks() → match.reset(mode, {mapId}) → fresh roster applied.
+ * Plus transient resets: effects.clearTransients (L-1), input.resetKeys (L-6),
+ * timeScale.reset (L-2).
  *
  * spawnMatchRoster is module-mocked to a deterministic roster; everything else
  * is lightweight recording fakes. The controller's async startSeq/queue runs
@@ -43,6 +45,7 @@ function makeDeps() {
     deathT: 5,
     prevReloading: true,
     combat: { resetStreaks: vi.fn(() => order.push('resetStreaks')) },
+    effects: { clearTransients: vi.fn(() => order.push('clearTransients')) },
     match: {
       reset: vi.fn(
         (_mode: string, opts: { mapId: string }) => order.push(`match.reset:${opts.mapId}`),
@@ -52,7 +55,7 @@ function makeDeps() {
     tanks: [] as unknown[],
     nameplates: new Map(),
     bots: { bots: [] as unknown[] },
-    input: { enabled: false, releaseLock: vi.fn(), requestLock: vi.fn(), look: { reset: vi.fn(), yaw: 0, pitch: 0 } },
+    input: { enabled: false, releaseLock: vi.fn(), requestLock: vi.fn(), resetKeys: vi.fn(() => order.push('input.resetKeys')), look: { reset: vi.fn(), yaw: 0, pitch: 0 } },
   };
   const deps = {
     sim,
@@ -62,6 +65,7 @@ function makeDeps() {
     previewController: { setVisible: vi.fn() },
     canvas: { style: {} } as unknown as HTMLCanvasElement,
     weaponDeps: {} as never,
+    timeScale: { reset: vi.fn(() => order.push('timeScale.reset')) },
     emit: vi.fn(),
     onArenaRebuilt: vi.fn(() => order.push('onArenaRebuilt')),
   } as unknown as GameModeControllerDeps & Record<string, unknown>;
@@ -90,6 +94,9 @@ describe('GameModeController round-start reset sequence', () => {
     expect(d.sim.deathT).toBe(-1);
     expect(d.sim.prevReloading).toBe(false);
     expect(d.sim.combat.resetStreaks).toHaveBeenCalledTimes(1);
+    expect(d.sim.effects.clearTransients).toHaveBeenCalledTimes(1);
+    expect(d.sim.input.resetKeys).toHaveBeenCalledTimes(1);
+    expect((d.deps as unknown as { timeScale: { reset: () => void } }).timeScale.reset).toHaveBeenCalledTimes(1);
     expect(d.sim.match.reset).toHaveBeenCalledWith(expect.any(String), { mapId: 'village', scene: d.deps.scene });
     // Fresh roster wins over the previous one
     const simView = d.sim as unknown as { player: unknown; bots: { bots: unknown[] } };
@@ -104,7 +111,10 @@ describe('GameModeController round-start reset sequence', () => {
 
     const i = (marker: string) =>
       d.order.findIndex((s) => s.startsWith(marker));
-    expect(i('clearTanks')).toBeLessThan(i('arena.rebuild'));
+    expect(i('clearTanks')).toBeLessThan(i('clearTransients'));
+    expect(i('clearTransients')).toBeLessThan(i('input.resetKeys'));
+    expect(i('input.resetKeys')).toBeLessThan(i('timeScale.reset'));
+    expect(i('timeScale.reset')).toBeLessThan(i('arena.rebuild'));
     expect(i('arena.rebuild')).toBeLessThan(i('onArenaRebuilt'));
     expect(i('onArenaRebuilt')).toBeLessThan(i('resetRun'));
     expect(i('resetRun')).toBeLessThan(i('resetStreaks'));

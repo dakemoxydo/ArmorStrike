@@ -118,7 +118,8 @@ export function evaluateMatchEnd(input: WinEvalInput): WinEvalResult | null {
   }
   if (matchTimeSec >= config.timeLimitSec) {
     const { team, tied } = teamLead(teamScore.alpha, teamScore.bravo);
-    // If CP scores still 0-0, fall back to team kills as tie-break.
+    // Time up: leader by score wins; any score tie (not just 0-0)
+    // falls back to team kills as tie-break (per GDD Capture_Point).
     if (tied) {
       const kb = teamLead(teamKills.alpha, teamKills.bravo);
       return {

@@ -72,6 +72,7 @@ export class GameSimulation {
       requestMatchOver: (result) => this.requestMatchOver(result),
       getDeathT: () => this.deathT,
       setDeathT: (v) => { this.deathT = v; },
+      getBestStreak: () => this.combat.playerBestStreak,
     });
 
     this.systems = buildSimulationStages({
@@ -117,6 +118,7 @@ export class GameSimulation {
       playerKills: p.kills,
       playerDeaths: p.deaths,
       playerScore: this.run.score,
+      playerBestStreak: this.combat.playerBestStreak,
       teamKills: { ...this.match.teamKills },
       teamScore: { ...this.match.teamScore },
       matchTimeSec: this.run.matchTime,
@@ -141,6 +143,7 @@ export class GameSimulation {
       score: result.playerScore,
       kills: result.playerKills,
       deaths: result.playerDeaths,
+      bestStreak: result.playerBestStreak,
       playerWon: result.playerWon,
       winnerName: result.winnerName,
       winnerTeam: result.winnerTeam,
@@ -159,6 +162,7 @@ export class GameSimulation {
     this.tanks = [];
     this.bots.reset();
     this.player = null;
+    for (const s of this.systems) s.onRosterCleared?.();
     this.match.disposeVisuals();
     this.match.reset(this.match.mode);
   }

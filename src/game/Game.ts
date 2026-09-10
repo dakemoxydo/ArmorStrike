@@ -70,6 +70,7 @@ export class Game implements GameApi {
       previewController: ctx.previewController,
       canvas: this.canvas,
       weaponDeps: ctx.weaponDeps,
+      timeScale: ctx.gameLoop.timeScale,
       emit: ctx.emitEvent,
       onArenaRebuilt: () => {
         const c = this.ctx;
@@ -186,7 +187,7 @@ export class Game implements GameApi {
     document.removeEventListener('visibilitychange', ctx.onVisibility);
     ctx.garageInput.detach();
     ctx.sim.input.detach();
-    ctx.sim.audio.stopEngine();
+    ctx.sim.audio.dispose();
     ctx.sim.clearTanks(ctx.scene);
     ctx.sim.projectiles.dispose();
     ctx.sim.effects.dispose();

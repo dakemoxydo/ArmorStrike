@@ -29,6 +29,8 @@ export interface MatchRuntimeHooks {
   /** Shared death-cam timer cell (player only). */
   getDeathT: () => number;
   setDeathT: (v: number) => void;
+  /** Best player streak of the match (H4) — wired to CombatSystem. */
+  getBestStreak?: () => number;
 }
 
 export interface MatchResetOpts {
@@ -75,11 +77,10 @@ export class MatchRuntime {
   }
 
   disposeVisuals() {
-    this.capture.dispose();
+    this.capture.disposeMarkers();
   }
 
   reset(mode: MatchModeId = DEFAULT_MATCH_MODE, opts: MatchResetOpts = {}) {
-    this.capture.dispose();
     this.config = configForMode(mode);
     this.ended = false;
     this.teamKills = { alpha: 0, bravo: 0 };
@@ -88,6 +89,12 @@ export class MatchRuntime {
 
     if (mode === 'capture_point' && opts.mapId && opts.scene) {
       this.capture.reset(opts.mapId, opts.scene);
+    } else {
+      // No scene to mount markers into: drop visuals in any case. Outside CP
+      // also drop zone data; inside CP keep the last zones (L-4) so readers
+      // never observe a torn-down set between clearTanks and the next start.
+      this.capture.disposeMarkers();
+      if (mode !== 'capture_point') this.capture.clearZones();
     }
   }
 
@@ -183,6 +190,7 @@ export class MatchRuntime {
         playerKills: p?.kills ?? this.hooks.run.kills,
         playerDeaths: p?.deaths ?? 0,
         playerScore: this.hooks.run.score,
+        playerBestStreak: this.hooks.getBestStreak?.() ?? 0,
         teamKills: { ...this.teamKills },
         teamScore: { ...this.teamScore },
         matchTimeSec: this.hooks.run.matchTime,

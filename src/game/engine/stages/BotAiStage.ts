@@ -49,6 +49,18 @@ export class BotAiStage implements SimSystem {
     private match: MatchRuntime,
   ) {}
 
+  /**
+   * Drop per-bot caches (L-3): tank ids grow monotonically across rounds, so
+   * a same-size rematch would otherwise keep dead-roster entries forever.
+   */
+  onRosterCleared(): void {
+    this._aiSticky.clear();
+    this._objSticky.clear();
+    this._blockerBufs.clear();
+    this._tankById.clear();
+    this._rosterSize = 0;
+  }
+
   update(ctx: FrameContext): void {
     // Roster swap guard: tank ids grow monotonically across rounds, so stale
     // per-bot entries (sticky focus, objective sticky, blocker buffers) would

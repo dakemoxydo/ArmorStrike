@@ -4,6 +4,22 @@ import type { AudioPort } from './ports/AudioPort';
 
 export type { AudioPort } from './ports/AudioPort';
 
+const MUTE_LS_KEY = 'as2_muted';
+
+/** Загрузить сохранённый mute (как graphicsQuality.loadQuality: тихо при битой схеме). */
+export function loadMuted(): boolean {
+  try {
+    return localStorage.getItem(MUTE_LS_KEY) === '1';
+  } catch { /* ignore */ }
+  return false;
+}
+
+function saveMuted(m: boolean) {
+  try {
+    localStorage.setItem(MUTE_LS_KEY, m ? '1' : '0');
+  } catch { /* ignore */ }
+}
+
 export class AudioFX implements AudioPort {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -18,6 +34,8 @@ export class AudioFX implements AudioPort {
   private chargeOscs: OscillatorNode[] = [];
   private chargeGains: GainNode[] = [];
   private chargeTickTimers: number[] = [];
+  /** Base f0/f1 per charge osc layer — captured at spawn so setChargeRailgunPitch can rescale. */
+  private chargeBaseFreqs: Array<{ f0: number; f1: number }> = [];
   /**
    * Engine voice state. The oscillator is created once and NEVER stopped —
    * stop/start just ramps its gain, so rapid transitions can't spawn a second
@@ -25,7 +43,8 @@ export class AudioFX implements AudioPort {
    * stopEngine (death-cam hum).
    */
   private engineOn = false;
-  muted = false;
+  /** Persisted across sessions via localStorage (BACKLOG G2). */
+  muted = loadMuted();
 
   ensure() {
     if (!this.ctx) {
@@ -53,8 +72,32 @@ export class AudioFX implements AudioPort {
 
   setMuted(m: boolean) {
     this.muted = m;
+    saveMuted(m);
     if (this.master && this.ctx) {
       this.master.gain.setTargetAtTime(m ? 0 : 0.5, this.ctx.currentTime, 0.02);
+    }
+  }
+
+  /** Full teardown (L-5): stop voices, clear timers, close the context. */
+  dispose() {
+    this.stopChargeRailgun(false);
+    this.stopFlameLoop();
+    this.stopEngine();
+    this.engineOn = false;
+    if (this.ctx) {
+      const ctx = this.ctx;
+      this.ctx = null;
+      this.master = null;
+      this.noiseBuf = null;
+      this.engineOsc = null;
+      this.engineGain = null;
+      this.engineFilter = null;
+      this.flameSource = null;
+      this.flameGain = null;
+      this.chargeOscs = [];
+      this.chargeGains = [];
+      this.chargeBaseFreqs = [];
+      void ctx.close().catch(() => undefined);
     }
   }
 
@@ -136,6 +179,7 @@ export class AudioFX implements AudioPort {
     if (!this.ctx) {
       this.chargeOscs = [];
       this.chargeGains = [];
+      this.chargeBaseFreqs = [];
       return;
     }
     const t = this.ctx.currentTime;
@@ -152,6 +196,46 @@ export class AudioFX implements AudioPort {
     }
     this.chargeOscs = [];
     this.chargeGains = [];
+    this.chargeBaseFreqs = [];
+  }
+
+  /**
+   * Live pitch boost for the active charge voice. progress ∈ [0,1].
+   * Ramps target frequency by up to 35% at full charge using a squared curve
+   * so the whine rises sharply in the last ~30% — matches the visual "overcharge" feel.
+   * No-op when no charge is active (cancel / death safety).
+   */
+  setChargeRailgunPitch(progress: number): void {
+    if (!this.ctx || this.chargeOscs.length === 0) return;
+    const p2 = Math.min(1, Math.max(0, progress)) ** 2;
+    const mul = 1 + p2 * 0.35; // 1.0 → 1.35× at full charge
+    const t = this.ctx.currentTime;
+    for (let i = 0; i < this.chargeOscs.length; i++) {
+      const base = this.chargeBaseFreqs[i];
+      if (!base) continue;
+      const o = this.chargeOscs[i];
+      try {
+        // Rescale the ramp's endpoint; current value follows naturally via WebAudio interpolation.
+        o.frequency.cancelScheduledValues(t);
+        o.frequency.setValueAtTime(o.frequency.value, t);
+        o.frequency.linearRampToValueAtTime(base.f1 * mul, t + 0.04);
+      } catch { /* already stopped */ }
+    }
+  }
+
+  /** Per-pierce ping: descending tone per hit index (0-based). First pierce brightest. */
+  railgunPierce(index: number): void {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    // Descending pitch: 1800 → 900 → 500 Hz; softer volume each step.
+    const f0 = Math.max(400, 1800 - index * 450);
+    const f1 = Math.max(200, f0 * 0.55);
+    const peak = Math.max(0.06, 0.22 - index * 0.06);
+    this.osc('triangle', t, 0.09, f0, f1, peak);
+    // Subtle noise layer on first two pierces for "crack".
+    if (index < 2) {
+      this.noise(t, 0.04, 'highpass', 2400 - index * 400, 1200, 0.08 - index * 0.03);
+    }
   }
 
   private spawnChargeOsc(
@@ -173,6 +257,7 @@ export class AudioFX implements AudioPort {
     o.stop(t0 + dur + 0.12);
     this.chargeOscs.push(o);
     this.chargeGains.push(g);
+    this.chargeBaseFreqs.push({ f0, f1 });
   }
 
   startFlameLoop() {

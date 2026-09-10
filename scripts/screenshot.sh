@@ -15,8 +15,13 @@ for c in \
   [ -n "$c" ] && [ -f "$c" ] && EXE="$c" && break
 done
 [ -n "$EXE" ] || { echo "No Edge/Chrome found" >&2; exit 1; }
-WIN_OUT="$(cygpath -w "$(pwd)/$OUT" 2>/dev/null || echo "$(pwd -W 2>/dev/null)/$OUT")"
-"$EXE" --headless=new --disable-gpu --hide-scrollbars \
+if command -v cygpath >/dev/null 2>&1; then
+  WIN_OUT="$(cygpath -w "$(pwd)/$OUT")"
+else
+  WIN_OUT="$(pwd)/$OUT"
+fi
+# SwiftShader, а НЕ --disable-gpu: three.js нужен WebGL, иначе кадр чёрный.
+"$EXE" --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader --hide-scrollbars \
   --window-size=1280,720 --virtual-time-budget="$WAIT_MS" \
   --screenshot="$WIN_OUT" "$URL" >/dev/null 2>&1
 echo "Screenshot saved to $OUT"

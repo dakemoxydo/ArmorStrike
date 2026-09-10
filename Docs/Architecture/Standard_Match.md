@@ -55,8 +55,17 @@ DamageSystem → CombatSystem.onTankDestroyed → MatchRuntime.onTankKilled
 | Tank death | FX + kill credit + **respawn timer** (not game over) |
 | Match win / time | `requestMatchOver` → `mode=over` + rich `gameOver` event |
 | Player death | death cam / unlock only; `MatchRuntime` respawns |
+| Round start | full transient reset chain (no carryover — см. ниже) |
+| Leave to menu/garage | `clearTanks` + `projectiles.clear` + `input.resetKeys` |
 
 `DeathTimerStage` → game over **запрещён** (удалён); конец матча только через match eval.
+
+Round-start chain (`executeStartRound`): `clearTanks` (tanks + nameplates + `bots.reset` +
+`onRosterCleared` стадий + CP visuals) → `projectiles.clear` → `effects.clearTransients`
+(smoke/scorch/wrecks/shake/FOV; пулы живы) → `input.resetKeys` → `timeScale.reset` →
+`arena.rebuild` → `run.resetRun` + `deathT=-1` + `prevReloading=false` →
+`combat.resetStreaks` (streaks + `playerBestStreak`) → `match.reset(mode, {mapId, scene})`
+→ fresh roster. Новое per-round состояние — только сюда, не в `step()`.
 
 ## 6. Roster
 

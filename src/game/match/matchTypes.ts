@@ -37,6 +37,8 @@ export interface MatchResult {
   playerKills: number;
   playerDeaths: number;
   playerScore: number;
+  /** Best player kill streak of the match (H4, results screen). */
+  playerBestStreak: number;
   teamKills: { alpha: number; bravo: number };
   teamScore: { alpha: number; bravo: number };
   matchTimeSec: number;

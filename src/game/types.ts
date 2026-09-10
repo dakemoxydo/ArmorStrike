@@ -66,6 +66,7 @@ export type GameEvent =
       score: number;
       kills: number;
       deaths: number;
+      bestStreak: number;
       playerWon: boolean;
       winnerName: string | null;
       winnerTeam: TeamId;

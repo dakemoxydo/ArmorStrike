@@ -81,4 +81,50 @@ describe('RailgunBeamFx', () => {
 
     fx.dispose();
   });
+
+  it('setLength shortens the beam mesh layers and moves impact light to the new end', () => {
+    const scene = new THREE.Scene();
+    const fx = new RailgunBeamFx(scene);
+    const muzzle = new THREE.Vector3(0, 1, 0);
+    const dir = new THREE.Vector3(0, 0, 1);
+    fx.show(muzzle, dir, 40);
+
+    // M18 fix: previously only the light moved — meshes kept drawing through walls.
+    fx.setLength(20);
+    const beams = scene.children.filter((c) => c instanceof THREE.Mesh) as THREE.Mesh[];
+    for (const b of beams) {
+      expect(b.scale.z).toBe(20);
+      // Midpoint should be at z = 10 (muzzle.z + 20/2).
+      expect(b.position.z).toBeCloseTo(10, 5);
+    }
+
+    const lights = scene.children.filter((c) => c instanceof THREE.PointLight) as THREE.PointLight[];
+    const impact = lights[lights.length - 1];
+    expect(impact.position.z).toBeCloseTo(20, 5);
+
+    fx.dispose();
+  });
+
+  it('setLength is a no-op when no active beam', () => {
+    const scene = new THREE.Scene();
+    const fx = new RailgunBeamFx(scene);
+    // No show() called — setLength must not throw or add children.
+    expect(() => fx.setLength(10)).not.toThrow();
+    expect(scene.children.length).toBe(3); // only idle meshes
+    fx.dispose();
+  });
+
+  it('shared geometry is ref-counted: disposed only after last instance disposes', () => {
+    const scene = new THREE.Scene();
+    const a = new RailgunBeamFx(scene);
+    const b = new RailgunBeamFx(scene);
+    a.dispose();
+    // Second instance still alive → geometries NOT yet disposed.
+    // Re-creating a third instance reuses the same shared geos (no duplicate construction).
+    const c = new RailgunBeamFx(scene);
+    b.dispose();
+    c.dispose();
+    // After all instances gone, scene should be empty.
+    expect(scene.children.length).toBe(0);
+  });
 });

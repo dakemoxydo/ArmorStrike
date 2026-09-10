@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { nearestShotBlockerDist } from '../game/weapons/railgunBlockers';
+import {
+  nearestShotBlockerDist,
+  SHOT_BLOCKER_HEIGHT_EPS,
+} from '../game/weapons/railgunBlockers';
 import { colliderFromCenter } from '../game/engine/physics';
 
 describe('nearestShotBlockerDist (M9)', () => {
@@ -29,5 +32,20 @@ describe('nearestShotBlockerDist (M9)', () => {
 
   it('does not treat decorative absence as blocker (empty list = free path)', () => {
     expect(nearestShotBlockerDist(0, 0, 0, 1, 120, [])).toBeNull();
+  });
+
+  it('ignores walls clearly below the muzzle (height gate + eps)', () => {
+    // Muzzle at 1.6, wall top at 1.0: 1.6 > 1.0 + eps → beam flies over it.
+    const lowWall = colliderFromCenter(0, 20, 10, 2, 1.0, 'wall');
+    expect(nearestShotBlockerDist(0, 0, 0, 1, 120, [lowWall], 1.6)).toBeNull();
+  });
+
+  it('blocks walls whose top is above the muzzle (edge case: within eps)', () => {
+    // Muzzle at 1.6, wall top at 1.5: 1.6 < 1.5 + eps → still blocks (grazing counts).
+    const wall = colliderFromCenter(0, 20, 10, 2, 1.5, 'wall');
+    const hit = nearestShotBlockerDist(0, 0, 0, 1, 120, [wall], 1.6);
+    expect(hit).not.toBeNull();
+    expect(hit!.id).toBe(wall.id);
+    expect(SHOT_BLOCKER_HEIGHT_EPS).toBeGreaterThan(0);
   });
 });

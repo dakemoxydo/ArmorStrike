@@ -55,7 +55,8 @@ Loadout (hull/turret) **не** сбрасывается между матчам�
 ## HUD / Results
 
 - Scoreboard (Tab): K/D, team columns in TDM/CP.
-- Game over: XP · kills · deaths · K/D · team strip · rematch (`resultsText`, `GameOverScreen`).
+- Game over: XP · kills · deaths · K/D · **best player streak** · team strip · rematch (`resultsText`, `GameOverScreen`).
+- `CombatSystem.playerBestStreak` — максимум window-серии за матч; смерть не сбрасывает, `resetStreaks()` (старт раунда) — да.
 
 ## Классы
 

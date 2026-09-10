@@ -9,15 +9,24 @@ import { fillMuzzleAndAim } from './muzzle';
 const tmpMuzzle = new THREE.Vector3();
 const tmpDir = new THREE.Vector3();
 
-/** Idle glow + clear FOV tighten. */
+/** Idle glow + clear FOV tighten. Settles leftover charge jitter on x/y. */
 export function applyRailgunIdleChargeFx(
   owner: WeaponOwner,
   effects: EffectsPort,
+  dt: number,
 ): void {
   const visual = owner.visual;
   if (visual.railGlowMat) {
     visual.railGlowMat.emissiveIntensity = WEAPON_TUNING.railgun.emissiveIdle;
   }
+  // Cancel-on-release / post-charge settle: jitter wrote x/y during CHARGING;
+  // damp them back to rest (z is owned by TankAnimationSystem via barrelKick).
+  visual.barrelGroup.position.x = THREE.MathUtils.damp(
+    visual.barrelGroup.position.x, 0, 10, dt,
+  );
+  visual.barrelGroup.position.y = THREE.MathUtils.damp(
+    visual.barrelGroup.position.y, BARREL_REST_Y, 10, dt,
+  );
   if (owner.isPlayer) effects.setFovTighten(0);
 }
 
@@ -63,7 +72,9 @@ export function applyRailgunChargingFx(
     acc += dt;
     const shakeEvery = THREE.MathUtils.lerp(0.12, 0.035, p2);
     if (acc >= shakeEvery) {
-      acc = 0;
+      // Subtract instead of reset: keeps the remainder so the shake cadence
+      // doesn't drift on large-dt frames (no phase loss, max one event/frame).
+      acc -= shakeEvery;
       effects.addShake(WEAPON_TUNING.railgun.chargeShakePeak * p25);
       fillMuzzleAndAim(owner, tmpMuzzle, tmpDir);
       effects.boostJet(

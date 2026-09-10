@@ -11,6 +11,10 @@ export interface AudioPort {
   setMuted(m: boolean): void;
 
   chargeRailgun(duration?: number): void;
+  /** Live pitch boost for the active charge voice (0..1 charge progress). */
+  setChargeRailgunPitch(progress: number): void;
+  /** Per-pierce ping for railgun penetration feedback (0-based hit index). */
+  railgunPierce(index: number): void;
   stopChargeRailgun(hard?: boolean): void;
   startFlameLoop(): void;
   stopFlameLoop(): void;
@@ -27,4 +31,7 @@ export interface AudioPort {
   startEngine(): void;
   setEngine(ratio: number, boost?: boolean): void;
   stopEngine(): void;
+
+  /** Full teardown: stop voices, clear timers, close the context. */
+  dispose(): void;
 }

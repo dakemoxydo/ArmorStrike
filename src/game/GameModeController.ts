@@ -4,6 +4,7 @@ import type { GameSimulation } from './engine/GameSimulation';
 import type { CameraRig } from './CameraRig';
 import type { RenderWorld } from './RenderWorld';
 import type { PreviewController } from './PreviewController';
+import type { TimeScale } from './effects/TimeScale';
 import type { GameMode, GameEvent } from './types';
 import type { WeaponFactoryDeps } from './PlayerFactory';
 import type { MapId } from './maps/mapCatalog';
@@ -20,6 +21,8 @@ export interface GameModeControllerDeps {
   previewController: PreviewController;
   canvas: HTMLCanvasElement;
   weaponDeps: WeaponFactoryDeps;
+  /** Hit-stop/slow-mo clock (owned by GameLoop) — reset on round start (L-2). */
+  timeScale: TimeScale;
   emit: (e: GameEvent) => void;
   /** Rebuild minimap static layer after arena map switch. */
   onArenaRebuilt?: () => void;
@@ -56,6 +59,7 @@ export class GameModeController {
       sim.deathT = -1;
       sim.run.paused = false;
       sim.input.enabled = false;
+      sim.input.resetKeys();
       sim.input.releaseLock();
       cameraRig.resetFov();
     }
@@ -106,6 +110,11 @@ export class GameModeController {
     sim.audio.stopEngine();
     sim.clearTanks(scene);
     sim.projectiles.clear();
+    // No carryover from the previous round: combat transients (L-1), held
+    // input (L-6) and hit-stop/slow-mo clock (L-2).
+    sim.effects.clearTransients();
+    sim.input.resetKeys();
+    this.d.timeScale.reset();
     previewController.setVisible(false);
 
     const id = isMapId(mapId) ? mapId : DEFAULT_MAP_ID;

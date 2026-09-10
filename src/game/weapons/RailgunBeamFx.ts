@@ -18,16 +18,38 @@ const MUZZLE_LIGHT_PEAK = 28;
 const IMPACT_LIGHT_PEAK = 18;
 const LIGHT_DIST = 12;
 
-/** Shared geometry per radius across all beam instances (perf: avoid N×CylinderGeometry). */
-const SHARED_GEO_CACHE = new Map<number, THREE.CylinderGeometry>();
-function getSharedBeamGeo(radius: number): THREE.CylinderGeometry {
-  let geo = SHARED_GEO_CACHE.get(radius);
-  if (!geo) {
-    geo = new THREE.CylinderGeometry(radius, radius, 1, 8);
+const CORE_RADIUS = 0.055;
+const BODY_RADIUS = 0.18;
+const GLOW_RADIUS = 0.42;
+
+/**
+ * Shared geometry per radius across all beam instances (perf: avoid N×CylinderGeometry).
+ * Ref-counted: each RailgunBeamFx instance acquires on construction and releases
+ * on dispose; the geometry is disposed only when the last user is gone (fixes
+ * module-level leak under hot-reload / repeated test runs).
+ */
+const SHARED_GEO_REFS = new Map<number, { geo: THREE.CylinderGeometry; refs: number }>();
+
+function acquireSharedBeamGeo(radius: number): THREE.CylinderGeometry {
+  let entry = SHARED_GEO_REFS.get(radius);
+  if (!entry) {
+    const geo = new THREE.CylinderGeometry(radius, radius, 1, 8);
     geo.rotateX(Math.PI / 2);
-    SHARED_GEO_CACHE.set(radius, geo);
+    entry = { geo, refs: 0 };
+    SHARED_GEO_REFS.set(radius, entry);
   }
-  return geo;
+  entry.refs += 1;
+  return entry.geo;
+}
+
+function releaseSharedBeamGeo(radius: number): void {
+  const entry = SHARED_GEO_REFS.get(radius);
+  if (!entry) return;
+  entry.refs -= 1;
+  if (entry.refs <= 0) {
+    entry.geo.dispose();
+    SHARED_GEO_REFS.delete(radius);
+  }
 }
 
 function makeBeamMesh(
@@ -41,7 +63,7 @@ function makeBeamMesh(
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   });
-  const mesh = new THREE.Mesh(getSharedBeamGeo(radius), mat);
+  const mesh = new THREE.Mesh(acquireSharedBeamGeo(radius), mat);
   mesh.frustumCulled = false;
   mesh.visible = false;
   mesh.matrixAutoUpdate = true;
@@ -61,11 +83,14 @@ export class RailgunBeamFx {
   private beamFadeTimer = 0;
   private punchTimer = 0;
   private rayLength = 1;
+  /** Beam frame captured at show(): origin + direction, so length can change later. */
+  private beamOrigin = new THREE.Vector3();
+  private beamDir = new THREE.Vector3(0, 0, 1);
 
   constructor(private scene: THREE.Scene) {
-    const core = makeBeamMesh(0.055, 0xffffff);
-    const body = makeBeamMesh(0.18, 0x8fffe8);
-    const glow = makeBeamMesh(0.42, 0x4ee6c8);
+    const core = makeBeamMesh(CORE_RADIUS, 0xffffff);
+    const body = makeBeamMesh(BODY_RADIUS, 0x8fffe8);
+    const glow = makeBeamMesh(GLOW_RADIUS, 0x4ee6c8);
     this.coreMesh = core.mesh;
     this.coreMat = core.mat;
     this.bodyMesh = body.mesh;
@@ -100,27 +125,35 @@ export class RailgunBeamFx {
     this.lightsAttached = false;
   }
 
-  /** Показать луч от muzzle вдоль dir на длину rayLength; punch + fade. */
-  show(muzzle: THREE.Vector3, dir: THREE.Vector3, rayLength: number) {
-    this.rayLength = Math.max(0.5, rayLength);
-    tmpMid.copy(muzzle).addScaledVector(dir, this.rayLength * 0.5);
-    tmpEnd.copy(muzzle).addScaledVector(dir, this.rayLength);
-    tmpLook.copy(muzzle).addScaledVector(dir, this.rayLength + 1);
+  /** Place/scale all three beam layers for the current origin/dir/rayLength. */
+  private layoutBeam(): void {
+    tmpMid.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength * 0.5);
+    tmpEnd.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength);
+    tmpLook.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength + 1);
 
     // Orient once on body, copy transform to siblings (avoid 3× lookAt).
     this.bodyMesh.position.copy(tmpMid);
     this.bodyMesh.scale.set(1.85, 1.85, this.rayLength);
     this.bodyMesh.lookAt(tmpLook);
-    this.bodyMesh.visible = true;
 
     this.coreMesh.position.copy(tmpMid);
     this.coreMesh.quaternion.copy(this.bodyMesh.quaternion);
     this.coreMesh.scale.set(2.4, 2.4, this.rayLength);
-    this.coreMesh.visible = true;
 
     this.glowMesh.position.copy(tmpMid);
     this.glowMesh.quaternion.copy(this.bodyMesh.quaternion);
     this.glowMesh.scale.set(1.55, 1.55, this.rayLength);
+  }
+
+  /** Показать луч от muzzle вдоль dir на длину rayLength; punch + fade. */
+  show(muzzle: THREE.Vector3, dir: THREE.Vector3, rayLength: number) {
+    this.beamOrigin.copy(muzzle);
+    this.beamDir.copy(dir);
+    this.rayLength = Math.max(0.5, rayLength);
+
+    this.layoutBeam();
+    this.bodyMesh.visible = true;
+    this.coreMesh.visible = true;
     this.glowMesh.visible = true;
 
     this.coreMat.opacity = 1;
@@ -135,6 +168,22 @@ export class RailgunBeamFx {
     this.muzzleLight.intensity = MUZZLE_LIGHT_PEAK;
     this.impactLight.position.copy(tmpEnd);
     this.impactLight.intensity = IMPACT_LIGHT_PEAK;
+  }
+
+  /**
+   * Shorten the visible beam to `dist` (a wall/block stopped it earlier than
+   * the initial range) and move the impact light to the new beam end.
+   * M18 fix: previously only the light moved — mesh layers kept drawing
+   * straight through the wall to full range (GDD: walls stop the beam).
+   */
+  setLength(dist: number) {
+    if (!this.bodyMesh.visible) return; // no active beam to shorten
+    this.rayLength = Math.max(0.5, dist);
+    this.layoutBeam();
+    if (this.lightsAttached) {
+      tmpEnd.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength);
+      this.impactLight.position.copy(tmpEnd);
+    }
   }
 
   /** Позиция impact-light (последнее попадание по танку / стене). */
@@ -205,12 +254,15 @@ export class RailgunBeamFx {
     this.detachLights();
     for (const mesh of [this.coreMesh, this.bodyMesh, this.glowMesh]) {
       this.scene.remove(mesh);
-      // Geometry is shared across instances — do NOT dispose here.
     }
     this.coreMat.dispose();
     this.bodyMat.dispose();
     this.glowMat.dispose();
     this.muzzleLight.dispose();
     this.impactLight.dispose();
+    // Shared geometry is ref-counted — release our references last.
+    releaseSharedBeamGeo(CORE_RADIUS);
+    releaseSharedBeamGeo(BODY_RADIUS);
+    releaseSharedBeamGeo(GLOW_RADIUS);
   }
 }

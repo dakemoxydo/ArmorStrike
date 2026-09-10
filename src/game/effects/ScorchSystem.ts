@@ -64,4 +64,14 @@ export class ScorchSystem implements ParticleSystem {
     }
     this.pool.length = 0;
   }
+
+  /** Hide all marks without freeing the pool (round start). */
+  clear() {
+    for (const sc of this.pool) {
+      sc.active = false;
+      sc.t = 0;
+      sc.mat.opacity = 0;
+      sc.mesh.visible = false;
+    }
+  }
 }

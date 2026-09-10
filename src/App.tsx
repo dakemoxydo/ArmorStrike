@@ -16,6 +16,7 @@ import type { MapId } from './game/maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './game/maps/mapCatalog';
 import type { MatchModeId } from './game/types';
 import { isInteractiveKeyboardTarget } from './ui/keyboardTarget';
+import { loadMuted } from './game/audio';
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,6 +28,7 @@ export default function App() {
     score: 0,
     kills: 0,
     deaths: 0,
+    bestStreak: 0,
     playerWon: false,
     winnerName: null as string | null,
     winnerTeam: null as import('./game/types').TeamId,
@@ -40,9 +42,11 @@ export default function App() {
   const [mapSelectOpen, setMapSelectOpen] = useState(false);
   const [lastMapId, setLastMapId] = useState<MapId>(DEFAULT_MAP_ID);
   const [lastMatchMode, setLastMatchMode] = useState<MatchModeId>('deathmatch');
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(loadMuted);
   /** startRound асинхронен (GLB-корпуса) — без этого арена молча пустует. */
   const [roundLoading, setRoundLoading] = useState(false);
+  /** Видимая ошибка старта раунда (M13b): раньше был только console.error. */
+  const [roundError, setRoundError] = useState<string | null>(null);
 
   // Boot: Game.create awaits async tank mesh / systems; listeners are safe pre/post ready.
   useEffect(() => {
@@ -53,6 +57,15 @@ export default function App() {
 
     (async () => {
       try {
+        // Fail-fast до Game.create: временный canvas, игровой не трогаем (W-1).
+        const probe = document.createElement('canvas').getContext('webgl2');
+        if (!probe) {
+          setBootError({
+            message: 'WebGL недоступен или не удалось создать графический контекст.',
+            detail: 'webgl2 context probe failed',
+          });
+          return;
+        }
         const instance = await Game.create(canvas);
         if (cancelled) {
           instance.dispose();
@@ -71,6 +84,7 @@ export default function App() {
               score: e.score,
               kills: e.kills,
               deaths: e.deaths,
+              bestStreak: e.bestStreak,
               playerWon: e.playerWon,
               winnerName: e.winnerName,
               winnerTeam: e.winnerTeam,
@@ -126,10 +140,12 @@ export default function App() {
   /** Единая точка старта: держит индикатор загрузки и глотает гонку stale-старта. */
   const runStartRound = useCallback(async (game: GameApi, mapId: MapId) => {
     setRoundLoading(true);
+    setRoundError(null);
     try {
       await game.startRound(mapId);
     } catch (err) {
       console.error('[ArmorStrike] startRound failed', err);
+      setRoundError('Не удалось начать раунд. Попробуйте ещё раз.');
     } finally {
       setRoundLoading(false);
     }
@@ -258,6 +274,7 @@ export default function App() {
           score={finalStats.score}
           kills={finalStats.kills}
           deaths={finalStats.deaths}
+          bestStreak={finalStats.bestStreak}
           playerWon={finalStats.playerWon}
           winnerName={finalStats.winnerName}
           winnerTeam={finalStats.winnerTeam}
@@ -287,6 +304,15 @@ export default function App() {
           onConfirm={confirmMap}
           onCancel={cancelMapSelect}
         />
+      )}
+
+      {roundError && !roundLoading && (
+        <div
+          className="absolute inset-x-0 top-5 z-50 mx-auto w-fit max-w-[min(20rem,calc(100vw-3rem))] px-4 py-2.5 text-center text-xs tracking-[0.2em] text-amber-200 hud-panel"
+          role="alert"
+        >
+          {roundError}
+        </div>
       )}
 
       {roundLoading && (

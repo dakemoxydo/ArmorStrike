@@ -32,6 +32,8 @@ export class CombatSystem {
   damageSystem: ReturnType<typeof createDamageSystem>;
   private streakTracker = new KillStreakTracker();
   private matchTime = 0;
+  /** Best player kill streak of the current match (H4, shown on results). */
+  private playerBest = 0;
 
   constructor(private deps: CombatDeps) {
     this.damageSystem = createDamageSystem(deps.arena, {
@@ -54,6 +56,12 @@ export class CombatSystem {
   /** Сброс streak tracker (при смерти игрока / смене раунда). */
   resetStreaks() {
     this.streakTracker.reset();
+    this.playerBest = 0;
+  }
+
+  /** Лучшая серия игрока в текущем матче (не сбрасывается смертью). */
+  get playerBestStreak(): number {
+    return this.playerBest;
   }
 
   /**
@@ -113,6 +121,7 @@ export class CombatSystem {
     // Kill streak tracking (только для игрока)
     if (byPlayer) {
       const streak = this.streakTracker.registerKill(this.matchTime);
+      this.playerBest = Math.max(this.playerBest, this.streakTracker.windowCount);
       if (streak) {
         this.deps.emit({ type: 'killStreak', count: streak.count, label: streak.label });
       }

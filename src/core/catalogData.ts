@@ -22,6 +22,10 @@ export const WEAPON_TUNING = {
     chargeFovTighten: 2.8,
     /** FOV punch on fire (degrees, player). */
     fireFovPunch: 5.5,
+    /** Visual beam delay after hitscan resolve (seconds) — weight/anticipation. */
+    tracerDelay: 0.025,
+    /** Per-pierce impact colors [1st, 2nd, 3rd+]. Bright → dim for penetration feedback. */
+    pierceColors: [0x8fffe8, 0x6fe8ff, 0x4ecfe0] as const,
   },
   flamethrower: {
     damagePerTick: 12,

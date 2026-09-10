@@ -13,6 +13,7 @@
 | Радиус | **20** wu | `CAPTURE.radius` |
 | Захват | **8 с** exclusive control | `CAPTURE.captureSec` |
 | Contest | обе команды в зоне → progress **freeze** | `resolveActor` |
+| Empty zone | прогресс **не decay'ится** (v1): freeze до прихода акторов | `stepCaptureZoneInto` |
 | Ownership | **neutral-first**: capture → neutral → enemy | `stepCaptureZone` |
 | Score | **+1 / s** за каждую owned point | `scoreDeltaFromZones` |
 | Win | teamScore ≥ **1000** | `evaluateMatchEnd` |

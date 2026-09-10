@@ -1,6 +1,7 @@
 /**
  * Draw-call census per map — headless, no WebGL renderer needed.
- * Usage: npx tsx scripts/draw-call-census.ts
+ * Usage: npm run census
+ * (vite-node уже в дереве через vitest — отдельный tsx не нужен.)
  *
  * Builds each registered map into a fresh THREE.Group via the real
  * Arena/builders, then walks the scene graph counting renderable objects:

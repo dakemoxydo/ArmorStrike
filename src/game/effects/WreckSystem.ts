@@ -250,4 +250,18 @@ export class WreckSystem {
     // (пересоздание Game / StrictMode) работал бы на освобождённых ресурсах.
     // Освобождать их здесь нельзя — как и общий smokeTexture().
   }
+
+  /** Hide all wrecks + smoke without freeing pools (round start, L-1). */
+  clear() {
+    for (const w of this.pool) {
+      if (w.active) this.removeWreck(w);
+    }
+    for (let i = 0; i < this.smokePool.length; i++) {
+      this.smokeLife[i] = 0;
+      this.smokeMaxLife[i] = 1;
+      const s = this.smokePool[i];
+      s.visible = false;
+      (s.material as THREE.SpriteMaterial).opacity = 0;
+    }
+  }
 }

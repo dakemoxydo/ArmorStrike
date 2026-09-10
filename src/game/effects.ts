@@ -80,4 +80,17 @@ export class Effects implements EffectsPort {
     this.dust.dispose();
     this.wreck.dispose();
   }
+
+  /**
+   * Clear round transients (L-1): combat smoke/scorch, wrecks, camera shake
+   * and FOV punch/zoom. Pools stay allocated; ambient dust is arena-owned
+   * and recenters on rebuild.
+   */
+  clearTransients() {
+    this.particles.clearTransients();
+    this.wreck.clear();
+    this.shake.reset();
+    this.fovPunch = 0;
+    this.fovTighten = 0;
+  }
 }

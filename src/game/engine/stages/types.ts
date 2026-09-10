@@ -28,6 +28,8 @@ export interface FrameContext {
 export interface SimSystem {
   readonly name: string;
   update(ctx: FrameContext): void;
+  /** Optional: drop cached per-roster state (called from clearTanks). */
+  onRosterCleared?(): void;
 }
 
 export type NameplateMap = Map<number, { plate: Nameplate; color: number }>;

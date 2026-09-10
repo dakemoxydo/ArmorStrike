@@ -110,4 +110,14 @@ export class SmokeSystem implements ParticleSystem {
     }
     this.pool.length = 0;
   }
+
+  /** Hide all puffs without freeing the pool (round start). */
+  clear() {
+    for (const p of this.pool) {
+      p.active = false;
+      p.life = 0;
+      p.s.visible = false;
+      p.mat.opacity = 0;
+    }
+  }
 }

@@ -97,6 +97,14 @@ export class PlayerController {
     if (document.pointerLockElement === this.dom) document.exitPointerLock();
   }
 
+  /** Сброс удерживаемых клавиш/огня при старте раунда (L-6). */
+  resetKeys() {
+    this.keys.clear();
+    this.wantsFire = false;
+    this.reloadRequested = false;
+    this.scoreHeld = false;
+  }
+
   /** Применить ввод к танку. Возвращает true, если запрошен выстрел. */
   update(tank: ControllableTank): boolean {
     const k = this.keys;

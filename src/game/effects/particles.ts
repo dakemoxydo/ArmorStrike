@@ -140,6 +140,12 @@ export class ParticleEffects {
     for (const sys of this.systems) sys.update(dt);
   }
 
+  /** Hide smoke/scorch without freeing pools (round start, L-1). */
+  clearTransients() {
+    this.smoke.clear();
+    this.scorch_.clear();
+  }
+
   dispose() {
     for (const sys of this.systems) sys.dispose();
   }

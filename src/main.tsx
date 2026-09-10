@@ -6,6 +6,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 const root = document.getElementById('root');
 if (!root) {
+  // До React-mount: ErrorBoundary такое не ловит — оставляем читаемый след.
+  document.body.textContent = 'ArmorStrike: не найден #root в index.html';
   throw new Error('Root element #root not found');
 }
 

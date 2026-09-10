@@ -13,12 +13,12 @@ npm run dev
 npm run typecheck   # tsc --noEmit
 npm run lint        # eslint src
 npm test            # vitest
-npm run build       # inlines JS/CSS into dist/index.html; copies public/ (e.g. GLB models) next to it
+npm run build       # inlines JS/CSS into dist/index.html; copies public/ (self-hosted fonts) next to it
 ```
 
-Windows: `start.bat` starts the Vite dev server.
+Windows: double-click `start.bat` to launch the game in your browser. If the dev server is already running on port 5178, it just opens the game; otherwise it installs dependencies and starts the server automatically. Use `start.bat --no-open` to skip the auto-open.
 
-**Deploy note:** `dist/index.html` is self-contained for app code, but hull GLBs live under `dist/models/`. Serve the whole `dist/` folder (not only the HTML file).
+**Deploy note:** `dist/index.html` is self-contained for app code, but self-hosted fonts live under `dist/fonts/`. Serve the whole `dist/` folder (not only the HTML file). No runtime requests leave the origin (fully offline-capable). Tank hulls render procedurally; the GLB pipeline is disabled (`MODELS_ENABLED = false` in `src/game/tank/TankConfig.ts`).
 
 ## Controls
 

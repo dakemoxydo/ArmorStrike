@@ -23,4 +23,9 @@ export class CameraShake {
   update(dt: number) {
     this.trauma = Math.max(0, this.trauma - dt * 1.6);
   }
+
+  /** Мгновенный сброс тряски (старт раунда). */
+  reset() {
+    this.trauma = 0;
+  }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Clock3, Layers, RefreshCcw, Skull, Target, Trophy, Users, Wrench } from 'lucide-react';
+import { Clock3, Flame, Layers, RefreshCcw, Skull, Target, Trophy, Users, Wrench } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { MatchEndReason, MatchModeId, TeamId } from '../game/types';
 import {
@@ -13,6 +13,8 @@ interface GameOverScreenProps {
   score: number;
   kills: number;
   deaths: number;
+  /** Лучшая серия убийств за матч (H4). */
+  bestStreak: number;
   playerWon: boolean;
   winnerName: string | null;
   winnerTeam: TeamId;
@@ -49,7 +51,7 @@ function CountUp({ value, duration = 1300 }: { value: number; duration?: number 
 }
 
 export default function GameOverScreen({
-  score, kills, deaths, playerWon, winnerName, winnerTeam, reason, mode,
+  score, kills, deaths, bestStreak, playerWon, winnerName, winnerTeam, reason, mode,
   matchTimeSec, teamKills, teamScore,
   onRematch, onChangeMode, onGarage, onMenu,
 }: GameOverScreenProps) {
@@ -118,10 +120,11 @@ export default function GameOverScreen({
           </p>
         )}
 
-        <div className="anim-up mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4" style={{ '--d': '0.38s' } as React.CSSProperties}>
+        <div className="anim-up mt-8 grid grid-cols-2 gap-3 sm:grid-cols-5" style={{ '--d': '0.38s' } as React.CSSProperties}>
           <StatCard icon={<Trophy size={16} />} label="СЧЁТ XP" value={score} accent="text-amber-300" />
           <StatCard icon={<Skull size={16} />} label="ФРАГИ" value={kills} accent="text-red-300" />
           <StatCard icon={<Target size={16} />} label="СМЕРТИ" value={deaths} accent="text-cyan-300" />
+          <StatCard icon={<Flame size={16} />} label="ЛУЧШАЯ СЕРИЯ" value={bestStreak} accent="text-orange-300" />
           <div className="hud-panel min-w-[7.5rem] px-5 py-4">
             <div className="flex justify-center text-emerald-300"><Layers size={16} aria-hidden /></div>
             <div className="font-display mt-2 text-3xl text-emerald-300">{formatKd(kills, deaths)}</div>
