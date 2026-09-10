@@ -14,6 +14,7 @@
 | `standard` | cannon | random-ish | 1.0 | 0.35 |
 
 Match combat scales: `BOT_NORMAL` in `matchConfig.ts` (fixed Normal difficulty).  
+Cooldown pad (`shotCooldownScale`: standard 1.2 / assault 1.15 / sniper 1.35 — `rosterSpawn.ts`) эффективен **только для класса пушки**: у railgun/flamer `TURRET.shotCooldown = 0`, их каденция weapon-internal (charge/reload / energy) — снайперы и штурмы стреляют в каденции игрока.  
 `roleForBot` / `personaForRole` / `aimErrorMulForRole` / `coverHpFracForRole` — `aiRoles.ts`.
 
 ## Target selection (P2 multi-target)
@@ -66,10 +67,12 @@ engage ──(lose sight timeout)──► patrol
 |--------|-----------------|
 | `AIController` | state machine, patrol waypoints, stuck |
 | `aiAimFire` | башня, lead, fire gate, aim noise |
-| `aiCover` | `findCoverPoint` |
+| `aiCover` | `findCoverPoint` (радиус 42, stand-off 3.4, только blocksSight, без ramp) |
 | `aiObstacle` | `computeObstacleAvoidance` |
 | `aiTuning` | preferredRange, aimTolerance, steering |
 | `losClear` | line of sight через colliders |
+
+**Cover и классы оружия (D3):** поиск укрытия класс-нейтрален (scoring сам-относительный: `80 − distSelf − travel·0.35 + losBlocked·45`); класс-уместность возникает сама, потому что бот дерётся на preferred range класса — flamer (~8) прячет у боя, railgun-снайпер (~46) прячет далеко. Порог HP ухода — по роли (`coverHpFracForRole`).
 
 ## Fire
 

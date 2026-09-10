@@ -1,12 +1,17 @@
 // ===== Поиск точки укрытия для ИИ (низкое HP) =====
+// Порог HP ухода в укрытие — ПО РОЛИ: coverHpFracForRole в aiRoles.ts
+// (elite 0.5 / sniper 0.4 / assault+standard 0.35).
 import type { Collider } from './engine/physics';
 import { losClear } from './engine/physics';
 
-export const AI_LOW_HP_FRAC = 0.35;
-
 /**
  * Точка за препятствием относительно угрозы: бот прячется «сзади» блока
- * (с дальней от игрока стороны), предпочитая позиции, рвущие LOS.
+ * (с дальней от угрозы стороны), предпочитая позиции, рвущие LOS.
+ *
+ * Поиск класс-нейтрален: default maxDist 42 / standOff 3.4 для всех ролей.
+ * Класс-уместность возникает сама — бот дерётся на preferred range своего
+ * оружия (flamer ~8 → ближние укрытия; railgun-снайпер ~46 → дальние),
+ * а scoring сам-относительный (80 − distSelf − travel·0.35 + losBlocked·45).
  */
 export function findCoverPoint(
   selfX: number,

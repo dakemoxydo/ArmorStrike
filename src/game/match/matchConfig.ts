@@ -40,7 +40,13 @@ export const BOT_NORMAL = {
   aimError: 0.1,
   healthScale: 1,
   damageScale: 1,
-  /** Role-independent cooldown pad (slightly slower than player). */
+  /**
+   * Cooldown pad (бот чуть медленнее игрока). Эффективен ТОЛЬКО для класса
+   * пушки: у railgun/flamer `TURRET.shotCooldown = 0`, их каденция —
+   * внутренняя логика оружия (charge/reload / energy), поэтому оверрайды
+   * ролей в rosterSpawn (assault 1.15 / sniper 1.35) там инертны:
+   * снайперы и штурмы стреляют в каденции игрока.
+   */
   shotCooldownScale: 1.2,
   /** Fake "wave" for roleForBot elite gate — no elite spam in match roster. */
   roleWave: 1,

@@ -87,6 +87,8 @@ async function makeBot(
     style: buildBotStyle(c),
     healthScale: BOT_NORMAL.healthScale,
     damageScale: BOT_NORMAL.damageScale,
+    // Пад действует только на класс пушки (у railgun/flamer shotCooldown=0 —
+    // каденция weapon-internal; см. BOT_NORMAL.shotCooldownScale в matchConfig).
     shotCooldownScale:
       role === 'assault' ? 1.15 : role === 'sniper' ? 1.35 : BOT_NORMAL.shotCooldownScale,
   });
