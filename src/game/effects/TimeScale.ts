@@ -43,6 +43,13 @@ export class TimeScale {
     // Slow-mo
     if (this.slowT > 0) {
       this.slowT -= realDt;
+      // Slow-mo закончился внутри этого кадра: выходим в реальное время
+      // без экстраполяции fade (иначе k < 0 раздувает scale выше 1).
+      if (this.slowT <= 0) {
+        this.slowT = 0;
+        this.scale = 1;
+        return realDt;
+      }
       // Плавный выход из slow-mo в последние 0.15с
       const fadeZone = 0.15;
       if (this.slowT < fadeZone) {
