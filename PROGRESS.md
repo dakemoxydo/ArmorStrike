@@ -22,6 +22,42 @@ Audit findings F-1…F-4 and H-1…H-5 were all FIXED — treated as closed (aud
 
 ---
 
+## Iteration 15 — 2026-09-10 · [D] ENEMY AI — КАДЕНЦИЯ БОТОВ: ПАДЫ РЕАЛЬНЫЕ (решение игрока по iter-14 question)
+
+**Task:** D2 design-question resolved by player: «Пады реальные» — railgun/flamer
+боты должны стрелять медленнее игрока, как задокументировано интентом.
+
+**Implementation (zero weapon-code changes — существующий шов wave-баффов):**
+- `aiRoles.firePadForRole` — единый источник пада (standard 1.2 / assault 1.15 /
+  sniper 1.35); `BOT_NORMAL.shotCooldownScale` удалён (последний потребитель переехал).
+- `rosterSpawn.makeBot`: standard → `shotCooldownScale = firePad` (межвыстрел пушки,
+  поведение НЕ изменилось — было 1.2); sniper/assault → `bot.reloadSpeedMul = 1/firePad`
+  (новое: реальный пад через `ownerReloadMul`, который уже протащен во все 3 оружия —
+  charge+reload рельсы, восстановление батареи огнемёта, полная перезарядка пушки).
+  Расход батареи огнемёта не пада; стандарт-боты mul не получают — их полная
+  перезарядка магазина как у игрока.
+- Shipped-числа: рельса-бот reload **4.8→6.48 с**, charge **1.1→1.485 с**;
+  огнемёт-бот батарея **22→19.13/с**; пушечный бот 0.336 с (без изменений).
+- Тесты: `reloadMul.test.ts` (+4 — шов: fallback/значение/бот-числа), `aiRoles.test.ts`
+  (пады firePadForRole + shipped-числа; старый тест инертности пада заменён).
+  GDD AI_Bots.md: параграф каденции переписан под новое состояние.
+
+**Процесс-урок:** edit matchConfig оборвался внутри объекта (`old_string` кончился
+на середине литерала → дублированный хвост) — пойман typecheck-гейтом до коммита,
+исправлен сразу. Закрывать `old_string` на границе конструкции.
+
+**Gates:** typecheck/lint clean, **250/250** tests (51 files, +5), build ✓
+`dist/index.html` = 1,111,700 B (gzip 305.01 kB; +50 B vs iter 14 — новая проводка).
+
+**Next:** [E2] nameplate readability (round-robin).
+
+### Micro-reflection (iter 15)
+- Moved forward? Yes — дизайн-долг D2 закрыт решением игрока; изменение минимально благодаря существующему шову `reloadSpeedMul` (наследие wave-баффов), правок оружия ноль.
+- Time lost? Один сломанный edit (пойман гейтом до коммита) — минута.
+- Highest-leverage next task: E2 nameplate readability.
+
+---
+
 ## Iteration 14 — 2026-09-10 · [D] ENEMY AI — D1–D3 AUDIT (spread verified; doc drift fixed, dead export removed)
 
 **Task:** BACKLOG D1–D3 — bot AI audit against `Docs/GDD/Approved/AI_Bots.md`.
