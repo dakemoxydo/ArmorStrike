@@ -53,7 +53,9 @@ export function useGameHud(game: GameApi | null, active: boolean) {
 
   useEffect(() => {
     if (!game) return;
-    const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
+    // Browser timers: DOM's setTimeout returns `number` (see tsconfig.json — the
+    // app program no longer sees node's NodeJS.Timeout overload).
+    const pendingTimers = new Set<number>();
     const onEvent = (e: GameEvent) => {
       if (e.type === 'playerHit') {
         setVignette((v) => v + 1);

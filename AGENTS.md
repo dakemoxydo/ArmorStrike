@@ -10,9 +10,9 @@ Self-contained workflow. Works in any IDE/CLI that reads AGENTS.md.
 ## 1. Commands & Verification (npm)
 
 - `npm run dev` — Vite dev server.
-- `npm run typecheck` — `tsc --noEmit`.
+- `npm run typecheck` — `tsc --noEmit` over **two** projects: `tsconfig.json` (browser `src/`, `types: ["vite/client"]` only) and `tsconfig.node.json` (`vite.config.ts` + `src/__tests__/`, adds `@types/node`). Node types are scoped on purpose: browser code must not compile `process`/`Buffer`/`require`.
 - `npm test` — `vitest run` (tests live in `src/__tests__/*.test.ts`).
-- `npm run lint` — `eslint src`.
+- `npm run lint` — `eslint src`. `no-explicit-any` is an **error** in shipped code, off under `src/__tests__/` (partial test doubles).
 - `npm run census` — draw-call census (`scripts/draw-call-census.ts`).
 - `npm run build` — typecheck + Vite production build.
 
