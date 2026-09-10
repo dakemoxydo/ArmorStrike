@@ -5,6 +5,9 @@ dist/
 .DS_Store
 Thumbs.db
 
+# Local dev evidence (screenshots via scripts/screenshot.sh; numbers live in PROGRESS.md)
+screenshots/
+
 # Env / secrets
 .env
 .env.*
@@ -15,6 +18,7 @@ graphify-out/
 
 # Agent / IDE local configs (machine-specific paths)
 .agents/
+.workbuddy-ai/
 .kilocode/
 .qwen/
 .claude/
