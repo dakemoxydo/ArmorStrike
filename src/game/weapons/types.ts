@@ -97,6 +97,12 @@ export interface Weapon {
   updateReload(dt: number): void;
   /** Запрос ручной перезарядки (клавиша R). По умолчанию нет. */
   requestReload(): void;
+  /**
+   * Вызывается один раз при переходе владельца из alive → !alive.
+   * Оружие должно остановить звуки, сбросить state, скрыть визуалы.
+   * Опционально: Cannon/Flame могут не реализовывать (setFire(false) достаточно).
+   */
+  onOwnerDeath?(): void;
   dispose(): void;
   getAmmoState(): WeaponAmmoState;
 }

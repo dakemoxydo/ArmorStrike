@@ -18,12 +18,22 @@ const MUZZLE_LIGHT_PEAK = 28;
 const IMPACT_LIGHT_PEAK = 18;
 const LIGHT_DIST = 12;
 
+/** Shared geometry per radius across all beam instances (perf: avoid N×CylinderGeometry). */
+const SHARED_GEO_CACHE = new Map<number, THREE.CylinderGeometry>();
+function getSharedBeamGeo(radius: number): THREE.CylinderGeometry {
+  let geo = SHARED_GEO_CACHE.get(radius);
+  if (!geo) {
+    geo = new THREE.CylinderGeometry(radius, radius, 1, 8);
+    geo.rotateX(Math.PI / 2);
+    SHARED_GEO_CACHE.set(radius, geo);
+  }
+  return geo;
+}
+
 function makeBeamMesh(
   radius: number,
   color: number,
 ): { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial } {
-  const geo = new THREE.CylinderGeometry(radius, radius, 1, 8);
-  geo.rotateX(Math.PI / 2);
   const mat = new THREE.MeshBasicMaterial({
     color,
     transparent: true,
@@ -31,7 +41,7 @@ function makeBeamMesh(
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   });
-  const mesh = new THREE.Mesh(geo, mat);
+  const mesh = new THREE.Mesh(getSharedBeamGeo(radius), mat);
   mesh.frustumCulled = false;
   mesh.visible = false;
   mesh.matrixAutoUpdate = true;
@@ -134,6 +144,19 @@ export class RailgunBeamFx {
     this.impactLight.intensity = Math.max(this.impactLight.intensity, IMPACT_LIGHT_PEAK * 0.75);
   }
 
+  /** Мгновенно скрыть луч и отцепить свет (смерть владельца mid-fade). */
+  hide() {
+    this.coreMesh.visible = false;
+    this.bodyMesh.visible = false;
+    this.glowMesh.visible = false;
+    this.coreMat.opacity = 0;
+    this.bodyMat.opacity = 0;
+    this.glowMat.opacity = 0;
+    this.beamFadeTimer = 0;
+    this.punchTimer = 0;
+    this.detachLights();
+  }
+
   /** Затухание слоёв + radial punch settle. */
   update(dt: number) {
     if (this.beamFadeTimer <= 0 && this.punchTimer <= 0) return;
@@ -182,7 +205,7 @@ export class RailgunBeamFx {
     this.detachLights();
     for (const mesh of [this.coreMesh, this.bodyMesh, this.glowMesh]) {
       this.scene.remove(mesh);
-      mesh.geometry.dispose();
+      // Geometry is shared across instances — do NOT dispose here.
     }
     this.coreMat.dispose();
     this.bodyMat.dispose();

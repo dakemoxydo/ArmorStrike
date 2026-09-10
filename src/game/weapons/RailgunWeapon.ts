@@ -45,6 +45,8 @@ export class RailgunWeapon implements Weapon {
   private _tmpPoint = new THREE.Vector3();
   /** Accumulator for charge micro-shake / ion sparks (player). */
   private chargeFxAcc = 0;
+  /** True while this weapon owns the active chargeRailgun sound. */
+  private chargingAudioActive = false;
 
   constructor(owner: WeaponOwner, deps: WeaponDeps) {
     this.owner = owner;
@@ -61,6 +63,7 @@ export class RailgunWeapon implements Weapon {
       this.state = 'CHARGING';
       this.chargeTimer = 0;
       this.chargeFxAcc = 0;
+      this.chargingAudioActive = true;
       this.deps.audio.chargeRailgun(this.chargeDuration());
     }
   }
@@ -112,6 +115,9 @@ export class RailgunWeapon implements Weapon {
 
         if (this.chargeTimer >= chargeDur) {
           visual.barrelGroup.position.set(0, BARREL_REST_Y, BARREL_REST_Z);
+          // GDD FSM shows CHARGING → FIRING → executeFiring; we execute synchronously
+          // to avoid a 1-frame latency between charge-complete and the shot.
+          this.chargingAudioActive = false;
           this.executeFiring(ctx.tanks, ctx.colliders);
           this.state = 'COOLDOWN';
           this.reloadTimer = this.cooldownDuration();
@@ -119,7 +125,11 @@ export class RailgunWeapon implements Weapon {
         break;
       }
 
+      // NOTE: GDD's transient FIRING state is folded into end-of-CHARGING above.
+      // This branch is unreachable in normal flow; kept as safety net only.
       case 'FIRING': {
+        this.chargingAudioActive = false;
+        this.executeFiring([], []);
         this.state = 'COOLDOWN';
         this.reloadTimer = this.cooldownDuration();
         break;
@@ -161,15 +171,23 @@ export class RailgunWeapon implements Weapon {
       this.deps.onShotFired?.();
     }
 
-    const hits = this.castHitscan(tanks);
-    const maxHitDist = this.resolveHits(hits, colliders);
-    this.beamFx.show(tmpMuzzle, tmpDir, maxHitDist);
+    // Beam must be shown BEFORE resolveHits so setImpactPosition inside applyHit
+    // actually lands on the hit point (show() would otherwise overwrite it).
+    const range = this.owner.params.range ?? WEAPON_TUNING.railgun.range;
+    this.beamFx.show(tmpMuzzle, tmpDir, range);
+    const finalDist = this.resolveHits(this.castHitscan(tanks), colliders);
+    // If a wall shortened the effective beam vs initial range, reposition end cap.
+    if (finalDist < range) {
+      this.beamFx.setImpactPosition(
+        this._tmpPoint.copy(tmpMuzzle).addScaledVector(tmpDir, finalDist),
+      );
+    }
 
     // Along-beam ion trail (midpoints)
-    const segs = Math.min(6, Math.max(2, Math.floor(maxHitDist / 18)));
+    const segs = Math.min(6, Math.max(2, Math.floor(finalDist / 18)));
     for (let i = 1; i <= segs; i++) {
       const u = i / (segs + 1);
-      tmpSpark.copy(tmpMuzzle).addScaledVector(tmpDir, maxHitDist * u);
+      tmpSpark.copy(tmpMuzzle).addScaledVector(tmpDir, finalDist * u);
       this.deps.effects.trailPuff(tmpSpark, BEAM_SPARK_COLOR);
       if (i === Math.ceil(segs / 2)) {
         this.deps.effects.railgunImpact(tmpSpark, 0x8fffe8, false);
@@ -188,13 +206,17 @@ export class RailgunWeapon implements Weapon {
     this._tankMap.clear();
     this._targetArr.length = 0;
 
+    const ownerTeam = this.owner.teamId ?? null;
     for (const t of tanks) {
-      if (t.id !== this.owner.id && t.alive) {
-        t.visual.group.traverse((o) => {
-          this._targetArr.push(o);
-          this._tankMap.set(o, t);
-        });
-      }
+      if (t.id === this.owner.id || !t.alive) continue;
+      // Skip teammates to avoid pushing allies / wasting penetration.
+      // Mirrors DamageSystem.applyDamage team filter; knockback/VFX aren't gated there.
+      const targetTeam = t.teamId ?? null;
+      if (ownerTeam !== null && targetTeam !== null && ownerTeam === targetTeam) continue;
+      t.visual.group.traverse((o) => {
+        this._targetArr.push(o);
+        this._tankMap.set(o, t);
+      });
     }
 
     return this.raycaster.intersectObjects(this._targetArr, false);
@@ -209,9 +231,9 @@ export class RailgunWeapon implements Weapon {
       tmpMuzzle.x, tmpMuzzle.z, tmpDir.x, tmpDir.z, range, colliders, tmpMuzzle.y,
     );
     if (!hit) return null;
-    const col = colliders.find((c) => c.id === hit.id);
+    // Impact FX at the actual beam height (horizontal ray), not an absolute world Y.
+    // Keeps impact/debris aligned with the visible beam regardless of wall height.
     const point = this._tmpPoint.copy(tmpMuzzle).addScaledVector(tmpDir, hit.dist);
-    point.y = col ? Math.min(col.height * 0.5, 2) : 1.6;
     return { dist: hit.dist, id: hit.id, point };
   }
 
@@ -223,7 +245,6 @@ export class RailgunWeapon implements Weapon {
     const baseDamage = resolveWeaponDamage(this.owner.params.damage, WEAPON_TUNING.railgun.damage);
     let currentDamage = baseDamage;
     const hitTanksSet = new Set<number>();
-    let lastImpact: THREE.Vector3 | null = null;
     let hitCount = 0;
 
     const wall = this.nearestShotBlocker(colliders, range);
@@ -250,7 +271,6 @@ export class RailgunWeapon implements Weapon {
         (p) => {
           this.deps.effects.railgunImpact(p, 0x8fffe8, heavy);
           this.beamFx.setImpactPosition(p);
-          lastImpact = p;
         },
         hit.point,
       );
@@ -263,10 +283,8 @@ export class RailgunWeapon implements Weapon {
       this.deps.effects.debris(wall.point, 0xffa040, 10);
       this.beamFx.setImpactPosition(wall.point);
       maxHitDist = wall.dist;
-    } else if (lastImpact) {
-      // Beam ends at last tank if no wall and we want shorter visual? Keep full range
-      // unless we only hit tanks — still draw to range for sniper feel.
     }
+    // Without a wall the beam draws to full range for sniper feel (per GDD).
 
     // Extra shake when player lands at least one pierce
     if (this.owner.isPlayer && hitCount > 0) {
@@ -291,8 +309,30 @@ export class RailgunWeapon implements Weapon {
     });
   }
 
+  /**
+   * Смерть владельца: остановить заряд, сбросить state, скрыть луч, очистить FOV.
+   * Вызывается один раз при переходе alive → !alive (Tank.takeDamage).
+   */
+  onOwnerDeath(): void {
+    // Stop charge audio only if THIS weapon started it (shared AudioPort caveat).
+    if (this.chargingAudioActive) {
+      this.deps.audio.stopChargeRailgun(false);
+      this.chargingAudioActive = false;
+    }
+    this.state = 'IDLE';
+    this.chargeTimer = 0;
+    this.reloadTimer = 0;
+    this.chargeFxAcc = 0;
+    if (this.owner.isPlayer) this.deps.effects.setFovTighten(0);
+    // Cut the beam so lights/meshes don't linger frozen while owner is dead.
+    this.beamFx.hide();
+  }
+
   dispose() {
-    this.deps.audio.stopChargeRailgun(false);
+    if (this.chargingAudioActive) {
+      this.deps.audio.stopChargeRailgun(false);
+      this.chargingAudioActive = false;
+    }
     if (this.owner.isPlayer) this.deps.effects.setFovTighten(0);
     this.beamFx.dispose();
   }

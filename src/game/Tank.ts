@@ -168,6 +168,9 @@ export class TankEntity implements TankLike, WeaponOwner {
       this.deathT = 0;
       this.throttle = 0;
       this.steer = 0;
+      // Оружие должно остановить звуки/заряд/визуалы при смерти владельца.
+      // Вызывается один раз на переход alive → !alive.
+      this.weapon?.onOwnerDeath?.();
     }
   }
 

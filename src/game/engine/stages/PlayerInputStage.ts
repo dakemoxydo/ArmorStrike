@@ -16,8 +16,12 @@ export class PlayerInputStage implements SimSystem {
     if (p.alive) {
       const wantsFire = this.input.update(p);
       p.weapon?.setFire(wantsFire);
-      const reloading = p.weapon?.getAmmoState().reloading ?? false;
-      if (reloading && !ctx.prevReloading.value) this.audio.reload();
+      const ammo = p.weapon?.getAmmoState();
+      const reloading = ammo?.reloading ?? false;
+      // Railgun reports isCharging as "reloading" for HUD progress, but charging
+      // isn't a magazine reload — don't play the reload click on charge start.
+      const isReloadNotCharge = reloading && !(ammo?.isCharging);
+      if (isReloadNotCharge && !ctx.prevReloading.value) this.audio.reload();
       ctx.prevReloading.value = reloading;
     } else {
       // M8: cut flamethrower/weapon fire on death so audio/state do not leak.
