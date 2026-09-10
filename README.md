@@ -20,6 +20,14 @@ Windows: double-click `start.bat` to launch the game in your browser. If the dev
 
 **Deploy note:** `dist/index.html` is self-contained for app code, but self-hosted fonts live under `dist/fonts/`. Serve the whole `dist/` folder (not only the HTML file). No runtime requests leave the origin (fully offline-capable). Tank hulls render procedurally; the GLB pipeline is disabled (`MODELS_ENABLED = false` in `src/game/tank/TankConfig.ts`).
 
+**Subpath deploys** (e.g. `https://example.com/game/`) need no code changes — pass the base at build time:
+
+```bash
+BASE_PATH=/game/ npm run build
+```
+
+Asset URLs are base-aware by construction: Vite rewrites CSS `url()` to relative paths (`./fonts/…`) and `assetUrl()` reads `import.meta.env.BASE_URL`. CI rebuilds under `/game/` and fails if any absolute asset reference survives.
+
 ## Controls
 
 | Action | Key |

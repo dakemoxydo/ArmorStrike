@@ -1,0 +1,33 @@
+# Line-ending policy — keeps diffs stable across Windows / macOS / Linux.
+# Repo blobs are always LF; each platform checks out what it needs.
+
+# Normalize text files on commit (LF in the repository).
+* text=auto
+
+# Binary assets — never touch, never diff as text.
+*.woff2  binary
+*.woff   binary
+*.ttf    binary
+*.otf    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.ico    binary
+*.glb    binary
+*.gltf   binary
+*.mp3    binary
+*.ogg    binary
+*.wav    binary
+
+# Windows launchers must keep CRLF — cmd.exe mis-parses LF-only .bat files.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Shell scripts must stay LF — CRLF breaks the shebang.
+*.sh text eol=lf
+
+# Lockfile is machine-written: keep it out of review noise.
+package-lock.json linguist-generated

@@ -27,3 +27,17 @@ jobs:
           size=$(stat -c%s dist/index.html)
           echo "dist/index.html = $size bytes"
           test "$size" -lt 1572864
+      - name: subfolder deploy gate (non-root base)
+        run: |
+          # Rebuild under a subpath and assert no absolute asset reference
+          # survives: an absolute /fonts or /models ref 404s whenever the game
+          # is not served from the domain root.
+          BASE_PATH=/game/ npm run build
+          test -f dist/index.html
+          test -f dist/fonts/russo-one-cyrillic-400.woff2
+          if grep -qE 'url\(/|src="/|href="/' dist/index.html; then
+            echo "::error::absolute asset reference found — subfolder deploy would 404"
+            grep -oE 'url\(/[^)]*\)|src="/[^"]*"|href="/[^"]*"' dist/index.html | head -10
+            exit 1
+          fi
+          echo "no absolute asset refs — subfolder deploy OK"
