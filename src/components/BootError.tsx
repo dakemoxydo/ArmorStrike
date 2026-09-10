@@ -8,8 +8,11 @@ interface BootErrorProps {
 /** Экран ошибки инициализации (WebGL / Game constructor). */
 export default function BootError({ message, detail }: BootErrorProps) {
   return (
-    <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-[#04060b] px-6 text-center text-white">
-      <AlertTriangle size={40} className="text-red-400" />
+    <div
+      role="alert"
+      className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-[#04060b] px-6 text-center text-white"
+    >
+      <AlertTriangle size={40} className="text-red-400" aria-hidden />
       <h1 className="font-display text-2xl tracking-wider text-red-300">НЕ УДАЛОСЬ ЗАПУСТИТЬ</h1>
       <p className="max-w-md text-sm text-white/70">{message}</p>
       {detail && (
@@ -25,7 +28,7 @@ export default function BootError({ message, detail }: BootErrorProps) {
         className="btn-game btn-primary px-8 py-3 text-sm"
         onClick={() => window.location.reload()}
       >
-        <RefreshCcw size={16} className="bicon" />
+        <RefreshCcw size={16} className="bicon" aria-hidden />
         <span>ПЕРЕЗАГРУЗИТЬ</span>
       </button>
     </div>

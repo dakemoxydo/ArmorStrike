@@ -178,4 +178,28 @@ describe('UI/UX structural contracts (critical/medium fixes)', () => {
     expect(hook).toMatch(/liveRef/);
     expect(hook).toMatch(/Броня критична/);
   });
+
+  it('M16: boot/error surfaces are announced and the play canvas is labelled', () => {
+    for (const rel of ['src/components/BootError.tsx', 'src/components/ErrorBoundary.tsx']) {
+      const src = readSrc(rel);
+      // Assertive announcement: the screen replaces the whole app, so nothing
+      // else tells AT users why the game vanished.
+      expect(src, `${rel} must announce`).toMatch(/role="alert"/);
+      // Decorative icons must not be read as content.
+      expect(src, `${rel} icons must be hidden`).toMatch(/<AlertTriangle[^>]*aria-hidden/);
+      expect(src, `${rel} reload icon must be hidden`).toMatch(/<RefreshCcw[^>]*aria-hidden/);
+    }
+
+    // Canvas has no implicit ARIA role: assert on the tag itself, not the file
+    // (App.tsx also holds role="alert"/aria-live for round errors, which would
+    // make a whole-file match pass vacuously).
+    const app = readSrc('src/App.tsx');
+    const canvas = app.match(/<canvas[\s\S]*?<\/canvas>/)?.[0] ?? '';
+    expect(canvas).not.toBe('');
+    expect(canvas).toMatch(/role="img"/);
+    expect(canvas).toMatch(/aria-label=/);
+    // Fallback content for UAs without <canvas>.
+    const inner = canvas.replace(/^<canvas[^>]*>/, '').replace(/<\/canvas>$/, '').trim();
+    expect(inner.length).toBeGreaterThan(0);
+  });
 });

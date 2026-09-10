@@ -120,6 +120,18 @@ Follow target: порт `CameraFollowable` (position, yaw, speed, boost…), н�
 
 Новые overlay-экраны обязаны: trap focus, Esc/pause contract через `GameApi`, не raw key handlers внутри sim.
 
+**Announce-контракт (пинится `uiUxPresentation.test.ts` M16):**
+
+| Поверхность | Роль | Почему |
+| ----------- | ---- | ------ |
+| `BootError`, `ErrorBoundary` | `role="alert"` | экран заменяет всё приложение — иначе AT-пользователь не узнает, почему игра исчезла |
+| `roundError` (App) | `role="alert"` | видимая ошибка старта раунда |
+| `roundLoading` (App) | `role="status"` + `aria-live="polite"` | не срочно, не перебивает |
+| vitals-порог (HUD) | `aria-live="polite"` через `liveRef` | «Броня критична» |
+| игровой `<canvas>` | `role="img"` + `aria-label` + fallback-текст | у `<canvas>` нет неявной ARIA-роли — без неё AT пропускает графику |
+
+Декоративные иконки (`lucide-react`) всегда `aria-hidden`; контейнер, у которого есть `role="img"` (например радар, `HudRadar`), делает потомков презентационными — отдельная разметка канвасу внутри не нужна.
+
 ## 8. Checklist нового UI
 
 - [ ] Зависимость только от `GameApi` / types
@@ -128,3 +140,4 @@ Follow target: порт `CameraFollowable` (position, yaw, speed, boost…), н�
 - [ ] Новое поле `HudSnapshot` покрыто гейтом автоматически; для непрерывного канала — добавить категорию в `ui/hudRenderGate.ts`
 - [ ] Input combat vs garage разделены
 - [ ] Camera — `CameraMode`, не if-ladder в компоненте
+- [ ] Экран, заменяющий приложение (ошибка/загрузка) — объявлен (`role="alert"` / `role="status"`), иконки `aria-hidden`

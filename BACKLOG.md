@@ -65,6 +65,7 @@ Cycle categories round-robin. Mark done with `[x]` + note. Re-bootstrap when ope
 
 ## [K] ACCESSIBILITY & POLISH
 - [x] K1: Document graphics preset matrix (low/med/high: pixel ratio, shadows, bloom, particles) and fill parity gaps. — iter 11 `90f0cd9`: `Docs/Architecture/Graphics_Presets_Matrix.md`; no code gaps — non-scaling dims documented as deliberate
+- [x] K4: a11y boot/error поверхностей. — 2026-09-11: `BootError` и `ErrorBoundary` не имели ни `role`, ни `aria-*` — экран молча подменял всё приложение, AT-пользователь не узнавал причину. Добавлен `role="alert"` (assertive, atomic) на контейнеры, `aria-hidden` на декоративные `AlertTriangle`/`RefreshCcw` (по конвенции проекта). Игровой `<canvas>` в `App.tsx` не имел неявной ARIA-роли: добавлены `role="img"` + `aria-label` + fallback-текст для UA без canvas. Контракт запинен в `uiUxPresentation.test.ts` M16 (ассерты по самому тегу canvas — иначе матч по файлу проходил бы вакуозно из-за `role="alert"` у `roundError`); mutation-check: снятие `role`/`aria-label` валит тест. Таблица announce-контракта — в `Standard_UI_Input.md` §7. Радар (`HudRadar`) уже был корректен (`role="img"` на панели с живым счётчиком целей).
 - [ ] K2: Team-color palette colorblind-safety check (HUD + minimap blips).
 - [ ] K3: Decide desktop-only vs touch controls (2026-09-09 audit: zero touch handling in src — `PlayerController` is WASD+mouse only). Either add touch controls or record «desktop-only» in GDD + README.
 

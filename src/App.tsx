@@ -236,7 +236,17 @@ export default function App() {
 
   return (
     <div className={`relative h-screen w-screen overflow-hidden bg-[#04060b] text-white ${uiMode === 'playing' && !paused && !hideChrome ? 'ingame' : ''}`}>
-      <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full" />
+      {/* Canvas has no implicit ARIA role — label it so screen readers announce
+          the play field instead of skipping an unlabelled graphic. The child is
+          fallback content for UAs without <canvas>; it never renders in-game. */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 block h-full w-full"
+        role="img"
+        aria-label="Игровое поле ArmorStrike"
+      >
+        Для игры нужен браузер с поддержкой HTML5 canvas и WebGL.
+      </canvas>
 
       <div className="fx-scanlines pointer-events-none absolute inset-0 z-30" />
       <div className="fx-vignette pointer-events-none absolute inset-0 z-10" />
