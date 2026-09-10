@@ -2,15 +2,6 @@
 import * as THREE from 'three';
 import type { TankFxState } from './types';
 
-/** Snapshot of combat params while a wave buff is active. */
-export interface BuffBaseSnapshot {
-  damage: number;
-  speed: number;
-  reverseSpeed: number;
-  turnSpeed: number;
-  shotCooldown: number;
-}
-
 /** Drive / pose / knockback (sim motion). Position lives on visual.group. */
 export class TankMotionState {
   yaw = 0;
@@ -41,15 +32,10 @@ export class TankCombatState {
   }
 }
 
-/** Temporary wave-buff multipliers and base-param snapshot. */
+/** Owner-level multipliers applied at spawn (role cadence pads). */
 export class TankBuffState {
-  /** Wave buff: multiply BOOST.drain (1 = normal). */
-  boostDrainMul = 1;
-  /** Wave buff: multiply BOOST.recharge (1 = normal). */
-  boostRechargeMul = 1;
-  /** Wave buff: >1 = faster weapon reload / charge / energy recovery. */
+  /** >1 = faster weapon reload / charge / energy recovery. */
   reloadSpeedMul = 1;
-  buffBase: BuffBaseSnapshot | null = null;
 }
 
 export function createTankFxState(): TankFxState {

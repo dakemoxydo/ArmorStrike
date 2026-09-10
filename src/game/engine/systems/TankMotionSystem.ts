@@ -11,10 +11,8 @@ export const TankMotionSystem = {
     const wantBoost = t.boosting && t.boostEnergy > BOOST.minActivate && t.throttle > 0.15;
     t.boostActive = wantBoost;
 
-    const drain = BOOST.drainPerSec * (t.boostDrainMul || 1);
-    const recharge = BOOST.rechargePerSec * (t.boostRechargeMul || 1);
     t.boostEnergy = clamp(
-      t.boostEnergy + (wantBoost ? -drain : recharge) * dt,
+      t.boostEnergy + (wantBoost ? -BOOST.drainPerSec : BOOST.rechargePerSec) * dt,
       0, 1,
     );
 

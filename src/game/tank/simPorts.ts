@@ -11,8 +11,6 @@ export interface MotionBody {
   params: Pick<TankParams, 'speed' | 'reverseSpeed' | 'turnSpeed'>;
   boosting: boolean;
   boostEnergy: number;
-  boostDrainMul: number;
-  boostRechargeMul: number;
   boostActive: boolean;
   throttle: number;
   speed: number;

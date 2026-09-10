@@ -10,8 +10,6 @@ function makeBody(over: Partial<MotionBody> = {}): MotionBody {
     params: { speed: 10, reverseSpeed: 5, turnSpeed: 2 },
     boosting: false,
     boostEnergy: 1,
-    boostDrainMul: 1,
-    boostRechargeMul: 1,
     boostActive: false,
     throttle: 1,
     speed: 0,

@@ -13,12 +13,10 @@ import {
   TankCombatState,
   TankMotionState,
   createTankFxState,
-  type BuffBaseSnapshot,
 } from './tank/components';
 import type { TeamId } from './match/matchTypes';
 
 export type { TankParams, TankVisual } from './tank/types';
-export type { BuffBaseSnapshot } from './tank/components';
 /** Удобный re-export сборки меша (импорт типов — из tank/types, цикл разорван). */
 export { buildTankMesh } from './tank/buildMesh';
 
@@ -35,7 +33,7 @@ export class TankEntity implements TankLike, WeaponOwner {
   readonly motion = new TankMotionState();
   /** HP, death, fire timer. */
   readonly combat: TankCombatState;
-  /** Wave-buff multipliers + snapshot. */
+  /** Owner-level spawn multipliers (role cadence pads). */
   readonly buffs = new TankBuffState();
   /** Presentation-only FX accumulators (outside TankLike). */
   readonly fx: TankFxState = createTankFxState();
@@ -95,17 +93,8 @@ export class TankEntity implements TankLike, WeaponOwner {
   get vel() { return this.motion.vel; }
   set vel(v: THREE.Vector3) { this.motion.vel.copy(v); }
 
-  get boostDrainMul() { return this.buffs.boostDrainMul; }
-  set boostDrainMul(v: number) { this.buffs.boostDrainMul = v; }
-
-  get boostRechargeMul() { return this.buffs.boostRechargeMul; }
-  set boostRechargeMul(v: number) { this.buffs.boostRechargeMul = v; }
-
   get reloadSpeedMul() { return this.buffs.reloadSpeedMul; }
   set reloadSpeedMul(v: number) { this.buffs.reloadSpeedMul = v; }
-
-  get buffBase(): BuffBaseSnapshot | null { return this.buffs.buffBase; }
-  set buffBase(v: BuffBaseSnapshot | null) { this.buffs.buffBase = v; }
 
   get health() { return this.combat.health; }
   set health(v: number) { this.combat.health = v; }

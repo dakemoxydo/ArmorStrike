@@ -1,4 +1,4 @@
-// ===== Множитель скорости перезарядки владельца (wave buff) =====
+// ===== Множитель скорости перезарядки владельца (роль-пад каденции ботов) =====
 import type { WeaponOwner } from './types';
 
 /** 1 = normal; >1 faster reloads / charge / energy recovery. */

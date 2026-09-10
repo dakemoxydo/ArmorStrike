@@ -15,7 +15,7 @@ Runtime-сущность: **`TankEntity`**.
 | --------- | ----------------- | ------------------------------------------------------ |
 | motion    | `TankMotionState` | yaw, aim, throttle, boost, knockback, vel              |
 | combat    | `TankCombatState` | health, alive, deathT, fireTimer, lastAttackerId       |
-| buffs     | `TankBuffState`   | mul slots + `BuffBaseSnapshot` (match: fixed at spawn) |
+| buffs     | `TankBuffState`   | owner mul slots (`reloadSpeedMul`; fixed at spawn)     |
 | fx        | `TankFxState`     | hitFlash, barrelKick, smoke/dust acc (presentation)    |
 | visual    | `TankVisual`      | Three mesh tree; **position** живёт на `visual.group`  |
 | params    | `TankParams`      | maxHealth, speeds, damage, cooldown, weaponType, range |

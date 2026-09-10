@@ -45,7 +45,7 @@ wantBoost = boosting && boostEnergy > minActivate && throttle > 0.15
 boostEnergy = clamp(boostEnergy + (wantBoost ? -drain : +recharge) * dt, 0, 1)
 ```
 
-`boostDrainMul` / `boostRechargeMul` — множители на `TankBuffState` (`entity.buffs`, flat projection на entity; сбрасываются с баффами).
+`drain` = `BOOST.drainPerSec`, `recharge` = `BOOST.rechargePerSec` — расход/восстановление идут по базовым константам без множителей.
 
 ### Скорость
 
