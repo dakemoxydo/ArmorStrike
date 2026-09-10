@@ -22,6 +22,64 @@ Audit findings F-1…F-4 and H-1…H-5 were all FIXED — treated as closed (aud
 
 ---
 
+## Iteration 14 — 2026-09-10 · [D] ENEMY AI — D1–D3 AUDIT (spread verified; doc drift fixed, dead export removed)
+
+**Task:** BACKLOG D1–D3 — bot AI audit against `Docs/GDD/Approved/AI_Bots.md`.
+
+**Method:** full code-read of `rosterSpawn` / `aiRoles` / `aiObjective` / `aiFocus` / `BotAiStage` / `AIController` / `aiCover` / `matchConfig`, GDD cross-check, then golden-table tests pinning the verified state.
+
+**D1 (duty distribution) — matches GDD, now pinned:** `botDutyTable.test.ts`
+- DM (7 ботов): {sniper 3 / assault 2 / standard 2}; duty-флаг 4/7 — инертен вне CP
+  (пин поведенчески: BotAiStage с duty-ботом в DM получает moveHint=null, в CP — центр зоны).
+- TDM/CP: alpha 2/4 = 50%, bravo 3/5 = 60% — обе внутри GDD band 40–60% (bravo на краю).
+- Elite не спавнится: gate `roleWave=1` запинен (рост roleWave ≥3 открыл бы elite на индексе 0).
+- Корпус когерентен роли при текущем порядке каталога: sniper→hunter, assault→viking,
+  standard→mammoth (свапы в makeBot — защита от смены порядка, сейчас инертны).
+
+**D2 (difficulty spread) — реален; находка: инертные cooldown-пады:**
+- Разброс запинен точной таблицей GDD: aggro sniper 0.22 < standard U[0.35,0.75] < assault 0.95
+  (без пересечений), aimError × 0.5/1.15/0.65/1.0, cover HP 0.5/0.4/0.35/0.35, persona
+  aggro/lead по GDD; эффективный aimError 0.05/0.10/0.115 сохраняет порядок ролей.
+- **Находка (intent-vs-reality, БЕЗ изменения баланса):** role cooldown pads
+  (sniper ×1.35, assault ×1.15 в rosterSpawn) инертны — у railgun/flamer
+  `TURRET.shotCooldown = 0`, каденция weapon-internal (charge/reload / energy).
+  Реально медленнее игрока только cannon-класс (standard, ×1.2 → 0.336 с vs 0.28).
+  Комментарий matchConfig «Role-independent cooldown pad» был неверен дважды
+  (пады role-зависимы И действуют только на пушку) — исправлен; факт в GDD.
+  **Открытый design-вопрос игроку:** нужны ли пад каденции railgun/flamer ботам?
+- Standard react U[0.13, 0.43] перекрывает sniper 0.168 на 12% диапазона — by-design
+  random persona, задокументировано в тесте.
+
+**D3 (cover vs weapon classes) — когерентно, класс-уместность эмерджентна:**
+- Поиск класс-нейтрален (default радиус 42 ≤ sight 46, stand-off 3.4, scoring
+  сам-относительный `80 − distSelf − travel·0.35 + losBlocked·45`) — класс-уместность
+  возникает сама через preferredRange: flamer (~8) прячет у боя, railgun-снайпер (~46)
+  далеко. Per-class тюнинг не нужен.
+- **Мёртвый экспорт удалён:** `AI_LOW_HP_FRAC` (wave-era, жил только в собственном
+  тесте — ts-prune слепой к «тест-прокормленным» символам) противоречил живым
+  порогам `coverHpFracForRole` (0.5/0.4/0.35). Убран вместе с тестом константы.
+- 4 новых контрактных теста: радиус поиска vs sight, brawler-геометрия (LOS порван,
+  точка у боя), sniper-геометрия (укрытие далеко), ближнее-выигрывает scoring.
+
+**Fixes:** aiCover.ts (−экспорт, +док-комментарий контракта), matchConfig.ts + rosterSpawn.ts
+(комментарии), AI_Bots.md (cooldown-pad факт + cover контракт/rationale), тесты +17
+(aiCover 4→7, aiRoles 6→13, botDutyTable +7).
+
+**Gates:** typecheck/lint clean, **245/245** tests (50 files), build ✓
+`dist/index.html` = 1,111,650 B (gzip 304.96 kB) — правки аудита это комментарии/тесты,
+дельта бандла ≈ 0 (рост vs iter-13 baseline 1,097 kB — из уже shipped коммитов
+8edf36b/de14375).
+
+**Next:** [E2] nameplate readability (round-robin), + решение игрока по design-вопросу
+cadence-pad'ов railgun/flamer ботов.
+
+### Micro-reflection (iter 14)
+- Moved forward? Yes — таблица-тест поймала intent-vs-reality разрыв (инертные пады), который прошёл бы мимо чистой проверки значений разброса.
+- Time lost? Нет.
+- Highest-leverage next task: E2 nameplate readability — следующий пункт round-robin.
+
+---
+
 ## Iteration 13 — 2026-08-24 · [E] RENDERING — E1 ATMOSPHERE AUDIT + GDD DRIFT FIX
 
 **Task:** BACKLOG E1 — atmosphere-preset gap check across maps.

@@ -26,9 +26,9 @@ Cycle categories round-robin. Mark done with `[x]` + note. Re-bootstrap when ope
 - [ ] C3: Regression test: tank-vs-obstacle penetration at max boost speed (Arena_Physics bounds).
 
 ## [D] ENEMY AI
-- [ ] D1: Table-test bot objective-duty distribution per mode (DM/TDM/CP) against Approved/AI_Bots.md.
-- [ ] D2: Verify difficulty spread in BotRoster (aim noise / reaction / aggression actually differs per tier); tune outliers.
-- [ ] D3: Review aiCover distances vs weapon range classes (railgun long-range covers vs flamer brawling).
+- [x] D1: Table-test bot objective-duty distribution per mode (DM/TDM/CP) against Approved/AI_Bots.md. — 2026-09-10: golden tables pinned in `botDutyTable.test.ts` — DM {sniper 3 / assault 2 / standard 2}, duty 4/7 (флаг инертен — pinned поведенчески через BotAiStage); CP/TDM alpha 2/4 = 50%, bravo 3/5 = 60% — обе в band 40–60% (bravo на краю); elite закрыт gate'ом roleWave=1
+- [x] D2: Verify difficulty spread in BotRoster (aim noise / reaction / aggression actually differs per tier); tune outliers. — 2026-09-10: разброс реален и запинен в `aiRoles.test.ts` (aggro 0.22 < U[0.35,0.75] < 0.95 без пересечений; aimError 0.05/0.10/0.115; react assault 0.1176 < sniper 0.168). Находка (не value-outlier): cooldown-пады ролей (sniper 1.35 / assault 1.15) ИНЕРТНЫ — у railgun/flamer `TURRET.shotCooldown=0`, каденция weapon-internal; реально медленнее игрока только класс пушки (×1.2 → 0.336 с). Комментарии в matchConfig/rosterSpawn исправлены, факт в GDD; баланс не менялся — открытый design-вопрос (см. PROGRESS iter 14)
+- [x] D3: Review aiCover distances vs weapon range classes (railgun long-range covers vs flamer brawling). — 2026-09-10: когерентно, per-class тюнинг не нужен: поиск класс-нейтрален (радиус 42 ≤ sight 46, stand-off 3.4, scoring сам-относительный), класс-уместность возникает через preferredRange (flamer прячет у боя, sniper — далеко). Контракт запинен в `aiCover.test.ts` (brawler/sniper геометрия, LOS-break, ближнее-выигрывает); мёртвый wave-era экспорт `AI_LOW_HP_FRAC` удалён (жил только в собственном тесте, противоречил живым порогам ролей); контракт+rationale добавлены в GDD AI_Bots.md
 
 ## [E] RENDERING & BEAUTY
 - [x] E1: Atmosphere-preset gap check across all maps; give any bare map a fitting preset. — iter 13 `0b6feed`: all maps covered; found+fixed GDD exposure drift (1.14→1.0) with absolute test pins
