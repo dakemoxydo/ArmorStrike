@@ -38,4 +38,13 @@ export default defineConfig({
     // распухнуть (M3). Актуальный размер — см. CI size-gate.
     chunkSizeWarningLimit: 1200,
   },
+  test: {
+    // React Testing Library регистрирует авто-cleanup через глобальный
+    // afterEach, поэтому globals нужны. Существующие suite'ы импортируют
+    // describe/it/expect явно — на них это не влияет.
+    globals: true,
+    // DOM-окружение подключается точечно: `// @vitest-environment jsdom`
+    // в начале файла. Остальные ~50 логических suite'ов остаются на быстром
+    // node-окружении, поэтому глобальный environment не переключаем.
+  },
 });

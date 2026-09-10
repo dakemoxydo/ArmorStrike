@@ -45,7 +45,7 @@ Cycle categories round-robin. Mark done with `[x]` + note. Re-bootstrap when ope
 
 ## [H] UI / UX / HUD
 - [ ] H1: Minimap correctness after sweep bake (commit b768fa0): layering, blip colors, sweep visuals — screenshot evidence.
-- [ ] H2: Garage loadout edge cases: rapid switching, invalid combo guards — component tests.
+- [x] H2: Garage loadout edge cases: rapid switching, invalid combo guards — component tests. — 2026-09-11: поднят DOM-стек тестов (jsdom + @testing-library/react + user-event + jest-dom; `test.globals: true` для RTL auto-cleanup, DOM подключается точечно через `// @vitest-environment jsdom`, поэтому ~50 логических suite'ов остаются на быстром node-окружении). `Garage.test.tsx` (10): ассертится точная пара (hull, turret), а не факт вызова; закрыт stale-pairing (новый корпус + старая башня), rapid switching, независимость вкладок, disabled-состояние при `game=null`. `useFocusTrap.test.tsx` (7): фокус на маунте, обёртка Tab/Shift+Tab, restore на unmount, `active=false` (со stub'ом `offsetParent` — jsdom не реализует layout, иначе трап видит пустой список). Итого 54 файла / 286 тестов.
 - [x] H3: Pause menu focus trap + Esc/Resume key handling. — 2026-09-09: verified present (`useFocusTrap` in PauseMenu/GameOverScreen/MapSelect/ModeSelect, Esc via App global + auto-pause on lock loss); no code change
 - [x] H4: GameOverScreen shows complete stat line (K/D/score/best streak) for all three modes. — 2026-09-09: added `playerBestStreak` (CombatSystem → MatchResult → gameOver event → 5th StatCard) + Scoring.md line
 
@@ -59,6 +59,7 @@ Cycle categories round-robin. Mark done with `[x]` + note. Re-bootstrap when ope
 - [x] J2: Unit-test ArenaEffects smoke eviction under cap pressure (audit H-4 remainder). — iter 3 `a215ae7` (+4 tests; guard is defensive-only at current tuning)
 - [x] J3: Dead-export scan after the two perf passes; remove unreferenced symbols. — iter 8 `0d66c54` (4 removals, −67 lines; assetUrl/applyMaterialToModel kept as documented dormant API)
 - [x] J4: Document texture-memoization + zoneViewCache patterns into Docs/Architecture/ (from commits 6ad7740/257c23c). — iter 7: `Docs/Architecture/Standard_Resources.md` + Core.md index
+- [x] J5: Заменить рукописный dirty-check HUD (~25 полей в `useGameHud`) на гейт с инвертированной логикой. — 2026-09-11: `ui/hudRenderGate.ts` (`hudNeedsRender`); по умолчанию `Object.is` по ВСЕМ полям снапшота, исключения — только семантические категории (ref-painted / continuous / quantized / by-content). Закрыты два реальных бага: `maxHealth` не сравнивался вовсе; содержимое `scoreboard` сравнивалось лишь по факту показа, поэтому открытое табло не обновлялось при изменении чужих kills/HP. `hudRenderGate.test.ts` (16) пинит инвариант «новое поле покрывается автоматически» (в т.ч. негативный тест: при откате `dispose()`-подобных регрессий падает). Контракт описан в `Standard_UI_Input.md` §2.
 
 ## [K] ACCESSIBILITY & POLISH
 - [x] K1: Document graphics preset matrix (low/med/high: pixel ratio, shadows, bloom, particles) and fill parity gaps. — iter 11 `90f0cd9`: `Docs/Architecture/Graphics_Presets_Matrix.md`; no code gaps — non-scaling dims documented as deliberate

@@ -44,6 +44,24 @@ Concrete `Game` **implements** `GameApi`; UI типизируется интер
 
 Правило perf: **не** `setState` каждый кадр для полосок; DOM refs + minimap canvas.
 
+### Гейт ре-рендера — `ui/hudRenderGate.ts`
+
+`hudNeedsRender(prev, next)` решает, нужен ли React-рендер после кадра. Логика **инвертирована**:
+по умолчанию сравниваются **все** поля `HudSnapshot` через `Object.is`, а исключения — только
+семантические категории:
+
+| Категория | Поля | Правило |
+|---|---|---|
+| ref-painted | `health`, `boost`, `reloadProgress` | рисуются в DOM императивно, рендер не нужен никогда |
+| continuous | `ammo` (огнемёт) | дискретные патроны рельсы/пушки форсят, энергия — нет |
+| quantized | `timeSec`, `teamScoreAlpha/Bravo` | сравнение по отображаемому значению (целые) |
+| by content | `scoreboard`, `capturePoints` | массивы пересоздаются каждый кадр; сравнение по содержимому (HP — шагом 1%, прогресс точки — 10%) |
+
+**Добавление поля в `HudSnapshot` не требует правки гейта** — оно попадает в сравнение
+автоматически. Обратная ситуация (рукописный список полей) была источником багов: `maxHealth`
+не сравнивался вовсе, а содержимое `scoreboard` — только по факту показа, поэтому открытое
+табло не обновлялось.
+
 ## 3. Component layout
 
 ```
@@ -54,7 +72,7 @@ components/
 hooks/
   useGameHud, useFocusTrap
 ui/
-  GarageInput, hudPresentation, keyboardTarget
+  GarageInput, hudPresentation, hudRenderGate, keyboardTarget
 styles/               # CSS by surface (hud, garage, overlays, …)
 ```
 
@@ -107,5 +125,6 @@ Follow target: порт `CameraFollowable` (position, yaw, speed, boost…), н�
 - [ ] Зависимость только от `GameApi` / types
 - [ ] Команда пользователя → method API; реакция мира → event или snapshot
 - [ ] Hot path без React re-render thrash
+- [ ] Новое поле `HudSnapshot` покрыто гейтом автоматически; для непрерывного канала — добавить категорию в `ui/hudRenderGate.ts`
 - [ ] Input combat vs garage разделены
 - [ ] Camera — `CameraMode`, не if-ladder в компоненте

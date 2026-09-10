@@ -79,8 +79,13 @@ describe('hudPresentation pure helpers (shipped)', () => {
     expect(ammoForcesHudRender('cannon', 'cannon', 3, 2)).toBe(true);
     expect(ammoForcesHudRender('flamethrower', 'flamethrower', 80, 79)).toBe(false);
     expect(ammoForcesHudRender('railgun', 'flamethrower', 1, 100)).toBe(true);
+    // Wiring: the hook delegates the render decision to the gate, and the gate
+    // is where the ammo-vs-flame distinction is applied (it lived inline in the
+    // hook before the hand-maintained field list was replaced).
     const hook = readSrc('src/hooks/useGameHud.ts');
-    expect(hook).toMatch(/ammoForcesHudRender/);
+    const gate = readSrc('src/ui/hudRenderGate.ts');
+    expect(hook).toMatch(/hudNeedsRender/);
+    expect(gate).toMatch(/ammoForcesHudRender/);
     expect(hook).toMatch(/flameFillRef/);
   });
 });
