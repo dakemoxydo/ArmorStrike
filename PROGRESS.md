@@ -1,6 +1,11 @@
-# ArmorStrike — Autonomous Progress Log
+# ArmorStrike — Progress Log
 
 Loop log for the /loop-driven autonomous improvement agent. One entry per iteration.
+
+> **2026-09-10 cleanup:** `graphify/` (code-graph tooling + `graphify-out/`), `AUTONOMOUS_PROMPT.md`,
+> and `audit.md` were removed from the project — process overhead outweighed value at this codebase
+> size. Historical entries below that mention them refer to files that no longer exist. Findings
+> F-1…F-4 / H-1…H-5 from the removed audit were all fixed and are covered by regression tests.
 
 ## Baseline (recorded 2026-08-24, iter #1)
 
@@ -13,7 +18,7 @@ Loop log for the /loop-driven autonomous improvement agent. One entry per iterat
 
 Notes: test count grew vs the documented baseline (43 files / 196 tests) — audit-fix commits
 added regression tests (zoneViewCache, aiFocus). No action needed; baseline recorded at actuals.
-`audit.md` findings F-1…F-4 and H-1…H-5 are all FIXED per §6 — treated as closed.
+Audit findings F-1…F-4 and H-1…H-5 were all FIXED — treated as closed (audit.md removed 2026-09-10).
 
 ---
 
@@ -279,7 +284,7 @@ React re-render fires only through `force()` guarded by ~20 discrete comparisons
 (thresholded time/team scores via Math.floor, capture-strip key, ammo gate) plus
 event-driven states (feed/vignette/hitmark/streak). No action needed.
 
-Negative results recorded deliberately (audit.md §4 convention) to prevent re-investigation.
+Negative results recorded deliberately (historical audit convention) to prevent re-investigation.
 
 **Next:** [B1c] city box instancing (607 plain boxes; census-attributed hotspots at
 cityMap.ts:218/175/178), then [J4] architecture docs.

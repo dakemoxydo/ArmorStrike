@@ -177,16 +177,16 @@ Docs/
   GDD/            # game design (balance & mechanics)
 ```
 
-## God nodes (knowledge graph)
+## Central abstractions
 
-Most connected abstractions (from Graphify):
+Most connected types (refactor with care):
 
 1. `AudioPort` / `EffectsPort`
 2. `TankEntity`
 3. `CameraRig` / `GameApi` / `Game`
 4. `GameEvent` / `Combat` path
 
-Use `graphify query|path|explain` before structural refactors.
+Use `grep`/`read` to trace call sites before structural refactors.
 
 ## Testing strategy
 

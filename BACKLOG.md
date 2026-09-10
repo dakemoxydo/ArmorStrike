@@ -1,7 +1,11 @@
-# ArmorStrike — Autonomous Backlog
+# ArmorStrike — Backlog
 
-Prioritized pool for the autonomous loop. Categories A–K (see AUTONOMOUS_PROMPT.md §PHASE 2).
-Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstrap when open < 10.
+Prioritized task pool. Categories A–K:
+- [A] Bugs & Stability · [B] Performance · [C] Core Gameplay · [D] Enemy AI
+- [E] Rendering & Beauty · [F] Physics & Feel · [G] Audio · [H] UI / UX / HUD
+- [I] Levels & Content · [J] Code Quality · [K] Accessibility & Polish
+
+Cycle categories round-robin. Mark done with `[x]` + note. Re-bootstrap when open < 10.
 
 ## [A] BUGS & STABILITY
 - [x] A1: Sweep `src/game` for remaining length-based caches of the F-1 class (cache keyed on array length instead of content/reference) and add a regression test for any found. — iter 6: CLEAN, no remaining sites; all candidates verified identity/content-guarded (see PROGRESS iter 6)
@@ -17,7 +21,7 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 - [x] B4: Bundle census: identify largest contributors inside dist single-file bundle from build output; name top-3 trim candidates. — iter 10: three ≈55% src-gz / app ≈28% / react-dom ≈32%; verdict NO trim action justified (see PROGRESS iter 10)
 
 ## [C] CORE GAMEPLAY
-- [ ] C1: Verify capture-point contest/decay math against Docs/GDD/Approved/Capture_Point.md constants; reconcile mismatches.
+- [x] C1: Verify capture-point contest/decay math against Docs/GDD/Approved/Capture_Point.md constants; reconcile mismatches. — 2026-09-09: VERIFIED clean, no code change (radius 20 / 8s / contest-freeze / neutral-first / +1s / 1000 / 12min+kills-tiebreak / anchors all match); 2 doc nits fixed (winConditions comment, empty-zone no-decay line in GDD)
 - [ ] C2: Verify projectile splash falloff curve against Approved/Projectile_System.md; fix only documented divergence.
 - [ ] C3: Regression test: tank-vs-obstacle penetration at max boost speed (Arena_Physics bounds).
 
@@ -37,13 +41,13 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 
 ## [G] AUDIO
 - [ ] G1: Verify spatialization hooks for enemy fire (relative-position panning) exist and are wired for cannon/railgun/flamer.
-- [ ] G2: Mute state persists across match restarts; engine voice survives fast menu transitions (post-H-5 regression test).
+- [x] G2: Mute state persists across match restarts; engine voice survives fast menu transitions (post-H-5 regression test). — 2026-09-09: mute persisted via `as2_muted` (AudioFX load/save + App init) + `muteStorage.test.ts` (3); engine-survival already closed by H-5 code, no new test (WebAudio mocks — tech debt)
 
 ## [H] UI / UX / HUD
 - [ ] H1: Minimap correctness after sweep bake (commit b768fa0): layering, blip colors, sweep visuals — screenshot evidence.
 - [ ] H2: Garage loadout edge cases: rapid switching, invalid combo guards — component tests.
-- [ ] H3: Pause menu focus trap + Esc/Resume key handling.
-- [ ] H4: GameOverScreen shows complete stat line (K/D/score/best streak) for all three modes.
+- [x] H3: Pause menu focus trap + Esc/Resume key handling. — 2026-09-09: verified present (`useFocusTrap` in PauseMenu/GameOverScreen/MapSelect/ModeSelect, Esc via App global + auto-pause on lock loss); no code change
+- [x] H4: GameOverScreen shows complete stat line (K/D/score/best streak) for all three modes. — 2026-09-09: added `playerBestStreak` (CombatSystem → MatchResult → gameOver event → 5th StatCard) + Scoring.md line
 
 ## [I] LEVELS & CONTENT
 - [ ] I1: Spawn fairness metrics per map (min distance spawn→nearest enemy lane); rebalance worst spawn weights.
@@ -59,9 +63,9 @@ Cycle categories round-robin. Mark done with `[x]` + iteration note. Re-bootstra
 ## [K] ACCESSIBILITY & POLISH
 - [x] K1: Document graphics preset matrix (low/med/high: pixel ratio, shadows, bloom, particles) and fill parity gaps. — iter 11 `90f0cd9`: `Docs/Architecture/Graphics_Presets_Matrix.md`; no code gaps — non-scaling dims documented as deliberate
 - [ ] K2: Team-color palette colorblind-safety check (HUD + minimap blips).
+- [ ] K3: Decide desktop-only vs touch controls (2026-09-09 audit: zero touch handling in src — `PlayerController` is WASD+mouse only). Either add touch controls or record «desktop-only» in GDD + README.
 
 ---
 ### Bootstrap notes (2026-08-24, iter #1)
-Seeded from audit.md (all F/H findings verified FIXED — do not reopen without repro),
-baseline gate run, and repo inventory (227 TS files under src/). Baseline: typecheck ✓,
+Seeded from baseline gate run and repo inventory (227 TS files under src/). Baseline: typecheck ✓,
 lint ✓, 196/196 tests (43 files), dist/index.html = 1,097,013 B (gzip ≈ 301.6 kB).
