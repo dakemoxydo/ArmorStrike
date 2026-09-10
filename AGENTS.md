@@ -18,6 +18,8 @@ Self-contained workflow. Works in any IDE/CLI that reads AGENTS.md.
 
 **Verified** = `npm run typecheck` + `npm test` green.
 
+> **Install gotcha:** the bundled npm 10.9.7 (managed Node 22) cannot resolve some peer sets — it throws `TypeError: Cannot read properties of null (reading 'edgesOut')` in arborist's `#loadPeerSet` (hit while adding vitest 4). Installing with the system Node 24 / npm 11.19 works and produces a `lockfileVersion: 3` lock that plain `npm ci` under npm 10 consumes fine. Do not reach for `--legacy-peer-deps`/`.npmrc` — switch npm instead.
+
 ## 2. Project Map
 
 - `src/core/` — catalogs (hulls/turrets/weapons): `catalogData.ts`.
