@@ -59,3 +59,19 @@ export function coverHpFracForRole(role: AIRole): number {
   if (role === 'sniper') return 0.4;
   return 0.35;
 }
+
+/**
+ * Пад каденции бота по роли: >1 = медленнее игрока.
+ * Единый источник чисел (iter 15; ранее 1.2/1.15/1.35 жили разрозненно):
+ * - standard — применяется к межвыстрелу пушки (`shotCooldownScale` в rosterSpawn,
+ *   0.28 → 0.336 с; полная перезарядка магазина не падаётся);
+ * - sniper / assault — их `TURRET.shotCooldown = 0` (каденция weapon-internal),
+ *   поэтому пад идёт через `reloadSpeedMul = 1/firePad`: заряд+перезарядка
+ *   рельсы (1.1→~1.49 с / 4.8→~6.48 с) и восстановление батареи огнемёта
+ *   (22→~19.1/с; расход батареи не меняется).
+ */
+export function firePadForRole(role: AIRole): number {
+  if (role === 'sniper') return 1.35;
+  if (role === 'assault') return 1.15;
+  return 1.2; // standard (и не спавнящийся в match-эре elite)
+}

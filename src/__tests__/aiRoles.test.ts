@@ -5,10 +5,11 @@ import {
   personaForRole,
   roleForBot,
   roleLabel,
+  firePadForRole,
 } from '../game/aiRoles';
 import { preferredRange } from '../game/AI';
 import { BOT_NORMAL } from '../game/match/matchConfig';
-import { TURRETS } from '../core/catalog';
+import { TURRETS, WEAPON_TUNING } from '../core/catalog';
 
 describe('aiRoles', () => {
   it('maps weapon to role; elite is first bot from wave 3', () => {
@@ -119,15 +120,25 @@ describe('aiRoles — точная таблица ролей (D2 vs AI_Bots.md)'
     expect(a.react).toBeLessThan(s.react);
   });
 
-  it('cooldown pad действует только на класс пушки (railgun/flamer инертны)', () => {
-    // Роль оверрайдит shotCooldownScale (sniper 1.35 / assault 1.15), но
-    // TURRET.shotCooldown ненулевой только у пушки — для остальных классов
-    // масштабирование 0×k не меняет каденцию (она weapon-internal).
-    for (const id of ['railgun', 'flamethrower'] as const) {
-      expect(TURRETS[id].shotCooldown).toBe(0);
-    }
-    expect(TURRETS.cannon.shotCooldown).toBe(0.28);
-    // Стандарт (пушка) реально медленнее игрока: 0.28 × 1.2 = 0.336.
-    expect(TURRETS.cannon.shotCooldown * BOT_NORMAL.shotCooldownScale).toBeCloseTo(0.336);
+  it('пад каденции по роли — единый источник firePadForRole', () => {
+    expect(firePadForRole('sniper')).toBe(1.35);
+    expect(firePadForRole('assault')).toBe(1.15);
+    expect(firePadForRole('standard')).toBe(1.2);
+    expect(firePadForRole('elite')).toBe(1.2); // match-эра: не спавнится
+    // У railgun/flamer межвыстрел weapon-internal (TURRET.shotCooldown = 0) —
+    // их пад обязан идти через reloadSpeedMul, а не через shotCooldownScale.
+    expect(TURRETS.railgun.shotCooldown).toBe(0);
+    expect(TURRETS.flamethrower.shotCooldown).toBe(0);
+  });
+
+  it('эффективная каденция ботов (shipped-числа, iter 15)', () => {
+    // Пушка (standard, ×1.2): межвыстрел 0.28 → 0.336 с.
+    expect(TURRETS.cannon.shotCooldown * firePadForRole('standard')).toBeCloseTo(0.336);
+    // Рельса-бот (sniper, ×1.35): перезарядка 4.8 → 6.48 с, заряд 1.1 → 1.485 с.
+    expect(WEAPON_TUNING.railgun.reloadTime * firePadForRole('sniper')).toBeCloseTo(6.48);
+    expect(WEAPON_TUNING.railgun.chargeTime * firePadForRole('sniper')).toBeCloseTo(1.485);
+    // Огнемёт-бот (assault, ×1.15): восстановление 22 → ~19.13/с (расход не пада).
+    expect(WEAPON_TUNING.flamethrower.rechargeRate / firePadForRole('assault')).toBeCloseTo(19.13);
+    // Стандарт-боты НЕ получают reloadSpeedMul — их полная перезарядка как у игрока.
   });
 });

@@ -5,7 +5,7 @@ import type { HullId, TurretId } from '../../core/catalog';
 import { COLORS } from '../../core/constants';
 import { buildBotStyle, buildPlayerStyle } from '../../core/TankCatalog';
 import { AIController } from '../AI';
-import { roleForBot, roleLabel, personaForRole } from '../aiRoles';
+import { roleForBot, roleLabel, personaForRole, firePadForRole } from '../aiRoles';
 import type { BotEntry } from '../botSpawn';
 import { Nameplate } from '../nameplate';
 import { createTankEntity, createWeapon, type WeaponFactoryDeps } from '../PlayerFactory';
@@ -79,6 +79,10 @@ async function makeBot(
     ? `${teamTag}-${roleLabel(role).toUpperCase()}-${index + 1}`
     : `${roleLabel(role).toUpperCase()}-${index + 1}`;
 
+  // Пад каденции роли (iter 15): у пушки действует на межвыстрел
+  // (shotCooldown 0.28 × firePad); у railgun/flamer shotCooldown = 0 —
+  // там пад идёт через reloadSpeedMul (ниже).
+  const firePad = firePadForRole(role);
   const bot = await createTankEntity({
     name,
     isPlayer: false,
@@ -87,15 +91,16 @@ async function makeBot(
     style: buildBotStyle(c),
     healthScale: BOT_NORMAL.healthScale,
     damageScale: BOT_NORMAL.damageScale,
-    // Пад действует только на класс пушки (у railgun/flamer shotCooldown=0 —
-    // каденция weapon-internal; см. BOT_NORMAL.shotCooldownScale в matchConfig).
-    shotCooldownScale:
-      role === 'assault' ? 1.15 : role === 'sniper' ? 1.35 : BOT_NORMAL.shotCooldownScale,
+    shotCooldownScale: role === 'standard' ? firePad : 1,
   });
   bot.teamId = teamId;
   bot.kills = 0;
   bot.deaths = 0;
   bot.invulnT = 0;
+  // Реальный пад каденции railgun/flamer ботов: их темп weapon-internal
+  // (заряд/перезарядка рельсы, батарея огнемёта) — замедляем через
+  // reloadSpeedMul (см. firePadForRole; расход батареи не трогаем).
+  if (role !== 'standard') bot.reloadSpeedMul = 1 / firePad;
   applyTeamRing(bot, teamId);
 
   const yaw = Math.atan2(-x, -z);
