@@ -13,6 +13,7 @@ import { ARENA } from '../constants';
 import { colliderFromCenter } from '../engine/physics';
 import { containerTexture, crateTexture, hexTexture } from '../textures';
 import type { ArenaBuildContext } from './context';
+import { buildTowerRing } from './skyline';
 
 /** City-themed interior: orthogonal grid, district accents, neon night. */
 export function buildCityContent(ctx: ArenaBuildContext) {
@@ -349,25 +350,18 @@ function buildCitySkyline(ctx: ArenaBuildContext) {
     new THREE.MeshBasicMaterial({ color: NEON.lime }),
   ];
   // Denser neon towers ringing the 300-arena wall.
-  for (let i = 0; i < 60; i++) {
-    const ang = (i / 60) * Math.PI * 2 + (Math.random() - 0.5) * 0.04;
-    const r = 172 + Math.random() * 72;
-    const w = 14 + Math.random() * 34;
-    const h = 24 + Math.random() * 78;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * 0.85), dark);
-    m.position.set(Math.cos(ang) * r, h / 2 - 0.3, Math.sin(ang) * r);
-    m.rotation.y = Math.random() * 0.35;
-    ctx.group.add(m);
-    if (Math.random() > 0.24) {
-      const win = new THREE.Mesh(
-        new THREE.PlaneGeometry(w * 0.55, h * 0.07),
-        neon[i % neon.length],
-      );
-      win.position.set(m.position.x, h * (0.3 + Math.random() * 0.4), m.position.z);
-      win.lookAt(0, win.position.y, 0);
-      ctx.group.add(win);
-    }
-  }
+  buildTowerRing(ctx, {
+    material: dark,
+    count: 60,
+    angleJitter: 0.04,
+    rMin: 172, rMax: 244,
+    widthMin: 14, widthMax: 48,
+    heightMin: 24, heightMax: 102,
+    depthRatio: 0.85,
+    baseY: -0.3,
+    rotMax: 0.35,
+    window: { material: neon, skip: 0.24, widthRatio: 0.55, heightRatio: 0.07, yMin: 0.3, yMax: 0.7 },
+  });
 }
 
 // ── plaza ──────────────────────────────────────────────────────────────────

@@ -17,6 +17,8 @@ City / Village заполняют всю арену ([[City_Level_Design]], [[Vi
 
 Модульные билдеры: `src/game/arena/*` (shell, factoryMap, villageMap, cityMap + factory modules: centralHall, containerYard, foundry, gantryCrane, silos, pipeRack, ramps, scattered, smokestacks, skyline, atmosphere…).
 
+Скайлайн-кит: `skyline.ts` экспортирует общий механизм декоративного кольца вокруг арены — `ringSlots(count, angleJitter, rMin, rMax)` (полярная раскладка с джиттером) и `buildTowerRing(ctx, spec)` (кольцо боксов + опциональные светящиеся окна-билборды + хук `onTower` для дымовых труб / крыш). Каждая карта задаёт свой `spec` (диапазоны размеров, материалы, extras); factory-билдер `buildSkyline` живёт там же, city/village вызывают кит из своих `*Map.ts`.
+
 Сборка: `buildArena(arena, effects, mapId, renderWorld?)` → `Arena`. Пересборка: `Arena.rebuild(mapId)` при каждом старте матча.
 
 ## Collider model

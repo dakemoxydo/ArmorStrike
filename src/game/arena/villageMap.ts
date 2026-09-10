@@ -13,6 +13,7 @@ import { ARENA } from '../constants';
 import { colliderFromCenter } from '../engine/physics';
 import { barrelTexture, crateTexture, hexTexture } from '../textures';
 import type { ArenaBuildContext } from './context';
+import { buildTowerRing, ringSlots } from './skyline';
 
 const GOLD = 0xc8a24a;
 
@@ -65,37 +66,32 @@ function buildVillageSkyline(ctx: ArenaBuildContext) {
   });
   const warm = new THREE.MeshBasicMaterial({ color: 0xffc266 });
   // rolling hill silhouettes (distant, low, wide)
-  for (let i = 0; i < 22; i++) {
-    const ang = (i / 22) * Math.PI * 2 + (Math.random() - 0.5) * 0.1;
-    const r = 190 + Math.random() * 70;
+  for (const { x, z } of ringSlots(22, 0.1, 190, 260)) {
     const rad = 26 + Math.random() * 40;
     const hill = new THREE.Mesh(new THREE.SphereGeometry(rad, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), hillMat);
-    hill.position.set(Math.cos(ang) * r, -rad * 0.35, Math.sin(ang) * r);
+    hill.position.set(x, -rad * 0.35, z);
     hill.scale.y = 0.42;
     ctx.group.add(hill);
   }
   // low farmhouses with warm windows
-  for (let i = 0; i < 30; i++) {
-    const ang = (i / 30) * Math.PI * 2 + (Math.random() - 0.5) * 0.08;
-    const r = 168 + Math.random() * 54;
-    const w = 12 + Math.random() * 22;
-    const h = 7 + Math.random() * 14;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * 0.7), dark);
-    m.position.set(Math.cos(ang) * r, h / 2 - 0.4, Math.sin(ang) * r);
-    m.rotation.y = Math.random() * Math.PI;
-    ctx.group.add(m);
+  buildTowerRing(ctx, {
+    material: dark,
+    count: 30,
+    angleJitter: 0.08,
+    rMin: 168, rMax: 222,
+    widthMin: 12, widthMax: 34,
+    heightMin: 7, heightMax: 21,
+    depthRatio: 0.7,
+    baseY: -0.4,
+    window: { material: warm, skip: 0.3, widthRatio: 0.32, heightRatio: 0.16, yMin: 0.45, yMax: 0.45 },
     // pitched roof cap
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(w * 1.1, h * 0.4, w * 0.8), hillMat);
-    roof.position.set(m.position.x, h + h * 0.15, m.position.z);
-    roof.rotation.y = m.rotation.y;
-    ctx.group.add(roof);
-    if (Math.random() > 0.3) {
-      const win = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.32, h * 0.16), warm);
-      win.position.set(m.position.x, h * 0.45, m.position.z);
-      win.lookAt(0, win.position.y, 0);
-      ctx.group.add(win);
-    }
-  }
+    onTower: (m, _i, w, h) => {
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(w * 1.1, h * 0.4, w * 0.8), hillMat);
+      roof.position.set(m.position.x, h + h * 0.15, m.position.z);
+      roof.rotation.y = m.rotation.y;
+      ctx.group.add(roof);
+    },
+  });
 }
 
 // ── house (hard cover, pitched roof) ────────────────────────────────────────
