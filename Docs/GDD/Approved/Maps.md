@@ -9,7 +9,7 @@
 | Id | Имя | Описание |
 |----|-----|----------|
 | `factory` | Завод | Литейный комплекс ЗАВОД-51 (контент ~в центре; см. Known gaps) |
-| `village` | Деревня | Площадь + колодец, дома/амбары, paddocks, hay platform — [[Village_Level_Design]] |
+| `village` | Деревня | Площадь + колодец, дома/амбары, paddocks, hay platform, ветряк и поля — [[Village_Level_Design]] |
 | `city` | Город | Grid-авеню, 4 districts, плаза, overpass, неон — [[City_Level_Design]] |
 
 Каталог: `src/game/maps/mapCatalog.ts` (`MapId`, `MAPS`, `MAP_IDS`, `DEFAULT_MAP_ID`).
@@ -19,7 +19,7 @@ Blurbs (UI):
 | Id | blurb (ru) |
 |----|------------|
 | factory | Литейный комплекс: цеха, контейнеры, краны и разрушаемые укрытия. |
-| village | Просторный сельский посёлок: рыночная площадь с колодцем, дома и амбары, заборы-паддоки, сеновал и стога. |
+| village | Сельский посёлок на закате: рыночная площадь с колодцем, фахверковые дома и амбары, ветряк, пшеничные поля и дым из труб. |
 | city | Огромный ночной downtown: широкий крест авеню, 4 квартала-district, плаза, эстакада и плотный неон. |
 
 ## Размер арены (глобальный)
@@ -30,8 +30,8 @@ Blurbs (UI):
 | half | 150 | `Arena.half` |
 | Shell ground / walls | 300×300 | `buildArenaShell` |
 | Minimap half | `MAP_HALF = 156` | `src/components/hud/minimapDraw.ts` |
-| Bot spawns | corners ±128 + edge points | `src/game/botSpawn.ts` |
-| Player start | `(0, 0, −120)` | `PlayerFactory.createTankEntity` |
+| Bot spawns | corners ±128 + edge points | `src/game/match/spawnPoints.ts` (`FFA_SPAWN_POINTS`) |
+| Player start (DM) | `(0, 0, −120)` | `src/game/match/rosterSpawn.ts` |
 | Render | fog 130..440, camera far 900, shadow ±170 | `src/game/RenderWorld.ts` |
 
 City и Village **заполняют всю 300**. Factory-контент (modules) исторически заточен под ~±75 — на 300-арене остаётся «остров» в центре с пустым outer ring (см. Known gaps).
@@ -50,7 +50,7 @@ City и Village **заполняют всю 300**. Factory-контент (modul
 | village | `buildVillageContent` (`arena/villageMap.ts`) — see [[Village_Level_Design]] |
 | city | `buildCityContent` (`arena/cityMap.ts`) — see [[City_Level_Design]] |
 
-Точка входа: `buildArena(arena, effects, mapId)` → `ArenaBuilder.ts`.
+Точка входа: `buildArena(arena, effects, mapId, renderWorld?)` → `ArenaBuilder.ts`.
 
 ## Пересборка
 
@@ -91,5 +91,5 @@ Enter в главном меню открывает выбор карты (не 
 | `Arena.rebuild` | `src/game/Arena.ts` |
 | `startRound(mapId?)` | `GameApi` / `GameModeController` |
 | `MapSelect` | `src/components/MapSelect.tsx` |
-| `SPAWN_POINTS` | `src/game/botSpawn.ts` |
+| `FFA_SPAWN_POINTS` / `ALPHA_SPAWN_POINTS` / `BRAVO_SPAWN_POINTS` | `src/game/match/spawnPoints.ts` |
 | `MAP_HALF` | `src/components/hud/minimapDraw.ts` |

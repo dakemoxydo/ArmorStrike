@@ -2,7 +2,7 @@
 
 **Статус:** Approved (P1–P4)  
 **Слой:** Match / Gameplay loop  
-**Связано:** [[Game_Lifecycle]], [[Scoring]], [[AI_Bots]], [[Team_Deathmatch]], [[Capture_Point]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]]
+**Связано:** [[Game_Lifecycle]], [[Scoring]], [[AI_Bots]], [[Team_Deathmatch]], [[Capture_Point]]
 
 ## Режимы
 
@@ -85,7 +85,7 @@ Handled by `RespawnController` (delegated from `MatchRuntime`) + `MatchStage`.
 - Scoreboard Tab: flat K/D (DM) or two team columns (TDM)
 - Minimap: self / ally / enemy relation colors
 - Game over: win/loss + winner name/team
-- Rematch re-opens ModeSelect (mode sticky via `setMatchMode`)
+- Rematch: `startRound(lastMap)` **без** ModeSelect — тот же mode + map (P6); смена режима/карты → ModeSelect
 
 ## AI focus (P2)
 

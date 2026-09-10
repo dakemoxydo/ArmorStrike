@@ -46,7 +46,7 @@
 4. CP: ~50% bots push A/B/C; rest hunt.
 5. Results: реванш / смена режима / гараж / меню.
 
-**План:** [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]] — **P0–P6 shipped**.
+**План:** Classic Match Modes (P0–P6) — **shipped**; доки — в таблице выше (черновик удалён из Drafts, история в git).
 
 ## Источники истины в коде
 

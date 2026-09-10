@@ -31,7 +31,6 @@ Runtime-сущность: **`TankEntity`**.
 - `WeaponOwner` — оружие
 - `MotionBody` / `AimBody` / … — sim systems
 - `ControllableTank` — player input
-- `BuffableTank` — mul slots (legacy; match uses spawn scales)
 - `HudUnit` / `CameraFollowable` — UI / camera
 
 Правило: **call sites зависят от узкого порта**, не от полного класса.  

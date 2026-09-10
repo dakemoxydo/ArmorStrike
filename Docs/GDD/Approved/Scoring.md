@@ -2,7 +2,7 @@
 
 **Статус:** Approved  
 **Слой:** Run meta  
-**Связано:** [[Damage_System]], [[Game_Lifecycle]], [[Match_Framework]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]]
+**Связано:** [[Damage_System]], [[Game_Lifecycle]], [[Match_Framework]]
 
 ## Константы (`SCORE`)
 

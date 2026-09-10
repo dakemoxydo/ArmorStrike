@@ -72,11 +72,16 @@ Ordered stages (`engine/stages/` — `buildSimulationStages` in `index.ts`):
 | 2 | `BotAiStage` | AI → fire |
 | 3 | `WeaponSystemStage` | weapon.update |
 | 4 | `TankSystemStage` | motion, aim, heal, reload timers |
-| 5 | FX / nameplates / ambient | presentation-side sim |
-| 6 | `PhysicsSystem` | walls + tank separation |
-| 7 | Projectiles | flight & hits |
-| 8 | Minimap | static collider sync |
-| 9 | Match | respawn + win conditions |
+| 5 | `TankAnimationSystemStage` | barrel/track anim, death pose |
+| 6 | `TankFxSystemStage` | smoke / dust FX |
+| 7 | `AmbientStage` | ambient effects center |
+| 8 | `NameplateSystemStage` | nameplate sync |
+| 9 | `PhysicsSystemStage` | walls + tank separation |
+| 10 | `ProjectileStage` | flight & hits |
+| 11 | `MinimapStage` | minimap sync |
+| 12 | `MatchStage` | invuln, respawn, capture, win |
+| 13 | `BoostStage` | player boost jet FX |
+| 14 | `EngineAudioStage` | engine audio |
 
 `dt` clamp ~0.05s in game loop.  
 Полный контракт стадий: [Core Patterns §3](Core_Patterns.md).
@@ -141,7 +146,7 @@ Weapons/combat depend on ports, not concrete `Effects`/`AudioFX`/`Arena` (testab
 
 `GameEvent` union → React:
 
-`playerHit` · `enemyHit` · `kill` · `shotFired` · `gameOver` · `pauseChanged` · `modeChanged` · `garageChanged`
+`playerHit` · `enemyHit` · `kill` · `shotFired` · `killStreak` · `gameOver` · `pauseChanged` · `modeChanged` · `garageChanged`
 
 UI-контракт: [Standard UI & Input](Standard_UI_Input.md).  
 Match rules: [Standard Match](Standard_Match.md).

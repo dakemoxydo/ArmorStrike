@@ -2,7 +2,7 @@
 
 **Статус:** Approved (P4–P5)  
 **Слой:** Match / Gameplay  
-**Связано:** [[Match_Framework]], [[Team_Deathmatch]], [[AI_Bots]], [[Maps]], [[Game_Lifecycle]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]]
+**Связано:** [[Match_Framework]], [[Team_Deathmatch]], [[AI_Bots]], [[Maps]], [[Game_Lifecycle]]
 
 ## Правила (as shipped)
 

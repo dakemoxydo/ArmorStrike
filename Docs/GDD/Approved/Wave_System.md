@@ -2,7 +2,7 @@
 
 **Статус:** Removed  
 **Слой:** —  
-**Связано:** [[Game_Lifecycle]], [[Scoring]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes (Draft)]]
+**Связано:** [[Game_Lifecycle]], [[Scoring]], [[Match_Framework]]
 
 ## Что было
 
@@ -23,4 +23,4 @@
 
 ## Замена
 
-Классические режимы **shipped (P0–P6):** [[Match_Framework]], [[Team_Deathmatch]], [[Capture_Point]], trail [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]].
+Классические режимы **shipped (P0–P6):** [[Match_Framework]], [[Team_Deathmatch]], [[Capture_Point]] (design-trail удалён из Drafts, история в git).

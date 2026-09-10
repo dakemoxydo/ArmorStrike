@@ -17,7 +17,7 @@ City / Village заполняют всю арену ([[City_Level_Design]], [[Vi
 
 Модульные билдеры: `src/game/arena/*` (shell, factoryMap, villageMap, cityMap + factory modules: centralHall, containerYard, foundry, gantryCrane, silos, pipeRack, ramps, scattered, smokestacks, skyline, atmosphere…).
 
-Сборка: `buildArena(arena, effects, mapId)` → `Arena`. Пересборка: `Arena.rebuild(mapId)` при каждом старте матча.
+Сборка: `buildArena(arena, effects, mapId, renderWorld?)` → `Arena`. Пересборка: `Arena.rebuild(mapId)` при каждом старте матча.
 
 ## Collider model
 

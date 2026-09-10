@@ -53,17 +53,19 @@ if timeSinceHit > HEAL_DELAY && health < maxHealth:
 | Smoke | `health / maxHealth < SMOKE_HEALTH_FRAC` (0.32) | `TankFxSystem` |
 | Death anim | `!alive`, `deathT` | `TankAnimationSystem` |
 
-## Смерть игрока
+## Смерть игрока (respawn, не game over)
 
 1. `CombatSystem.onTankDestroyed` → `onPlayerDeath`
-2. `applyPlayerDeathState`: `deathT = 0`, `paused = false`, input off
-3. ~2 с death cam → `mode = 'over'` + `gameOver`
+2. `applyPlayerDeathState`: `deathT = 0`, `paused = false`, input off + release lock (без auto-pause)
+3. Death cam длится `respawnDelaySec` (**4 с**, `matchConfig.ts`) → `RespawnController.respawnTank`: restore HP, `invulnT = spawnInvulnSec` (**2 с**), re-lock input, `startEngine`
 
-См. [[Game_Lifecycle]].
+Смерть игрока **не** заканчивает матч — конец только через win conditions (`evaluateMatchEnd`).
+См. [[Game_Lifecycle]] / [[Match_Framework]].
 
 ## Классы
 
-
+| Символ | Файл |
+|--------|------|
 | `TankEntity.takeDamage` | `src/game/Tank.ts` |
 | `TankCombatTimersSystem` | `src/game/engine/systems/TankCombatTimersSystem.ts` |
 | `HEAL_*`, `SMOKE_HEALTH_FRAC` | `src/game/tuning.ts` |

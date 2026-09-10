@@ -2,7 +2,7 @@
 
 **Статус:** Approved (P3)  
 **Слой:** Match / Gameplay  
-**Связано:** [[Match_Framework]], [[AI_Bots]], [[Damage_System]], [[Game_Lifecycle]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]]
+**Связано:** [[Match_Framework]], [[AI_Bots]], [[Damage_System]], [[Game_Lifecycle]]
 
 ## Правила (as shipped)
 
@@ -34,7 +34,7 @@
 
 | Surface | Behaviour |
 |---------|-----------|
-| ModeSelect | DM + TDM enabled; CP disabled (P4) |
+| ModeSelect | DM / TDM / CP — все включены (CP shipped в P4–P5) |
 | Flow | ModeSelect → MapSelect → `startRound` |
 | HUD | `ALPHA n — m BRAVO` + personal K/D + time + win target |
 | Tab scoreboard | Two columns Alpha / Bravo |

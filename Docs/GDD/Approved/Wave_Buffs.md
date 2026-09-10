@@ -2,7 +2,7 @@
 
 **Статус:** Removed  
 **Слой:** —  
-**Связано:** [[Wave_System]], [[Match_Framework]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]]
+**Связано:** [[Wave_System]], [[Match_Framework]]
 
 ## Что было
 

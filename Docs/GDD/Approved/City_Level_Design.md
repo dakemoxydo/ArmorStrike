@@ -74,8 +74,8 @@
 
 | System | Value |
 |--------|--------|
-| Bot spawns | `SPAWN_POINTS` corners ±128 + edges (~132–135) |
-| Player start | `(0, 0, −120)` — `PlayerFactory` |
+| Bot spawns | `FFA_SPAWN_POINTS` corners ±128 + edges (~132–135) — `match/spawnPoints.ts` |
+| Player start | `(0, 0, −120)` — `match/rosterSpawn.ts` |
 | Minimap half | `MAP_HALF = 156` — `minimapDraw.ts` |
 | Fog / camera | fog 130..440, camera far 900, shadow frustum ±170 — `RenderWorld` |
 

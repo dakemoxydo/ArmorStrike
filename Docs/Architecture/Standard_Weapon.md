@@ -14,6 +14,8 @@ interface Weapon {
   update(dt: number, ctx: WeaponContext): void;
   updateReload(dt: number): void;
   requestReload(): void;
+  /** Однократно при alive → !alive владельца: стоп звуков/заряда, скрыть визуалы (optional). */
+  onOwnerDeath?(): void;
   dispose(): void;
   getAmmoState(): WeaponAmmoState;
 }

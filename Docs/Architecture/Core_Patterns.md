@@ -56,11 +56,16 @@ interface SimSystem {
 2. `BotAiStage` — AI → fire
 3. `WeaponSystemStage` — `weapon.update`
 4. `TankSystemStage` — motion, aim, heal, timers
-5. Animation / FX / nameplates / ambient
-6. `PhysicsSystem` — walls + tank separation
-7. Projectiles — flight & hits
-8. Minimap
-9. Match — respawn + win (`MatchStage`)
+5. `TankAnimationSystemStage` — barrel/track anim, death pose
+6. `TankFxSystemStage` — smoke/dust FX
+7. `AmbientStage` — ambient center
+8. `NameplateSystemStage` — nameplate sync
+9. `PhysicsSystemStage` — walls + tank separation
+10. `ProjectileStage` — flight & hits
+11. `MinimapStage` — minimap sync
+12. `MatchStage` — invuln, respawn, capture, win
+13. `BoostStage` — player boost jet
+14. `EngineAudioStage` — engine audio
 
 Правила:
 - `dt` clamp ~0.05s в game loop.
@@ -83,7 +88,7 @@ Weapons / combat / systems **не** импортируют concrete `Effects` / 
 
 `GameEvent` union (`game/types.ts`) — единственный push-канал UI:
 
-`playerHit` · `enemyHit` · `kill` · `shotFired` · `gameOver` (winner fields) · `pauseChanged` · `modeChanged` · `garageChanged`
+`playerHit` · `enemyHit` · `kill` · `shotFired` · `killStreak` · `gameOver` (winner fields) · `pauseChanged` · `modeChanged` · `garageChanged`
 
 Правило: sim/combat **эмитит события**; React **подписывается**. Обратный поток команд — только методы `GameApi`.
 

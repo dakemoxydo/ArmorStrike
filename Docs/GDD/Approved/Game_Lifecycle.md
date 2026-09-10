@@ -2,7 +2,7 @@
 
 **Статус:** Approved  
 **Слой:** App / Game mode  
-**Связано:** [[Player_Controls]], [[Health_And_Regen]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes (Draft)]]
+**Связано:** [[Player_Controls]], [[Health_And_Regen]], [[Match_Framework]]
 
 ## GameMode
 
@@ -95,13 +95,19 @@ applyPlayerDeathState:
 1. PlayerInput  
 2. BotAi (team modes: nearest enemy focus)  
 3. Weapons  
-4. Tanks  
-5. Tank FX / nameplates / ambient  
-6. Physics  
-7. Projectiles  
-8. Minimap  
-9. **Match** (respawn + win)  
-10. Boost / engine audio
+4. Tanks (motion → timers → aim → presentation)  
+5. TankAnimation  
+6. Tank FX  
+7. Ambient  
+8. Nameplates  
+9. Physics  
+10. Projectiles  
+11. Minimap  
+12. **Match** (invuln, respawn, capture, win)  
+13. Boost (нитро-выхлоп игрока)  
+14. Engine audio
+
+Полный реестр — `buildSimulationStages` (`src/game/engine/stages/index.ts`).
 
 ## Классы
 

@@ -55,7 +55,7 @@ CP-зоны пересоздаются каждый тик (`CaptureController.u
 
 ## 3. Draw-call census: измеряй перед тем как оптимизировать
 
-**Инструмент:** `scripts/draw-call-census.ts` (запуск: `npx tsx scripts/draw-call-census.ts`,
+**Инструмент:** `scripts/draw-call-census.ts` (запуск: `npm run census` — `vite-node scripts/draw-call-census.ts`,
 вне tsconfig/eslint — см. `scripts/screenshot.sh` прецедент).
 
 Строит каждую карту реальным THREE без WebGL (Proxy-заглушка 2d-контекста),

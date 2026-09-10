@@ -2,7 +2,7 @@
 
 **Статус:** Approved  
 **Слой:** AI  
-**Связано:** [[Match_Framework]], [[Tank_Movement]], [[Tank_Aim]], [[../Drafts/Classic_Match_Modes|Classic_Match_Modes]]
+**Связано:** [[Match_Framework]], [[Tank_Movement]], [[Tank_Aim]]
 
 ## Роли (`AIRole`)
 

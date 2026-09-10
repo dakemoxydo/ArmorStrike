@@ -7,9 +7,8 @@
 
 ## Active / trail
 
-| File | Status |
-|------|--------|
-| [[Classic_Match_Modes]] | **Shipped P0–P6** — history trail; use Approved Match_* docs |
+_Пусто. Реализованные черновики после синхронизации `../Approved/` удаляются
+(например, Classic_Match_Modes — P0–P6 shipped; история — в git)._
 
 ## Ideas backlog
 

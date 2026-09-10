@@ -29,10 +29,15 @@ interface DamageSystem {
 
 ```
 if !target.alive: return
-if dmg <= 0: return          // VFX-only hits (cannon direct via splash path uses 0 here)
+if source.id === target.id: return    // self-hit
+if (target.invulnT ?? 0) > 0: return  // spawn invuln (match respawn)
+if source.teamId != null && source.teamId === target.teamId: return  // FF off (team modes)
+if dmg <= 0: return                    // VFX-only hits (cannon direct via splash path uses 0 here)
 target.takeDamage(dmg, source.id)
 hooks.onTankDamaged(target, dmg, source)
 ```
+
+Гейты self/invuln/FF живут **только** здесь — оружие и projectiles их не дублируют.
 
 ### applyKnockback
 

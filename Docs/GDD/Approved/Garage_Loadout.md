@@ -51,7 +51,7 @@ range       = turret.range
 | Символ | Файл |
 |--------|------|
 | `HULLS`, `TURRETS` | `src/core/catalogData.ts` / `catalog.ts` |
-| `createTankEntity`, `createWeapon`, `buildPlayerTank` | `src/game/PlayerFactory.ts` |
+| `createTankEntity`, `createWeapon` | `src/game/PlayerFactory.ts` |
 | `RunState.load/save` | `src/game/RunState.ts` |
 | `Garage` | `src/components/Garage.tsx` |
 | `GarageBinding` | `src/game/GarageBinding.ts` |
