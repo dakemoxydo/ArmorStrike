@@ -1,6 +1,6 @@
 import type { HullId, TurretId } from '../../core/catalog';
 
-export type RenderType = 'code' | 'model';
+type RenderType = 'code' | 'model';
 
 export interface RenderConfig {
   type: RenderType;

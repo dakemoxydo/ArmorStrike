@@ -328,34 +328,6 @@
   100% { opacity: 0; }
 }
 
-/* --- баннер волны --- */
-.wave-banner {
-  position: absolute;
-  left: 50%; top: 26%;
-  transform: translateX(-50%);
-  text-align: center;
-  animation: banner 2.6s ease-out forwards;
-  pointer-events: none;
-}
-.wave-banner-sub {
-  font-size: 11px;
-  letter-spacing: 0.5em;
-  color: rgba(255, 210, 74, 0.8);
-}
-.wave-banner-text {
-  font-family: 'Russo One', sans-serif;
-  font-size: 3.4rem;
-  letter-spacing: 0.3em;
-  color: #ffe9b0;
-  text-shadow: 0 0 34px rgba(255, 180, 60, 0.85);
-}
-@keyframes banner {
-  0% { opacity: 0; transform: translateX(-50%) scale(1.35); letter-spacing: 0.6em; }
-  12% { opacity: 1; transform: translateX(-50%) scale(1); }
-  75% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-24px); }
-}
-
 /* --- frag-popup --- */
 .frag-popup {
   position: absolute;
@@ -513,10 +485,7 @@
 .sb-hp > div.hp-mid { background: var(--warn, #ffd24a); }
 .sb-hp > div.hp-low { background: var(--danger, #ff4d3d); }
 
-/* center combat toasts: keep wave above frag, both below score (M13) */
-.wave-banner {
-  top: 22%;
-}
+/* center combat toasts: frag below score (M13) */
 .frag-popup {
   top: 34%;
 }
@@ -588,12 +557,10 @@
   .hitmarker,
   .damage-vignette,
   .damage-arc,
-  .wave-banner,
   .frag-popup,
   .scoreboard-overlay {
     animation: none;
   }
-  .wave-banner,
   .frag-popup {
     opacity: 1;
   }

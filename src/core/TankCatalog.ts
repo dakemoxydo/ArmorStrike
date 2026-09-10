@@ -4,9 +4,6 @@
 import type { Color } from 'three';
 import { COLORS } from './constants';
 import type { TankStyle } from './types';
-import type { HullId, TurretId, HullDef, TurretDef } from './catalog';
-
-export type { HullId, TurretId, HullDef, TurretDef };
 
 /** Стиль окраски игрока (фиксированная палитра). */
 export function buildPlayerStyle(): TankStyle {

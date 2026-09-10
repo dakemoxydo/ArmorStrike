@@ -12,7 +12,7 @@ import { markShared, unmarkShared } from '../resources/sharedResources';
  *   (hit-flash, death fade, damage darkening) пишут в `color` / `emissive`.
  *   Без этого все танки на одной модели мигали бы синхронно.
  */
-export class AssetManager {
+class AssetManager {
   private loader = new GLTFLoader();
   private cache = new Map<string, THREE.Object3D>();
   /** In-flight загрузки: параллельные запросы одного url делят один fetch. */

@@ -8,7 +8,7 @@ export interface AvoidState {
   avoidDir: number;
 }
 
-export function dirFree(t: AIBody, a: number, colliders: Collider[]): boolean {
+function dirFree(t: AIBody, a: number, colliders: Collider[]): boolean {
   const px = t.position.x + Math.sin(a) * 5;
   const pz = t.position.z + Math.cos(a) * 5;
   for (const c of colliders) {

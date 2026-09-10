@@ -82,7 +82,7 @@ export type GameEvent =
 
 export interface MinimapStatic { id: number; x: number; z: number; w: number; d: number; kind: string; alive: boolean }
 /** Relation of blip to local player for team coloring (FFA: others = enemy). */
-export type MinimapRelation = 'self' | 'ally' | 'enemy';
+type MinimapRelation = 'self' | 'ally' | 'enemy';
 export interface MinimapDynamic {
   x: number;
   z: number;

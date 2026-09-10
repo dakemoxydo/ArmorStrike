@@ -58,4 +58,4 @@ export function buildSimulationStages(d: StageDeps): SimSystem[] {
 }
 
 // Re-export types for external consumers.
-export type { FrameContext, SimSystem, ScalarCell, NameplateMap } from './types';
+export type { FrameContext, SimSystem, ScalarCell } from './types';

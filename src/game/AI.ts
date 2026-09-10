@@ -15,7 +15,6 @@ import { preferredRange, steeringFromAngle } from './aiTuning';
 
 export { preferredRange, aimTolerance, steeringFromAngle } from './aiTuning';
 
-export type { WeaponType };
 export type { AIRole };
 
 /** Цель ИИ (игрок): позиция, жив, скорость для lead. */

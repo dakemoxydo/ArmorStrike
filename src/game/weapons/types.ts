@@ -30,13 +30,13 @@ export function buildAmmoState(partial: Partial<WeaponAmmoState> & { magazine: n
 }
 
 /** Визуальный срез владельца, который трогает оружие (не весь TankVisual). */
-export interface WeaponOwnerVisual {
+interface WeaponOwnerVisual {
   muzzle: THREE.Object3D;
   barrelGroup: THREE.Group;
   railGlowMat?: THREE.MeshStandardMaterial;
 }
 
-export interface WeaponOwnerParams {
+interface WeaponOwnerParams {
   damage: number;
   range?: number;
 }

@@ -73,7 +73,7 @@ export function buildArena(
   }
 }
 
-export function makeContext(arena: Arena, effects: ArenaEffects): ArenaBuildContext {
+function makeContext(arena: Arena, effects: ArenaEffects): ArenaBuildContext {
   return {
     group: arena.group,
     half: arena.half,

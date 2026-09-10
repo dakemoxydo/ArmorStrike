@@ -2,8 +2,6 @@
 import type { WeaponType } from '../core/catalog';
 import type { AudioPort } from './ports/AudioPort';
 
-export type { AudioPort } from './ports/AudioPort';
-
 const MUTE_LS_KEY = 'as2_muted';
 
 /** Загрузить сохранённый mute (как graphicsQuality.loadQuality: тихо при битой схеме). */
@@ -336,13 +334,6 @@ export class AudioFX implements AudioPort {
   click() {
     if (!this.ctx) return;
     this.osc('triangle', this.ctx.currentTime, 0.05, 900, 620, 0.14);
-  }
-
-  waveHorn() {
-    if (!this.ctx) return;
-    const t = this.ctx.currentTime;
-    this.osc('sawtooth', t, 0.5, 140, 144, 0.2);
-    this.osc('sawtooth', t + 0.24, 0.6, 187, 190, 0.2);
   }
 
   death() {

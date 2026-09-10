@@ -3,7 +3,7 @@ import type { MapId } from '../maps/mapCatalog';
 import type { CapturePointId } from './captureLogic';
 import { CAPTURE, createZone, type CaptureZoneState } from './captureLogic';
 
-export interface CaptureAnchor {
+interface CaptureAnchor {
   id: CapturePointId;
   x: number;
   z: number;
@@ -13,7 +13,7 @@ export interface CaptureAnchor {
  * Design anchors (arena half ≈ 150). Keep away from team bases at z±120.
  * factory: west / center / east · village: plaza + flanks · city: plaza + N/S avenue.
  */
-export const CAPTURE_ANCHORS: Record<MapId, readonly CaptureAnchor[]> = {
+const CAPTURE_ANCHORS: Record<MapId, readonly CaptureAnchor[]> = {
   factory: [
     { id: 'A', x: -88, z: 8 },
     { id: 'B', x: 0, z: 0 },

@@ -3,7 +3,7 @@ import { losClear, type Collider } from '../engine/physics';
 import type { TeamId } from './matchTypes';
 import { isAlly, isEnemy } from './teams';
 
-export interface FocusCandidate {
+interface FocusCandidate {
   id: number;
   teamId: TeamId;
   alive: boolean;
@@ -11,7 +11,7 @@ export interface FocusCandidate {
   vel: { x: number; y: number; z: number };
 }
 
-export interface FocusSelf {
+interface FocusSelf {
   id: number;
   teamId: TeamId;
   position: { x: number; z: number };

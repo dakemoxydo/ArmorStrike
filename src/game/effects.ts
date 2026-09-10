@@ -8,8 +8,6 @@ import { AmbientDust } from './effects/AmbientDust';
 import { WreckSystem } from './effects/WreckSystem';
 import type { EffectsPort } from './ports/EffectsPort';
 
-export type { EffectsPort } from './ports/EffectsPort';
-
 export class Effects implements EffectsPort {
   private particles: ParticleEffects;
   private shake: CameraShake;

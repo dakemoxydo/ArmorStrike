@@ -4,7 +4,7 @@ import { ArrowLeft, Crosshair, Flag, Play, Users } from 'lucide-react';
 import type { MatchModeId } from '../game/types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
-export interface ModeOption {
+interface ModeOption {
   id: MatchModeId;
   title: string;
   blurb: string;

@@ -25,7 +25,6 @@ export interface AudioPort {
   hitPlayer(): void;
   reload(): void;
   click(): void;
-  waveHorn(): void;
   death(): void;
 
   startEngine(): void;
