@@ -25,8 +25,17 @@ export default tseslint.config(
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
       }],
-      '@typescript-eslint/no-explicit-any': 'off',
+      // `any` escapes the type system, so it is banned in shipped code. Tests
+      // are exempt below: a deliberately-partial test double is exactly where
+      // an explicit `any` cast is the honest annotation.
+      '@typescript-eslint/no-explicit-any': 'error',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    files: ['src/__tests__/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 );
