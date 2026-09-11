@@ -36,6 +36,7 @@
 - [[../../Architecture/Core|Core Architecture]] — слои, симуляция, порты, фабрики
 - [[../../Architecture/Standard_Tank|Standard Tank]] — entity, systems, фабрика меша
 - [[../../Architecture/Standard_Hull_Models|Standard Hull Models]] — процедурные корпуса, слоты материалов, бюджет детализации
+- [[../../Architecture/Standard_Turret_Models|Standard Turret Models]] — процедурные башни + стволы, слоты, per-tank `railGlowMat`
 
 ## Жанр и петля
 

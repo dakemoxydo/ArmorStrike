@@ -13,7 +13,8 @@
     "lint": "eslint src",
     "test": "vitest run",
     "census": "vite-node scripts/draw-call-census.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:models": "vite-node scripts/hull-preview.ts"
   },
   "dependencies": {
     "lucide-react": "^1.24.0",
