@@ -61,7 +61,11 @@ function makeDeps() {
     sim,
     scene: new THREE.Scene(),
     cameraRig: { resetFov: vi.fn(), resetGarage: vi.fn(), snap: vi.fn() },
-    renderWorld: {} as never,
+    renderWorld: {
+      warmUp: vi.fn(async () => {
+        order.push('renderWorld.warmUp');
+      }),
+    } as never,
     previewController: { setVisible: vi.fn() },
     canvas: { style: {} } as unknown as HTMLCanvasElement,
     weaponDeps: {} as never,
@@ -98,6 +102,10 @@ describe('GameModeController round-start reset sequence', () => {
     expect(d.sim.input.resetKeys).toHaveBeenCalledTimes(1);
     expect((d.deps as unknown as { timeScale: { reset: () => void } }).timeScale.reset).toHaveBeenCalledTimes(1);
     expect(d.sim.match.reset).toHaveBeenCalledWith(expect.any(String), { mapId: 'village', scene: d.deps.scene });
+    // Shader warm-up runs once per round, under the loading overlay.
+    expect(
+      (d.deps as unknown as { renderWorld: { warmUp: () => void } }).renderWorld.warmUp,
+    ).toHaveBeenCalledTimes(1);
     // Fresh roster wins over the previous one
     const simView = d.sim as unknown as { player: unknown; bots: { bots: unknown[] } };
     expect(simView.player).toEqual({ name: 'P1', isPlayer: true, yaw: 0.4 });
@@ -119,6 +127,8 @@ describe('GameModeController round-start reset sequence', () => {
     expect(i('onArenaRebuilt')).toBeLessThan(i('resetRun'));
     expect(i('resetRun')).toBeLessThan(i('resetStreaks'));
     expect(i('resetStreaks')).toBeLessThan(i('match.reset'));
+    // Warm-up is the last step before the match goes live (after the roster).
+    expect(i('match.reset')).toBeLessThan(i('renderWorld.warmUp'));
   });
 
   it('second round start re-runs every reset (no cross-round carryover path)', async () => {

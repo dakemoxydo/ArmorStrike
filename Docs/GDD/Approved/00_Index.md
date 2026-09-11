@@ -13,6 +13,7 @@
 | [[Tank_Aim]] | Наведение башни | `TankAimSystem` |
 | [[Health_And_Regen]] | HP, реген, смерть | `TankEntity` (`combat`/`fx`), `TankCombatTimersSystem` |
 | [[Damage_System]] | Урон / knockback / блоки | `DamageSystem`, `CombatSystem`, `applyHit` |
+| [[Kill_Feedback]] | Hit-stop / slow-mo за убийство игроком | `TimeScale`, `CombatSystem.setOnKillPunch` |
 | [[Weapon_Cannon]] | Пушка «Смоки» | `CannonWeapon`, `ProjectileManager` |
 | [[Weapon_Railgun]] | Рельсотрон | `RailgunWeapon` |
 | [[Weapon_Flamethrower]] | Огнемёт Firebird | `FlamethrowerWeapon`, `inFlameConeXZ` |
@@ -38,6 +39,7 @@
 - [[../../Architecture/Standard_Tank|Standard Tank]] — entity, systems, фабрика меша
 - [[../../Architecture/Standard_Hull_Models|Standard Hull Models]] — процедурные корпуса, слоты материалов, бюджет детализации
 - [[../../Architecture/Standard_Turret_Models|Standard Turret Models]] — процедурные башни + стволы, слоты, per-tank `railGlowMat`
+- [[../../Architecture/Standard_Frame_Stability|Standard Frame Stability]] — постоянный бюджет света, warm-up шейдеров, пул обломков, hit-stop гейт, HUD-квантование
 
 ## Жанр и петля
 

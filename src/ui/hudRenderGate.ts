@@ -29,8 +29,6 @@ function boardDiffers(a: readonly ScoreRow[], b: readonly ScoreRow[]): boolean {
     if (
       x.name !== y.name ||
       x.hull !== y.hull ||
-      x.turret !== y.turret ||
-      x.weapon !== y.weapon ||
       x.weaponName !== y.weaponName ||
       x.isPlayer !== y.isPlayer ||
       x.alive !== y.alive ||
@@ -78,6 +76,8 @@ const FIELD_DIFFERS: Partial<Record<keyof HudSnapshot, FieldDiffers>> = {
   timeSec: (a, b) => Math.floor(a.timeSec) !== Math.floor(b.timeSec),
   teamScoreAlpha: (a, b) => Math.floor(a.teamScoreAlpha) !== Math.floor(b.teamScoreAlpha),
   teamScoreBravo: (a, b) => Math.floor(a.teamScoreBravo) !== Math.floor(b.teamScoreBravo),
+  // Обратный отсчёт респауна идёт непрерывно — рендерим только целые секунды.
+  respawnInSec: (a, b) => Math.ceil(a.respawnInSec) !== Math.ceil(b.respawnInSec),
 
   // Массивы пересоздаются каждый кадр — сравниваем содержимое.
   scoreboard: (a, b) => boardDiffers(a.scoreboard, b.scoreboard),

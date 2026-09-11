@@ -1,9 +1,12 @@
 // ===== Визуальный луч рельсотрона (multi-layer beam + lights + punch) =====
 // Выделен из RailgunWeapon: владеет mesh-слоями, PointLight и fade.
 // Чисто визуально — уроном / hitscan не занимается.
-// Perf: lights detached while idle (Three still shades intensity-0 lights if in scene).
+// Perf: свет берётся из LightRig и НИКОГДА не добавляется/не удаляется из
+// сцены — смена числа источников заставляет three пересобирать программу
+// каждому lit-материалу и компилировать GLSL прямо в кадре выстрела.
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
+import type { LightRig } from '../effects/LightRig';
 
 const tmpMid = new THREE.Vector3();
 const tmpLook = new THREE.Vector3();
@@ -17,6 +20,11 @@ const GLOW_HOLD = 1.35;
 const MUZZLE_LIGHT_PEAK = 28;
 const IMPACT_LIGHT_PEAK = 18;
 const LIGHT_DIST = 12;
+/** Rig channel indices: the pair is shared by all railgun instances. */
+const MUZZLE_SLOT = 0;
+const IMPACT_SLOT = 1;
+const MUZZLE_LIGHT_COLOR = 0x2ee6c0;
+const IMPACT_LIGHT_COLOR = 0xfff0a0;
 
 const CORE_RADIUS = 0.055;
 const BODY_RADIUS = 0.18;
@@ -79,7 +87,6 @@ export class RailgunBeamFx {
   private glowMat: THREE.MeshBasicMaterial;
   private muzzleLight: THREE.PointLight;
   private impactLight: THREE.PointLight;
-  private lightsAttached = false;
   private beamFadeTimer = 0;
   private punchTimer = 0;
   private rayLength = 1;
@@ -87,7 +94,7 @@ export class RailgunBeamFx {
   private beamOrigin = new THREE.Vector3();
   private beamDir = new THREE.Vector3(0, 0, 1);
 
-  constructor(private scene: THREE.Scene) {
+  constructor(private scene: THREE.Scene, private rig: LightRig) {
     const core = makeBeamMesh(CORE_RADIUS, 0xffffff);
     const body = makeBeamMesh(BODY_RADIUS, 0x8fffe8);
     const glow = makeBeamMesh(GLOW_RADIUS, 0x4ee6c8);
@@ -102,27 +109,15 @@ export class RailgunBeamFx {
     this.scene.add(this.bodyMesh);
     this.scene.add(this.coreMesh);
 
-    // Not added to scene until show() — avoids permanent light budget per weapon instance.
-    this.muzzleLight = new THREE.PointLight(0x2ee6c0, 0, LIGHT_DIST, 2);
-    this.muzzleLight.castShadow = false;
-    this.impactLight = new THREE.PointLight(0xfff0a0, 0, LIGHT_DIST, 2);
-    this.impactLight.castShadow = false;
+    // Rig lights are permanently attached; a beam only writes to them.
+    this.muzzleLight = rig.light('beam', MUZZLE_SLOT);
+    this.impactLight = rig.light('beam', IMPACT_SLOT);
   }
 
-  private attachLights() {
-    if (this.lightsAttached) return;
-    this.scene.add(this.muzzleLight);
-    this.scene.add(this.impactLight);
-    this.lightsAttached = true;
-  }
-
-  private detachLights() {
-    if (!this.lightsAttached) return;
-    this.scene.remove(this.muzzleLight);
-    this.scene.remove(this.impactLight);
+  /** Extinguish the beam lights in place (they stay attached to the scene). */
+  private offLights() {
     this.muzzleLight.intensity = 0;
     this.impactLight.intensity = 0;
-    this.lightsAttached = false;
   }
 
   /** Place/scale all three beam layers for the current origin/dir/rayLength. */
@@ -163,11 +158,10 @@ export class RailgunBeamFx {
     this.beamFadeTimer = WEAPON_TUNING.railgun.beamDuration;
     this.punchTimer = PUNCH_DUR;
 
-    this.attachLights();
-    this.muzzleLight.position.copy(muzzle);
-    this.muzzleLight.intensity = MUZZLE_LIGHT_PEAK;
-    this.impactLight.position.copy(tmpEnd);
-    this.impactLight.intensity = IMPACT_LIGHT_PEAK;
+    // Colors/distances are re-applied on every show(): the rig slots are shared
+    // with other railgun instances and with the flame channel's neighbours.
+    this.rig.set('beam', MUZZLE_SLOT, muzzle, MUZZLE_LIGHT_COLOR, MUZZLE_LIGHT_PEAK, LIGHT_DIST);
+    this.rig.set('beam', IMPACT_SLOT, tmpEnd, IMPACT_LIGHT_COLOR, IMPACT_LIGHT_PEAK, LIGHT_DIST);
   }
 
   /**
@@ -180,20 +174,17 @@ export class RailgunBeamFx {
     if (!this.bodyMesh.visible) return; // no active beam to shorten
     this.rayLength = Math.max(0.5, dist);
     this.layoutBeam();
-    if (this.lightsAttached) {
-      tmpEnd.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength);
-      this.impactLight.position.copy(tmpEnd);
-    }
+    tmpEnd.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength);
+    this.impactLight.position.copy(tmpEnd);
   }
 
   /** Позиция impact-light (последнее попадание по танку / стене). */
   setImpactPosition(p: THREE.Vector3) {
-    if (!this.lightsAttached) this.attachLights();
     this.impactLight.position.copy(p);
     this.impactLight.intensity = Math.max(this.impactLight.intensity, IMPACT_LIGHT_PEAK * 0.75);
   }
 
-  /** Мгновенно скрыть луч и отцепить свет (смерть владельца mid-fade). */
+  /** Мгновенно скрыть луч и погасить свет (смерть владельца mid-fade). */
   hide() {
     this.coreMesh.visible = false;
     this.bodyMesh.visible = false;
@@ -203,7 +194,7 @@ export class RailgunBeamFx {
     this.glowMat.opacity = 0;
     this.beamFadeTimer = 0;
     this.punchTimer = 0;
-    this.detachLights();
+    this.offLights();
   }
 
   /** Затухание слоёв + radial punch settle. */
@@ -234,10 +225,8 @@ export class RailgunBeamFx {
     const glowT = Math.min(1, t * GLOW_HOLD);
     this.glowMat.opacity = 0.55 * glowT * glowT;
 
-    if (this.lightsAttached) {
-      this.muzzleLight.intensity = t * t * MUZZLE_LIGHT_PEAK;
-      this.impactLight.intensity = t * IMPACT_LIGHT_PEAK;
-    }
+    this.muzzleLight.intensity = t * t * MUZZLE_LIGHT_PEAK;
+    this.impactLight.intensity = t * IMPACT_LIGHT_PEAK;
 
     if (this.beamFadeTimer <= 0) {
       this.coreMesh.visible = false;
@@ -246,20 +235,19 @@ export class RailgunBeamFx {
       this.coreMat.opacity = 0;
       this.bodyMat.opacity = 0;
       this.glowMat.opacity = 0;
-      this.detachLights();
+      this.offLights();
     }
   }
 
   dispose() {
-    this.detachLights();
+    this.offLights();
     for (const mesh of [this.coreMesh, this.bodyMesh, this.glowMesh]) {
       this.scene.remove(mesh);
     }
     this.coreMat.dispose();
     this.bodyMat.dispose();
     this.glowMat.dispose();
-    this.muzzleLight.dispose();
-    this.impactLight.dispose();
+    // Rig lights are shared and scene-owned — never disposed here.
     // Shared geometry is ref-counted — release our references last.
     releaseSharedBeamGeo(CORE_RADIUS);
     releaseSharedBeamGeo(BODY_RADIUS);

@@ -6,6 +6,7 @@ import { ParticleEffects } from './effects/particles';
 import { CameraShake } from './effects/CameraShake';
 import { AmbientDust } from './effects/AmbientDust';
 import { WreckSystem } from './effects/WreckSystem';
+import { LightRig } from './effects/LightRig';
 import type { EffectsPort } from './ports/EffectsPort';
 
 export class Effects implements EffectsPort {
@@ -13,13 +14,20 @@ export class Effects implements EffectsPort {
   private shake: CameraShake;
   private dust: AmbientDust;
   private wreck: WreckSystem;
+  /**
+   * Constant PointLight budget shared by every combat effect (flashes, railgun
+   * beam, flamethrower muzzle). Owned here because all consumers hang off the
+   * effects facade; weapons receive the same instance through WeaponDeps.
+   */
+  readonly lights: LightRig;
   /** Degrees added to FOV (fire punch), damps toward 0. */
   private fovPunch = 0;
   /** Degrees subtracted from FOV (charge zoom), set explicitly. */
   private fovTighten = 0;
 
   constructor(scene: THREE.Scene) {
-    this.particles = new ParticleEffects(scene);
+    this.lights = new LightRig(scene);
+    this.particles = new ParticleEffects(scene, this.lights);
     this.shake = new CameraShake();
     this.dust = new AmbientDust(scene);
     this.wreck = new WreckSystem(scene);
@@ -77,6 +85,7 @@ export class Effects implements EffectsPort {
     this.particles.dispose();
     this.dust.dispose();
     this.wreck.dispose();
+    this.lights.dispose();
   }
 
   /**
@@ -90,5 +99,8 @@ export class Effects implements EffectsPort {
     this.shake.reset();
     this.fovPunch = 0;
     this.fovTighten = 0;
+    // Beam / flame lights belong to weapons that are rebuilt with the roster,
+    // so nothing else will switch them off for this round.
+    this.lights.clear();
   }
 }

@@ -4,6 +4,7 @@ import type { Collider } from '../engine/physics';
 import type { EffectsPort } from '../ports/EffectsPort';
 import type { AudioPort } from '../ports/AudioPort';
 import type { ProjectileManager } from '../engine/Projectile';
+import type { LightRig } from '../effects/LightRig';
 import type { DamageSystem, TankLike } from '../../core/types';
 
 
@@ -83,6 +84,12 @@ export interface WeaponDeps {
   audio: AudioPort;
   damageSystem: DamageSystem;
   projectiles: ProjectileManager;
+  /**
+   * Постоянный бюджет PointLight (см. effects/LightRig): оружие пишет в свои
+   * слоты, но никогда не добавляет/не удаляет источники в сцене — иначе three
+   * пересобирает шейдер-программы всем lit-материалам в кадре выстрела.
+   */
+  lights: LightRig;
   /** Колбэк для события «игрок выстрелил» (используется HUD). */
   onShotFired?: () => void;
 }

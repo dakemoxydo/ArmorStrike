@@ -1,5 +1,5 @@
 // ===== Общие типы игрового слоя (без зависимости от Game) =====
-import type { HullId, TurretId } from '../core/catalog';
+import type { TurretId } from '../core/catalog';
 import type { MatchModeId, TeamId, MatchEndReason } from './match/matchTypes';
 
 export type GameMode = 'menu' | 'garage' | 'playing' | 'over';
@@ -19,15 +19,16 @@ export interface HudSnapshot {
   score: number;
   kills: number;
   deaths: number;
-  botsAlive: number;
+  /** Живые противники (союзники в TDM/CP не считаются) — радар, «ЦЕЛИ». */
+  enemiesAlive: number;
   alive: boolean;
+  /** Секунды до возрождения (0 когда игрок жив). */
+  respawnInSec: number;
   timeSec: number;
   muted: boolean;
-  hullId: HullId;
   turretId: TurretId;
   weaponName: string;
   weaponLabel: string;
-  weaponColor: string;
   weaponAccentClass: string;
   showScore: boolean;
   scoreboard: ScoreRow[];
@@ -94,8 +95,6 @@ export interface MinimapDynamic {
 export interface ScoreRow {
   name: string;
   hull: string;
-  turret: string;
-  weapon: string;
   weaponName: string;
   hpFrac: number;
   isPlayer: boolean;

@@ -14,9 +14,9 @@ function snap(over: Partial<HudSnapshot> = {}): HudSnapshot {
   return {
     mode: 'playing', paused: false, health: 100, maxHealth: 100, ammo: 6, magazine: 6,
     reloading: false, reloadProgress: 0, isCharging: false, boost: 1, score: 0, kills: 0,
-    deaths: 0, botsAlive: 4, alive: true, timeSec: 0, muted: false, hullId: 'hunter',
+    deaths: 0, enemiesAlive: 4, alive: true, respawnInSec: 0, timeSec: 0, muted: false,
     turretId: 'railgun', weaponName: 'Railgun', weaponLabel: 'РЕЛЬСА',
-    weaponColor: '#2ee6c0', weaponAccentClass: 'text-cyan-300', showScore: false,
+    weaponAccentClass: 'text-cyan-300', showScore: false,
     scoreboard: [], matchMode: 'deathmatch', winTarget: 30, timeLimitSec: 720,
     teamKillsAlpha: 0, teamKillsBravo: 0, teamScoreAlpha: 0, teamScoreBravo: 0,
     capturePoints: [],
@@ -26,7 +26,7 @@ function snap(over: Partial<HudSnapshot> = {}): HudSnapshot {
 
 function row(over: Partial<ScoreRow> = {}): ScoreRow {
   return {
-    name: 'Bot 1', hull: 'Hunter', turret: 'Railgun', weapon: 'railgun', weaponName: 'Railgun',
+    name: 'Bot 1', hull: 'Hunter', weaponName: 'Railgun',
     hpFrac: 1, isPlayer: false, alive: true, kills: 0, deaths: 0, teamId: null,
     ...over,
   };
@@ -80,6 +80,12 @@ describe('hudNeedsRender — quantized to the displayed value', () => {
   it('timeSec only forces on whole-second boundaries', () => {
     expect(hudNeedsRender(snap({ timeSec: 12.1 }), snap({ timeSec: 12.9 }))).toBe(false);
     expect(hudNeedsRender(snap({ timeSec: 12.9 }), snap({ timeSec: 13.0 }))).toBe(true);
+  });
+
+  it('respawn countdown only forces when the shown whole second changes', () => {
+    // Счётчик тикает каждый кадр — рендер нужен только на смене секунды.
+    expect(hudNeedsRender(snap({ alive: false, respawnInSec: 3.9 }), snap({ alive: false, respawnInSec: 3.1 }))).toBe(false);
+    expect(hudNeedsRender(snap({ alive: false, respawnInSec: 3.1 }), snap({ alive: false, respawnInSec: 2.9 }))).toBe(true);
   });
 
   it('team score only forces on integer steps', () => {

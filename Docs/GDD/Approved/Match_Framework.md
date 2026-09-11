@@ -81,7 +81,11 @@ Handled by `RespawnController` (delegated from `MatchRuntime`) + `MatchStage`.
 
 - Flow: **ModeSelect → MapSelect → startRound**
 - HUD DM: cosmetic score + `kills/winTarget`
-- HUD TDM: `ALPHA n — m BRAVO` + personal K/D
+- HUD TDM/CP: `ALPHA n — m BRAVO` + personal K/D
+- HUD timer: обратный отсчёт до `timeLimitSec` (подсвечивается на последней минуте) —
+  матч может закончиться по времени (`reason: 'time'`)
+- HUD смерть: оверлей «УНИЧТОЖЕН» с отсчётом респауна (`alive` / `respawnInSec`)
+- Радар «ЦЕЛИ»: только живые **противники** (`enemiesAlive`); союзники в TDM/CP не считаются
 - Scoreboard Tab: flat K/D (DM) or two team columns (TDM)
 - Minimap: self / ally / enemy relation colors
 - Game over: win/loss + winner name/team

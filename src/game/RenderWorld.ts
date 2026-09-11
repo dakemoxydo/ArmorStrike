@@ -246,6 +246,22 @@ export class RenderWorld {
   }
 
   /**
+   * Pre-compile every shader the current scene needs.
+   *
+   * The dynamic light budget is constant (see `effects/LightRig`), so one pass
+   * covers all combat materials: without it the first shot / first explosion
+   * pays a synchronous GLSL compile inside the frame. `compileAsync` uses
+   * `KHR_parallel_shader_compile` when available, so the wait does not block
+   * the main thread; it resolves immediately when the extension is absent.
+   *
+   * Call after the arena and the match roster are in the scene, under a loading
+   * overlay (GameModeController.executeStartRound).
+   */
+  async warmUp(): Promise<void> {
+    await this.renderer.compileAsync(this.scene, this.camera);
+  }
+
+  /**
    * Full teardown. `renderer.dispose()` alone releases only the WebGL context —
    * it does NOT free scene-owned GL resources. Every GPU resource created here
    * (PMREM env target, sky program, shadow map) is therefore released

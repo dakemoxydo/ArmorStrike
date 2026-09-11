@@ -9,14 +9,22 @@ import { hudNeedsRender } from '../ui/hudRenderGate';
 
 const _defaultWeapon = WEAPONS.railgun;
 
+/**
+ * Handle of `setTimeout` in whichever program compiles this file: the browser
+ * program (`tsconfig.json`, DOM lib) sees `number`, while the test program
+ * (`tsconfig.node.json`) pulls `@types/node` and sees `NodeJS.Timeout`. Typing
+ * the handle as `number` breaks the moment a DOM test imports this hook.
+ */
+type TimerHandle = ReturnType<typeof setTimeout>;
+
 /** Фабрика, а не константа: снапшот мутируется через Object.assign каждый кадр. */
 function createSnapInit(): HudSnapshot {
   return {
     mode: 'menu', paused: false, health: 100, maxHealth: 100, ammo: 0, magazine: 0,
-    reloading: false, reloadProgress: 0, isCharging: false, boost: 1, score: 0, kills: 0, deaths: 0, botsAlive: 0,
-    alive: false, timeSec: 0, muted: false, hullId: 'hunter', turretId: 'railgun',
+    reloading: false, reloadProgress: 0, isCharging: false, boost: 1, score: 0, kills: 0, deaths: 0,
+    enemiesAlive: 0, alive: false, respawnInSec: 0, timeSec: 0, muted: false, turretId: 'railgun',
     weaponName: _defaultWeapon.name, weaponLabel: _defaultWeapon.label,
-    weaponColor: _defaultWeapon.color, weaponAccentClass: _defaultWeapon.accentClass,
+    weaponAccentClass: _defaultWeapon.accentClass,
     showScore: false, scoreboard: [],
     matchMode: 'deathmatch', winTarget: 30, timeLimitSec: 720,
     teamKillsAlpha: 0, teamKillsBravo: 0,
@@ -24,6 +32,20 @@ function createSnapInit(): HudSnapshot {
     capturePoints: [],
   };
 }
+
+/**
+ * Длительности боевых тостов. Совпадают с CSS-анимациями (см. hud.css) и нужны
+ * потому, что состояние тоста должно быть временным: под `prefers-reduced-motion`
+ * анимация отключена, и без таймера виньетка/дуга/хитмаркер/«+ ФРАГ» остались бы
+ * на экране навсегда (элементы не размонтируются сами).
+ */
+const TOAST_MS = {
+  vignette: 700,
+  dmgArc: 1000,
+  hitmark: 400,
+  frag: 1300,
+  streak: 1500,
+} as const;
 
 export function useGameHud(game: GameApi | null, active: boolean) {
   const [, force] = useReducer((x: number) => x + 1, 0);
@@ -53,34 +75,60 @@ export function useGameHud(game: GameApi | null, active: boolean) {
 
   useEffect(() => {
     if (!game) return;
-    // Browser timers: DOM's setTimeout returns `number` (see tsconfig.json — the
-    // app program no longer sees node's NodeJS.Timeout overload).
-    const pendingTimers = new Set<number>();
+    const pendingTimers = new Set<TimerHandle>();
+    /** Per-channel timers: a new hit restarts its toast instead of being cut short. */
+    const clearTimers = new Map<string, TimerHandle>();
+    const later = (channel: string, ms: number, fn: () => void) => {
+      const prev = clearTimers.get(channel);
+      if (prev !== undefined) {
+        clearTimeout(prev);
+        pendingTimers.delete(prev);
+      }
+      const t = setTimeout(() => {
+        pendingTimers.delete(t);
+        clearTimers.delete(channel);
+        fn();
+      }, ms);
+      clearTimers.set(channel, t);
+      pendingTimers.add(t);
+    };
     const onEvent = (e: GameEvent) => {
       if (e.type === 'playerHit') {
         setVignette((v) => v + 1);
         setDmgArc({ dir: e.dir, key: performance.now() });
+        later('dmgArc', TOAST_MS.dmgArc, () => setDmgArc(null));
+        later('vignette', TOAST_MS.vignette, () => setVignette(0));
       } else if (e.type === 'enemyHit') {
         setHitmark({ kill: e.killed, key: performance.now() });
+        later('hitmark', TOAST_MS.hitmark, () => setHitmark(null));
       } else if (e.type === 'kill') {
         const id = ++feedId.current;
         setFeed((f) => [...f.slice(-4), { id, victim: e.victim, byPlayer: e.byPlayer }]);
-        const t = setTimeout(() => { pendingTimers.delete(t); setFeed((f) => f.filter((x) => x.id !== id)); }, 4200);
-        pendingTimers.add(t);
-        if (e.byPlayer) setFrag({ victim: e.victim, key: performance.now() });
+        later(`feed:${id}`, 4200, () => setFeed((f) => f.filter((x) => x.id !== id)));
+        if (e.byPlayer) {
+          setFrag({ victim: e.victim, key: performance.now() });
+          later('frag', TOAST_MS.frag, () => setFrag(null));
+        }
       } else if (e.type === 'killStreak') {
         setStreak({ label: e.label, count: e.count, key: performance.now() });
+        later('streak', TOAST_MS.streak, () => setStreak(null));
       } else if (e.type === 'shotFired') {
-        const el = crossRef.current?.querySelector('.cross-core');
-        if (el) {
-          el.classList.remove('shot-pulse');
-          void (el as HTMLElement).offsetWidth;
+        // Pulse restarts only once the previous one finished: the class is
+        // dropped on animationend in HudCrosshair. No forced reflow here —
+        // reading offsetWidth to restart a CSS animation flushed layout on
+        // every single shot.
+        const el = crossRef.current?.querySelector<HTMLElement>('.cross-core');
+        if (el && !el.classList.contains('shot-pulse')) {
           el.classList.add('shot-pulse');
         }
       }
     };
     game.addListener(onEvent);
-    return () => { game.removeListener(onEvent); pendingTimers.forEach(clearTimeout); };
+    return () => {
+      game.removeListener(onEvent);
+      pendingTimers.forEach(clearTimeout);
+      clearTimers.clear();
+    };
   }, [game]);
 
   useEffect(() => {
@@ -136,17 +184,21 @@ export function useGameHud(game: GameApi | null, active: boolean) {
           s.turretId !== 'flamethrower' &&
           s.magazine > 0 &&
           s.ammo <= 0;
+        // Меню/гараж держат alive=false — «смерть» объявляем только в бою.
+        const dead = s.mode === 'playing' && !s.alive;
         const key = [
           lowHp ? 'low' : 'ok',
           s.reloading ? 'reload' : '',
           emptyMag ? 'empty' : '',
+          dead ? 'dead' : '',
         ].join('|');
         if (key !== lastLiveKey.current) {
           lastLiveKey.current = key;
           const parts: string[] = [];
-          if (lowHp) parts.push(`Броня критична: ${Math.ceil(s.health)}`);
+          if (lowHp && !dead) parts.push(`Броня критична: ${Math.ceil(s.health)}`);
           if (s.reloading) parts.push('Перезарядка');
           if (emptyMag) parts.push('Магазин пуст');
+          if (dead) parts.push('Уничтожен. Возрождение');
           liveRef.current.textContent = parts.join('. ');
         }
       }

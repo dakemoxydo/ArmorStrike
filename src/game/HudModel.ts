@@ -6,12 +6,12 @@ import type { RunState } from './RunState';
 import type { BotRoster } from './BotRoster';
 import type { MatchRuntime } from './match/MatchRuntime';
 import type { HudUnit } from './tank/simPorts';
-import { HULLS, TURRETS } from '../core/catalog';
+import { HULLS } from '../core/catalog';
 import type { HullId, TurretId } from '../core/catalog';
 
 import type { CaptureHudPoint, HudSnapshot, MinimapDynamic, MinimapStatic, ScoreRow } from './types';
 import { getWeaponMeta } from '../core/WeaponCatalog';
-import { isAlly } from './match/teams';
+import { isAlly, isEnemy } from './match/teams';
 import type { TeamId } from './match/matchTypes';
 
 export class HudModel {
@@ -109,7 +109,7 @@ export class HudModel {
     includeScoreboard = false,
     out?: HudSnapshot,
   ): HudSnapshot {
-    const { run, audio, bots, input } = this.deps;
+    const { run, audio, input } = this.deps;
     const match = this.deps.getMatch();
 
     const ammoState = player?.weapon?.getAmmoState();
@@ -128,8 +128,6 @@ export class HudModel {
           return {
             name: t.name,
             hull: hullId ? HULLS[hullId].name : '-',
-            turret: turretId ? TURRETS[turretId].name : '-',
-            weapon: t.params.weaponType ?? '-',
             weaponName: turretId ? getWeaponMeta(turretId).name : '-',
             hpFrac: t.maxHealth > 0 ? t.health / t.maxHealth : 0,
             isPlayer: t.isPlayer,
@@ -168,16 +166,18 @@ export class HudModel {
     target.boost = player?.boostEnergy ?? 1;
     target.score = run.score;
     target.kills = player?.kills ?? run.kills;
+    // RunState не ведёт счёт смертей игрока — их держит только танк.
     target.deaths = player?.deaths ?? 0;
-    target.botsAlive = bots.bots.reduce((n, b) => n + (b.tank.alive ? 1 : 0), 0);
+    target.enemiesAlive = countEnemiesAlive(player, tanks);
     target.alive = player?.alive ?? false;
+    target.respawnInSec = target.alive || !player
+      ? 0
+      : Math.max(0, (cfg?.respawnDelaySec ?? 4) - (player.deathT ?? 0));
     target.timeSec = run.matchTime;
     target.muted = audio.muted;
-    target.hullId = run.currentHull;
     target.turretId = run.currentTurret;
     target.weaponName = wmeta.name;
     target.weaponLabel = wmeta.label;
-    target.weaponColor = wmeta.color;
     target.weaponAccentClass = wmeta.accentClass;
     target.showScore = showScore;
     target.scoreboard = board;
@@ -202,4 +202,31 @@ export class HudModel {
     }
     return out;
   }
+}
+
+/**
+ * Живые противники игрока. В TDM/CP союзники не входят в счёт — радар показывает
+ * именно цели. Без игрока (меню/гараж) считаем всех живых, но там HUD не рисуется.
+ */
+function countEnemiesAlive(
+  player: (HudUnit & { teamId?: TeamId }) | null,
+  tanks: readonly HudUnit[],
+): number {
+  const selfId = player?.id ?? -1;
+  const selfTeam = (player?.teamId ?? null) as TeamId;
+  let n = 0;
+  for (const t of tanks) {
+    if (!t.alive) continue;
+    if (t.isPlayer || (selfId >= 0 && t.id === selfId)) continue;
+    if (
+      selfId < 0 ||
+      isEnemy(
+        { id: selfId, teamId: selfTeam },
+        { id: t.id ?? 0, teamId: (t.teamId ?? null) as TeamId },
+      )
+    ) {
+      n += 1;
+    }
+  }
+  return n;
 }

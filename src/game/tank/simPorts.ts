@@ -107,6 +107,8 @@ export interface HudUnit {
   maxHealth: number;
   isPlayer: boolean;
   alive: boolean;
+  /** Seconds since death — HUD respawn countdown (`respawnInSec`). */
+  deathT?: number;
   position: { x: number; z: number };
   yaw: number;
   turretYaw: number;

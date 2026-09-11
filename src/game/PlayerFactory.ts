@@ -11,6 +11,7 @@ import type { Weapon, WeaponDeps, WeaponOwner, DamageSystem } from './weapons/ty
 import type { EffectsPort } from './ports/EffectsPort';
 import type { AudioPort } from './ports/AudioPort';
 import type { ProjectileManager } from './engine/Projectile';
+import type { LightRig } from './effects/LightRig';
 
 export interface WeaponFactoryDeps {
   scene: THREE.Scene;
@@ -18,6 +19,8 @@ export interface WeaponFactoryDeps {
   audio: AudioPort;
   damageSystem: DamageSystem;
   projectiles: ProjectileManager;
+  /** Shared constant light budget — same instance as `Effects.lights`. */
+  lights: LightRig;
   onShotFired: () => void;
 }
 
@@ -28,6 +31,7 @@ export function createWeapon(owner: WeaponOwner, type: WeaponType, deps: WeaponF
     audio: deps.audio,
     damageSystem: deps.damageSystem,
     projectiles: deps.projectiles,
+    lights: deps.lights,
     onShotFired: deps.onShotFired,
   };
   if (type === 'railgun') return new RailgunWeapon(owner, wdeps);

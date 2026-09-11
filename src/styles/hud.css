@@ -16,24 +16,6 @@
   align-items: center;
 }
 
-.hud-btn {
-  font-family: 'Russo One', sans-serif;
-  letter-spacing: 0.22em;
-  color: #06202a;
-  background: linear-gradient(135deg, #2ee6c0, #1fc3ff);
-  border: none;
-  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
-  box-shadow: 0 0 30px rgba(var(--glow), 0.35);
-  transition: all 0.2s ease;
-}
-.hud-btn:hover {
-  box-shadow: 0 0 55px rgba(var(--glow), 0.65);
-  transform: translateY(-2px);
-}
-.hud-btn:active { transform: translateY(0) scale(0.98); }
-
-.menu-cta { font-size: 1.25rem; }
-
 /* --- здоровье --- */
 .hp-shell {
   position: relative;
@@ -66,6 +48,10 @@
 @keyframes hp-blink { 50% { opacity: 0.55; } }
 .hp-segments {
   position: absolute; inset: 0;
+  /* Above .hp-fill (z-index 1): otherwise the fill paints over the dividers and
+     the segmented bar look is lost. */
+  z-index: 2;
+  pointer-events: none;
   background: repeating-linear-gradient(90deg, transparent 0 15px, rgba(4, 10, 14, 0.85) 15px 17px);
 }
 
@@ -152,10 +138,6 @@
 .ammo-pip.full {
   background: linear-gradient(180deg, #8fffe8, #2ee6c0);
   box-shadow: 0 0 10px rgba(var(--glow), 0.7);
-}
-.ammo-pip.fire {
-  background: linear-gradient(180deg, #ffcc44, #ff5500);
-  box-shadow: 0 0 10px rgba(255, 85, 0, 0.8);
 }
 .ammo-pip.cannon {
   background: linear-gradient(180deg, #ffe080, #ffb020);
@@ -331,7 +313,8 @@
 /* --- frag-popup --- */
 .frag-popup {
   position: absolute;
-  left: 50%; top: 38%;
+  left: 50%;
+  top: 34%; /* ниже панели счёта (M13) */
   transform: translateX(-50%);
   z-index: 27;
   text-align: center;
@@ -485,11 +468,6 @@
 .sb-hp > div.hp-mid { background: var(--warn, #ffd24a); }
 .sb-hp > div.hp-low { background: var(--danger, #ff4d3d); }
 
-/* center combat toasts: frag below score (M13) */
-.frag-popup {
-  top: 34%;
-}
-
 /* --- kill streak banner --- */
 .streak-banner {
   position: absolute;
@@ -541,6 +519,59 @@
   color: var(--text-muted, rgba(255, 255, 255, 0.62));
 }
 
+/* --- лимит времени матча (панель счёта) --- */
+.hud-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(255, 255, 255, 0.62);
+}
+.hud-timer.is-low {
+  color: var(--danger, #ff4d3d);
+  text-shadow: 0 0 12px rgba(255, 77, 61, 0.8);
+  animation: hp-blink 1s infinite;
+}
+
+/* --- смерть / респаун --- */
+.death-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 27;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(60, 6, 6, 0.18) 0%, rgba(3, 7, 12, 0.55) 100%);
+  animation: sb-fade 0.25s ease-out forwards;
+}
+.death-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 34px;
+  text-align: center;
+}
+.death-icon { color: var(--danger, #ff4d3d); }
+.death-title {
+  font-family: 'Russo One', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 0.24em;
+  color: #ffb4ac;
+  text-shadow: 0 0 22px rgba(255, 77, 61, 0.75);
+}
+.death-sub {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.7);
+}
+.death-sub b {
+  color: #ffd24a;
+  font-weight: 600;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hp-fill.danger {
     animation: none;
@@ -551,13 +582,29 @@
   .feed-item {
     animation: none;
   }
+  .hud-timer.is-low {
+    animation: none;
+  }
   .shot-pulse {
     animation: none !important;
   }
+  /* Полосы состояния не «догоняют» значение — под reduced motion они должны
+     менять ширину мгновенно, а не проигрывать переход. */
+  .hp-fill,
+  .hp-ghost,
+  .boost-fill,
+  .ammo-pip,
+  .sb-hp > div {
+    transition: none;
+  }
+  /* Тосты (виньетка / дуга / хитмаркер / фраг / серия) статичны, но состояние
+     снимается таймерами в useGameHud — иначе они висели бы на экране вечно. */
   .hitmarker,
   .damage-vignette,
   .damage-arc,
   .frag-popup,
+  .streak-banner,
+  .death-overlay,
   .scoreboard-overlay {
     animation: none;
   }

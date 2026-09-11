@@ -1,8 +1,11 @@
 // ===== Пул частиц пламени огнемёта (визуальный FX) =====
 // Выделен из FlamethrowerWeapon: владеет InstancedMesh, PointLight и жизненным
 // циклом частиц. Чисто визуально — уроном не занимается.
+// Perf: дульный свет берётся из LightRig (постоянный бюджет источников) —
+// добавление/удаление света в сцене ломает кэш шейдер-программ three.
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
+import type { LightRig } from '../effects/LightRig';
 
 interface FlameParticle {
   active: boolean;
@@ -19,14 +22,22 @@ const tmpScaleVec = new THREE.Vector3();
 const tmpColor = new THREE.Color();
 const localDir = new THREE.Vector3();
 
+/** Rig channel slot shared by every flamethrower in the match. */
+const FLAME_SLOT = 0;
+const FLAME_LIGHT_COLOR = 0xff6600;
+const FLAME_LIGHT_DIST = 22;
+
 export class FlameParticlePool {
   private instancedMesh: THREE.InstancedMesh;
   private particleMat: THREE.MeshBasicMaterial;
   private particles: FlameParticle[] = [];
-  private muzzleLight: THREE.PointLight;
+  private rig: LightRig;
+  /** Current muzzle-light intensity; written to the rig slot every frame. */
+  private muzzleIntensity = 0;
   private spawnAcc = 0;
 
-  constructor(private scene: THREE.Scene, count: number) {
+  constructor(private scene: THREE.Scene, count: number, rig: LightRig) {
+    this.rig = rig;
     const particleGeo = new THREE.IcosahedronGeometry(0.35, 1);
     const particleMat = new THREE.MeshBasicMaterial({
       transparent: true,
@@ -67,10 +78,6 @@ export class FlameParticlePool {
       this.instancedMesh.setMatrixAt(i, tmpMatrix);
     }
     this.instancedMesh.instanceMatrix.needsUpdate = true;
-
-    // Одиночный мерцающий источник света на срезе ствола
-    this.muzzleLight = new THREE.PointLight(0xff6600, 0, 22);
-    this.scene.add(this.muzzleLight);
   }
 
   /** Спавн/обновление частиц + мерцание дульного света. */
@@ -91,12 +98,12 @@ export class FlameParticlePool {
         }
       }
 
-      // Мерцание дульного PointLight
-      this.muzzleLight.position.copy(muzzle);
-      this.muzzleLight.intensity = 25 + Math.random() * 20;
+      // Мерцание дульного света (intensity 0 = погашен)
+      this.muzzleIntensity = 25 + Math.random() * 20;
     } else {
-      this.muzzleLight.intensity = Math.max(0, this.muzzleLight.intensity - dt * 100);
+      this.muzzleIntensity = Math.max(0, this.muzzleIntensity - dt * 100);
     }
+    this.rig.set('flame', FLAME_SLOT, muzzle, FLAME_LIGHT_COLOR, this.muzzleIntensity, FLAME_LIGHT_DIST);
 
     // --- Обновление жизненного цикла и матриц InstancedMesh ---
     let anyActive = false;
@@ -177,8 +184,9 @@ export class FlameParticlePool {
   }
 
   dispose() {
+    // The muzzle light is a shared rig slot — extinguish it, never detach.
+    this.rig.off('flame', FLAME_SLOT);
     this.scene.remove(this.instancedMesh);
-    this.scene.remove(this.muzzleLight);
     this.instancedMesh.geometry.dispose();
     this.instancedMesh.dispose();
     this.particleMat.dispose();

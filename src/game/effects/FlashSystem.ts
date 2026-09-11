@@ -1,79 +1,82 @@
 import * as THREE from 'three';
 import type { ParticleSystem } from './ParticleSystem';
 import { clamp } from '../engine/physics';
+import { LIGHT_CHANNEL_CAPACITY, type LightRig } from './LightRig';
 
-interface FlashLight { light: THREE.PointLight; t: number; dur: number; peak: number }
+interface FlashSlot {
+  light: THREE.PointLight;
+  /** Elapsed time of the current flash; >= dur means "free". */
+  t: number;
+  dur: number;
+  peak: number;
+}
+
+/**
+ * Concurrent muzzle / impact / explosion flashes. The lights themselves live in
+ * the LightRig and are NEVER added to or removed from the scene — the light
+ * count is part of the shader program key, so attach/detach used to force a
+ * program rebuild for every lit material (and a mid-frame GLSL compile).
+ */
+const MAX_FLASHES = LIGHT_CHANNEL_CAPACITY.flash;
+/** Clamp absurd peaks (railgun used to request 90–140). */
+const MAX_PEAK = 55;
+const FLASH_DISTANCE = 14;
 
 export class FlashSystem implements ParticleSystem {
-  private flashes: FlashLight[] = [];
-  private scene: THREE.Scene;
+  private readonly slots: FlashSlot[] = [];
 
-  constructor(scene: THREE.Scene) {
-    this.scene = scene;
-  }
-
-  /** Hard cap — extra concurrent flashes cost full per-fragment lighting. */
-  private static readonly MAX_LIGHTS = 4;
-
-  private getLight(): FlashLight | null {
-    const free = this.flashes.find((f) => f.t >= f.dur);
-    if (free) {
-      if (!free.light.parent) this.scene.add(free.light);
-      return free;
+  constructor(rig: LightRig) {
+    for (let i = 0; i < MAX_FLASHES; i++) {
+      const light = rig.light('flash', i);
+      light.distance = FLASH_DISTANCE;
+      this.slots.push({ light, t: 1, dur: 1, peak: 0 });
     }
-    if (this.flashes.length >= FlashSystem.MAX_LIGHTS) {
-      // Steal oldest active slot instead of growing the light list forever.
-      let oldest = this.flashes[0];
-      for (let i = 1; i < this.flashes.length; i++) {
-        if (this.flashes[i].t > oldest.t) oldest = this.flashes[i];
-      }
-      if (!oldest.light.parent) this.scene.add(oldest.light);
-      return oldest;
-    }
-    const light = new THREE.PointLight(0xffffff, 0, 14, 2);
-    light.castShadow = false;
-    this.scene.add(light);
-    const fl: FlashLight = { light, t: 1, dur: 1, peak: 0 };
-    this.flashes.push(fl);
-    return fl;
   }
 
   flash(p: THREE.Vector3, color: number, intensity: number, dur: number) {
-    const f = this.getLight();
-    if (!f) return;
-    f.light.position.copy(p);
-    f.light.color.setHex(color);
-    f.t = 0;
-    f.dur = dur;
-    // Clamp absurd peaks (railgun used to request 90–140).
-    f.peak = Math.min(intensity, 55);
-    f.light.intensity = f.peak;
-    f.light.distance = 14;
+    // Free slot, else steal the most spent one (never grows the light list).
+    let slot = this.slots[0];
+    for (const s of this.slots) {
+      if (s.t >= s.dur) {
+        slot = s;
+        break;
+      }
+      if (s.t > slot.t) slot = s;
+    }
+
+    slot.light.position.copy(p);
+    slot.light.color.setHex(color);
+    slot.t = 0;
+    slot.dur = dur;
+    slot.peak = Math.min(intensity, MAX_PEAK);
+    slot.light.intensity = slot.peak;
   }
 
   update(dt: number) {
-    for (const f of this.flashes) {
-      if (f.t >= f.dur) {
-        if (f.light.parent && f.light.intensity === 0) {
-          // Detach spent lights so WebGLRenderer light count stays low.
-          this.scene.remove(f.light);
-        }
+    for (const s of this.slots) {
+      if (s.t >= s.dur) continue;
+      s.t += dt;
+      if (s.t >= s.dur) {
+        // Extinguish in place — the light stays attached to the scene.
+        s.light.intensity = 0;
         continue;
       }
-      f.t += dt;
-      const k = clamp(1 - f.t / f.dur, 0, 1);
-      f.light.intensity = f.peak * k * k;
-      if (f.t >= f.dur) {
-        f.light.intensity = 0;
-        this.scene.remove(f.light);
-      }
+      const k = clamp(1 - s.t / s.dur, 0, 1);
+      s.light.intensity = s.peak * k * k;
+    }
+  }
+
+  /** Kill every running flash (round start). Lights stay attached. */
+  clear() {
+    for (const s of this.slots) {
+      s.t = s.dur;
+      s.peak = 0;
+      s.light.intensity = 0;
     }
   }
 
   dispose() {
-    for (const f of this.flashes) {
-      this.scene.remove(f.light);
-    }
-    this.flashes.length = 0;
+    this.clear();
+    this.slots.length = 0;
   }
 }

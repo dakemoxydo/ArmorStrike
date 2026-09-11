@@ -70,7 +70,7 @@ export class RailgunWeapon implements Weapon {
   constructor(owner: WeaponOwner, deps: WeaponDeps) {
     this.owner = owner;
     this.deps = deps;
-    this.beamFx = new RailgunBeamFx(deps.scene);
+    this.beamFx = new RailgunBeamFx(deps.scene, deps.lights);
   }
 
   /**

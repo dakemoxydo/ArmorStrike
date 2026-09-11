@@ -10,6 +10,7 @@ import { RingSystem } from './RingSystem';
 import { CoreSystem } from './CoreSystem';
 import { ScorchSystem } from './ScorchSystem';
 import { MuzzleSystem } from './MuzzleSystem';
+import type { LightRig } from './LightRig';
 
 export class ParticleEffects {
   private systems: ParticleSystem[];
@@ -25,7 +26,7 @@ export class ParticleEffects {
   /** Reusable color for burst calls (avoids per-call new THREE.Color()). */
   private burstCol = new THREE.Color();
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, rig: LightRig) {
     const sparkPool = new SparkPool(scene);
     this.sparks = new SparkSystem(sparkPool);
 
@@ -34,7 +35,7 @@ export class ParticleEffects {
     const circleGeo = new THREE.CircleGeometry(1, 28);
 
     this.smoke = new SmokeSystem(scene);
-    this.flash = new FlashSystem(scene);
+    this.flash = new FlashSystem(rig);
     this.ring = new RingSystem(scene, ringGeo);
     this.core = new CoreSystem(scene, sphereGeo);
     this.scorch_ = new ScorchSystem(scene, circleGeo);
@@ -140,10 +141,11 @@ export class ParticleEffects {
     for (const sys of this.systems) sys.update(dt);
   }
 
-  /** Hide smoke/scorch without freeing pools (round start, L-1). */
+  /** Hide smoke/scorch/flash without freeing pools (round start, L-1). */
   clearTransients() {
     this.smoke.clear();
     this.scorch_.clear();
+    this.flash.clear();
   }
 
   dispose() {

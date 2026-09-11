@@ -6,14 +6,29 @@ import type { MinimapDynamic, MinimapStatic } from '../../game/types';
 export const MAP_SIZE = 172;
 export const MAP_HALF = 156;
 
-/** Fingerprint of static layer content (layout + block alive flags). */
-export function staticLayerKey(statics: readonly MinimapStatic[]): string {
-  let key = `${statics.length}|`;
+/**
+ * Fingerprint of static layer content (layout + block alive flags).
+ *
+ * A rolling integer hash, not a string: this runs every frame, and the previous
+ * string concatenation allocated a full key per tick. Geometry is part of the
+ * hash so a map switch repaints the baked layer even when collider ids and
+ * alive flags happen to match.
+ */
+export function staticLayerKey(statics: readonly MinimapStatic[]): number {
+  let h = statics.length;
   for (let i = 0; i < statics.length; i++) {
     const m = statics[i];
-    key += `${m.id}:${m.alive ? 1 : 0},`;
+    h = (Math.imul(h, 31) + m.id) | 0;
+    h = (Math.imul(h, 31) + q(m.x) + q(m.z)) | 0;
+    h = (Math.imul(h, 31) + q(m.w) + q(m.d)) | 0;
+    h = (Math.imul(h, 31) + (m.alive ? 1 : 0)) | 0;
   }
-  return key;
+  return h;
+}
+
+/** Sub-pixel quantization (1/16 unit) — keeps the hash integer without losing layout detail. */
+function q(v: number): number {
+  return Math.round(v * 16);
 }
 
 function paintStatics(
@@ -41,7 +56,7 @@ interface CanvasCache {
   ctx: CanvasRenderingContext2D;
   staticCv: HTMLCanvasElement;
   staticCtx: CanvasRenderingContext2D;
-  staticKey: string;
+  staticKey: number;
   /** Pre-baked conic radar sweep (R-4) — rotated per frame instead of rebuilt. */
   sweepCv: HTMLCanvasElement;
   w: number;
@@ -79,18 +94,49 @@ function getCache(cv: HTMLCanvasElement): CanvasCache | null {
     staticCv.height = cv.height;
     const staticCtx = staticCv.getContext('2d');
     if (!staticCtx) return null;
-    c = { ctx, staticCv, staticCtx, staticKey: '', sweepCv: bakeSweep(cv.width), w: cv.width, h: cv.height };
+    // NaN never equals itself → the baked layer is repainted on the first frame
+    // after a cache rebuild (including a DPR change).
+    c = { ctx, staticCv, staticCtx, staticKey: Number.NaN, sweepCv: bakeSweep(cv.width), w: cv.width, h: cv.height };
     cacheByCanvas.set(cv, c);
   }
   return c;
 }
 
+/** Backing-store scale. Capped at 2 so 3x phones don't pay for a needless 3x buffer. */
+function deviceScale(): number {
+  if (typeof window === 'undefined') return 1;
+  return Math.min(2, window.devicePixelRatio || 1);
+}
+
+/**
+ * Rotating radar sweep is continuous decorative motion, so it is frozen under
+ * `prefers-reduced-motion: reduce`. The MediaQueryList is created once and its
+ * `change` event keeps the flag live without a matchMedia() call per frame.
+ */
+const motionQuery =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)')
+    : null;
+let reducedMotion = motionQuery?.matches ?? false;
+motionQuery?.addEventListener?.('change', (e) => { reducedMotion = e.matches; });
+
 export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: MinimapDynamic[]) {
   if (!cv) return;
+  // Canvas is sized in device pixels while CSS keeps MAP_SIZE — otherwise the
+  // radar is blurry on HiDPI displays. getCache() rebuilds when the size moves.
+  const backing = Math.round(MAP_SIZE * deviceScale());
+  if (cv.width !== backing || cv.height !== backing) {
+    cv.width = backing;
+    cv.height = backing;
+    cv.style.width = `${MAP_SIZE}px`;
+    cv.style.height = `${MAP_SIZE}px`;
+  }
   const cache = getCache(cv);
   if (!cache) return;
   const { ctx } = cache;
   const S = cv.width;
+  /** Fixed-size strokes/fonts are authored in CSS px — scale them to the backing store. */
+  const k = S / MAP_SIZE;
   const scale = S / (MAP_HALF * 2);
   const toX = (x: number) => (x + MAP_HALF) * scale;
   const toY = (z: number) => (z + MAP_HALF) * scale;
@@ -108,7 +154,7 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
 
   // Radar sweep (R-4): pre-baked conic gradient, rotated per frame —
   // no createConicGradient + full-canvas gradient rebuild per tick.
-  const t = performance.now() * 0.0012;
+  const t = reducedMotion ? 0 : performance.now() * 0.0012;
   if (cache.sweepCv.width > 0) {
     ctx.save();
     ctx.translate(S / 2, S / 2);
@@ -134,17 +180,17 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
             : 'rgba(160,170,180,0.85)';
     ctx.save();
     ctx.beginPath();
-    ctx.arc(cx, cy, 5.5, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 5.5 * k, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(5,12,18,0.75)';
     ctx.fill();
     ctx.strokeStyle = col;
-    ctx.lineWidth = 1.6;
+    ctx.lineWidth = 1.6 * k;
     ctx.stroke();
     ctx.fillStyle = col;
-    ctx.font = 'bold 8px sans-serif';
+    ctx.font = `bold ${8 * k}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(cp.id, cx, cy + 0.5);
+    ctx.fillText(cp.id, cx, cy + 0.5 * k);
     ctx.restore();
   }
 
@@ -164,19 +210,19 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
     ctx.save();
     ctx.translate(x, y);
     ctx.strokeStyle = stroke;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.2 * k;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(Math.sin(d.turret) * 7, -Math.cos(d.turret) * 7);
+    ctx.lineTo(Math.sin(d.turret) * 7 * k, -Math.cos(d.turret) * 7 * k);
     ctx.stroke();
     ctx.rotate(Math.PI - d.yaw);
     ctx.fillStyle = fill;
     ctx.shadowColor = fill;
-    ctx.shadowBlur = 6;
+    ctx.shadowBlur = 6 * k;
     ctx.beginPath();
-    ctx.moveTo(0, -4.5);
-    ctx.lineTo(3.4, 3.6);
-    ctx.lineTo(-3.4, 3.6);
+    ctx.moveTo(0, -4.5 * k);
+    ctx.lineTo(3.4 * k, 3.6 * k);
+    ctx.lineTo(-3.4 * k, 3.6 * k);
     ctx.closePath();
     ctx.fill();
     ctx.restore();

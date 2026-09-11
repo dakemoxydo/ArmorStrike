@@ -103,7 +103,7 @@ export class GameModeController {
     // Superseded while waiting in the queue — skip entirely.
     if (seq !== this.startSeq) return;
 
-    const { sim, scene, previewController, cameraRig, weaponDeps, emit, onArenaRebuilt } = this.d;
+    const { sim, scene, previewController, cameraRig, renderWorld, weaponDeps, emit, onArenaRebuilt } = this.d;
     const mode = matchMode ?? this.matchMode;
 
     sim.audio.ensure();
@@ -148,6 +148,11 @@ export class GameModeController {
 
     sim.player = player;
     sim.bots.bots = bots;
+
+    // Shader warm-up under the loading overlay. The light budget is constant
+    // (LightRig), so this one pass covers every combat material — no GLSL
+    // compiles on the first shot / first death.
+    await renderWorld.warmUp();
 
     sim.run.mode = 'playing';
     sim.run.paused = false;

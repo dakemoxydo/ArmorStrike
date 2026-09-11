@@ -30,7 +30,7 @@ Domain core  (src/core/)
 
 Порядок ответственности:
 1. `RenderWorld` (renderer, scene, camera, lights)
-2. `Arena`, `Effects`, `AudioFX`, `ProjectileManager`
+2. `Arena`, `Effects` (владеет постоянным бюджетом света `LightRig`), `AudioFX`, `ProjectileManager`
 3. `PlayerController`, `RunState`
 4. `CombatSystem` → владеет `createDamageSystem`
 5. `BotRoster`, `HudModel`, weapon factory deps
@@ -38,6 +38,11 @@ Domain core  (src/core/)
 7. Window handlers (resize, visibility → auto-pause)
 
 Новые подсистемы подключать в bootstrap, а не «сбоку» из React.
+
+`Effects` отдаёт `LightRig` фабрике оружия через `weaponDeps.lights` (свет нельзя
+attach/detach в рантайме). Warm-up шейдеров — `renderWorld.warmUp()` в
+`executeStartRound`, а не в bootstrap: к моменту вызова арена и ростер уже в сцене.
+См. [Standard Frame Stability](Standard_Frame_Stability.md).
 
 ## 3. Simulation pipeline (ordered stages)
 

@@ -30,7 +30,11 @@ export class FlamethrowerWeapon implements Weapon {
   constructor(owner: WeaponOwner, deps: WeaponDeps) {
     this.owner = owner;
     this.deps = deps;
-    this.flamePool = new FlameParticlePool(deps.scene, WEAPON_TUNING.flamethrower.particleCount);
+    this.flamePool = new FlameParticlePool(
+      deps.scene,
+      WEAPON_TUNING.flamethrower.particleCount,
+      deps.lights,
+    );
   }
 
   setFire(active: boolean) {

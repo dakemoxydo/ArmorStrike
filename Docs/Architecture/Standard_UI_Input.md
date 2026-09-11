@@ -35,7 +35,7 @@ Concrete `Game` **implements** `GameApi`; UI типизируется интер
 | Канал | Когда | Примеры |
 |-------|-------|---------|
 | `GameEvent` | дискретные импульсы | hit, kill, shotFired, gameOver (scores, time, winner) |
-| `HudSnapshot` | непрерывное состояние | HP, ammo, boost, score, matchMode, winTarget, teamKills/Score, capturePoints |
+| `HudSnapshot` | непрерывное состояние | HP, ammo, boost, score, matchMode, winTarget, timeLimitSec, `enemiesAlive`, `alive`/`respawnInSec`, teamKills/Score, capturePoints |
 
 `useGameHud(game, active)`:
 - подписка на events → vignette, feed, hitmark
@@ -43,6 +43,31 @@ Concrete `Game` **implements** `GameApi`; UI типизируется интер
 - `ammoForcesHudRender` / `isLowHealth` — pure helpers в `ui/hudPresentation.ts`
 
 Правило perf: **не** `setState` каждый кадр для полосок; DOM refs + minimap canvas.
+
+### Снапшот — один мутируемый объект. `memo` на нём не работает
+
+`GameLoop` мутирует **один и тот же** объект `HudSnapshot` каждый кадр, `useGameHud`
+копирует его в `snap.current` через `Object.assign`, а `HUD` читает `snap.current`.
+Ссылка стабильна by design — иначе не было бы нулевых аллокаций на кадр.
+
+Из этого следует правило для детей HUD:
+
+> `memo`-компонент **нельзя** кормить объектом снапшота (или любым его срезом).
+> Shallow-compare видит ту же ссылку и навсегда пропускает ре-рендер.
+
+Реальный баг этого класса: `<MemoWeapon st={snap.current} />` заморозил панель оружия —
+патроны и статус перезарядки не менялись после маунта (пинится
+`src/__tests__/hudLiveUpdates.test.tsx`).
+
+| Что передавать | Пример |
+|---|---|
+| примитивы полей | `ammo={st.ammo} reloading={st.reloading}` |
+| стабильные refs | `healthRef`, `mapRef` |
+| новые объекты/массивы из состояния | `hitmark`, `feed`, `scoreboard` (пересоздаются → memo перерисовывает) |
+
+Тосты боя (`dmgArc`, `hitmark`, `frag`, `streak`, `vignette`) — **временные**: их снимает
+таймер в `useGameHud` (`TOAST_MS`). Без таймера элементы не размонтировались бы никогда, и
+под `prefers-reduced-motion` (где CSS-анимация выключена) висели бы на экране постоянно.
 
 ### Гейт ре-рендера — `ui/hudRenderGate.ts`
 
@@ -54,8 +79,11 @@ Concrete `Game` **implements** `GameApi`; UI типизируется интер
 |---|---|---|
 | ref-painted | `health`, `boost`, `reloadProgress` | рисуются в DOM императивно, рендер не нужен никогда |
 | continuous | `ammo` (огнемёт) | дискретные патроны рельсы/пушки форсят, энергия — нет |
-| quantized | `timeSec`, `teamScoreAlpha/Bravo` | сравнение по отображаемому значению (целые) |
+| quantized | `timeSec`, `teamScoreAlpha/Bravo`, `respawnInSec` | сравнение по отображаемому значению (целые секунды) |
 | by content | `scoreboard`, `capturePoints` | массивы пересоздаются каждый кадр; сравнение по содержимому (HP — шагом 1%, прогресс точки — 10%) |
+
+Квантованность обязана совпадать с отрисовкой: полоса прогресса точки рисуется
+`Math.floor(progress * 10) * 10`% — ровно те же 10%, что и в `captureStripKey`.
 
 **Добавление поля в `HudSnapshot` не требует правки гейта** — оно попадает в сравнение
 автоматически. Обратная ситуация (рукописный список полей) была источником багов: `maxHealth`
@@ -127,17 +155,25 @@ Follow target: порт `CameraFollowable` (position, yaw, speed, boost…), н�
 | `BootError`, `ErrorBoundary` | `role="alert"` | экран заменяет всё приложение — иначе AT-пользователь не узнает, почему игра исчезла |
 | `roundError` (App) | `role="alert"` | видимая ошибка старта раунда |
 | `roundLoading` (App) | `role="status"` + `aria-live="polite"` | не срочно, не перебивает |
-| vitals-порог (HUD) | `aria-live="polite"` через `liveRef` | «Броня критична» |
+| vitals-порог (HUD) | `aria-live="polite"` через `liveRef` | «Броня критична», «Перезарядка», «Магазин пуст», «Уничтожен» |
+| радар (HUD) | `<canvas role="img">` + `aria-label` | подписи «РАДАР»/«ЦЕЛИ» остаются читаемыми |
+| оверлей смерти (HUD) | `aria-hidden` | текст дублируется в `liveRef`; иначе отсчёт респауна читался бы каждую секунду |
 | игровой `<canvas>` | `role="img"` + `aria-label` + fallback-текст | у `<canvas>` нет неявной ARIA-роли — без неё AT пропускает графику |
 
-Декоративные иконки (`lucide-react`) всегда `aria-hidden`; контейнер, у которого есть `role="img"` (например радар, `HudRadar`), делает потомков презентационными — отдельная разметка канвасу внутри не нужна.
+Декоративные иконки (`lucide-react`) всегда `aria-hidden`.
+
+`role="img"` вешается на **сам канвас**, а не на панель: контейнер с `role="img"` делает всех
+потомков презентационными и скринридер терял бы подписи и список целей радара.
 
 ## 8. Checklist нового UI
 
 - [ ] Зависимость только от `GameApi` / types
 - [ ] Команда пользователя → method API; реакция мира → event или snapshot
 - [ ] Hot path без React re-render thrash
+- [ ] `memo`-ребёнок получает примитивы / refs / свежие объекты, **не** `snap.current`
 - [ ] Новое поле `HudSnapshot` покрыто гейтом автоматически; для непрерывного канала — добавить категорию в `ui/hudRenderGate.ts`
+- [ ] Квантованность гейта совпадает с шагом отрисовки (см. `captureStripKey` ↔ полоса точки)
+- [ ] Тост/оверлей с CSS-анимацией снимается таймером (иначе под `prefers-reduced-motion` он вечный)
 - [ ] Input combat vs garage разделены
 - [ ] Camera — `CameraMode`, не if-ladder в компоненте
 - [ ] Экран, заменяющий приложение (ошибка/загрузка) — объявлен (`role="alert"` / `role="status"`), иконки `aria-hidden`

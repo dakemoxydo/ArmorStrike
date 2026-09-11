@@ -37,7 +37,7 @@
 | Surface | Behaviour |
 |---------|-----------|
 | World | ring disk + letter billboard; color by owner / contest / capture progress |
-| HUD | `ALPHA score — BRAVO score` + A/B/C chips + personal K/D |
+| HUD | `ALPHA score — BRAVO score` + A/B/C chips (progress bar шагом 10%) + personal K/D |
 | Minimap | letter circles A/B/C with owner color |
 | ModeSelect | CP enabled |
 

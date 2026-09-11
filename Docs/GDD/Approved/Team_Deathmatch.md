@@ -36,7 +36,8 @@
 |---------|-----------|
 | ModeSelect | DM / TDM / CP — все включены (CP shipped в P4–P5) |
 | Flow | ModeSelect → MapSelect → `startRound` |
-| HUD | `ALPHA n — m BRAVO` + personal K/D + time + win target |
+| HUD | `ALPHA n — m BRAVO` + personal K/D + elapsed/remaining time + win target |
+| HUD radar | «ЦЕЛИ» = живые противники (`enemiesAlive`); союзники Alpha не считаются |
 | Tab scoreboard | Two columns Alpha / Bravo |
 | Minimap | self cyan, ally blue (`#3b9eff`), enemy red |
 | GameOver | team winner + mode label «КОМАНДНЫЙ БОЙ» |

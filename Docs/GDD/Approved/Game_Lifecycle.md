@@ -48,6 +48,8 @@ type GameMode = 'menu' | 'garage' | 'playing' | 'over'
 - Выход в `menu` / `garage` инвалидирует старт «в полёте» **в любом режиме** —
   иначе догрузка выкинула бы игрока в бой из гаража.
 - UI держит оверлей «ЗАГРУЗКА» на время ожидания (`App.runStartRound`).
+- Перед `mode = 'playing'` — `renderWorld.warmUp()`: компиляция шейдеров всех материалов
+  сцены, пока виден оверлей (см. [[../../Architecture/Standard_Frame_Stability|Standard Frame Stability]] §2).
 
 ## Флаги run
 
@@ -84,6 +86,10 @@ applyPlayerDeathState:
 // MatchStage / MatchRuntime after respawnDelay (4s):
   restore HP, invuln 2s, re-lock input, startEngine
 ```
+
+**HUD death cam:** пока `alive = false`, `HUD` рисует оверлей «УНИЧТОЖЕН» с обратным отсчётом
+`respawnInSec` (= `respawnDelaySec − deathT`, квантован по секундам в `hudRenderGate`), прицел
+скрыт. Текст дублируется в live-region (`useGameHud`), сам оверлей — `aria-hidden`.
 
 ## Match end → Game Over
 

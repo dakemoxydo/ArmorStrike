@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import { CannonWeapon } from '../game/weapons/CannonWeapon';
 import { TankEntity } from '../game/Tank';
+import { LightRig } from '../game/effects/LightRig';
 import type { WeaponDeps } from '../game/weapons/types';
 import type { TankVisual } from '../game/Tank';
 import { WEAPON_TUNING } from '../core/catalog';
@@ -39,6 +40,7 @@ function makeDeps(): WeaponDeps {
     audio: { shoot: vi.fn(), reload: vi.fn() } as any,
     damageSystem: {} as any,
     projectiles: { fire: vi.fn() } as any,
+    lights: new LightRig(new THREE.Scene()),
     onShotFired: vi.fn(),
   };
 }

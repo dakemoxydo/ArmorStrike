@@ -35,9 +35,15 @@ interface Weapon {
 | `WeaponOwner` | `TankLike` + fireTimer, params, visual muzzle/barrel, onFired, setBarrelKick? |
 | `CombatPeer` | peer в `ctx.tanks` (position/alive + visual.group) |
 | `WeaponContext` | `{ tanks, colliders }` — **без** concrete Arena |
-| `WeaponDeps` | scene, EffectsPort, AudioPort, DamageSystem, ProjectileManager, onShotFired? |
+| `WeaponDeps` | scene, EffectsPort, AudioPort, `LightRig`, DamageSystem, ProjectileManager, onShotFired? |
 
 Оружие не знает о React, HUD React-tree, match modes / WaveManager.
+
+> **Исключение из «только порты»:** `WeaponDeps.lights: LightRig` — оружие берёт слоты
+> постоянного бюджета света **напрямую** (порт `EffectsPort` его не отдаёт). Это осознанно:
+> число источников света входит в ключ кэша шейдерных программ, поэтому риг — общий
+> инвариант, а не деталь реализации одного эффекта. Правила работы со светом —
+> [Standard Frame Stability](Standard_Frame_Stability.md) §1.
 
 ## 3. Fire pipeline (кадр)
 
@@ -94,7 +100,7 @@ createDamageSystem(arena, hooks): DamageSystem
 ## 8. Checklist нового оружия
 
 - [ ] Implements `Weapon` полностью (включая dispose)
-- [ ] Depends on ports, not concrete Effects/Audio/Arena
+- [ ] Depends on ports, not concrete Effects/Audio/Arena (свет — через `WeaponDeps.lights`, см. §2)
 - [ ] Damage only via DamageSystem / applyHit
 - [ ] Ammo state через `buildAmmoState` shape
 - [ ] Player & bot factory path без дублирования

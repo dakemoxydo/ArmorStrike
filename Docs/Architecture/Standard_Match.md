@@ -62,10 +62,16 @@ DamageSystem → CombatSystem.onTankDestroyed → MatchRuntime.onTankKilled
 
 Round-start chain (`executeStartRound`): `clearTanks` (tanks + nameplates + `bots.reset` +
 `onRosterCleared` стадий + CP visuals) → `projectiles.clear` → `effects.clearTransients`
-(smoke/scorch/wrecks/shake/FOV; пулы живы) → `input.resetKeys` → `timeScale.reset` →
+(smoke/scorch/wrecks/shake/FOV + гашение каналов `LightRig`; пулы живы) → `input.resetKeys` →
+`timeScale.reset` →
 `arena.rebuild` → `run.resetRun` + `deathT=-1` + `prevReloading=false` →
 `combat.resetStreaks` (streaks + `playerBestStreak`) → `match.reset(mode, {mapId, scene})`
-→ fresh roster. Новое per-round состояние — только сюда, не в `step()`.
+→ fresh roster → `renderWorld.warmUp()` (await, под loading-overlay) → `mode = 'playing'`.
+Новое per-round состояние — только сюда, не в `step()`.
+
+> Warm-up обязателен **после** роста и **до** `mode = 'playing'`: он компилирует шейдеры
+> всех материалов сцены, пока виден загрузочный оверлей (см.
+> [Standard Frame Stability](Standard_Frame_Stability.md) §2).
 
 ## 6. Roster
 

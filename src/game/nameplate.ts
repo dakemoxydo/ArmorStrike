@@ -1,6 +1,13 @@
 // ===== Именные таблички ботов (спрайт с именем и полоской HP) =====
 import * as THREE from 'three';
 
+/**
+ * HP redraw step. The bar is 204px wide, so 2% ≈ 4px — invisible, while
+ * cutting canvas redraws and 256×80 texture uploads to a handful per damage
+ * event (update() runs for every bot, every frame).
+ */
+const HP_DRAW_STEP = 0.02;
+
 export class Nameplate {
   readonly sprite: THREE.Sprite;
   private canvas: HTMLCanvasElement;
@@ -8,7 +15,9 @@ export class Nameplate {
   private tex: THREE.CanvasTexture;
   private readonly w = 256;
   private readonly h = 80;
-  private lastFrac = -1;
+  /** Last drawn HP bucket + color — redraw only when the picture changes. */
+  private lastStep = -1;
+  private lastColor = -1;
   private name: string;
 
   constructor(name: string, color: number) {
@@ -78,11 +87,13 @@ export class Nameplate {
   }
 
   update(frac: number, color: number) {
-    if (Math.abs(frac - this.lastFrac) > 0.012) {
-      this.draw(frac, color);
-      this.tex.needsUpdate = true;
-      this.lastFrac = frac;
-    }
+    const f = Math.max(0, Math.min(1, frac));
+    const step = Math.round(f / HP_DRAW_STEP);
+    if (step === this.lastStep && color === this.lastColor) return;
+    this.lastStep = step;
+    this.lastColor = color;
+    this.draw(step * HP_DRAW_STEP, color);
+    this.tex.needsUpdate = true;
   }
 
   setPosition(x: number, y: number, z: number) {

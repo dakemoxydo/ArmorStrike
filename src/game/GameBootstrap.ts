@@ -8,7 +8,6 @@ import { ProjectileManager } from './engine/Projectile';
 import { PlayerController } from './PlayerController';
 import { AudioFX } from './audio';
 import type { AudioPort } from './ports/AudioPort';
-import type { EffectsPort } from './ports/EffectsPort';
 import { CombatSystem } from './CombatSystem';
 import { HudModel } from './HudModel';
 import { RenderWorld } from './RenderWorld';
@@ -75,7 +74,7 @@ function buildEventBus(): {
 // ---- Builder: базовые подсистемы ----
 function buildCoreSubsystems(scene: THREE.Scene, canvas: HTMLCanvasElement): {
   arena: Arena;
-  effects: EffectsPort;
+  effects: Effects;
   projectiles: ProjectileManager;
   input: PlayerController;
   audio: AudioPort;
@@ -95,7 +94,7 @@ function buildCoreSubsystems(scene: THREE.Scene, canvas: HTMLCanvasElement): {
 function buildDerivedSystems(
   scene: THREE.Scene,
   arena: Arena,
-  effects: EffectsPort,
+  effects: Effects,
   audio: AudioPort,
   projectiles: ProjectileManager,
   input: PlayerController,
@@ -110,6 +109,7 @@ function buildDerivedSystems(
 } {
   const weaponDeps: WeaponFactoryDeps = {
     scene, effects, audio,
+    lights: effects.lights,
     damageSystem: combat.damageSystem,
     projectiles,
     onShotFired: () => emitEvent({ type: 'shotFired' }),
@@ -260,10 +260,13 @@ export async function bootstrapGame(canvas: HTMLCanvasElement): Promise<GameCont
   const garageInput = buildGarageInput(canvas, sim, cameraRig);
   const { gameLoop, hudSink, hud } = buildGameLoop(sim, cameraRig, renderWorld, hudModel, emitEvent, previewController);
 
-  // Wire hit-stop / slow-mo на убийствах (после создания gameLoop)
+  // Hit-stop / slow-mo — только за убийство ИГРОКОМ. Раньше hitStop() стоял без
+  // гейта и морозил матч (TimeScale отдаёт dt = 0) на каждой смерти любого танка:
+  // при 7 ботах это постоянные 40-мс замирания всей симуляции и камеры.
   combat.setOnKillPunch((byPlayer) => {
+    if (!byPlayer) return;
     gameLoop.timeScale.hitStop(0.04);
-    if (byPlayer) gameLoop.timeScale.killSlowMo(0.5, 0.45);
+    gameLoop.timeScale.killSlowMo(0.5, 0.45);
   });
 
   return {

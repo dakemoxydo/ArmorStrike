@@ -38,7 +38,7 @@ describe('HudModel getHud (shipped)', () => {
     const a = model.getHud(null, []);
     expect(a.score).toBe(10);
     expect(a.kills).toBe(1);
-    expect(a.botsAlive).toBe(0);
+    expect(a.enemiesAlive).toBe(0);
     expect(a.matchMode).toBe('deathmatch');
     expect(a.winTarget).toBe(30);
   });
@@ -112,5 +112,38 @@ describe('HudModel getHud (shipped)', () => {
     expect(s.winTarget).toBe(75);
     expect(s.teamKillsAlpha).toBe(12);
     expect(s.teamKillsBravo).toBe(9);
+  });
+
+  it('enemiesAlive excludes team allies (radar «ЦЕЛИ» in TDM/CP)', () => {
+    const model = makeHudModel();
+    const unit = (id: number, teamId: 'alpha' | 'bravo' | null, alive = true) => ({
+      id,
+      name: `t${id}`,
+      params: {},
+      health: 100,
+      maxHealth: 100,
+      isPlayer: false,
+      alive,
+      position: { x: 0, z: 0 },
+      yaw: 0,
+      turretYaw: 0,
+      teamId,
+    });
+    const player = { ...unit(1, 'alpha'), isPlayer: true };
+    const tanks = [player, unit(2, 'alpha'), unit(3, 'bravo'), unit(4, 'bravo', false)];
+    const s = model.getHud(player as never, tanks as never);
+    // 2 своих (игрок + союзник) и 1 мёртвый враг не считаются.
+    expect(s.enemiesAlive).toBe(1);
+  });
+
+  it('respawnInSec counts down from the mode respawn delay', () => {
+    const model = makeHudModel();
+    const dead = {
+      id: 1, name: 'P', params: {}, health: 0, maxHealth: 100, isPlayer: true,
+      alive: false, deathT: 1.5, position: { x: 0, z: 0 }, yaw: 0, turretYaw: 0, teamId: null,
+    };
+    const s = model.getHud(dead as never, [dead] as never);
+    expect(s.alive).toBe(false);
+    expect(s.respawnInSec).toBeCloseTo(2.5); // DM respawnDelaySec = 4
   });
 });

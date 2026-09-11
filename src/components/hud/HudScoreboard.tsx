@@ -23,10 +23,10 @@ function TeamTable({
           <tr><th>ИМЯ</th><th>K</th><th>D</th><th>КОРПУС</th><th>ОРУЖИЕ</th><th>БРОНЯ</th></tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => {
+          {rows.map((r) => {
             const frac = Math.max(0, Math.min(1, r.hpFrac));
             return (
-              <tr key={`${title}-${i}`} className={r.isPlayer ? 'row-player' : ''}>
+              <tr key={rowKey(r)} className={r.isPlayer ? 'row-player' : ''}>
                 <td className={r.alive ? '' : 'dead'}>{r.name}</td>
                 <td>{r.kills}</td>
                 <td>{r.deaths}</td>
@@ -56,10 +56,10 @@ function FlatTable({ rows }: { rows: ScoreRow[] }) {
         <tr><th>ИМЯ</th><th>K</th><th>D</th><th>КОРПУС</th><th>ОРУЖИЕ</th><th>БРОНЯ</th></tr>
       </thead>
       <tbody>
-        {rows.map((r, i) => {
+        {rows.map((r) => {
           const frac = Math.max(0, Math.min(1, r.hpFrac));
           return (
-            <tr key={i} className={r.isPlayer ? 'row-player' : ''}>
+            <tr key={rowKey(r)} className={r.isPlayer ? 'row-player' : ''}>
               <td className={r.alive ? '' : 'dead'}>{r.name}</td>
               <td>{r.kills}</td>
               <td>{r.deaths}</td>
@@ -82,7 +82,15 @@ function FlatTable({ rows }: { rows: ScoreRow[] }) {
 }
 
 function isTeamBoard(rows: ScoreRow[]): boolean {
-  return rows.some((r) => r.teamId === 'alpha' || r.teamId === 'bravo');
+  // Командное табло — только если КАЖДАЯ строка закреплена за командой: `byTeam`
+  // фильтрует строго по teamId, поэтому одна строка без команды молча исчезала бы
+  // из обеих таблиц. Некомандные строки лучше показать плоским списком.
+  return rows.length > 0 && rows.every((r) => r.teamId === 'alpha' || r.teamId === 'bravo');
+}
+
+/** Стабильный ключ строки — строки пересортировываются по киллам каждый кадр. */
+function rowKey(r: ScoreRow): string {
+  return `${r.teamId ?? 'ffa'}:${r.name}:${r.isPlayer ? 'p' : 'b'}`;
 }
 
 function byTeam(rows: ScoreRow[], team: TeamId): ScoreRow[] {
