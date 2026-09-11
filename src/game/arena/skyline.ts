@@ -103,26 +103,29 @@ export function buildSkyline(ctx: ArenaBuildContext) {
   const dark = new THREE.MeshStandardMaterial({ color: 0x0a0f16, roughness: 1, emissive: 0x0c141f, emissiveIntensity: 0.35 });
   const winMat = new THREE.MeshBasicMaterial({ color: 0xffa64d });
   const rng = (a: number, b: number) => a + Math.random() * (b - a);
+  // Ring sits outside the playable box (half = 150) — factory content now fills
+  // the whole 300×300, so anything inside r≈168 would land on top of gameplay.
   buildTowerRing(ctx, {
     material: dark,
-    count: 26,
-    angleJitter: 0.12,
-    rMin: 105, rMax: 150,
-    widthMin: 10, widthMax: 26,
-    heightMin: 8, heightMax: 34,
+    count: 34,
+    angleJitter: 0.10,
+    rMin: 172, rMax: 244,
+    widthMin: 12, widthMax: 34,
+    heightMin: 12, heightMax: 52,
     baseY: -0.5,
     window: { material: winMat, skip: 0.4, widthRatio: 0.5, heightRatio: 0.12, yMin: 0.3, yMax: 0.7 },
     // Every 5th tower carries a smokestack that feeds the atmosphere emitters.
     onTower: (m, i) => {
       if (i % 5 !== 0) return;
-      const th = rng(26, 44);
+      const th = rng(30, 52);
       const st = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.2, th, 8), dark);
       st.position.set(m.position.x + rng(-10, 10), th / 2, m.position.z + rng(-10, 10));
       ctx.group.add(st);
       ctx.smokeEmitters.push(new THREE.Vector3(st.position.x, th + 1, st.position.z));
     },
   });
-  const gz = new THREE.Mesh(new THREE.SphereGeometry(16, 20, 14), dark);
-  gz.position.set(-120, 10, -95);
+  // Distant gasometer silhouette — decorative, far outside the walls.
+  const gz = new THREE.Mesh(new THREE.SphereGeometry(20, 20, 14), dark);
+  gz.position.set(-232, 12, -196);
   ctx.group.add(gz);
 }

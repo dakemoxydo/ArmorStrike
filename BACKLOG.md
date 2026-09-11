@@ -12,6 +12,7 @@ Cycle categories round-robin. Mark done with `[x]` + note. Re-bootstrap when ope
 - [x] A2: Unit-test `KillStreakTracker` window expiry incl. negative time deltas (stale stamps from a previous match must never suppress new streaks). — iter 1 `622eca3` (+5 tests, predicate fix)
 - [x] A3: Verify full match lifecycle resets (DM→TDM→CP across village/city/factory) leave no cross-mode state (score, streaks, capture zones, rosters) — lifecycle test. — iter 9 `1b750b3` (+3 tests, full reset-chain + ordering pinned)
 - [x] A4: Audit teardown path (`Game.teardownContext`, App StrictMode guard) for dangling listeners/timers after unmount. — iter 12: CLEAN, full chain verified (see PROGRESS iter 12); one theoretical post-dispose API note
+- [x] A5: Hotfix — `ArenaEffects` хардкодил float обелиска `y = 12.6`, из-за чего City-монумент (поставлен на y=9.1) каждый кадр уезжал на +3.5 м. Базовая высота теперь захватывается в `setObelisk` и сбрасывается в `resetForRebuild`; анимация относительно базы. — iter 16 (найдено при пересборке factory)
 
 ## [B] PERFORMANCE
 - [x] B1: Draw-call census per map: count meshes vs instanced in RenderWorld scene graph; instance the worst repeated prop category; record before/after numbers. — iter 4 `38171ba` (census tool; baseline factory 327 / village 940 / city 753 est. DC)
@@ -50,8 +51,9 @@ Cycle categories round-robin. Mark done with `[x]` + note. Re-bootstrap when ope
 - [x] H4: GameOverScreen shows complete stat line (K/D/score/best streak) for all three modes. — 2026-09-09: added `playerBestStreak` (CombatSystem → MatchResult → gameOver event → 5th StatCard) + Scoring.md line
 
 ## [I] LEVELS & CONTENT
-- [ ] I1: Spawn fairness metrics per map (min distance spawn→nearest enemy lane); rebalance worst spawn weights.
-- [ ] I2: Obstacle density/variety comparison village vs city; log metrics, patch only clear gaps.
+- [x] I0: Factory reskin/scale на всю арену 300×300 (был Known gap #1: «остров» ~±75 с пустым outer ring). — iter 16: `factoryMap.ts` переписан с нуля, 11 legacy-модулей удалены; 4 district'а + портальный кран над CP-B; 133 коллайдера (58H/4M/39S/8 ramps), квадранты сбалансированы; skyline вынесен за playable box (34 башни r 172–244); отдельный пресет `FACTORY`; ground S=3072; `factoryMap.test.ts` (13). Док — [[Factory_Level_Design]]. Census 540 est. DC.
+- [ ] I1: Spawn fairness metrics per map (min distance spawn→nearest enemy lane); rebalance worst spawn weights. — инструмент готов: `npm run map-plan [mapId]` печатает плотность/зоны/spawn-точки из реальных коллайдеров
+- [ ] I2: Obstacle density/variety comparison village vs city; log metrics, patch only clear gaps. — factory-данные уже сняты (`npm run map-plan factory`): 133 коллайдера, NW 14H/6S · NE 13H/12S · SW 16H/11S · SE 15H/10S
 - [ ] I3: CP anchor symmetry: capture-point distances from both team spawns roughly equal per map.
 
 ## [J] CODE QUALITY

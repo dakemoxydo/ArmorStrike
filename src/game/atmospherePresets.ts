@@ -1,5 +1,7 @@
 // ===== Пресеты атмосферы по картам: небо / туман / солнце / hemisphere / rim / экспозиция =====
-// factory + city = legacy cold night (нулевой визуальный регресс); village = тёплый golden-hour dusk.
+// city = legacy cold night (нулевой визуальный регресс);
+// factory = натриевая смога-ночь (промзона: амбер-дымка, оранжевый rim);
+// village = тёплый golden-hour dusk.
 import type { MapId } from './maps/mapCatalog';
 
 export interface AtmospherePreset {
@@ -48,8 +50,25 @@ const DUSK: AtmospherePreset = {
   skySunDisc: [1.0, 0.78, 0.46], skySunGlow: [1.0, 0.55, 0.28],
 };
 
+/**
+ * Промзона: та же ночь, но воздух «сварен» — плотнее туман, тёплая натриевая
+ * дымка и оранжевый rim. Отличает Завод от холодного неона Города с первого
+ * взгляда, не трогая ни один пресет City/Village.
+ */
+const FACTORY: AtmospherePreset = {
+  background: 0x0d0b08,
+  fogColor: 0x1d1810, fogNear: 108, fogFar: 400,
+  exposure: 0.95,
+  hemiSky: 0xc0a077, hemiGround: 0x14100a, hemiIntensity: 0.5,
+  sunColor: 0xffd0a0, sunIntensity: 1.65, sunPosition: [128, 150, 44],
+  rimColor: 0xff8c30, rimIntensity: 0.52,
+  skyZenith: [0.05, 0.045, 0.035], skyHorizon: [0.26, 0.19, 0.11], skyCloud: [0.22, 0.17, 0.12],
+  skySunDir: [0.52, 0.6, 0.32],
+  skySunDisc: [1.0, 0.82, 0.55], skySunGlow: [0.85, 0.58, 0.3],
+};
+
 export const ATMOSPHERES: Record<MapId, AtmospherePreset> = {
-  factory: NIGHT,
+  factory: FACTORY,
   city: NIGHT,
   village: DUSK,
 };

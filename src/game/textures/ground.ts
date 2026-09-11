@@ -1,9 +1,17 @@
 import * as THREE from 'three';
 import { cachedTexture, cachedTextureEvict, cachedTextureHas, makeCanvas, noise } from './shared';
 
+/**
+ * Factory ground: литейный комплекс ЗАВОД-51 (arena 300).
+ * Синхронизировано с layout из `arena/factoryMap.ts`:
+ *   main cross x∈[−13,13] / z∈[−13,13] · centre plaza |x|,|z|<34 + CP-B ring
+ *   ring road |x|,|z|∈[34,46] · foundry (NW) molten zone · container bays (NE)
+ *   tank-farm pads (SE) · assembly pads + pipe-rack shadow (SW) · rail siding (SE outer)
+ *   outer storage pads on the diagonals · CP rings A/B/C · hazard bands
+ */
 export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
-  return cachedTexture(`ground:factory:${arenaSize}`, () => {
-  const S = 2048;
+  return cachedGround('ground:factory', arenaSize, () => {
+  const S = 3072;
   const K = S / arenaSize;
   const half = arenaSize / 2;
   const px = (x: number) => (x + half) * K;
@@ -11,13 +19,13 @@ export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
   const { c, ctx } = makeCanvas(S);
 
   const rectX = (x0: number, z0: number, w: number, d: number) => ctx.fillRect(px(x0), pz(z0), w * K, d * K);
-  const hazardBand = (x0: number, z0: number, w: number, d: number) => {
+  const hazardBand = (x0: number, z0: number, w: number, d: number, alpha = 0.16) => {
     ctx.save();
     ctx.beginPath();
     ctx.rect(px(x0), pz(z0), w * K, d * K);
     ctx.clip();
     for (let i = -d; i < w + d; i += 2.6) {
-      ctx.fillStyle = 'rgba(255,176,46,0.16)';
+      ctx.fillStyle = `rgba(255,176,46,${alpha})`;
       ctx.save();
       ctx.translate(px(x0 + i), pz(z0));
       ctx.rotate(0.785);
@@ -26,92 +34,16 @@ export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
     }
     ctx.restore();
   };
-
-  ctx.fillStyle = '#151920';
-  ctx.fillRect(0, 0, S, S);
-  noise(ctx, S, 9000, 0.05);
-
-  ctx.fillStyle = 'rgba(120,140,165,0.08)'; rectX(-19, -16, 38, 32);
-  ctx.fillStyle = 'rgba(255,110,40,0.07)';  rectX(-30, -62, 40, 26);
-  ctx.fillStyle = 'rgba(70,160,190,0.06)';  rectX(4, 36, 40, 28);
-  ctx.fillStyle = 'rgba(150,160,120,0.07)'; rectX(-66, -34, 32, 68);
-  ctx.fillStyle = 'rgba(90,110,150,0.07)';  rectX(36, -38, 26, 76);
-
-  ctx.strokeStyle = '#10141b';
-  ctx.lineWidth = 10 * K;
-  const inset = half - 13;
-  ctx.strokeRect(px(-inset), pz(-inset), inset * 2 * K, inset * 2 * K);
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 0.25 * K;
-  ctx.strokeRect(px(-inset + 4.6), pz(-inset + 4.6), (inset - 4.6) * 2 * K, (inset - 4.6) * 2 * K);
-
-  const drawRoad = (x0: number, z0: number, w: number, d: number, horizontal: boolean) => {
-    ctx.fillStyle = '#0f1319';
-    rectX(x0, z0, w, d);
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-    ctx.lineWidth = 0.2 * K;
-    ctx.strokeRect(px(x0), pz(z0), w * K, d * K);
-    ctx.strokeStyle = 'rgba(255,200,80,0.30)';
-    ctx.lineWidth = 0.3 * K;
-    ctx.setLineDash([2.2 * K, 1.8 * K]);
+  const ring = (x: number, z: number, r: number, stroke: string, width: number, dash: number[] = []) => {
+    ctx.save();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = width * K;
+    ctx.setLineDash(dash.map((v) => v * K));
     ctx.beginPath();
-    if (horizontal) { ctx.moveTo(px(x0), pz(z0 + d / 2)); ctx.lineTo(px(x0 + w), pz(z0 + d / 2)); }
-    else { ctx.moveTo(px(x0 + w / 2), pz(z0)); ctx.lineTo(px(x0 + w / 2), pz(z0 + d)); }
+    ctx.arc(px(x), pz(z), r * K, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.restore();
   };
-  drawRoad(-inset, -22.5, inset * 2, 9, true);
-  drawRoad(-inset, 13.5, inset * 2, 9, true);
-  drawRoad(-34.5, -inset, 9, inset * 2, false);
-  drawRoad(25.5, -inset, 9, inset * 2, false);
-
-  const railY = { z0: -inset, z1: inset };
-  ctx.fillStyle = 'rgba(20,16,12,0.85)';
-  rectX(-39.6, railY.z0, 3.2, railY.z1 - railY.z0);
-  ctx.fillStyle = 'rgba(60,48,36,0.7)';
-  for (let z = railY.z0; z < railY.z1; z += 2.0) rectX(-40, z, 4.0, 0.5);
-  ctx.fillStyle = 'rgba(150,160,175,0.5)';
-  rectX(-39.2, railY.z0, 0.28, railY.z1 - railY.z0);
-  rectX(-37.1, railY.z0, 0.28, railY.z1 - railY.z0);
-  hazardBand(-41, -23.4, 6, 1.4);
-  hazardBand(-41, 21.9, 6, 1.4);
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
-  ctx.lineWidth = 2;
-  for (let m = -half; m <= half; m += 12.5) {
-    ctx.beginPath(); ctx.moveTo(px(m), 0); ctx.lineTo(px(m), S); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, pz(m)); ctx.lineTo(S, pz(m)); ctx.stroke();
-  }
-
-  hazardBand(-22.6, -8.6, 45.2, 1.6);
-  hazardBand(-22.6, 7.0, 45.2, 1.6);
-
-  for (let i = 0; i < 16; i++) {
-    ctx.fillStyle = `rgba(4,6,10,${0.14 + Math.random() * 0.12})`;
-    ctx.beginPath();
-    ctx.ellipse(S * (0.08 + Math.random() * 0.84), S * (0.08 + Math.random() * 0.84),
-      (2 + Math.random() * 4) * K, (1.2 + Math.random() * 2.4) * K, Math.random() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.strokeStyle = 'rgba(8,10,12,0.28)';
-  for (let i = 0; i < 12; i++) {
-    ctx.lineWidth = 0.55 * K;
-    ctx.beginPath();
-    ctx.arc(S * (0.1 + Math.random() * 0.8), S * (0.1 + Math.random() * 0.8),
-      (5 + Math.random() * 9) * K, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2 + 0.9);
-    ctx.stroke();
-  }
-  for (let i = 0; i < 7; i++) {
-    const x = S * (0.12 + Math.random() * 0.76), z = S * (0.12 + Math.random() * 0.76);
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(x, z, 1.2 * K, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath();
-    ctx.lineWidth = 2;
-    ctx.moveTo(x - 0.8 * K, z); ctx.lineTo(x + 0.8 * K, z);
-    ctx.stroke();
-  }
-
   const label = (txt: string, x: number, z: number, rot: number, size: number, color = 'rgba(255,255,255,0.13)') => {
     ctx.save();
     ctx.translate(px(x), pz(z));
@@ -123,18 +55,229 @@ export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
     ctx.fillText(txt, 0, 0);
     ctx.restore();
   };
-  label('ЦЕХ-7', 0, 20, 0, 6);
-  label('ЛИТЕЙКА', -11, -34, 0, 4.6, 'rgba(255,150,70,0.16)');
-  label('A-1', -51, -28, Math.PI / 2, 5);
-  label('ПОГРУЗКА', -51, 0, Math.PI / 2, 4.2);
-  label('БАНКИ', 24, 34, 0, 4.4, 'rgba(90,220,255,0.14)');
-  label('М-12', 47, -36, Math.PI / 2, 4.4, 'rgba(140,170,255,0.14)');
-  label('ОПАСНО', -8, -30, 0, 3.4, 'rgba(255,120,50,0.20)');
 
-  hazardBand(-63, -14, 5, 28);
-  hazardBand(56, -14, 5, 28);
+  // ── base: залитый бетон промплощадки ──────────────────────────────────────
+  ctx.fillStyle = '#151920';
+  ctx.fillRect(0, 0, S, S);
+  noise(ctx, S, 11000, 0.05);
 
-  noise(ctx, S, 5000, 0.04);
+  // ── district slabs (лёгкая тональная разметка зон) ────────────────────────
+  ctx.fillStyle = 'rgba(255,110,40,0.075)';  rectX(-120, 30, 84, 56);   // NW foundry
+  ctx.fillStyle = 'rgba(80,160,190,0.065)';  rectX(40, 30, 96, 56);     // NE containers
+  ctx.fillStyle = 'rgba(150,160,120,0.065)'; rectX(-124, -84, 92, 58);  // SW assembly
+  ctx.fillStyle = 'rgba(120,140,190,0.07)';  rectX(38, -84, 100, 60);   // SE power/tanks
+  ctx.fillStyle = 'rgba(120,140,165,0.10)';  rectX(-34, -34, 68, 68);   // centre plaza
+
+  // ── lanes: main cross + ring road ─────────────────────────────────────────
+  const lane = (x0: number, z0: number, w: number, d: number, horizontal: boolean, glow = false) => {
+    ctx.fillStyle = '#0e1218';
+    rectX(x0, z0, w, d);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 0.22 * K;
+    ctx.strokeRect(px(x0), pz(z0), w * K, d * K);
+    if (glow) {
+      ctx.strokeStyle = 'rgba(46,230,192,0.10)';
+      ctx.lineWidth = 0.4 * K;
+      ctx.strokeRect(px(x0), pz(z0), w * K, d * K);
+    }
+    ctx.strokeStyle = 'rgba(255,200,80,0.26)';
+    ctx.lineWidth = 0.3 * K;
+    ctx.setLineDash([2.4 * K, 2.0 * K]);
+    ctx.beginPath();
+    if (horizontal) { ctx.moveTo(px(x0), pz(z0 + d / 2)); ctx.lineTo(px(x0 + w), pz(z0 + d / 2)); }
+    else { ctx.moveTo(px(x0 + w / 2), pz(z0)); ctx.lineTo(px(x0 + w / 2), pz(z0 + d)); }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  };
+  lane(-13, -half + 6, 26, arenaSize - 12, false, true);   // N–S main (primary fire lane)
+  lane(-half + 6, -13, arenaSize - 12, 26, true, true);    // E–W main (primary fire lane)
+  // ring road |x|,|z| ∈ [34,46] — secondary circulation around the plaza
+  lane(34, -half + 6, 12, arenaSize - 12, false);
+  lane(-46, -half + 6, 12, arenaSize - 12, false);
+  lane(-half + 6, 34, arenaSize - 12, 12, true);
+  lane(-half + 6, -46, arenaSize - 12, 12, true);
+
+  // hazard stripes on the plaza mouths (crossing the ring road)
+  hazardBand(-13, 30, 26, 5);
+  hazardBand(-13, -35, 26, 5);
+  hazardBand(30, -13, 5, 26);
+  hazardBand(-35, -13, 5, 26);
+
+  // ── centre plaza: chevrons под козловым краном + CP-B ─────────────────────
+  hazardBand(-32, -6, 64, 12, 0.10);
+  ctx.strokeStyle = 'rgba(46,230,192,0.16)';
+  ctx.lineWidth = 0.45 * K;
+  ctx.strokeRect(px(-32), pz(-32), 64 * K, 64 * K);
+  // crane rail beds (legs at x ±36, z ±9)
+  ctx.fillStyle = 'rgba(10,13,17,0.85)';
+  rectX(-40, -11.4, 80, 2.6);
+  rectX(-40, 8.8, 80, 2.6);
+  ctx.fillStyle = 'rgba(180,190,205,0.22)';
+  rectX(-40, -10.4, 80, 0.28);
+  rectX(-40, 10.2, 80, 0.28);
+  // molten runner crossing the plaza floor (visual tie-in с литейкой)
+  ctx.strokeStyle = 'rgba(255,106,16,0.20)';
+  ctx.lineWidth = 1.6 * K;
+  ctx.beginPath();
+  ctx.moveTo(px(-30), pz(24));
+  ctx.lineTo(px(-30), pz(-14));
+  ctx.lineTo(px(30), pz(-14));
+  ctx.stroke();
+
+  // ── capture-point rings (anchors from match/captureAnchors.ts) ────────────
+  const cp: [string, number, number][] = [['A', -88, 8], ['B', 0, 0], ['C', 92, -6]];
+  for (const [id, cx, cz] of cp) {
+    ring(cx, cz, 20, 'rgba(46,230,192,0.20)', 0.5, [3.2, 2.4]);
+    ring(cx, cz, 6, 'rgba(46,230,192,0.12)', 0.35);
+    label(id, cx, cz, 0, 7, 'rgba(46,230,192,0.22)');
+  }
+
+  // ── NW foundry: расплав, шлак, трещины ────────────────────────────────────
+  ctx.fillStyle = 'rgba(255,106,16,0.14)';
+  rectX(-72, 52, 22, 18);
+  ctx.fillStyle = 'rgba(255,140,40,0.10)';
+  rectX(-100, 34, 34, 20);
+  // molten runners: furnace (−62,62) → ladle (−62,44) → casting hall (−96,40)
+  ctx.strokeStyle = 'rgba(255,106,16,0.30)';
+  ctx.lineWidth = 1.5 * K;
+  ctx.beginPath();
+  ctx.moveTo(px(-62), pz(56));
+  ctx.lineTo(px(-62), pz(46));
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(px(-66), pz(44));
+  ctx.lineTo(px(-88), pz(42));
+  ctx.stroke();
+  // heat-cracked slab
+  ctx.strokeStyle = 'rgba(255,120,40,0.16)';
+  for (let i = 0; i < 10; i++) {
+    ctx.lineWidth = 0.2 * K;
+    const sx = px(-118 + Math.random() * 60);
+    const sz = pz(32 + Math.random() * 46);
+    ctx.beginPath();
+    ctx.moveTo(sx, sz);
+    ctx.lineTo(sx + (Math.random() - 0.5) * 14 * K, sz + (Math.random() - 0.5) * 14 * K);
+    ctx.stroke();
+  }
+  label('ЛИТЕЙКА', -64, 70, 0, 5.6, 'rgba(255,150,70,0.20)');
+  label('ДОМНА-1', -62, 62, 0, 3.6, 'rgba(255,120,50,0.26)');
+  label('РАЗЛИВКА', -96, 46, 0, 4.4, 'rgba(255,150,70,0.16)');
+  label('ОПАСНО', -62, 36, 0, 3.2, 'rgba(255,120,50,0.22)');
+
+  // ── NE container terminal: stacking bays ──────────────────────────────────
+  ctx.strokeStyle = 'rgba(200,220,240,0.10)';
+  ctx.lineWidth = 0.22 * K;
+  for (let bz = 34; bz <= 70; bz += 12) {
+    ctx.strokeRect(px(48), pz(bz), 10 * K, 8 * K);
+    ctx.strokeRect(px(64), pz(bz), 10 * K, 8 * K);
+  }
+  ctx.fillStyle = 'rgba(30,38,48,0.20)';
+  rectX(44, 32, 36, 42);
+  label('КОНТЕЙНЕРЫ', 70, 74, 0, 5.2, 'rgba(90,200,255,0.16)');
+  label('ТЕРМИНАЛ-2', 66, 52, Math.PI / 2, 3.6, 'rgba(140,190,230,0.14)');
+
+  // ── SE tank farm: bunded circular pads ────────────────────────────────────
+  for (const [tx, tz] of [[92, -52], [108, -52], [92, -68], [108, -68]] as const) {
+    ctx.fillStyle = 'rgba(70,82,98,0.22)';
+    ctx.beginPath();
+    ctx.arc(px(tx), pz(tz), 6.6 * K, 0, Math.PI * 2);
+    ctx.fill();
+    ring(tx, tz, 6.6, 'rgba(255,176,46,0.22)', 0.4, [2.0, 1.6]);
+  }
+  ctx.fillStyle = 'rgba(150,160,120,0.05)';
+  rectX(80, -84, 44, 42);
+  label('РЕЗЕРВУАРЫ', 100, -80, 0, 5.0, 'rgba(140,170,255,0.15)');
+  label('М-12', 118, -60, Math.PI / 2, 3.6, 'rgba(140,170,255,0.14)');
+
+  // ── SW assembly: workshop pads + pipe-rack shadow ─────────────────────────
+  ctx.fillStyle = 'rgba(150,160,120,0.10)';
+  rectX(-114, -62, 36, 20);
+  rectX(-66, -79, 28, 18);
+  // pipe rack runs along z = −38, x −120..−40
+  ctx.fillStyle = 'rgba(6,8,11,0.55)';
+  rectX(-120, -41.6, 80, 7.2);
+  ctx.fillStyle = 'rgba(150,160,175,0.16)';
+  for (const rz of [-41.0, -40.0, -39.0]) rectX(-120, rz, 80, 0.22);
+  label('СБОРКА', -96, -52, 0, 5.0, 'rgba(180,200,160,0.15)');
+  label('ЦЕХ-7', -52, -70, 0, 4.2, 'rgba(180,200,160,0.14)');
+
+  // ── SE outer: rail siding (x 84..142 at z = −112) ─────────────────────────
+  ctx.fillStyle = 'rgba(20,16,12,0.85)';
+  rectX(84, -114.6, 58, 5.2);
+  ctx.fillStyle = 'rgba(60,48,36,0.7)';
+  for (let rx = 84; rx < 142; rx += 2.0) rectX(rx, -115.2, 0.7, 6.4);
+  ctx.fillStyle = 'rgba(150,160,175,0.5)';
+  rectX(84, -114.2, 58, 0.26);
+  rectX(84, -110.0, 58, 0.26);
+  label('ПОГРУЗКА', 112, -106, 0, 4.0, 'rgba(255,255,255,0.12)');
+
+  // ── outer storage pads (diagonals) ────────────────────────────────────────
+  for (const [sx, sz] of [[-108, 108], [108, 108], [-108, -108], [108, -108]] as const) {
+    ctx.fillStyle = 'rgba(60,70,84,0.22)';
+    rectX(sx - 16, sz - 14, 32, 28);
+    hazardBand(sx - 16, sz - 14, 32, 2.0, 0.12);
+    hazardBand(sx - 16, sz + 12, 32, 2.0, 0.12);
+  }
+  label('СКЛАД', -108, 100, 0, 4.4, 'rgba(255,255,255,0.12)');
+  label('ТРУБЫ', 108, 100, 0, 4.4, 'rgba(255,255,255,0.12)');
+  label('МЕТАЛЛОЛОМ', -108, -100, 0, 4.0, 'rgba(255,255,255,0.12)');
+  label('А-1', 108, -100, 0, 4.4, 'rgba(255,255,255,0.12)');
+
+  // corner smokestack scorch rings (±144, ±144)
+  for (const [sx, sz] of [[-144, 144], [144, 144], [-144, -144], [144, -144]] as const) {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.arc(px(sx), pz(sz), 5.4 * K, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── perimeter service road inside the walls ───────────────────────────────
+  ctx.strokeStyle = 'rgba(255,255,255,0.045)';
+  ctx.lineWidth = 0.5 * K;
+  ctx.setLineDash([6 * K, 4 * K]);
+  ctx.strokeRect(px(-132), pz(-132), 264 * K, 264 * K);
+  ctx.setLineDash([]);
+
+  // ── wear: oil stains, cracks, tyre arcs ───────────────────────────────────
+  for (let i = 0; i < 22; i++) {
+    ctx.fillStyle = `rgba(4,6,10,${0.12 + Math.random() * 0.12})`;
+    ctx.beginPath();
+    ctx.ellipse(S * (0.06 + Math.random() * 0.88), S * (0.06 + Math.random() * 0.88),
+      (2 + Math.random() * 4.5) * K, (1.2 + Math.random() * 2.6) * K, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(8,10,12,0.28)';
+  for (let i = 0; i < 16; i++) {
+    ctx.lineWidth = 0.55 * K;
+    ctx.beginPath();
+    ctx.arc(S * (0.08 + Math.random() * 0.84), S * (0.08 + Math.random() * 0.84),
+      (5 + Math.random() * 10) * K, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2 + 0.9);
+    ctx.stroke();
+  }
+  // tyre arcs along the main cross
+  ctx.strokeStyle = 'rgba(0,0,0,0.20)';
+  for (let i = 0; i < 10; i++) {
+    const tz = -140 + i * 28;
+    ctx.lineWidth = 0.5 * K;
+    ctx.beginPath();
+    ctx.arc(px(-8.5), pz(tz), 2.6 * K, Math.PI * 0.6, Math.PI * 1.4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(px(8.5), pz(tz + 9), 2.6 * K, Math.PI * 1.6, Math.PI * 0.4);
+    ctx.stroke();
+  }
+
+  // ── soft grid + final grain ───────────────────────────────────────────────
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+  ctx.lineWidth = 2;
+  for (let m = -half; m <= half; m += 25) {
+    ctx.beginPath(); ctx.moveTo(px(m), 0); ctx.lineTo(px(m), S); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, pz(m)); ctx.lineTo(S, pz(m)); ctx.stroke();
+  }
+  label('ЗАВОД-51', 0, 128, 0, 9, 'rgba(46,230,192,0.10)');
+  label('ЗАВОД-51', 0, -136, 0, 9, 'rgba(46,230,192,0.10)');
+
+  noise(ctx, S, 5200, 0.04);
 
     const t = new THREE.CanvasTexture(c);
     t.anisotropy = 8;
@@ -443,7 +586,7 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
  * markShared — поштучный teardown её не тронет до выгрузки здесь.
  */
 function cachedGround(
-  key: 'ground:village' | 'ground:city',
+  key: 'ground:factory' | 'ground:village' | 'ground:city',
   arenaSize: number,
   build: () => THREE.CanvasTexture,
 ): THREE.CanvasTexture {

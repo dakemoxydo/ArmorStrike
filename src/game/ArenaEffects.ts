@@ -12,6 +12,9 @@ export class ArenaEffects {
   dust: THREE.Points | null = null;
   obeliskCore: THREE.Mesh | null = null;
   obeliskRing: THREE.Mesh | null = null;
+  /** Y, на котором builders поставили обелиск: анимация парит вокруг него, а не вокруг константы. */
+  obeliskCoreBaseY = 0;
+  obeliskRingBaseY = 0;
   craneTrolley: THREE.Group | null = null;
   furnaceGlowMats: THREE.MeshStandardMaterial[] = [];
   moltenMats: THREE.MeshBasicMaterial[] = [];
@@ -49,6 +52,8 @@ export class ArenaEffects {
     this.dust = null;
     this.obeliskCore = null;
     this.obeliskRing = null;
+    this.obeliskCoreBaseY = 0;
+    this.obeliskRingBaseY = 0;
     this.craneTrolley = null;
     this.furnaceGlowMats.length = 0;
     this.moltenMats.length = 0;
@@ -98,11 +103,11 @@ export class ArenaEffects {
     if (this.obeliskCore) {
       this.obeliskCore.rotation.y = elapsed * 0.9;
       this.obeliskCore.rotation.x = elapsed * 0.4;
-      this.obeliskCore.position.y = 12.6 + Math.sin(elapsed * 1.3) * 0.35;
+      this.obeliskCore.position.y = this.obeliskCoreBaseY + Math.sin(elapsed * 1.3) * 0.35;
     }
     if (this.obeliskRing) {
       this.obeliskRing.rotation.z = elapsed * 0.6;
-      this.obeliskRing.position.y = 12.6 + Math.sin(elapsed * 1.3 + 1) * 0.35;
+      this.obeliskRing.position.y = this.obeliskRingBaseY + Math.sin(elapsed * 1.3 + 1) * 0.35;
     }
     if (this.dust) this.dust.rotation.y = elapsed * 0.012;
 

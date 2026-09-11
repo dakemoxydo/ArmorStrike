@@ -87,7 +87,14 @@ function makeContext(arena: Arena, effects: ArenaEffects): ArenaBuildContext {
     box: (w, h, d, mat, cy) => arena.box(w, h, d, mat, cy),
     addColliderBlock: (x, z, w, d, h, destructible, buildMesh, hp, kind, blocksSight) =>
       arena.addColliderBlock(x, z, w, d, h, destructible, buildMesh, hp, kind, blocksSight),
-    setObelisk: (core, ring) => { effects.obeliskCore = core; effects.obeliskRing = ring; },
+    setObelisk: (core, ring) => {
+      effects.obeliskCore = core;
+      effects.obeliskRing = ring;
+      // Захватываем высоту размещения — иначе парение прыгает на константу
+      // и обелиск отрывается от своей крыши/опоры (см. ArenaEffects.update).
+      effects.obeliskCoreBaseY = core ? core.position.y : 0;
+      effects.obeliskRingBaseY = ring ? ring.position.y : 0;
+    },
     setCraneTrolley: (trolley) => { effects.craneTrolley = trolley; },
     setDome: (dome) => { effects.dome = dome; },
     setDust: (dust) => { effects.dust = dust; },

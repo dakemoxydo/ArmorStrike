@@ -12,6 +12,7 @@
 | [Standard Weapon](Standard_Weapon.md) | `Weapon` strategy, projectiles, `DamageSystem` / `CombatSystem` |
 | [Standard UI & Input](Standard_UI_Input.md) | `GameApi`, HUD, React boundary, input, camera modes |
 | [Standard Match](Standard_Match.md) | `MatchModeId`, teams, respawn, win, kill path |
+| [Standard Arena Level Design](Standard_Arena_Level_Design.md) | Content builders, collider authoring, cover tiers, layout invariants + verification |
 | [Standard Resources](Standard_Resources.md) | Текстуры (`cachedTexture`/`markShared`), кэш CP-зон, draw-call census |
 | [Graphics Presets Matrix](Graphics_Presets_Matrix.md) | low/medium/high: pixel ratio, тени, bloom, frame-path gate; что НЕ масштабируется |
 

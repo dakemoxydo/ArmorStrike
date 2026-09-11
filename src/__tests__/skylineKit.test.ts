@@ -147,20 +147,26 @@ describe('buildTowerRing', () => {
 });
 
 describe('factory buildSkyline', () => {
-  it('rings 26 towers in [105,150] with 6 smokestack emitters and one ground sphere', () => {
+  it('rings 34 towers in [172,244] with 7 smokestack emitters and one distant sphere', () => {
     const { group, smokeEmitters, ctx } = stubCtx();
     buildSkyline(ctx);
     const towers = boxes(group);
-    expect(towers).toHaveLength(26);
+    expect(towers).toHaveLength(34);
     for (const t of towers) {
-      expect(radiusOf(t)).toBeGreaterThanOrEqual(105);
-      expect(radiusOf(t)).toBeLessThanOrEqual(150);
+      expect(radiusOf(t)).toBeGreaterThanOrEqual(172);
+      expect(radiusOf(t)).toBeLessThanOrEqual(244);
+      // Decorative silhouettes must stay outside the playable box (half = 150):
+      // factory content fills the whole arena, so an in-box ring would sit on gameplay.
+      expect(radiusOf(t)).toBeGreaterThan(150);
     }
     const spheres = group.children.filter(
       (c) => (c as THREE.Mesh).geometry instanceof THREE.SphereGeometry,
     );
     expect(spheres).toHaveLength(1);
-    // one smokestack every 5th tower (i = 0,5,10,15,20,25)
-    expect(smokeEmitters).toHaveLength(6);
+    // one smokestack every 5th tower (i = 0,5,10,15,20,25,30)
+    expect(smokeEmitters).toHaveLength(7);
+    for (const e of smokeEmitters) {
+      expect(Math.hypot(e.x, e.z)).toBeGreaterThan(150);
+    }
   });
 });

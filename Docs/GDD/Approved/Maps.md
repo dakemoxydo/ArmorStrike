@@ -2,13 +2,13 @@
 
 **Статус:** Approved  
 **Слой:** World / UI  
-**Связано:** [[Arena_Physics]], [[Game_Lifecycle]], [[City_Level_Design]], [[Village_Level_Design]]
+**Связано:** [[Arena_Physics]], [[Game_Lifecycle]], [[Factory_Level_Design]], [[City_Level_Design]], [[Village_Level_Design]]
 
 ## Map IDs
 
 | Id | Имя | Описание |
 |----|-----|----------|
-| `factory` | Завод | Литейный комплекс ЗАВОД-51 (контент ~в центре; см. Known gaps) |
+| `factory` | Завод | Литейный комплекс ЗАВОД-51: домна, цеха, контейнерный терминал, портальный кран, цистерны — [[Factory_Level_Design]] |
 | `village` | Деревня | Площадь + колодец, дома/амбары, paddocks, hay platform, ветряк и поля — [[Village_Level_Design]] |
 | `city` | Город | Grid-авеню, 4 districts, плаза, overpass, неон — [[City_Level_Design]] |
 
@@ -46,7 +46,7 @@ City и Village **заполняют всю 300**. Factory-контент (modul
 
 | Карта | Билдер |
 |-------|--------|
-| factory | `buildFactoryContent` (`arena/factoryMap.ts`) + legacy modules |
+| factory | `buildFactoryContent` (`arena/factoryMap.ts`) — see [[Factory_Level_Design]] |
 | village | `buildVillageContent` (`arena/villageMap.ts`) — see [[Village_Level_Design]] |
 | city | `buildCityContent` (`arena/cityMap.ts`) — see [[City_Level_Design]] |
 
@@ -78,9 +78,10 @@ Enter в главном меню открывает выбор карты (не 
 
 ## Known gaps / balance notes
 
-1. **Factory empty ring** — content not rescaled to 300; outer band ~75→150 empty. Factory reskin/scale is a separate task.
-2. **Combat range vs map size** — `PROJECTILE.range=85`, AI `sightRange=46` not retuned; long repositioning on City/Village is expected.
-3. **Factory first-contact** — bots spawn at ±128 and drive inward to factory cluster.
+1. **Combat range vs map size** — `PROJECTILE.range=85`, AI `sightRange=46` not retuned; long repositioning on City/Village/Factory is expected.
+2. **Factory first-contact** — bots spawn at ±128 and drive inward to the district ring.
+
+> **Resolved 2026-09-11:** «Factory empty ring» (был #1) — контент пересобран на всю арену 300, legacy-модули удалены. См. [[Factory_Level_Design]].
 
 ## Классы / API
 

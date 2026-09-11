@@ -22,6 +22,77 @@ Audit findings F-1…F-4 and H-1…H-5 were all FIXED — treated as closed (aud
 
 ---
 
+## Iteration 16 — 2026-09-11 · [I] LEVELS — FACTORY: ПОЛНАЯ ПЕРЕСБОРКА НА 300×300
+
+**Task (player request):** «Проанализируй игровую карту Завод. Улучши её. Сделай её
+красивее и удобнее для стрельбы и более приятной для игры».
+
+**Diagnosis:** Factory была последней картой, собранной из legacy-модулей (mid-July),
+рассчитанных на ~±75 из 300 — на 300-арене оставался «остров» в центре с пустым outer
+ring. Это был явный Known gap #1 в `Maps.md` («Factory reskin/scale is a separate task»),
+а `constants.ts` даже фиксировал «factory — центр». Village/City уже прошли полную
+пересборку на 300 — Factory оставалась недоделанной.
+
+**Implementation:**
+- **`factoryMap.ts` переписан с нуля** — self-contained builder (~1090 строк) в стиле
+  `cityMap`/`villageMap`, 11 legacy-модулей удалены (`centralHall`, `containerYard`,
+  `foundry`, `gantryCrane`, `pipeRack`, `ramps`, `scattered`, `silos`, `smokestacks`,
+  `transformers`, `atmosphere`).
+- **Документированный layout graph:** крест магистралей x/z ∈ [−13,13] (hard cover
+  запрещён), плаза |x|,|z| < 30 свободна (hard запрещён внутри 34), ring road 34–46
+  (только soft), outer corridor 96–140, spawn aprons держатся свободными.
+- **4 district'а:** NW foundry (домна + вторая печь + ladle-house + литейный цех +
+  рудный конвейер), NE container terminal (ряды/штабели контейнеров, силосы),
+  SW assembly/pipe (2 цеха + pipe-rack), SE power/tank farm (4 цистерны + 2 градирни).
+- **Центр:** портальный кран (4 ноги `(±36,±16)` `legH=13` + cap-beams + анимированный
+  троллей) и holo beacon над CP-B; рельсы z=±16 проходят мимо CP-A (z 8) / CP-C (z −6).
+- **Outer ring:** 4 диагональных storage-пада, угловые дымовые трубы, 8 edge-мачт,
+  rail siding (flush, без коллайдера), mid-ring peek-укрытия.
+- **Skyline вынесен за playable box:** 34 башни r ∈ [172,244] (было 26 × r 105–150 —
+  «приземлялись» внутрь арены), газ-сфера `(−232,12,−196)`.
+- **Отдельный атмосферный пресет `FACTORY`** (натриевая смога-ночь: bg `0x0d0b08`,
+  exposure 0.95, тёплый sun/hemi/rim) — factory больше не алиасит city-NIGHT.
+- **`factoryGroundTexture` перерисован** под новый layout, S 2048→3072, через
+  `cachedGround('ground:factory', …)` (LRU-1).
+- **Побочный фикс реального бага:** `ArenaEffects` хардкодил float обелиска `y = 12.6`,
+  из-за чего City-монумент (поставлен на y=9.1) каждый кадр уезжал на +3.5 м. Теперь
+  базовая высота захватывается в `setObelisk` и анимация идёт относительно неё.
+- **Разблокирован `npm run census`** — `vite-node` больше не транзитивная зависимость
+  vitest 4; добавлен devDependency через системный npm 11.19 (`lockfileVersion: 3`
+  сохранён, `npm ci --dry-run` под managed npm 10 проходит).
+- **Новый инструмент `scripts/map-plan.ts`** (`npm run map-plan`) — headless top-down
+  план из реальных коллайдеров (SVG+HTML, тиры, зоны, спавны, плотность по квадрантам).
+  3D-скриншот на этой машине невозможен (нет browser automation на Windows) — план
+  даёт проверяемую геометрию вместо него.
+
+**Metrics:**
+- Census: factory **540** est. draw calls (mesh 534, points 2, instanced 4×69) —
+  легче village 843 / city 754, при том что контент теперь на всей арене.
+- Plan: **133** коллайдера — hard 58 · medium 4 · soft 39 · ramps 8 · perimeter 24;
+  квадранты NW 14H/6S · NE 13H/12S · SW 16H/11S · SE 15H/10S (сбалансировано).
+- Тесты: +1 файл `factoryMap.test.ts` (13) — контракт layout'а (крест/плаза/CP/spawns/
+  покрытие квадрантов/раммы non-blocking); `skylineKit`/`atmospherePresets` пины
+  обновлены. Итого **332/332** (59 файлов).
+
+**Gates:** typecheck clean, lint clean, **332/332** tests (59 files), build ✓
+`dist/index.html` = 1,141.02 kB (gzip 314.81 kB).
+
+**Docs:** новый [[Factory_Level_Design]]; `00_Index.md` + `Maps.md` обновлены (Known gap
+#1 «Factory empty ring» закрыт); `mapCatalog` blurb; `constants.ts` комментарий.
+
+**Next:** [I1] spawn fairness metrics per map (план-данные уже есть — использовать
+`npm run map-plan`), либо [E2] nameplate readability.
+
+### Micro-reflection (iter 16)
+- Moved forward? Yes — последняя недоделанная карта доведена до стандарта village/city;
+  заодно найден и закрыт живой баг City (float обелиска) и разблокирован census-инструмент.
+- Time lost? Несколько Edit'ов молча не применились (повторное использование `old_string`
+  по уже изменённому региону) — ловились чтением диапазона; вывод: после серии правок
+  перечитывать целевые строки, а не доверять успешному ответу.
+- Highest-leverage next task: I1 (spawn fairness) — теперь есть готовый инструмент плана.
+
+---
+
 ## Iteration 15 — 2026-09-10 · [D] ENEMY AI — КАДЕНЦИЯ БОТОВ: ПАДЫ РЕАЛЬНЫЕ (решение игрока по iter-14 question)
 
 **Task:** D2 design-question resolved by player: «Пады реальные» — railgun/flamer
