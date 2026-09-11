@@ -118,6 +118,22 @@ describe('D1: objective duty по режимам (AI_Bots.md ~50%)', () => {
     expect(roleAt(6)).toBe('sniper');
     expect(hullAt(6)).toBe('hunter'); // viking → hunter
   });
+
+  it('флагман titan не достаётся ботам ни в одном режиме', () => {
+    // Порядок каталога ставит titan на индексы 9 и 14 (период 15), а самый
+    // длинный ростер — 9 ботов (TDM/CP: 4 союзника + 5 врагов), в DM — 7.
+    // Значит сверхтяжёлый флагман сейчас доступен только игроку. Это
+    // состояние осознанное, а не случайное: сверхтяжёлый бот — лёгкая цель,
+    // и роль штурмовика его всё равно отвергает. Если teamSize или dmBotCount
+    // вырастут, тест упадёт и заставит решить, нужен ли titan в ростере.
+    const dm = configForMode('deathmatch').dmBotCount;
+    const team = configForMode('team_deathmatch').teamSize;
+    const lastBotIndex = Math.max(dm, team * 2 - 1) - 1;
+    expect(lastBotIndex).toBe(8); // 9 ботов в TDM/CP — текущий потолок
+    for (let i = 0; i <= lastBotIndex; i++) {
+      expect(hullAt(i), `index ${i}`).not.toBe('titan');
+    }
+  });
 });
 
 // ===== D1 (behaviour): objectiveDuty двигает бота ТОЛЬКО в CP =====
