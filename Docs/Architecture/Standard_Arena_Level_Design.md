@@ -18,7 +18,7 @@ buildArena(arena, effects, mapId, renderWorld?)      // ArenaBuilder.ts
   └─ effects.setObelisk / setCraneTrolley / setDome / setDust   // → ArenaEffects
 ```
 
-- **Оболочка** (стены, пол, пилоны, лампы, вывески, `ground map`) — только `shell.ts`. Не дублировать в map-билдере.
+- **Оболочка** (стены, пол, пилоны, лампы, вывески, `ground map`) — только `shell.ts`. Не дублировать в map-билдере. Тема (`ArenaShellTheme`) задаёт `groundMap`, опц. `wallMap`, `signStyle` (`'tech'|'rural'`), цвета стен/пилонов/ламп/полосы и две вывески. Любое расширение темы — **опциональное поле с default**, сохраняющим вид остальных карт.
 - **Map-билдер** — `buildXContent(ctx: ArenaBuildContext)`, **самодостаточный**: никаких legacy/helper-модулей на карту. Общий код выносится только если он действительно generic (пример: `arena/skyline.ts` — `buildSkyline`).
 - **Никаких новых полей в `ArenaBuildContext` без необходимости** — набор полей зафиксирован (`context.ts`): `group, half, colliders, blocks, beaconMats, smokeEmitters, furnaceGlowMats, moltenMats, animNodes, box, addColliderBlock, setObelisk, setCraneTrolley, setDome, setDust`.
 
@@ -94,6 +94,27 @@ Per-map пресет в `atmospherePresets.ts` (`ATMOSPHERES: Record<MapId, Atmo
 
 ## 6. Известные грабли
 
-- **`Edit` по уже изменённому региону молча не применяется** — после серии правок перечитывать целевые строки, а не доверять успешному ответу инструмента.
+- **`Edit` по уже изменённому региону молча не применяется** — после серии правок перечитывать целевые строки, а не доверять успешному ответу инструмента. (Правило появилось не на пустом месте: при пересборке Village два `Edit` подряд по одному региону `shell.ts` — импорт + тело — применились только частично, typecheck поймал.)
 - **`npm run census` / `map-plan`** требуют `vite-node` как явный devDependency (с vitest 4 он больше не транзитивный). Ставится **системным npm 11** — managed npm 10.9.7 не резолвит peer-set vitest 4 (`TypeError ... edgesOut`); `lockfileVersion: 3` должен сохраниться, иначе ломается `npm ci` под npm 10.
 - **Managed npm 10 / node 22** — для install'ов с новыми peer-set'ами переключаться на system node 24 / npm 11.
+- **Draw-call бюджет — не бесконечный.** Village после добавления часовни/сада/пруда/скирд/гирлянд
+  держится на ~800 draw calls именно за счёт instancing (деревья = 4 draw на 20 деревьев,
+  бочки/камыши/цветы/гирлянды — по одному `InstancedMesh`). Новый контент добавлять
+  инстансами; сверяться с `npm run census`.
+- **DUSK выбивает светлое albedo.** Village-атмосфера = sun 2.0 / exposure 1.0; светлый
+  пластырь (`#d8cbb2` и выше) уходит в чистый белый под ACES. Держать тона стен/крыш в
+  среднем значении (`PLASTER_TONES`/`ROOF_TONES`).
+
+## 7. Map-native textures (не заимствовать чужие ассеты)
+
+Правило: **карта не тянет тематические текстуры другой карты.** Village исторически
+использовал `crateTexture` (сено с hazard-шевронами), `barrelTexture` («FUEL-51») и
+`hexTexture` (cyan-сетка неба) — это читалось как «завод на деревне» и было вычищено.
+
+- Свои фабрики — в `src/game/textures/<map>.ts`, экспорт через `textures/index.ts`.
+- Все фабрики идут через `cachedTexture(key, …)` (process-lifetime, `markShared`) и
+  ключуются своим тоном; несколько тонов = несколько текстур.
+- Общие (не тематические) текстуры остаются в `shared.ts`/`effects.ts` — их можно
+  переиспользовать (`glowTexture`, `smokeTexture`, `scorchTexture`).
+- Общая геометрия/приёмы (skyline-кольцо, рампа-клин, instanced-забор) — выносить
+  только если они действительно generic (`arena/skyline.ts`).

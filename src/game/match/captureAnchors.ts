@@ -11,7 +11,10 @@ interface CaptureAnchor {
 
 /**
  * Design anchors (arena half ≈ 150). Keep away from team bases at z±120.
- * factory: west / center / east · village: plaza + flanks · city: plaza + N/S avenue.
+ * factory: west / center / east · village: plaza + flank meadows · city: plaza + N/S avenue.
+ *
+ * Every anchor must sit in a ~20 m clearing (CAPTURE.radius) with soft cover
+ * only — `villageMap.test.ts` / `factoryMap.test.ts` pin this.
  */
 const CAPTURE_ANCHORS: Record<MapId, readonly CaptureAnchor[]> = {
   factory: [
@@ -21,8 +24,8 @@ const CAPTURE_ANCHORS: Record<MapId, readonly CaptureAnchor[]> = {
   ],
   village: [
     { id: 'A', x: 0, z: 4 },
-    { id: 'B', x: -85, z: 25 },
-    { id: 'C', x: 88, z: -18 },
+    { id: 'B', x: -100, z: 20 },
+    { id: 'C', x: 100, z: -20 },
   ],
   city: [
     { id: 'A', x: 0, z: 0 },

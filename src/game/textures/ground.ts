@@ -299,6 +299,27 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
   const { c, ctx } = makeCanvas(S);
   const rectX = (x0: number, z0: number, w: number, d: number) =>
     ctx.fillRect(px(x0), pz(z0), w * K, d * K);
+  const ring = (x: number, z: number, r: number, stroke: string, width: number, dash: number[] = []) => {
+    ctx.save();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = width * K;
+    ctx.setLineDash(dash.map((v) => v * K));
+    ctx.beginPath();
+    ctx.arc(px(x), pz(z), r * K, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  };
+  const label = (txt: string, x: number, z: number, rot: number, size: number, color = 'rgba(255,255,255,0.13)') => {
+    ctx.save();
+    ctx.translate(px(x), pz(z));
+    ctx.rotate(rot);
+    ctx.font = `bold ${Math.round(size * K)}px 'Russo One','Exo 2',sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.fillText(txt, 0, 0);
+    ctx.restore();
+  };
 
   ctx.fillStyle = '#2a2418';
   ctx.fillRect(0, 0, S, S);
@@ -342,10 +363,10 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
   dirtRoad(-half + 16, -10, arenaSize - 32, 20);
   dirtRoad(-10, -half + 16, 20, arenaSize - 32);
 
-  // diagonal-ish paths to barn clusters (NW / SE)
-  const barnPath = (x0: number, z0: number, x1: number, z1: number) => {
+  // trodden paths to the landmarks (barns NW/SE, chapel SW, windmill NE)
+  const path = (x0: number, z0: number, x1: number, z1: number, width = 7) => {
     ctx.strokeStyle = 'rgba(58,48,32,0.7)';
-    ctx.lineWidth = 7 * K;
+    ctx.lineWidth = width * K;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(px(x0), pz(z0));
@@ -353,36 +374,86 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
     ctx.stroke();
     ctx.lineCap = 'butt';
   };
-  barnPath(-10, 10, -90, 82);   // to NW barns
-  barnPath(10, -10, 92, -82);   // to SE barns
-  barnPath(-10, -10, -82, -46); // to mid-W barn
-  barnPath(10, 10, 78, 48);     // to mid-E barn
+  path(-10, 10, -98, 82);     // to NW barns
+  path(10, -10, 98, -82);     // to SE barns
+  path(-10, -10, -86, -52);   // to mid-W barn
+  path(10, 10, 84, 50);       // to mid-E barn
+  path(-16, 24, -104, -100);  // to the chapel
+  path(16, 16, 118, 108);     // to the windmill
+  path(-20, 32, -48, 48, 5);  // to the pond
 
-  // village square (packed earth, worn light) + cobble paving
+  // ── village square: packed earth + dense cobble paving (|x|,|z| < 30) ─────
   ctx.fillStyle = 'rgba(96,80,54,0.4)';
-  rectX(-28, -28, 56, 56);
-  // cobble tiles across the square (плотная брусчатка)
-  ctx.fillStyle = 'rgba(118,104,80,0.5)';
-  for (let x = -26; x < 26; x += 3.2) {
-    for (let z = -26; z < 26; z += 3.2) {
-      const jx = (Math.random() - 0.5) * 0.8, jz = (Math.random() - 0.5) * 0.8;
+  rectX(-30, -30, 60, 60);
+  for (let x = -28; x < 28; x += 3.2) {
+    for (let z = -28; z < 28; z += 3.2) {
+      const jx = (Math.random() - 0.5) * 1.6, jz = (Math.random() - 0.5) * 1.6;
+      ctx.fillStyle = `rgba(118,104,80,${0.24 + Math.random() * 0.16})`;
       ctx.beginPath();
-      ctx.arc(px(x + jx), pz(z + jz), 1.5 * K, 0, Math.PI * 2);
+      ctx.arc(px(x + jx), pz(z + jz), (1.1 + Math.random() * 0.9) * K, 0, Math.PI * 2);
       ctx.fill();
     }
   }
-  // cobble ring around the well (accent)
-  ctx.strokeStyle = 'rgba(150,134,102,0.55)';
-  ctx.lineWidth = 0.7 * K;
-  ctx.beginPath();
-  ctx.arc(px(0), pz(0), 12 * K, 0, Math.PI * 2);
-  ctx.stroke();
+  // packed-earth ring around the well (-16,30) and the market plaza centre
+  ring(-16, 30, 6.5, 'rgba(150,134,102,0.55)', 0.8);
+  ring(0, 0, 15, 'rgba(150,134,102,0.35)', 0.6, [3, 2]);
 
-  // paddock field patches (green pasture) near clusters
+  // ── capture-point rings (anchors from match/captureAnchors.ts) ────────────
+  const cp: [string, number, number][] = [['A', 0, 4], ['B', -100, 20], ['C', 100, -20]];
+  for (const [id, cx, cz] of cp) {
+    ring(cx, cz, 20, 'rgba(200,162,74,0.30)', 0.5, [3.2, 2.4]);
+    ring(cx, cz, 6, 'rgba(200,162,74,0.18)', 0.35);
+    label(id, cx, cz, 0, 7, 'rgba(200,162,74,0.30)');
+  }
+
+  // ── churchyard at the chapel (-104, -100 / tower -116) ───────────────────
+  ctx.fillStyle = 'rgba(96,92,80,0.35)';
+  rectX(-113, -124, 18, 40);
+  ctx.strokeStyle = 'rgba(150,140,120,0.28)';
+  ctx.lineWidth = 0.5 * K;
+  ctx.strokeRect(px(-113), pz(-124), 18 * K, 40 * K);
+  label('ЧАСОВНЯ', -104, -84, 0, 4.6, 'rgba(255,226,170,0.22)');
+
+  // ── pond (NW inner) ──────────────────────────────────────────────────────
+  ctx.fillStyle = 'rgba(40,58,66,0.85)';
+  ctx.beginPath();
+  ctx.ellipse(px(-48), pz(48), 12 * K, 9 * K, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(58,46,26,0.5)';
+  ctx.beginPath();
+  ctx.ellipse(px(-48), pz(48), 14.4 * K, 11.2 * K, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(40,58,66,0.9)';
+  ctx.beginPath();
+  ctx.ellipse(px(-48), pz(48), 11.4 * K, 8.4 * K, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(150,190,200,0.10)';
+  ctx.lineWidth = 0.4 * K;
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.ellipse(px(-48), pz(48), (3 + i * 2) * K, (2 + i * 1.5) * K, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  label('ПРУД', -48, 66, 0, 4.2, 'rgba(150,200,220,0.20)');
+
+  // ── orchard plot (SW inner, x −60..−40 · z −42..−62) ─────────────────────
+  ctx.fillStyle = 'rgba(70,96,44,0.22)';
+  rectX(-66, -68, 32, 32);
+  ctx.fillStyle = 'rgba(60,44,26,0.35)';
+  for (const ox of [-60, -50, -40]) {
+    for (const oz of [-42, -52, -62]) {
+      ctx.beginPath();
+      ctx.arc(px(ox), pz(oz), 3.4 * K, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  label('САД', -50, -72, 0, 4.2, 'rgba(180,220,150,0.20)');
+
+  // paddock field patches (green pasture) near the barn clusters
   ctx.fillStyle = 'rgba(70,100,45,0.16)';
   rectX(-124, -116, 60, 56);
   rectX(60, 62, 64, 60);
-  // wheat fields (золотые) with furrows — SW + NE quadrants
+  // wheat fields (золотые) with furrows — kept clear of the spawn aprons
   const wheatField = (x0: number, z0: number, w: number, d: number, horiz: boolean) => {
     ctx.fillStyle = 'rgba(168,132,58,0.28)';
     rectX(x0, z0, w, d);
@@ -403,23 +474,37 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
       }
     }
   };
-  wheatField(-128, 40, 56, 70, false);   // SW wheat
-  wheatField(70, -128, 62, 58, true);    // NE wheat
-  wheatField(34, 96, 56, 34, true);      // S-mid wheat strip
+  wheatField(-132, 26, 50, 66, false);   // W wheat
+  wheatField(84, -126, 62, 58, true);    // E wheat
+  wheatField(86, 92, 52, 34, true);      // E-mid wheat strip
   // tilled fields (коричневые борозды)
   ctx.fillStyle = 'rgba(120,90,40,0.16)';
-  rectX(62, -116, 58, 54);   // tilled SE field
-  rectX(-120, 58, 54, 64);   // tilled NW field
+  rectX(88, -116, 54, 54);   // tilled E field
+  rectX(-132, 58, 50, 62);   // tilled NW field
   ctx.strokeStyle = 'rgba(40,32,18,0.3)';
   ctx.lineWidth = 0.4 * K;
   for (let i = 0; i < 8; i++) {
     ctx.beginPath();
-    ctx.moveTo(px(62 + i * 7), pz(-116)); ctx.lineTo(px(62 + i * 7), pz(-62));
+    ctx.moveTo(px(88 + i * 6.6), pz(-116)); ctx.lineTo(px(88 + i * 6.6), pz(-62));
     ctx.stroke();
   }
   for (let i = 0; i < 8; i++) {
     ctx.beginPath();
-    ctx.moveTo(px(-120), pz(58 + i * 8)); ctx.lineTo(px(-66), pz(58 + i * 8));
+    ctx.moveTo(px(-132), pz(58 + i * 7.6)); ctx.lineTo(px(-82), pz(58 + i * 7.6));
+    ctx.stroke();
+  }
+
+  // puddles along the dirt cross (wet dusk ground)
+  for (let i = 0; i < 14; i++) {
+    const onNS = Math.random() > 0.5;
+    const x = onNS ? (Math.random() - 0.5) * 16 : (Math.random() - 0.5) * 280;
+    const z = onNS ? (Math.random() - 0.5) * 280 : (Math.random() - 0.5) * 16;
+    ctx.fillStyle = `rgba(20,24,26,${0.28 + Math.random() * 0.2})`;
+    ctx.beginPath();
+    ctx.ellipse(px(x), pz(z), (1.4 + Math.random() * 2.6) * K, (1.0 + Math.random() * 1.6) * K, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(150,170,190,0.10)';
+    ctx.lineWidth = 0.2 * K;
     ctx.stroke();
   }
 
@@ -430,6 +515,12 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
     ctx.beginPath(); ctx.moveTo(px(m), 0); ctx.lineTo(px(m), S); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, pz(m)); ctx.lineTo(S, pz(m)); ctx.stroke();
   }
+  label('ДЕРЕВНЯ', 0, 128, 0, 9, 'rgba(200,162,74,0.10)');
+  label('ДЕРЕВНЯ', 0, -136, 0, 9, 'rgba(200,162,74,0.10)');
+  label('ПЛОЩАДЬ', 0, -30, 0, 4.6, 'rgba(255,226,170,0.20)');
+  label('МЕЛЬНИЦА', 118, 96, 0, 4.2, 'rgba(255,226,170,0.18)');
+  label('АМБАР', -98, 74, 0, 4.2, 'rgba(255,226,170,0.16)');
+  label('АМБАР', 98, -74, 0, 4.2, 'rgba(255,226,170,0.16)');
 
   noise(ctx, S, 6000, 0.04);
     const t = new THREE.CanvasTexture(c);

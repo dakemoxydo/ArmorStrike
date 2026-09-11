@@ -2,6 +2,7 @@ import {
   cityGroundTexture,
   factoryGroundTexture,
   villageGroundTexture,
+  villageWallTexture,
 } from './textures';
 import { ARENA } from './constants';
 import type { Arena } from './Arena';
@@ -30,6 +31,7 @@ export function buildArena(
     case 'village':
       buildArenaShell(ctx, {
         groundMap: villageGroundTexture(ARENA.size),
+        wallMap: villageWallTexture(),
         groundRoughness: 0.92,
         groundMetalness: 0.05,
         wallColor: 0xc8bca0,
@@ -38,6 +40,7 @@ export function buildArena(
         stripColor: 0xc8a24a,
         signA: ['ДЕРЕВНЯ', 'ПОСЁЛОК «ARMORSTRIKE»'],
         signB: ['ПЛОЩАДЬ', 'РЫНОК · КОЛОДЕЦ'],
+        signStyle: 'rural',
       });
       buildVillageContent(ctx);
       break;

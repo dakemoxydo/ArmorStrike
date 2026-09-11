@@ -2,11 +2,13 @@
 import * as THREE from 'three';
 import { ARENA } from '../constants';
 import { colliderFromCenter } from '../engine/physics';
-import { signTexture, wallTexture } from '../textures';
+import { signTexture, wallTexture, type SignStyle } from '../textures';
 import type { ArenaBuildContext } from './context';
 
 export interface ArenaShellTheme {
   groundMap: THREE.Texture;
+  /** Perimeter wall map; defaults to the shared industrial `wallTexture()`. */
+  wallMap?: THREE.Texture;
   groundRoughness?: number;
   groundMetalness?: number;
   wallColor?: number;
@@ -15,6 +17,8 @@ export interface ArenaShellTheme {
   stripColor?: number;
   signA: [string, string];
   signB: [string, string];
+  /** Billboard styling; defaults to the neon `tech` look. */
+  signStyle?: SignStyle;
 }
 
 /** Perimeter, ground and wall trim shared by every map. */
@@ -39,7 +43,7 @@ export function buildArenaShell(ctx: ArenaBuildContext, theme: ArenaShellTheme) 
   ctx.group.add(ground);
 
   const wMat = new THREE.MeshStandardMaterial({
-    map: wallTexture(),
+    map: theme.wallMap ?? wallTexture(),
     roughness: 0.6,
     metalness: 0.4,
     color: theme.wallColor ?? 0xbfd2e6,
@@ -101,8 +105,9 @@ export function buildArenaShell(ctx: ArenaBuildContext, theme: ArenaShellTheme) 
 
   const [tA, sA] = theme.signA;
   const [tB, sB] = theme.signB;
+  const signStyle = theme.signStyle ?? 'tech';
   const signMat = new THREE.MeshStandardMaterial({
-    map: signTexture(tA, sA),
+    map: signTexture(tA, sA, signStyle),
     emissive: 0x22333a,
     emissiveIntensity: 0.5,
     roughness: 0.6,
@@ -113,7 +118,7 @@ export function buildArenaShell(ctx: ArenaBuildContext, theme: ArenaShellTheme) 
   ctx.group.add(sign);
 
   const sign2Mat = new THREE.MeshStandardMaterial({
-    map: signTexture(tB, sB),
+    map: signTexture(tB, sB, signStyle),
     emissive: 0x22333a,
     emissiveIntensity: 0.5,
     roughness: 0.6,

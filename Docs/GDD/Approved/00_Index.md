@@ -29,7 +29,7 @@
 | [[Maps]] | Карты и выбор арены (300×300) | `mapCatalog`, `Arena.rebuild`, `MapSelect` |
 | [[Factory_Level_Design]] | Завод: foundry, containers, crane, tank farm | `buildFactoryContent`, `factoryGroundTexture` |
 | [[City_Level_Design]] | Город: grid, districts, overpass | `buildCityContent`, `cityGroundTexture` |
-| [[Village_Level_Design]] | Деревня: square, barns, paddocks | `buildVillageContent`, `villageGroundTexture` |
+| [[Village_Level_Design]] | Деревня: площадь, часовня, амбары, пруды, сад | `buildVillageContent`, `villageGroundTexture` |
 | [[Game_Lifecycle]] | Режимы, пауза, death cam | `RunState`, `deathLifecycle` |
 
 ## Архитектура
