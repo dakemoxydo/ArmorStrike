@@ -17,6 +17,29 @@ Match combat scales: `BOT_NORMAL` in `matchConfig.ts` (fixed Normal difficulty).
 Cooldown pad — `firePadForRole` (`aiRoles.ts`): standard **1.2** / assault **1.15** / sniper **1.35**, применяется в `rosterSpawn.makeBot`. У пушки — на межвыстрел (0.28 → 0.336 с; полная перезарядка магазина не пада). У railgun/flamer `TURRET.shotCooldown = 0` (каденция weapon-internal) — их пад идёт через `reloadSpeedMul = 1/firePad`: рельса-бот заряд 1.1 → **~1.49 с**, перезарядка 4.8 → **~6.48 с**; огнемёт-бот батарея 22 → **~19.1/с** (расход не меняется). Все классы ботов стреляют медленнее игрока.  
 `roleForBot` / `personaForRole` / `aimErrorMulForRole` / `coverHpFracForRole` / `firePadForRole` — `aiRoles.ts`.
 
+## Roster: корпус и башня бота
+
+`spawnMatchRoster` → `makeBot` (`match/rosterSpawn.ts`) выдаёт корпус и башню
+**независимыми** циклами каталога: `hull = HULL_IDS[i % 5]`
+(`hunter, viking, mammoth, speedy, titan`), `turret = TURRET_IDS[i % 3]`
+(`railgun, flamethrower, cannon`). Роль выводится из башни, поэтому пара
+«роль × корпус» повторяется с периодом **15** (НОК 3 и 5).
+
+Два свапа-предохранителя удерживают корпус когерентным роли:
+
+| Условие | Свап | Почему |
+|---------|------|--------|
+| `assault` + `mammoth` / `titan` | → `viking` | штурмовик живёт скоростью; сверхтяжёлый корпус убивает роль |
+| `sniper` + `viking` | → `hunter` | снайперу не нужен самый хрупкий корпус |
+
+**Флагман `titan` ботам не достаётся.** Он стоит на индексах 9 и 14, а самый
+длинный ростер — 9 ботов (TDM/CP: 4 союзника + 5 врагов; DM: 7). Сверхтяжёлый
+корпус сейчас строго игроцкий; состояние запинено контрактом в
+`botDutyTable.test.ts` (`флагман titan не достаётся ботам ни в одном режиме`),
+чтобы рост `teamSize` / `dmBotCount` требовал осознанного решения, а не молча
+раздавал флагман ботам. Золотая таблица «индекс → роль → корпус» на 15 позиций —
+там же.
+
 ## Target selection (P2 multi-target)
 
 `pickAiFocus` (`src/game/match/aiFocus.ts`) + `BotAiStage`:
@@ -89,4 +112,5 @@ engage ──(lose sight timeout)──► patrol
 | `pickObjectiveZone`, `isObjectiveDuty` | `src/game/match/aiObjective.ts` |
 | `BotAiStage` | `src/game/engine/stages/BotAiStage.ts` |
 | `roleForBot` | `src/game/aiRoles.ts` |
+| `spawnMatchRoster`, `makeBot` | `src/game/match/rosterSpawn.ts` |
 | `updateTurretAndFire` | `src/game/aiAimFire.ts` |
