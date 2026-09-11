@@ -24,7 +24,7 @@
 | [[Capture_Point]] | CP A/B/C, score tick, markers (P4) | `captureLogic`, `CaptureMarkers`, `MatchRuntime` |
 | [[AI_Bots]] | ИИ ботов | `AIController`, `aiRoles` |
 | [[Scoring]] | Очки и убийства | `scoring`, `SCORE` |
-| [[Garage_Loadout]] | Гараж 3×3 | `RunState`, `HULLS`/`TURRETS` |
+| [[Garage_Loadout]] | Гараж 4×3 | `RunState`, `HULLS`/`TURRETS` |
 | [[Arena_Physics]] | Арена и коллизии | `Arena`, `physics`, `PhysicsSystem` |
 | [[Maps]] | Карты и выбор арены (300×300) | `mapCatalog`, `Arena.rebuild`, `MapSelect` |
 | [[Factory_Level_Design]] | Завод: foundry, containers, crane, tank farm | `buildFactoryContent`, `factoryGroundTexture` |
