@@ -94,14 +94,23 @@ describe('D1: objective duty по режимам (AI_Bots.md ~50%)', () => {
     }
   });
 
-  it('корпус когерентен роли под текущим порядком каталога (свапы инертны)', () => {
-    // TURRET_IDS/HULL_IDS циклы дают: снайпер→hunter, штурм→viking, стандарт→mammoth.
-    // Свапы в makeBot (assault≠mammoth / sniper≠viking) — защита от смены порядка.
-    for (let i = 0; i < 9; i++) {
-      const role = roleAt(i);
-      const hull = hullAt(i);
-      expect(hull).toBe(role === 'sniper' ? 'hunter' : role === 'assault' ? 'viking' : 'mammoth');
+  it('корпус когерентен роли под текущим порядком каталога', () => {
+    // Роль задаёт турель (цикл 3), корпус — независимый цикл каталога (4),
+    // поэтому пара повторяется с периодом 12. Золотая таблица ниже — это
+    // HULL_IDS[i % 4] со свапами-предохранителями из makeBot на i=9/10;
+    // она ловит любую смену порядка каталога и заставляет принять её осознанно.
+    const GOLDEN = [
+      'hunter', 'viking', 'mammoth', 'speedy', // 0..3
+      'hunter', 'viking', 'mammoth', 'speedy', // 4..7
+      'hunter', 'hunter', 'viking', 'speedy', // 8..11
+    ];
+    expect(HULL_IDS).toEqual(['hunter', 'viking', 'mammoth', 'speedy']);
+    for (let i = 0; i < GOLDEN.length; i++) {
+      expect(hullAt(i), `index ${i}`).toBe(GOLDEN[i]);
     }
+    // Свапы действительно срабатывают: штурм не берёт «Мамонта», снайпер — «Викинга».
+    expect(roleAt(9)).toBe('sniper');
+    expect(roleAt(10)).toBe('assault');
   });
 });
 

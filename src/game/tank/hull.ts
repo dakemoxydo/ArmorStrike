@@ -1,4 +1,4 @@
-// ===== Procedural hulls: hunter / viking / mammoth =====
+// ===== Procedural hulls: hunter / viking / mammoth / speedy =====
 //
 // Each hull is authored as a pile of small primitives (armour plates, road
 // wheels, hatches, louvers, rivets, tow hooks) and fused into one geometry per
@@ -369,12 +369,122 @@ function buildMammoth(b: HullBuilder) {
   b.cyl(1.42, 1.48, 0.16, 20, 'body', 0, 2.32, -0.10);
 }
 
+// -------------------------------------------------------------------- speedy
+
+/**
+ * Ultra-light interceptor hull: the flattest, narrowest chassis in the game.
+ * A wide sled-like deck with raised side rails carries one oversized turret
+ * ring plate; the whole lower half is a single dark track guard pierced by
+ * vent windows, the nose is a long wedge glacis with a bolted appliqué plate
+ * and a light bar, and a stepped engine deck closes the rear.
+ *
+ * Two-tone is the point: the guard slab is the only large `metal` mass in the
+ * hull set. `metal` is `style.accent` (dark slate for the player, near-black
+ * for bots), which is exactly the "dark lower half" the silhouette needs —
+ * unlike the thin trim strips elsewhere, this mass carries no fine detail, so
+ * nothing is lost when accent is dark.
+ */
+function buildSpeedy(b: HullBuilder) {
+  const TRACK: TrackSpec = {
+    x: 1.22, width: 0.56, wheelWidth: 0.68,
+    front: 2.04, rear: -2.04,
+    wheelR: 0.26, wheelY: 0.40, wheelCount: 5,
+    linkH: 0.12, hubR: 0.26,
+  };
+  for (const side of [-1, 1] as const) buildTrack(b, side, TRACK);
+
+  // --- Flat sled hull ---
+  b.box(2.34, 0.50, 4.10, 'body', 0, 0.74, -0.05); // lower hull
+  b.box(2.30, 0.34, 3.40, 'body', 0, 1.18, -0.30); // fighting compartment
+  b.box(2.26, 0.10, 3.40, 'body', 0, 1.40, -0.30); // flat deck plate
+
+  // --- Dark track guard: the reference's lower half ---
+  for (const side of [-1, 1] as const) {
+    b.box(0.60, 0.26, 3.90, 'body', side * 1.40, 1.04, -0.05); // sponson over the band
+    b.box(0.26, 0.58, 3.70, 'metal', side * 1.68, 0.66, -0.05); // guard slab
+    b.box(0.32, 0.09, 3.80, 'body', side * 1.68, 0.98, -0.05); // guard top rail
+    b.box(0.28, 0.07, 3.80, 'metal', side * 1.68, 0.38, -0.05); // guard bottom rail
+    for (let i = 0; i < 4; i++) {
+      b.box(0.07, 0.26, 0.46, 'dark', side * 1.81, 0.66, -1.30 + i * 0.88); // vent window
+    }
+    b.box(0.06, 0.07, 0.24, 'lamp', side * 1.81, 0.86, 1.60); // side marker light
+    b.box(0.26, 0.20, 0.08, 'dark', side * 1.68, 0.50, 1.86); // front mud flap
+    b.box(0.26, 0.18, 0.08, 'dark', side * 1.68, 0.52, -1.94); // rear mud flap
+
+    // Stowed tow cable above the sponson, on welded brackets.
+    b.cyl(0.045, 0.045, 2.70, 6, 'metal', side * 1.52, 1.24, -0.35, Math.PI / 2, 0, 0);
+    b.box(0.06, 0.14, 0.06, 'metal', side * 1.52, 1.16, -1.20);
+    b.box(0.06, 0.14, 0.06, 'metal', side * 1.52, 1.16, 0.30);
+
+    // Fender tool box, seated on the sponson beside the compartment.
+    b.box(0.42, 0.16, 0.66, 'metal', side * 1.36, 1.26, -1.45);
+    b.box(0.46, 0.05, 0.70, 'metal', side * 1.36, 1.36, -1.45);
+
+    // Grab handle on the compartment wall.
+    b.box(0.06, 0.06, 0.34, 'metal', side * 1.16, 1.26, 0.30);
+    b.rivets(4, 0.028, 'metal', side * 1.16, 1.26, 0.30, 0, 0, 0.30);
+  }
+
+  // --- Deck rails: the reference's raised green tray edges ---
+  for (const side of [-1, 1] as const) {
+    b.box(0.18, 0.14, 3.30, 'body', side * 1.13, 1.53, -0.30);
+    b.box(0.20, 0.05, 3.34, 'metal', side * 1.13, 1.62, -0.30);
+  }
+
+  // --- Long wedge glacis with a bolted appliqué plate ---
+  const G = slope(0, 1.11, 1.805, 0.598);
+  const gl = (w: number, h: number, d: number, slot: HullSlot, u: number, v: number, n = 0) => {
+    const [x, y, z] = G(u, v, n);
+    b.box(w, h, d, slot, x, y, z, 0.598, 0, 0);
+  };
+  gl(2.30, 0.15, 1.10, 'body', 0, 0, 0);
+  gl(1.40, 0.14, 0.70, 'metal', -0.22, 0.02, 0.15); // raised appliqué plate
+  gl(0.54, 0.09, 0.40, 'metal', 0.62, 0.22, 0.12); // driver's hatch
+  for (const u of [0.48, 0.62, 0.76]) gl(0.10, 0.07, 0.10, 'dark', u, 0.50, 0.14); // periscopes
+  for (const u of [-0.92, -0.60]) gl(0.26, 0.09, 0.36, 'dark', u, -0.36, 0.12); // spare links
+  for (const side of [-1, 1] as const) gl(0.18, 0.14, 0.22, 'metal', side * 1.04, -0.38, 0.10); // tow hooks
+  // Bolt row along the glacis top edge.
+  for (let i = 0; i < 9; i++) {
+    const [bx, by, bz] = G(-0.96 + i * 0.25, -0.46, 0.10);
+    b.sphere(0.03, 'metal', bx, by, bz, 6, 4);
+  }
+
+  // --- Nose: lower plate and a full-width light bar ---
+  b.box(2.30, 0.40, 0.16, 'body', 0, 0.70, 2.02);
+  b.box(1.70, 0.08, 0.06, 'lamp', 0, 0.60, 2.11);
+
+  // --- Rear plate, slanted exhausts, tow hooks ---
+  b.box(2.30, 0.50, 0.16, 'body', 0, 0.76, -2.14);
+  for (const side of [-1, 1] as const) {
+    b.cyl(0.085, 0.105, 0.55, 10, 'metal', side * 1.00, 1.22, -2.00, -0.6, 0, 0);
+    b.cyl(0.095, 0.095, 0.08, 10, 'dark', side * 1.00, 1.447, -2.155, -0.6, 0, 0);
+    b.box(0.24, 0.30, 0.34, 'dark', side * 1.00, 1.16, -1.92); // heat shield
+    b.box(0.20, 0.16, 0.20, 'metal', side * 0.80, 0.66, -2.24); // tow hook
+    b.cyl(0.10, 0.10, 0.07, 8, 'metal', side * 0.68, 1.50, -0.95); // fuel cap
+  }
+
+  // --- Stepped rear engine deck: louvers, hatch, drum ---
+  b.box(2.02, 0.16, 0.94, 'body', 0, 1.49, -1.50);
+  b.louvers(3, 1.10, 0.06, 0.17, 'dark', 0, 1.585, -1.68, -0.34);
+  b.box(0.54, 0.05, 0.36, 'metal', -0.44, 1.585, -1.50); // hatch
+  b.rivetRing(6, 0.026, 'metal', -0.44, 1.615, -1.50, 0.18);
+  b.cyl(0.26, 0.26, 0.07, 14, 'body', 0.48, 1.585, -1.50); // engine drum
+  b.cyl(0.20, 0.20, 0.03, 14, 'dark', 0.48, 1.625, -1.50);
+
+  // --- Oversized turret ring plate + collar ---
+  b.cyl(1.30, 1.34, 0.10, 24, 'body', 0, 1.43, 0.06);
+  b.cyl(1.24, 1.28, 0.13, 20, 'body', 0, 1.44, 0.06);
+  b.cyl(1.32, 1.32, 0.05, 24, 'metal', 0, 1.375, 0.06); // ring bezel
+  b.rivetRing(16, 0.032, 'metal', 0, 1.49, 0.06, 1.20);
+}
+
 // -------------------------------------------------------------------- wiring
 
 const PART_BUILDERS: Record<HullId, (b: HullBuilder) => void> = {
   hunter: buildHunter,
   viking: buildViking,
   mammoth: buildMammoth,
+  speedy: buildSpeedy,
 };
 
 const geometryCache = new Map<HullId, HullGeometrySet>();

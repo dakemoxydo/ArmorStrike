@@ -117,7 +117,7 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
           </div>
 
           <div
-            className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-3"
             role="tabpanel"
             aria-labelledby={activeTab === 'hulls' ? 'garage-tab-hulls' : 'garage-tab-turrets'}
           >

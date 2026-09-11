@@ -91,13 +91,19 @@ describe('procedural hull geometry', () => {
     }
   });
 
-  it('keeps the hulls distinct: viking lowest, mammoth widest and tallest', () => {
+  it('keeps the hulls distinct: speedy lowest, mammoth widest and tallest', () => {
     const hunter = hullBox('hunter').getSize(new THREE.Vector3());
     const viking = hullBox('viking').getSize(new THREE.Vector3());
     const mammoth = hullBox('mammoth').getSize(new THREE.Vector3());
+    const speedy = hullBox('speedy').getSize(new THREE.Vector3());
 
+    // Height ladder: the light interceptor is the flattest chassis, the
+    // super-heavy the tallest — one silhouette per role.
+    expect(speedy.y).toBeLessThan(viking.y);
     expect(viking.y).toBeLessThan(hunter.y);
     expect(hunter.y).toBeLessThan(mammoth.y);
+    // Width: the light hull is the narrowest, the super-heavy the widest.
+    expect(speedy.x).toBeLessThan(hunter.x);
     expect(mammoth.x).toBeGreaterThan(hunter.x);
     expect(mammoth.x).toBeGreaterThan(viking.x);
   });

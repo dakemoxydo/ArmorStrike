@@ -82,6 +82,16 @@ export const HULLS: Record<HullId, HullDef> = {
     desc: 'Сверхтяжёлая монолитная броня. Пониженная мобильность компенсируется огромным запасом прочности.',
     badge: 'Макс. броня',
   },
+  speedy: {
+    id: 'speedy',
+    name: 'Speedy',
+    maxHealth: 70,
+    speed: 23.5,
+    reverseSpeed: 14.5,
+    turnSpeed: 4.4,
+    desc: 'Сверхлёгкий низкопрофильный корпус-перехватчик. Абсолютная скорость и разворот — ценой почти полного отсутствия брони.',
+    badge: 'Макс. скорость',
+  },
 };
 
 export const TURRETS: Record<TurretId, TurretDef> = {

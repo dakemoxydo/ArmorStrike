@@ -43,7 +43,7 @@ export default function HullCard({ hull, isSelected, delay, onSelect, disabled }
             <span className="font-display text-cyan-300">{hull.speed}</span>
           </div>
           <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-            <div className="g-stat-bar bg-cyan-400 h-full rounded-full" style={{ width: `${(hull.speed / 20) * 100}%` }} />
+            <div className="g-stat-bar bg-cyan-400 h-full rounded-full" style={{ width: `${(hull.speed / 24) * 100}%` }} />
           </div>
         </div>
       </div>
