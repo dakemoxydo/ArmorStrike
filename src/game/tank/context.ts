@@ -7,6 +7,8 @@ export interface TankBuildContext {
   bodyMat: THREE.MeshStandardMaterial;
   turretMat: THREE.MeshStandardMaterial;
   metalMat: THREE.MeshStandardMaterial;
+  /** Recessed detail material: grilles, louvers, rubber, track shadows. */
+  darkMat: THREE.MeshStandardMaterial;
   lampMat: THREE.MeshBasicMaterial;
   trackTex: THREE.CanvasTexture;
   trackMat: THREE.MeshStandardMaterial;

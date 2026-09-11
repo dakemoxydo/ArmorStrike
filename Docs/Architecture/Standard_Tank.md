@@ -65,6 +65,12 @@ createWeapon(owner, type, deps)  →  Railgun | Flamethrower | Cannon
 | `'code'` | `buildHull` / `buildTurret` на style-материалах | все корпуса и башни |
 | `'model'` | `assetManager.load(path)` → `normalizeHullModel` → `prepareTexturedModel` | недоступен (`MODELS_ENABLED = false`) |
 
+Процедурный корпус — не «пара боксов»: детали копятся в `HullBuilder` и
+сливаются в **один меш на слот материала** (`body` / `metal` / `dark` /
+`track` / `lamp`), а сама геометрия кэшируется на процесс и помечается
+`markShared`. Полное описание, бюджет детализации и инструмент визуальной
+проверки — [Standard Hull Models](Standard_Hull_Models.md).
+
 - Код model-веток в `TankFactory` / `AssetManager` / `modelUtils` не удалён:
   при выключенном флаге всегда выполняется процедурный путь.
 - Путь модели строится через `assetUrl` (учитывает `import.meta.env.BASE_URL`).
@@ -82,6 +88,7 @@ createWeapon(owner, type, deps)  →  Railgun | Flamethrower | Cannon
 | Ресурс | Владелец | Кто освобождает |
 | ------ | -------- | --------------- |
 | geometry / textures мастера GLB | `AssetManager` (кэш на процесс) | только `clearCache()` |
+| merged geometry процедурного корпуса | `geometryCache` в `tank/hull.ts` (`markShared`) | никто до конца процесса |
 | материалы экземпляра | танк | `Tank.dispose` → `disposeObject3D` |
 
 - `cloneWithOwnMaterials` даёт каждому танку свои материалы: per-tank FX

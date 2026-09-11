@@ -20,6 +20,8 @@ Self-contained workflow. Works in any IDE/CLI that reads AGENTS.md.
 
 > **Install gotcha:** the bundled npm 10.9.7 (managed Node 22) cannot resolve some peer sets — it throws `TypeError: Cannot read properties of null (reading 'edgesOut')` in arborist's `#loadPeerSet` (hit while adding vitest 4). Installing with the system Node 24 / npm 11.19 works and produces a `lockfileVersion: 3` lock that plain `npm ci` under npm 10 consumes fine. Do not reach for `--legacy-peer-deps`/`.npmrc` — switch npm instead.
 
+> **Dev-server gotcha:** `vite.config.ts` pins `server.host = '127.0.0.1'`. Vite's default is `localhost`, which on Windows resolves to `::1`, so the server binds IPv6-loopback **only** and `http://127.0.0.1:5178` is refused (browser shows "page not found"). Open `http://127.0.0.1:5178`, not `localhost:5178`. To expose the dev server on the LAN: `npm run dev -- --host`.
+
 ## 2. Project Map
 
 - `src/core/` — catalogs (hulls/turrets/weapons): `catalogData.ts`.

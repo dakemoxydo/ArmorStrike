@@ -3,7 +3,9 @@
 set -euo pipefail
 OUT="${1:?usage: screenshot.sh <out.png> [wait_ms]}"
 WAIT_MS="${2:-5000}"
-URL="${URL:-http://localhost:5178}"
+# 127.0.0.1, а не localhost: Vite биндится на IPv4-loopback (см. server.host в
+# vite.config.ts), а `localhost` на Windows может уйти в ::1 и дать отказ.
+URL="${URL:-http://127.0.0.1:5178}"
 mkdir -p "$(dirname "$OUT")"
 EXE=""
 for c in \

@@ -34,6 +34,8 @@
 ## Архитектура
 
 - [[../../Architecture/Core|Core Architecture]] — слои, симуляция, порты, фабрики
+- [[../../Architecture/Standard_Tank|Standard Tank]] — entity, systems, фабрика меша
+- [[../../Architecture/Standard_Hull_Models|Standard Hull Models]] — процедурные корпуса, слоты материалов, бюджет детализации
 
 ## Жанр и петля
 
@@ -59,3 +61,5 @@
 | Порядок тика симуляции | `src/game/engine/stages/` (`index.ts`) |
 | Bootstrap | `src/game/GameBootstrap.ts` |
 | Модель vs код для корпуса/башни | `src/game/tank/TankConfig.ts` |
+| Визуал корпуса (процедурный) | `src/game/tank/hull.ts`, `src/game/tank/hullKit.ts` |
+| Визуал башни (процедурный) | `src/game/tank/turret.ts` |

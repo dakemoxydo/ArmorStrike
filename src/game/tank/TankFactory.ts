@@ -29,6 +29,7 @@ function createStyleMaterials(style: TankStyle): {
   bodyMat: THREE.MeshStandardMaterial;
   turretMat: THREE.MeshStandardMaterial;
   metalMat: THREE.MeshStandardMaterial;
+  darkMat: THREE.MeshStandardMaterial;
   lampMat: THREE.MeshBasicMaterial;
   trackTex: THREE.CanvasTexture;
   trackMat: THREE.MeshStandardMaterial;
@@ -53,6 +54,15 @@ function createStyleMaterials(style: TankStyle): {
   });
   bodyMats.push(metalMat);
 
+  // Recessed detail (grilles, louvers, rubber, inner track well). Stays dark on
+  // every style, so it reads as shadow between the accent parts.
+  const darkMat = new THREE.MeshStandardMaterial({
+    color: 0x161a20,
+    roughness: 0.85,
+    metalness: 0.35,
+  });
+  bodyMats.push(darkMat);
+
   const lampMat = new THREE.MeshBasicMaterial({ color: style.glow });
   const trackTex = trackTexture();
   const trackMat = new THREE.MeshStandardMaterial({
@@ -61,7 +71,7 @@ function createStyleMaterials(style: TankStyle): {
     metalness: 0.15,
   });
 
-  return { bodyMats, bodyMat, turretMat, metalMat, lampMat, trackTex, trackMat };
+  return { bodyMats, bodyMat, turretMat, metalMat, darkMat, lampMat, trackTex, trackMat };
 }
 
 export class TankFactory {
@@ -89,6 +99,7 @@ export class TankFactory {
       bodyMat: mats.bodyMat,
       turretMat: mats.turretMat,
       metalMat: mats.metalMat,
+      darkMat: mats.darkMat,
       lampMat: mats.lampMat,
       trackTex: mats.trackTex,
       trackMat: mats.trackMat,
@@ -116,7 +127,7 @@ export class TankFactory {
         if (modelMats.length > 0) {
           // Prefer model mats for hit-flash; keep turret/metal at end for procedural bits
           bodyMats.length = 0;
-          bodyMats.push(...modelMats, mats.turretMat, mats.metalMat);
+          bodyMats.push(...modelMats, mats.turretMat, mats.metalMat, mats.darkMat);
         }
         hullGroup.add(model);
         turretY = Math.max(0.9, deckY * 0.82);

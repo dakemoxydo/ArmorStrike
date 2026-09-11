@@ -22,7 +22,14 @@ const base = process.env.BASE_PATH?.trim() || '/';
 export default defineConfig({
   base,
   // Dev-порт — единый источник правды (scripts/screenshot.sh ходит сюда).
-  server: { port: 5178 },
+  //
+  // `host: '127.0.0.1'` обязателен: дефолт Vite — `localhost`, а Node 17+ больше
+  // не переупорядочивает результат `dns.lookup` под IPv4-first. На Windows
+  // `localhost` резолвится в `::1`, сервер биндится ТОЛЬКО на IPv6-loopback,
+  // и браузер, идущий на `127.0.0.1:5178` (как и screenshot.sh), получает
+  // ERR_CONNECTION_REFUSED / «Страница не найдена». Явный IPv4-хост это чинит.
+  // Нужен доступ с других устройств — `npm run dev -- --host` (перекроет на 0.0.0.0).
+  server: { port: 5178, host: '127.0.0.1' },
   plugins: [react(), tailwindcss(), viteSingleFile()],
   resolve: {
     alias: {
