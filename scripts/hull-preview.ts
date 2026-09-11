@@ -300,7 +300,7 @@ function buildDraws(
 const turretId = (process.argv[2] as TurretId) ?? 'railgun';
 const paletteName = (process.argv[3] as keyof typeof PALETTES) ?? 'player';
 const palette = PALETTES[paletteName] ?? PALETTES.player;
-const hullIds: HullId[] = ['hunter', 'viking', 'mammoth', 'speedy'];
+const hullIds: HullId[] = ['hunter', 'viking', 'mammoth', 'speedy', 'titan'];
 
 const CELL_W = 640;
 const CELL_H = 480;

@@ -1,4 +1,4 @@
-// ===== Procedural hulls: hunter / viking / mammoth / speedy =====
+// ===== Procedural hulls: hunter / viking / mammoth / speedy / titan =====
 //
 // Each hull is authored as a pile of small primitives (armour plates, road
 // wheels, hatches, louvers, rivets, tow hooks) and fused into one geometry per
@@ -478,6 +478,137 @@ function buildSpeedy(b: HullBuilder) {
   b.rivetRing(16, 0.032, 'metal', 0, 1.49, 0.06, 1.20);
 }
 
+// -------------------------------------------------------------------- titan
+
+/**
+ * Super-heavy flagship hull — the widest, longest and tallest chassis in the
+ * game, and the only one whose rear deck is dominated by a circular engine
+ * grille instead of louver banks.
+ *
+ * Reference read: a low-poly heavy MBT in olive over a dark lower half. The
+ * silhouette is built from four masses: a long shallow glacis carrying layered
+ * appliqué and two nose light clusters, a wide slab hull with spaced side
+ * skirts ribbed along their length, a raised engine deck closed by a round
+ * fan grille with radial spokes, and an eight-wheel running gear that sets the
+ * overall length (the tracks overhang the hull front and rear on purpose).
+ *
+ * Two-tone is deliberate, as on `speedy`: the skirt slab is the second large
+ * `metal` mass in the hull set, because the reference's defining feature is a
+ * dark lower half under an olive upper hull. `metal` is `style.accent` — dark
+ * slate for the player, near-black for bots — which is exactly that dark grey.
+ * The slab carries no fine detail of its own (the ribs are separate `dark`
+ * parts), so nothing is lost when accent goes near-black.
+ */
+function buildTitan(b: HullBuilder) {
+  const TRACK: TrackSpec = {
+    x: 1.86, width: 0.96, wheelWidth: 1.02,
+    front: 2.72, rear: -2.72,
+    wheelR: 0.38, wheelY: 0.60, wheelCount: 8,
+    linkH: 0.20, hubR: 0.40,
+  };
+  for (const side of [-1, 1] as const) buildTrack(b, side, TRACK);
+
+  // --- Slab hull: wider and taller than anything else in the catalog ---
+  b.box(3.36, 1.02, 4.98, 'body', 0, 1.10, -0.05); // lower hull
+  b.box(2.90, 0.72, 3.86, 'body', 0, 2.08, -0.30); // fighting compartment
+  for (const side of [-1, 1] as const) {
+    b.box(1.06, 0.44, 4.76, 'body', side * 1.88, 1.50, -0.05); // sponson over the band
+    b.box(1.20, 0.10, 5.06, 'body', side * 1.90, 1.26, -0.05); // olive fender lip
+    b.box(1.04, 0.34, 0.10, 'dark', side * 1.88, 1.06, 2.54); // front mud flap
+    b.box(1.04, 0.30, 0.10, 'dark', side * 1.88, 1.08, -2.60); // rear mud flap
+
+    // Dark skirt slab, ribbed so the long face never reads as one flat sheet.
+    b.box(0.16, 0.52, 4.72, 'metal', side * 2.40, 1.40, -0.05);
+    for (let i = 0; i < 6; i++) {
+      b.box(0.20, 0.42, 0.15, 'dark', side * 2.40, 1.40, -1.95 + i * 0.78);
+    }
+    b.box(0.12, 0.20, 4.72, 'dark', side * 2.40, 1.12, -0.05); // skirt lower lip
+    b.box(0.06, 0.46, 4.68, 'dark', side * 2.34, 1.38, -0.05); // skirt shadow line
+
+    // Side appliqué panel with two bolt rows — the layered-armour read.
+    b.box(0.09, 0.50, 1.80, 'metal', side * 1.42, 1.96, -0.55);
+    b.rivets(7, 0.042, 'metal', side * 1.44, 2.16, -1.30, 0, 0, 1.50);
+    b.rivets(7, 0.042, 'metal', side * 1.44, 1.76, -1.30, 0, 0, 1.50);
+
+    // Stowage rack on the rear sponson + tool box on the front one.
+    b.box(0.66, 0.28, 1.20, 'metal', side * 1.78, 1.86, -1.95);
+    b.box(0.54, 0.22, 0.90, 'metal', side * 1.88, 1.80, 1.10);
+    b.box(0.58, 0.05, 0.94, 'metal', side * 1.88, 1.93, 1.10);
+    b.cyl(0.05, 0.05, 3.20, 6, 'metal', side * 1.52, 1.74, -0.30, Math.PI / 2, 0, 0); // tow cable
+    b.box(0.07, 0.07, 0.42, 'metal', side * 1.50, 2.20, 0.60); // grab handle
+  }
+  // Spare track links stowed on the front sponsons.
+  for (const side of [-1, 1] as const) {
+    for (let i = 0; i < 4; i++) {
+      b.box(0.50, 0.10, 0.24, 'dark', side * 1.88, 1.76, 1.72 + i * 0.30);
+    }
+  }
+
+  // --- Long shallow glacis: olive face, grey trim, panels kept small ---
+  const G = slope(0, 1.76, 2.16, 0.52);
+  const gl = (w: number, h: number, d: number, slot: HullSlot, u: number, v: number, n = 0) => {
+    const [x, y, z] = G(u, v, n);
+    b.box(w, h, d, slot, x, y, z, 0.52, 0, 0);
+  };
+  gl(3.06, 0.28, 1.66, 'body', 0, 0, 0);
+  gl(3.02, 0.12, 0.18, 'metal', 0, -0.72, 0.14); // trim strip along the top edge
+  gl(1.26, 0.16, 0.54, 'metal', -0.10, 0.40, 0.18); // lower centre appliqué
+  gl(0.78, 0.12, 0.56, 'metal', -0.90, -0.34, 0.17); // driver's hatch
+  gl(0.70, 0.14, 0.50, 'metal', 1.02, -0.30, 0.17); // gunner's plate
+  for (const u of [-0.66, -0.48, -0.30]) gl(0.14, 0.10, 0.14, 'dark', u, 0.06, 0.19); // periscopes
+  for (const u of [0.52, 0.86]) gl(0.30, 0.12, 0.44, 'dark', u, 0.58, 0.15); // spare links
+  for (const side of [-1, 1] as const) gl(0.24, 0.22, 0.30, 'metal', side * 1.30, 0.62, 0.13); // tow hooks
+  // Bolt rows along the glacis top edge and the appliqué lower edge.
+  for (const v of [-0.62, 0.16]) {
+    for (let i = 0; i < 9; i++) {
+      const [bx, by, bz] = G(-1.10 + i * 0.275, v, 0.16);
+      b.sphere(0.042, 'metal', bx, by, bz, 6, 4);
+    }
+  }
+
+  // --- Nose: lower plate, brow, and the reference's twin light clusters ---
+  b.box(3.36, 0.92, 0.34, 'body', 0, 1.04, 2.64); // lower nose plate
+  b.box(3.26, 0.22, 0.34, 'body', 0, 1.48, 2.72); // nose brow
+  b.box(3.28, 0.08, 0.08, 'dark', 0, 1.61, 2.84); // nose seam
+  for (const side of [-1, 1] as const) {
+    gl(0.58, 0.24, 0.16, 'metal', side * 1.02, 0.76, 0.16); // lamp housing
+    gl(0.42, 0.14, 0.06, 'lamp', side * 1.02, 0.76, 0.27); // lamp lens
+  }
+  // Sensor block with a vision window, mirroring the reference's nose box.
+  gl(0.64, 0.30, 0.44, 'metal', -1.16, -0.18, 0.24);
+  gl(0.44, 0.15, 0.07, 'lamp', -1.16, -0.18, 0.37);
+
+  // --- Engine deck: louver bank forward, round fan grille aft ---
+  b.box(2.84, 0.16, 1.80, 'body', 0, 2.48, -1.68);
+  b.louvers(4, 1.92, 0.10, 0.20, 'dark', 0, 2.58, -1.30, -0.32);
+  for (const side of [-1, 1] as const) {
+    b.louvers(3, 0.46, 0.09, 0.20, 'dark', side * 1.14, 2.58, -1.30, -0.32);
+    b.cyl(0.17, 0.17, 0.10, 8, 'metal', side * 0.86, 2.60, -1.06); // fuel cap
+  }
+  // The round grille is the deck's signature: bezel, recessed disc, hub, spokes.
+  b.cyl(0.68, 0.68, 0.06, 22, 'metal', 0, 2.58, -2.02);
+  b.cyl(0.60, 0.60, 0.10, 22, 'dark', 0, 2.62, -2.02);
+  b.cyl(0.22, 0.22, 0.07, 14, 'metal', 0, 2.67, -2.02);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    b.box(0.09, 0.05, 0.50, 'metal', Math.sin(a) * 0.32, 2.67, -2.02 + Math.cos(a) * 0.32, 0, a, 0);
+  }
+
+  // --- Rear plate, exhaust stacks with heat shields, tow hooks ---
+  b.box(3.12, 1.06, 0.26, 'body', 0, 1.14, -2.66);
+  for (const side of [-1, 1] as const) {
+    b.cyl(0.18, 0.20, 1.10, 12, 'metal', side * 1.48, 1.92, -2.48, -0.16, 0, 0);
+    b.box(0.40, 0.46, 0.40, 'dark', side * 1.48, 1.64, -2.44); // heat shield
+    b.box(0.50, 0.12, 0.50, 'metal', side * 1.48, 2.48, -2.56); // stack cap
+    b.box(0.36, 0.26, 0.32, 'metal', side * 1.26, 0.78, -2.82); // tow hook
+  }
+
+  // --- Turret ring collar ---
+  b.cyl(1.50, 1.56, 0.18, 22, 'body', 0, 2.38, -0.10);
+  b.cyl(1.56, 1.56, 0.06, 22, 'metal', 0, 2.32, -0.10);
+  b.rivetRing(18, 0.036, 'metal', 0, 2.48, -0.10, 1.44);
+}
+
 // -------------------------------------------------------------------- wiring
 
 const PART_BUILDERS: Record<HullId, (b: HullBuilder) => void> = {
@@ -485,6 +616,7 @@ const PART_BUILDERS: Record<HullId, (b: HullBuilder) => void> = {
   viking: buildViking,
   mammoth: buildMammoth,
   speedy: buildSpeedy,
+  titan: buildTitan,
 };
 
 const geometryCache = new Map<HullId, HullGeometrySet>();

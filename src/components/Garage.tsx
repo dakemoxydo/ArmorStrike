@@ -117,7 +117,13 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
           </div>
 
           <div
-            className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+            className={
+              // 5 hulls vs 3 turrets: the hull row only goes to five across on
+              // very wide screens, where a single row still fits the dock.
+              activeTab === 'hulls'
+                ? 'grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-3'
+                : 'grid grid-cols-2 lg:grid-cols-3 gap-3'
+            }
             role="tabpanel"
             aria-labelledby={activeTab === 'hulls' ? 'garage-tab-hulls' : 'garage-tab-turrets'}
           >

@@ -37,6 +37,7 @@ export const HULL_CONFIG: Record<HullId, RenderConfig> = {
   viking: { type: 'code' },
   mammoth: { type: 'code' },
   speedy: { type: 'code' },
+  titan: { type: 'code' },
 };
 
 export const TURRET_CONFIG: Record<TurretId, RenderConfig> = {
@@ -51,6 +52,7 @@ export const HULL_TURRET_Y: Record<HullId, number> = {
   viking: 1.5,
   mammoth: 2.3,
   speedy: 1.46,
+  titan: 2.36,
 };
 
 /** Target length (Z/X max) when normalizing imported hull GLBs to game units. */

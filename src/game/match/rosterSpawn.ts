@@ -70,7 +70,8 @@ async function makeBot(
   const bTurret = botTurrets[index % botTurrets.length];
   const role = roleForBot(BOT_NORMAL.roleWave, index, bTurret);
 
-  if (role === 'assault' && bHull === 'mammoth') bHull = 'viking';
+  // Штурмовики не берут сверхтяжёлые корпуса: их скорость — это вся роль.
+  if (role === 'assault' && (bHull === 'mammoth' || bHull === 'titan')) bHull = 'viking';
   if (role === 'sniper' && bHull === 'viking') bHull = 'hunter';
 
   const c = botStyleColor(index, teamId);

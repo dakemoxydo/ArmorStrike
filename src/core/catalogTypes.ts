@@ -1,6 +1,6 @@
 export type WeaponType = 'railgun' | 'flamethrower' | 'cannon';
 
-export type HullId = 'hunter' | 'viking' | 'mammoth' | 'speedy';
+export type HullId = 'hunter' | 'viking' | 'mammoth' | 'speedy' | 'titan';
 
 export interface HullDef {
   id: HullId;

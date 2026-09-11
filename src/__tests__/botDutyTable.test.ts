@@ -32,7 +32,7 @@ function roleAt(index: number): 'sniper' | 'assault' | 'standard' {
 function hullAt(index: number): string {
   let h = HULL_IDS[index % HULL_IDS.length];
   const role = roleAt(index);
-  if (role === 'assault' && h === 'mammoth') h = 'viking';
+  if (role === 'assault' && (h === 'mammoth' || h === 'titan')) h = 'viking';
   if (role === 'sniper' && h === 'viking') h = 'hunter';
   return h;
 }
@@ -95,22 +95,28 @@ describe('D1: objective duty по режимам (AI_Bots.md ~50%)', () => {
   });
 
   it('корпус когерентен роли под текущим порядком каталога', () => {
-    // Роль задаёт турель (цикл 3), корпус — независимый цикл каталога (4),
-    // поэтому пара повторяется с периодом 12. Золотая таблица ниже — это
-    // HULL_IDS[i % 4] со свапами-предохранителями из makeBot на i=9/10;
-    // она ловит любую смену порядка каталога и заставляет принять её осознанно.
+    // Роль задаёт турель (цикл 3), корпус — независимый цикл каталога (5),
+    // поэтому пара повторяется с периодом 15. Золотая таблица ниже — это
+    // HULL_IDS[i % 5] со свапами-предохранителями из makeBot (штурм не берёт
+    // «Мамонта»/«Титана», снайпер — «Викинга»); она ловит любую смену порядка
+    // каталога и заставляет принять её осознанно.
     const GOLDEN = [
-      'hunter', 'viking', 'mammoth', 'speedy', // 0..3
-      'hunter', 'viking', 'mammoth', 'speedy', // 4..7
-      'hunter', 'hunter', 'viking', 'speedy', // 8..11
+      'hunter', 'viking', 'mammoth', 'speedy', 'viking', // 0..4
+      'hunter', 'hunter', 'viking', 'speedy', 'titan', // 5..9
+      'hunter', 'viking', 'mammoth', 'speedy', 'titan', // 10..14
     ];
-    expect(HULL_IDS).toEqual(['hunter', 'viking', 'mammoth', 'speedy']);
+    expect(HULL_IDS).toEqual(['hunter', 'viking', 'mammoth', 'speedy', 'titan']);
     for (let i = 0; i < GOLDEN.length; i++) {
       expect(hullAt(i), `index ${i}`).toBe(GOLDEN[i]);
     }
-    // Свапы действительно срабатывают: штурм не берёт «Мамонта», снайпер — «Викинга».
-    expect(roleAt(9)).toBe('sniper');
-    expect(roleAt(10)).toBe('assault');
+    // Свапы действительно срабатывают: штурм не берёт сверхтяжёлые корпуса,
+    // снайпер — «Викинга».
+    expect(roleAt(4)).toBe('assault');
+    expect(hullAt(4)).toBe('viking'); // titan → viking
+    expect(roleAt(7)).toBe('assault');
+    expect(hullAt(7)).toBe('viking'); // mammoth → viking
+    expect(roleAt(6)).toBe('sniper');
+    expect(hullAt(6)).toBe('hunter'); // viking → hunter
   });
 });
 

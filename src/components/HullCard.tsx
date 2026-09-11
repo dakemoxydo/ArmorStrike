@@ -1,5 +1,11 @@
 import { Check, Gauge, Shield } from 'lucide-react';
+import { HULLS } from '../core/catalog';
 import type { HullId, HullDef } from '../core/catalog';
+
+/** Bar scale for the armour readout — derived so a new top-tier hull cannot clip. */
+const MAX_HULL_HP = Math.max(...Object.values(HULLS).map((h) => h.maxHealth));
+/** Bar scale for the speed readout (fastest hull ≈ full bar). */
+const MAX_HULL_SPEED = Math.max(...Object.values(HULLS).map((h) => h.speed));
 
 interface HullCardProps {
   hull: HullDef;
@@ -34,7 +40,7 @@ export default function HullCard({ hull, isSelected, delay, onSelect, disabled }
             <span className="font-display text-emerald-300">{hull.maxHealth} HP</span>
           </div>
           <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-            <div className="g-stat-bar bg-emerald-400 h-full rounded-full" style={{ width: `${(hull.maxHealth / 160) * 100}%` }} />
+            <div className="g-stat-bar bg-emerald-400 h-full rounded-full" style={{ width: `${(hull.maxHealth / MAX_HULL_HP) * 100}%` }} />
           </div>
         </div>
         <div>
@@ -43,7 +49,7 @@ export default function HullCard({ hull, isSelected, delay, onSelect, disabled }
             <span className="font-display text-cyan-300">{hull.speed}</span>
           </div>
           <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-            <div className="g-stat-bar bg-cyan-400 h-full rounded-full" style={{ width: `${(hull.speed / 24) * 100}%` }} />
+            <div className="g-stat-bar bg-cyan-400 h-full rounded-full" style={{ width: `${(hull.speed / MAX_HULL_SPEED) * 100}%` }} />
           </div>
         </div>
       </div>
