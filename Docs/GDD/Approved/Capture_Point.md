@@ -12,8 +12,8 @@
 | Точки | **A, B, C** — изначально **нейтральные** | `zonesForMap` |
 | Радиус | **20** wu | `CAPTURE.radius` |
 | Захват | **8 с** exclusive control | `CAPTURE.captureSec` |
-| Contest | обе команды в зоне → progress **freeze** | `resolveActor` |
-| Empty zone | прогресс **не decay'ится** (v1): freeze до прихода акторов | `stepCaptureZoneInto` |
+| Contest | progress **freeze** (без decay); тот же актор продолжает с замороженного значения, смена актора → рестарт шкалы | `resolveActor` + `stepCaptureZoneInto` |
+| Empty zone | прогресс **не decay'ится** (v1): freeze до возвращения того же актора | `stepCaptureZoneInto` |
 | Ownership | **neutral-first**: capture → neutral → enemy | `stepCaptureZone` |
 | Score | **+1 / s** за каждую owned point | `scoreDeltaFromZones` |
 | Win | teamScore ≥ **1000** | `evaluateMatchEnd` |
@@ -27,7 +27,7 @@
 | Map | A | B | C |
 |-----|---|---|---|
 | factory | (−88, 8) west | (0, 0) center | (92, −6) east |
-| village | (0, 4) plaza | (−85, 25) west | (88, −18) east |
+| village | (0, 4) plaza | (−100, 20) west | (100, −20) east |
 | city | (0, 0) plaza | (0, 78) north | (12, −86) south |
 
 Источник: `src/game/match/captureAnchors.ts`.

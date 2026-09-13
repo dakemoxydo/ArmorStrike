@@ -14,7 +14,11 @@ export interface CaptureZoneState {
   owner: CaptureOwner;
   /** 0..1 fill toward capture or neutralize. */
   progress: number;
-  /** Team currently filling the bar (null if idle). */
+  /**
+   * Team that last advanced the bar (null if none yet). Kept while the bar is
+   * frozen (contest / empty) so the same team resumes from the frozen value;
+   * a different actor restarts the bar.
+   */
   actor: CaptureOwner;
   contested: boolean;
 }
@@ -90,8 +94,12 @@ export function stepCaptureZoneInto(
   const { actor, contested } = resolveActor(target.owner, presence);
 
   if (contested || actor === null) {
+    // Contested / empty / allies holding an owned zone: freeze progress
+    // ("no decay in v1"). Keep the last actor so the SAME team resumes from
+    // the frozen value when the contest clears — nulling it here used to wipe
+    // the whole bar on a single defender frame. A different actor still
+    // restarts the bar below ("Actor switched").
     target.contested = contested;
-    target.actor = contested ? null : target.actor;
     return target;
   }
 

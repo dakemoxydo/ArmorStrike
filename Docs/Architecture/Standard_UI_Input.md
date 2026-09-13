@@ -12,8 +12,9 @@ React-компоненты и хуки видят **только** `GameApi` (+ 
 ```ts
 interface GameApi {
   // commands
-  setMode, startRound, setMatchMode, togglePause, ...
-  setGarageSelection, toggleMute, cycleQuality, ...
+  setMode, setMatchMode, togglePause, toggleMute, cycleQuality, ...
+  startRound(...): Promise<void>            // serialized, latest wins
+  setGarageSelection(h, t): Promise<void>    // resolve после пересборки превью
   // subscriptions
   addListener / removeListener  // GameEvent
   setHudCallback               // HudSnapshot push
@@ -120,10 +121,15 @@ Presentation CSS classes могут приходить из catalog (`weaponAcce
   - R → `weapon.requestReload`
   - LMB / Space → fire flag
 
-Stage wiring (`PlayerInputStage`):
-- alive → `input.update(player)` → `weapon.setFire`
-- dead → `setFire(false)` (no audio/state leak)
-- over / menus → `input.enabled = false` + `releaseLock()` (кликабельный React UI)
+Stage wiring:
+- `PlayerInputStage` — alive → `input.update(player)` (триггер не дёргает);
+  wantsFire/requestReload применяются позже
+- `WeaponFireStage` (после `TankSystemStage`) → `weapon.setFire(wantsFire)`;
+  dead → `setFire(false)` (no audio/state leak) — дуло уже синкнуто под
+  текущий aimYaw
+- over / menus / **пауза** → `input.enabled = false` + `releaseLock()`
+  (кликабельный React UI; Space/Tab принадлежат странице — `onKeyDown`
+  гейтится по `enabled`)
 
 ## 5. Garage input (отдельный класс)
 

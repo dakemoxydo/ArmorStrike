@@ -212,7 +212,11 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
     ctx.lineWidth = 1.2 * k;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(Math.sin(d.turret) * 7 * k, -Math.cos(d.turret) * 7 * k);
+    // World forward for yaw θ is (sin θ, cos θ); toY(z) grows downward, so the
+    // canvas vector is (sin, +cos) — same mapping as the hull triangle via
+    // rotate(π − yaw). The old −cos mirrored the barrel line across the E-W
+    // axis (it pointed backwards for any north/south aim).
+    ctx.lineTo(Math.sin(d.turret) * 7 * k, Math.cos(d.turret) * 7 * k);
     ctx.stroke();
     ctx.rotate(Math.PI - d.yaw);
     ctx.fillStyle = fill;

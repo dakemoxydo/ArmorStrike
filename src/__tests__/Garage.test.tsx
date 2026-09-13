@@ -7,6 +7,16 @@ import Garage from '../components/Garage';
 import type { GameApi } from '../game/GameApi';
 import type { HullId, TurretId } from '../core/catalog';
 
+// jsdom has no ResizeObserver; the safe-zone measuring only needs the shape.
+vi.stubGlobal(
+  'ResizeObserver',
+  class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  },
+);
+
 /**
  * Component coverage for the garage loadout picker (BACKLOG H2).
  *
@@ -17,19 +27,31 @@ import type { HullId, TurretId } from '../core/catalog';
  * that some call happened.
  */
 
-function fakeGame(initial: { hull?: HullId; turret?: TurretId } = {}) {
+function fakeGame(
+  initial: { hull?: HullId; turret?: TurretId; failSelection?: boolean } = {},
+) {
   const calls: Array<[HullId, TurretId]> = [];
   const game = {
     currentHull: initial.hull ?? 'hunter',
     currentTurret: initial.turret ?? 'railgun',
     setGarageSelection: (h: HullId, t: TurretId) => {
       calls.push([h, t]);
+      // GameApi contract: resolves after the preview rebuild commits; rejects
+      // on build failure (committed state stays at the previous pick).
+      return initial.failSelection
+        ? Promise.reject(new Error('preview build failed'))
+        : Promise.resolve();
     },
+    // Peek events (garagePeek) exist but no event fires without GameInput.
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    // Safe-zone framing: the rig is a no-op from the component's tests' view.
+    setGarageViewportInset: () => undefined,
   } as unknown as GameApi;
   return { game, calls };
 }
 
-function setup(initial?: { hull?: HullId; turret?: TurretId }) {
+function setup(initial?: { hull?: HullId; turret?: TurretId; failSelection?: boolean }) {
   const { game, calls } = fakeGame(initial);
   const onStart = vi.fn();
   const onBack = vi.fn();
@@ -155,6 +177,21 @@ describe('Garage — game not ready yet', () => {
     await user.click(screen.getByRole('button', { name: /В МЕНЮ/ }));
 
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Garage — preview rebuild failure', () => {
+  it('reverts the optimistic pick to the committed loadout when the rebuild rejects', async () => {
+    // Regression: the old `void` GameApi contract hid the async rebuild; the
+    // UI kept the failed pick while the committed loadout stayed behind.
+    const { user } = setup({ hull: 'hunter', turret: 'railgun', failSelection: true });
+
+    await user.click(hullCard(/Викинг/));
+
+    // Committed state stayed 'hunter' — the UI must fall back to it.
+    await vi.waitFor(() => {
+      expect(pressedCards()[0]).toHaveTextContent('Хантер');
+    });
   });
 });
 

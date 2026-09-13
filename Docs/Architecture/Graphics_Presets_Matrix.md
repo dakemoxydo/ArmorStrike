@@ -38,6 +38,11 @@
   запуске (`loadQuality`, fallback 'high').
 - Смена пресета безопасна в любой момент раунда: bloom teardown/rebuild покрыт
   тестом `renderWorldQuality.test.ts`; shadow map dispose — частью `applyQuality`.
+- Если `shadows` когда-нибудь меняется между пресетами, `applyQuality` форсит
+  разовый `material.needsUpdate` по сцене: three.js не перекомпилирует уже
+  собранные материалы при переключении `renderer.shadowMap.enabled` сам
+  (без этого флаг молча не действовал бы визуально). Сегодня все пресеты
+  держат `shadows: true` (см. матрицу) — ветка спит, но корректна.
 - Frame-path не читает localStorage: `Arena.setRenderWorld` подключает живой
   геттер из RenderWorld (`setQualitySource`) — пресет читается из памяти каждый кадр.
 

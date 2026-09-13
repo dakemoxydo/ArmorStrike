@@ -69,20 +69,21 @@ Ordered stages (`engine/stages/` — `buildSimulationStages` in `index.ts`):
 
 | # | Stage | Purpose |
 |---|-------|---------|
-| 1 | `PlayerInputStage` | WASD/mouse → tank + fire |
-| 2 | `BotAiStage` | AI → fire |
-| 3 | `WeaponSystemStage` | weapon.update |
-| 4 | `TankSystemStage` | motion, aim, heal, reload timers |
-| 5 | `TankAnimationSystemStage` | barrel/track anim, death pose |
-| 6 | `TankFxSystemStage` | smoke / dust FX |
-| 7 | `AmbientStage` | ambient effects center |
-| 8 | `NameplateSystemStage` | nameplate sync |
-| 9 | `PhysicsSystemStage` | walls + tank separation |
-| 10 | `ProjectileStage` | flight & hits |
-| 11 | `MinimapStage` | minimap sync |
-| 12 | `MatchStage` | invuln, respawn, capture, win |
-| 13 | `BoostStage` | player boost jet FX |
-| 14 | `EngineAudioStage` | engine audio |
+| 1 | `PlayerInputStage` | WASD/mouse → tank (wantsFire фиксируется) |
+| 2 | `BotAiStage` | AI решает wantsFire |
+| 3 | `TankSystemStage` | motion, aim, heal, reload timers + presentation sync башни |
+| 4 | `WeaponFireStage` | `weapon.setFire` (после синка башни) |
+| 5 | `WeaponSystemStage` | weapon.update |
+| 6 | `TankAnimationSystemStage` | barrel/track anim, death pose |
+| 7 | `TankFxSystemStage` | smoke / dust FX |
+| 8 | `AmbientStage` | ambient effects center |
+| 9 | `NameplateSystemStage` | nameplate sync |
+| 10 | `PhysicsSystemStage` | walls + tank separation |
+| 11 | `ProjectileStage` | flight & hits |
+| 12 | `MinimapStage` | minimap sync |
+| 13 | `MatchStage` | invuln, respawn, capture, win |
+| 14 | `BoostStage` | player boost jet FX |
+| 15 | `EngineAudioStage` | engine audio |
 
 `dt` clamp ~0.05s in game loop.  
 Полный контракт стадий: [Core Patterns §3](Core_Patterns.md).

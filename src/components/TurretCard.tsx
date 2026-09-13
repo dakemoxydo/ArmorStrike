@@ -18,17 +18,19 @@ export default function TurretCard({ turret, isSelected, delay, onSelect, disabl
       onClick={() => onSelect(turret.id)}
       disabled={disabled}
       aria-pressed={isSelected}
-      className={`hud-panel garage-card anim-up p-4${isSelected ? ' is-selected turret-selected' : ''}`}
+      title={turret.desc}
+      className={`hud-panel garage-card anim-up p-3${isSelected ? ' is-selected turret-selected' : ''}`}
       style={{ '--d': delay } as React.CSSProperties}
     >
       <div className="flex items-center justify-between mb-2">
         <span className="font-display text-lg tracking-wide text-white">{turret.name}</span>
         {isSelected && <Check size={18} className="g-check text-amber-300" aria-hidden />}
       </div>
-      <div className="card-badge cut-chip px-2 py-0.5 mb-3 text-[10px] tracking-wider uppercase bg-amber-500/20 text-amber-200 border border-amber-500/40">
+      <div className="card-badge cut-chip px-2 py-0.5 mb-2 text-[10px] tracking-wider uppercase bg-amber-500/20 text-amber-200 border border-amber-500/40">
         {turret.badge}
       </div>
-      <p className="text-[11px] text-white/60 leading-relaxed mb-4">{turret.desc}</p>
+      {/* Компактная карточка: без описания — паспорт справа несёт факты,
+          флейвор доступен в тултипе; 1fr-ряд выше держит бары на одной линии. */}
       <div className="space-y-2 text-[10px]">
         <div>
           <div className="flex justify-between text-white/70 mb-1">

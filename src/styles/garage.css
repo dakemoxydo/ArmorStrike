@@ -17,6 +17,16 @@
   );
   border-top: 1px solid rgba(var(--glow), 0.14);
   box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.35);
+  /* Peek-осмотр: пока игрок вращает танк, док уезжает и гаснет, освобождая
+     кадр. Камера параллельно демпфирует свой safe-zone сдвиг (CameraRig),
+     поэтому танк плавно возвращается в центр. Состояние ставит Garage.tsx
+     классом `garage-peek` на корень экрана. */
+  transition: transform var(--ease-base), opacity var(--ease-fast);
+}
+.garage-peek .garage-bottom {
+  transform: translateY(14%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Подпись над карточками: своя почти непрозрачная краска вместо `--text-faint`
@@ -56,12 +66,11 @@
   }
 }
 
-/* Compact card hover in dock (less lift so bottom doesn't clip) */
+/* Компактная карточка в дока (peek-совместимая): сетка со 1fr-рядом — блок
+   характеристик встаёт на одну линию во всех карточках, как бы ни отличался
+   контент (U24). Карточки одной строки растянуты по высоте внешней сеткой,
+   поэтому `1fr` поглощает разницу. */
 .garage-card {
-  /* Сетка с растягивающейся строкой описания: ряды характеристик встают на одну
-     линию во всех карточках, как бы длинно ни было описание (U24). Карточки
-     одной строки растянуты по высоте внешней сеткой, поэтому `1fr` поглощает
-     разницу. */
   display: grid;
   grid-template-rows: auto auto 1fr auto;
   width: 100%;
@@ -226,6 +235,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .garage-bottom {
+    transition: none;
+  }
   .garage-card {
     transition: none;
   }
@@ -238,5 +250,17 @@
   }
   .g-stat-bar {
     transition: none;
+  }
+}
+
+/* Очень низкие окна: док не должен съедать весь вертикальный запас —
+   необязательные подписи уходят, паспорт сжимается до существенного,
+   предпросмотр танка остаётся читаемым. */
+@media (max-height: 560px) {
+  .garage-hint-label {
+    display: none;
+  }
+  .garage-weapon-tip {
+    display: none;
   }
 }

@@ -33,6 +33,13 @@ export function configForMode(mode: MatchModeId): MatchConfig {
 
 export const DEFAULT_MATCH_MODE: MatchModeId = 'deathmatch';
 
+/** All selectable modes in canonical order (ModeSelect UI + quick game). */
+export const MATCH_MODE_IDS: readonly MatchModeId[] = [
+  'deathmatch',
+  'team_deathmatch',
+  'capture_point',
+];
+
 /** Normal bot combat scales (no wave ramp). */
 export const BOT_NORMAL = {
   /** AI sight / aim — mid of legacy wave curve. */

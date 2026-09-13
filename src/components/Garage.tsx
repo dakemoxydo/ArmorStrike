@@ -1,5 +1,5 @@
 // ===== ГАРАЖ: сборка танка из корпуса и башни с 3D предпросмотром =====
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft, HardDrive, MoveUp,
   Play, Shield, Target,
@@ -7,6 +7,7 @@ import {
 import { HULLS, TURRETS } from '../core/catalog';
 import type { HullId, TurretId } from '../core/catalog';
 import type { GameApi } from '../game/GameApi';
+import type { GameEvent } from '../game/types';
 import HullCard from './HullCard';
 import TurretCard from './TurretCard';
 
@@ -21,6 +22,9 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
   /** Local selection mirrors GameApi so UI re-renders without remounting the grid. */
   const [selectedHullId, setSelectedHullId] = useState<HullId>(() => game?.currentHull ?? 'hunter');
   const [selectedTurretId, setSelectedTurretId] = useState<TurretId>(() => game?.currentTurret ?? 'railgun');
+  /** Peek-осмотр: док скрыт, пока игрок вращает танк (drag). */
+  const [peeking, setPeeking] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const ready = Boolean(game);
 
   useEffect(() => {
@@ -29,23 +33,93 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
     setSelectedTurretId(game.currentTurret);
   }, [game]);
 
+  // Peek: GarageInput включает осмотр на drag и выключает на pointerup.
+  useEffect(() => {
+    if (!game) return;
+    const onEvent = (e: GameEvent) => {
+      if (e.type === 'garagePeek') setPeeking(e.value);
+    };
+    game.addListener(onEvent);
+    return () => game.removeListener(onEvent);
+  }, [game]);
+
+  /**
+   * Safe-zone: измеряем фактический след UI (шапка, док, паспорт) и сообщаем
+   * его камере — предпросмотр танка центрируется в свободном прямоугольнике.
+   * ResizeObserver переживает смену раскладок (5↔3 карточек, паспорт-док lg+).
+   */
+  useEffect(() => {
+    if (!ready || !game) return;
+    const root = rootRef.current;
+    if (!root) return;
+    const header = root.querySelector<HTMLElement>('.garage-header');
+    const dock = root.querySelector<HTMLElement>('.garage-bottom');
+    const passport = root.querySelector<HTMLElement>('.garage-passport');
+    if (!dock) return;
+
+    let last = '';
+    const measure = () => {
+      // Peek сдвигает док трансформом, а getBoundingClientRect его учитывает —
+      // замер во время осмотра даст неверный след; камера уже гасит покрытие.
+      if (root.classList.contains('garage-peek')) return;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const hr = header?.getBoundingClientRect();
+      const br = dock.getBoundingClientRect();
+      const pr = passport?.getBoundingClientRect();
+      // Паспорт занимает правую зону только когда он в ряд с доком (lg+);
+      // в стеке он внутри дока и правую зону не трогает.
+      const sideDocked = pr !== undefined && pr.top <= br.top + 2;
+      const inset = {
+        top: Math.round(hr ? Math.max(0, hr.bottom) : 0),
+        bottom: Math.round(vh - br.top),
+        right: sideDocked ? Math.round(vw - pr.left) : 0,
+        left: 0,
+      };
+      const key = `${inset.top},${inset.right},${inset.bottom},${inset.left}`;
+      if (key === last) return;
+      last = key;
+      game.setGarageViewportInset(inset);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(dock);
+    if (header) ro.observe(header);
+    if (passport) ro.observe(passport);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+      game.setGarageViewportInset(null);
+    };
+  }, [ready, game]);
+
   const selectHull = (id: HullId) => {
     if (!game) return;
-    game.setGarageSelection(id, selectedTurretId);
     setSelectedHullId(id);
+    // Revert the optimistic pick when the preview rebuild fails — the
+    // committed loadout stayed at the previous hull (see GarageBinding).
+    game.setGarageSelection(id, selectedTurretId).catch(() => {
+      setSelectedHullId((cur) => (cur === id ? game.currentHull : cur));
+    });
   };
 
   const selectTurret = (id: TurretId) => {
     if (!game) return;
-    game.setGarageSelection(selectedHullId, id);
     setSelectedTurretId(id);
+    game.setGarageSelection(selectedHullId, id).catch(() => {
+      setSelectedTurretId((cur) => (cur === id ? game.currentTurret : cur));
+    });
   };
 
   const currHull = HULLS[selectedHullId];
   const currTurret = TURRETS[selectedTurretId];
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col justify-between p-4 md:p-8 pointer-events-none select-none">
+    <div
+      ref={rootRef}
+      className={`absolute inset-0 z-40 flex flex-col justify-between p-4 md:p-8 pointer-events-none select-none${peeking ? ' garage-peek' : ''}`}
+    >
       {/* Шапка — только навигация: назад слева, табы по центру (S2/U10). */}
       <div className="garage-header">
         <div className="garage-header-actions anim-left" style={{ '--d': '0.05s' } as React.CSSProperties}>
@@ -95,9 +169,13 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
         </div>
       )}
 
-      {/* Нижняя зона: карточки + паспорт */}
+      {/* Нижняя зона: карточки + паспорт. Высоту дока исторически задавала
+          колонка паспорта — под рядом карточек оставался пустой тёмный пояс,
+          а на низких окнах танк не влезал в свободную зону. Панель паспорта
+          ужата до высоты карточного ряда, остаток высоты разбирает
+          cards-col (justify-between: чип управления прижат к низу дока). */}
       <div className="garage-bottom pointer-events-auto">
-        <div className="garage-cards-col flex flex-col gap-3">
+        <div className="garage-cards-col flex flex-col justify-between gap-3">
           <div className="anim-up hud-label garage-hint-label mb-1 flex items-center gap-2" style={{ '--d': '0.1s' } as React.CSSProperties}>
             <MoveUp size={12} aria-hidden />
             {activeTab === 'hulls' ? 'ВЫБЕРИТЕ КОРПУС — ОПРЕДЕЛЯЕТ ЗДОРОВЬЕ И СКОРОСТЬ' : 'ВЫБЕРИТЕ БАШНЮ — ОПРЕДЕЛЯЕТ ТИП ОРУЖИЯ И УРОН'}
@@ -144,51 +222,53 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
           </div>
         </div>
 
-        <div className="garage-passport flex flex-col gap-3">
-          <div className="anim-up hud-panel p-5" style={{ '--d': '0.3s' } as React.CSSProperties}>
-            <div className="hud-label text-cyan-300/90 mb-3 flex items-center gap-1.5">
+        <div className="garage-passport flex flex-col gap-2">
+          <div className="anim-up hud-panel p-3" style={{ '--d': '0.3s' } as React.CSSProperties}>
+            <div className="hud-label text-cyan-300/90 mb-1.5 flex items-center gap-1.5">
               <HardDrive size={14} aria-hidden /> СБОРОЧНЫЙ ПАСПОРТ
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                <span className="text-xs text-white/60">КОРПУС</span>
-                <span className="font-display text-sm text-cyan-300">{currHull.name}</span>
+            <div className="space-y-2">
+              {/* Эхо выбора одной строкой: цвета несут таксономию (циан — корпус,
+                  янтарь — башня), как в чипе сборки главного меню. */}
+              <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-white/10">
+                <span className="text-[10px] tracking-widest text-white/60 whitespace-nowrap">КОРПУС · БАШНЯ</span>
+                <span className="font-display text-sm whitespace-nowrap">
+                  <span className="text-cyan-300">{currHull.name}</span>
+                  <span className="text-white/45"> · </span>
+                  <span className="text-amber-300">{currTurret.name}</span>
+                </span>
               </div>
-              <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                <span className="text-xs text-white/60">БАШНЯ</span>
-                <span className="font-display text-sm text-amber-300">{currTurret.name}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 pt-1 text-center">
-                <div className="cut-chip bg-white/5 p-2 border border-white/10">
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="cut-chip bg-white/5 px-2 py-1.5 border border-white/10">
                   <div className="text-[10px] tracking-widest text-white/55 mb-0.5">ПРОЧНОСТЬ</div>
                   <div className="font-display text-lg text-emerald-400">{currHull.maxHealth}</div>
                 </div>
-                <div className="cut-chip bg-white/5 p-2 border border-white/10">
+                <div className="cut-chip bg-white/5 px-2 py-1.5 border border-white/10">
                   <div className="text-[10px] tracking-widest text-white/55 mb-0.5">СКОРОСТЬ</div>
                   <div className="font-display text-lg text-cyan-300">{currHull.speed}</div>
                 </div>
-                <div className="cut-chip bg-white/5 p-2 border border-white/10">
+                <div className="cut-chip bg-white/5 px-2 py-1.5 border border-white/10">
                   <div className="text-[10px] tracking-widest text-white/55 mb-0.5">УРОН / ВЫСТРЕЛ</div>
                   <div className="font-display text-lg text-amber-300">{currTurret.damage}</div>
                 </div>
-                <div className="cut-chip bg-white/5 p-2 border border-white/10">
+                <div className="cut-chip bg-white/5 px-2 py-1.5 border border-white/10">
                   <div className="text-[10px] tracking-widest text-white/55 mb-0.5">МАГАЗИН</div>
                   <div className="font-display text-lg text-white">{currTurret.magazine}</div>
                 </div>
               </div>
               <div key={currTurret.weaponType} className="anim-pop" style={{ '--d': '0s' } as React.CSSProperties}>
                 {currTurret.weaponType === 'cannon' && (
-                  <div className="text-[10px] text-amber-200/70 bg-amber-500/10 border border-amber-500/20 cut-chip p-2 text-center tracking-wider">
+                  <div className="garage-weapon-tip text-[10px] text-amber-200/70 bg-amber-500/10 border border-amber-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
                     ФУГАСНЫЙ УРОН · РАДИУС ВЗРЫВА 5 М
                   </div>
                 )}
                 {currTurret.weaponType === 'flamethrower' && (
-                  <div className="text-[10px] text-orange-200/70 bg-orange-500/10 border border-orange-500/20 cut-chip p-2 text-center tracking-wider">
+                  <div className="garage-weapon-tip text-[10px] text-orange-200/70 bg-orange-500/10 border border-orange-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
                     НЕПРЕРЫВНЫЙ КОНУС ПЛАМЕНИ
                   </div>
                 )}
                 {currTurret.weaponType === 'railgun' && (
-                  <div className="text-[10px] text-cyan-200/70 bg-cyan-500/10 border border-cyan-500/20 cut-chip p-2 text-center tracking-wider">
+                  <div className="garage-weapon-tip text-[10px] text-cyan-200/70 bg-cyan-500/10 border border-cyan-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
                     ТОЧНЫЙ ЭНЕРГЕТИЧЕСКИЙ ЛУЧ · {currTurret.damage} ЕД.
                   </div>
                 )}
@@ -208,7 +288,7 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
               type="button"
               onClick={onStart}
               disabled={!ready}
-              className="btn-game btn-primary w-full px-8 py-3.5 text-base"
+              className="btn-game btn-primary w-full px-8 py-3 text-base"
             >
               <Play size={18} className="bicon" aria-hidden />
               <span>В БОЙ</span>

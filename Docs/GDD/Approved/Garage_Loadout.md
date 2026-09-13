@@ -53,11 +53,17 @@ range       = turret.range
 
 | Элемент | Деталь |
 |---------|--------|
-| `Garage.tsx` | вкладки КОРПУС / БАШНЯ, passport stats |
-| `HullCard` / `TurretCard` | карточки выбора |
+| `Garage.tsx` | вкладки КОРПУС / БАШНЯ, passport stats, safe-zone-инсеты + peek-класс |
+| `HullCard` / `TurretCard` | компактные карточки (имя + бейдж + бары; описание — тултип) |
+| Кадрирование предпросмотра | [[Garage_Viewport_Safe_Zone]]: танк центрируется в свободной от UI зоне |
 | `RunState.currentHull/Turret` | runtime |
 | `localStorage['as2_loadout']` | `{ hullId, turretId }` |
 | 3D preview | `PreviewController` + `buildTankMesh` |
+
+Выбор в UI — оптимистичный; `GameApi.setGarageSelection` возвращает
+`Promise`: коммит в `RunState` (+ save + `garageChanged`) происходит только
+после успешной пересборки превью, при ошибке UI откатывает карточку к
+последнему закоммиченному корпусу/башне.
 
 ## Стили
 

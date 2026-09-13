@@ -57,20 +57,26 @@ interface SimSystem {
 
 Порядок (`buildSimulationStages`):
 
-1. `PlayerInputStage` — WASD/mouse → tank + fire
-2. `BotAiStage` — AI → fire
-3. `WeaponSystemStage` — `weapon.update`
-4. `TankSystemStage` — motion, aim, heal, timers
-5. `TankAnimationSystemStage` — barrel/track anim, death pose
-6. `TankFxSystemStage` — smoke/dust FX
-7. `AmbientStage` — ambient center
-8. `NameplateSystemStage` — nameplate sync
-9. `PhysicsSystemStage` — walls + tank separation
-10. `ProjectileStage` — flight & hits
-11. `MinimapStage` — minimap sync
-12. `MatchStage` — invuln, respawn, capture, win
-13. `BoostStage` — player boost jet
-14. `EngineAudioStage` — engine audio
+1. `PlayerInputStage` — WASD/mouse → tank (wantsFire/requestReload фиксируются)
+2. `BotAiStage` — AI решает `wantsFire`
+3. `TankSystemStage` — motion, aim, heal, timers + **presentation sync башни**
+4. `WeaponFireStage` — `weapon.setFire` (после синка башни: дуло текущего кадра)
+5. `WeaponSystemStage` — `weapon.update`
+6. `TankAnimationSystemStage` — barrel/track anim, death pose
+7. `TankFxSystemStage` — smoke/dust FX
+8. `AmbientStage` — ambient center
+9. `NameplateSystemStage` — nameplate sync
+10. `PhysicsSystemStage` — walls + tank separation
+11. `ProjectileStage` — flight & hits
+12. `MinimapStage` — minimap sync
+13. `MatchStage` — invuln, respawn, capture, win
+14. `BoostStage` — player boost jet
+15. `EngineAudioStage` — engine audio
+
+Триггеры (`setFire`) применяются строго ПОСЛЕ `TankSystemStage`: презентация
+башни синкается там, а выстрел читает мировую позицию дула — иначе снаряд/луч
+вылетает из дула прошлого кадра при текущем направлении (боковой унос при
+развороте башни 9–10 рад/с).
 
 Правила:
 - `dt` clamp ~0.05s в game loop.

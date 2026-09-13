@@ -1,5 +1,5 @@
 import {
-  Flame, Gamepad2, MousePointer2, Play, RotateCw, Shield, Target, Wrench, Zap,
+  Flame, Gamepad2, MousePointer2, Play, RotateCw, Shield, Shuffle, Target, Wrench, Zap,
 } from 'lucide-react';
 import type { HullDef, TurretDef } from '../core/catalog';
 
@@ -7,10 +7,11 @@ interface MainMenuProps {
   hull: HullDef;
   turret: TurretDef;
   onStart: () => void;
+  onQuickGame: () => void;
   onGarage: () => void;
 }
 
-export default function MainMenu({ hull, turret, onStart, onGarage }: MainMenuProps) {
+export default function MainMenu({ hull, turret, onStart, onQuickGame, onGarage }: MainMenuProps) {
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-between p-8 md:p-14 bg-gradient-to-r from-[#04060bf2] via-[#04060ba8] to-transparent">
       <div className="menu-stripes pointer-events-none absolute inset-x-0 top-0 h-2" />
@@ -36,13 +37,27 @@ export default function MainMenu({ hull, turret, onStart, onGarage }: MainMenuPr
           Соедини корпус и орудие в Гараже — выбери режим — и выходи в бой.
         </p>
 
-        {/* S1: главное действие — сразу под лидом. Раньше его отделяла от
-            заголовка панель сборки, и `ИГРАТЬ` стояло пятым в потоке чтения. */}
+        {/* S1: главное действие — сразу под лидом. Рядом — быстрый вход:
+            случайный режим + карта без двух экранов подготовки. */}
         <div className="anim-left mt-8" style={{ '--d': '0.4s' } as React.CSSProperties}>
-          <button type="button" onClick={onStart} className="btn-game btn-primary px-12 py-4 text-lg" aria-label="Начать игру">
-            <Play size={22} className="bicon" />
-            <span>ИГРАТЬ</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" onClick={onStart} className="btn-game btn-primary px-12 py-4 text-lg" aria-label="Начать игру — выбор режима и карты">
+              <Play size={22} className="bicon" />
+              <span>ИГРАТЬ</span>
+            </button>
+            <button
+              type="button"
+              onClick={onQuickGame}
+              className="btn-game btn-ghost px-6 py-4 text-base"
+              aria-label="Быстрая игра: случайный режим и случайная карта"
+            >
+              <Shuffle size={18} className="bicon" />
+              <span>БЫСТРАЯ ИГРА</span>
+            </button>
+          </div>
+          <p className="mt-2.5 text-[11px] tracking-wider text-white/45">
+            БЫСТРАЯ ИГРА — случайный режим · случайная карта
+          </p>
         </div>
 
         {/* Сборка сжата до одной строки-чипа: вторичный вход, а не блок-препятствие.

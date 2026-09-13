@@ -12,6 +12,7 @@ import type { MatchRuntime } from '../../match/MatchRuntime';
 
 import { PlayerInputStage } from './PlayerInputStage';
 import { BotAiStage } from './BotAiStage';
+import { WeaponFireStage } from './WeaponFireStage';
 import { WeaponSystemStage, TankSystemStage, TankAnimationSystemStage, TankFxSystemStage } from './TankStages';
 import {
   AmbientStage,
@@ -42,8 +43,11 @@ export function buildSimulationStages(d: StageDeps): SimSystem[] {
   return [
     new PlayerInputStage(d.input, d.audio),
     new BotAiStage(d.bots, d.arena, d.match),
-    new WeaponSystemStage(d.arena),
+    // Tanks BEFORE triggers: motion/aim integrate and the turret pose syncs
+    // here, so weapons fire from the CURRENT-frame muzzle (see WeaponFireStage).
     new TankSystemStage(),
+    new WeaponFireStage(d.input, d.bots),
+    new WeaponSystemStage(d.arena),
     new TankAnimationSystemStage(),
     new TankFxSystemStage(d.effects),
     new AmbientStage(d.effects),

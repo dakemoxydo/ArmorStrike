@@ -41,6 +41,8 @@ export const WEAPON_TUNING = {
   },
   cannon: {
     damage: 32,
+    /** Shell flight speed — the single source of truth (AI lead reads it too). */
+    speed: 48,
     shotCooldown: 0.28,
     magazine: 10,
     reloadTime: 1.8,

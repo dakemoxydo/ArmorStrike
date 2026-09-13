@@ -21,7 +21,9 @@ export interface ProjectileBehavior {
 const cannon: ProjectileBehavior = {
   init(s, _owner, damage, customRange) {
     const tune = WEAPON_TUNING.cannon;
-    s.speed = 48;
+    // Single source of truth for the shell speed (WEAPON_TUNING.cannon) —
+    // aiAimFire's lead prediction reads the same value.
+    s.speed = tune.speed;
     s.maxRange = customRange ?? tune.range;
     s.color.setHex(0xffb020);
     s.glow.scale.setScalar(2.2);

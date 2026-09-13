@@ -1,6 +1,6 @@
 // ===== Управление камерой: режимы menu/garage/playing/over, обход препятствий, FOV =====
 import * as THREE from 'three';
-import type { GameMode } from './types';
+import type { GameMode, GarageViewportInset } from './types';
 import type { Collider } from './engine/physics';
 import { segmentHitT, dampTo } from './engine/physics';
 import type { EffectsPort } from './ports/EffectsPort';
@@ -40,6 +40,21 @@ export class CameraRig {
   garageDist = 9.5;
   garageAutoSpin = true;
   garageTargetY = PREVIEW_POS.y + 0.8;
+  /**
+   * Safe-zone гаража: UI сообщает занятые края (CSS px) через GameApi, камера
+   * центрирует предпросмотр в оставшемся свободном прямоугольнике кадра.
+   */
+  garageInset: GarageViewportInset | null = null;
+  /** Peek-осмотр (drag): док скрыт, покрытие дока/паспорта демпфируется к нулю. */
+  garagePeek = false;
+
+  /** Размер вьюпорта в CSS px — поддерживается актуальным ресайзом (bootstrap). */
+  private viewW = 0;
+  private viewH = 0;
+  /** Демпфированная доля покрытия дока/паспорта при peek (1 = полный инсет). */
+  private peekCover = 1;
+  /** Последний применённый оффсет — чтобы не пересобирать проекцию впустую. */
+  private appliedOffset = { dx: NaN, dy: NaN, w: 0, h: 0 };
 
   private modes: Record<GameMode, CameraMode>;
 
@@ -60,6 +75,19 @@ export class CameraRig {
     this.garageDist = 9.5;
     this.garageAutoSpin = true;
     this.garageTargetY = PREVIEW_POS.y + 0.8;
+    this.garagePeek = false;
+    this.peekCover = 1;
+  }
+
+  /** Актуальный размер вьюпорта (CSS px) — нужен для setViewOffset. */
+  setViewportSize(w: number, h: number) {
+    this.viewW = w;
+    this.viewH = h;
+  }
+
+  /** UI-след гаража (CSS px по краям вьюпорта); null — следа нет. */
+  setGarageInset(inset: GarageViewportInset | null) {
+    this.garageInset = inset;
   }
 
   /** Перетаскивание мыши — вращение камеры вокруг танка. */
@@ -104,10 +132,54 @@ export class CameraRig {
       this.modes[p.mode].update(dt, p, this);
     }
 
+    this.applyGarageViewOffset(dt, p.mode);
+
     const roll = p.effects.getShake(this.shakeV, p.elapsed);
     this.camera.position.copy(this.camPos).add(this.shakeV);
     this.camera.up.set(Math.sin(roll), 1, 0).normalize();
     this.camera.lookAt(this.camLook);
+  }
+
+  /**
+   * Safe-zone гаража: центр танка совмещается с центром свободного от UI
+   * прямоугольника проекционным сдвигом (setViewOffset). Пивот орбиты остаётся
+   * на танке — вращение мышью по-прежнему «крутит танк на месте». При выходе
+   * из гаража сдвиг снимается, остальные режимы не затронуты.
+   */
+  private applyGarageViewOffset(dt: number, mode: GameMode) {
+    if (mode !== 'garage') {
+      if (this.camera.view?.enabled) this.camera.clearViewOffset();
+      // Форсируем переприменение при возврате в гараж с теми же инсетами.
+      this.appliedOffset.dx = NaN;
+      return;
+    }
+    const inset = this.garageInset;
+    if (!inset || this.viewW < 2 || this.viewH < 2) return;
+
+    // Peek: док скрыт — покрытие демпфируется к нулю, танк плавно возвращается
+    // в центр кадра (шапка остаётся, её инсет не гаснет).
+    this.peekCover = dampTo(this.peekCover, this.garagePeek ? 0 : 1, 7, dt);
+    const dx = (inset.right * this.peekCover - inset.left) / 2;
+    const dy = (inset.bottom * this.peekCover - inset.top) / 2;
+
+    const a = this.appliedOffset;
+    if (
+      Math.abs(a.dx - dx) < 0.25 &&
+      Math.abs(a.dy - dy) < 0.25 &&
+      a.w === this.viewW &&
+      a.h === this.viewH
+    ) {
+      return;
+    }
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+      if (this.camera.view?.enabled) this.camera.clearViewOffset();
+    } else {
+      this.camera.setViewOffset(this.viewW, this.viewH, dx, dy, this.viewW, this.viewH);
+    }
+    a.dx = dx;
+    a.dy = dy;
+    a.w = this.viewW;
+    a.h = this.viewH;
   }
 
   /** Обход препятствий: возвращает скорректированный сдвиг камеры. */

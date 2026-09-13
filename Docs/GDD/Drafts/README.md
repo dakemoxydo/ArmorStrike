@@ -9,6 +9,10 @@
 
 _Нет активных черновиков._
 
+_(Garage_Viewport_Safe_Zone — 2026-09-12, реализовано и разнесено в
+`../Approved/Garage_Viewport_Safe_Zone.md` + `../../Architecture/Standard_UI_Safe_Zone.md`;
+история — в git.)_
+
 _Реализованные черновики после синхронизации `../Approved/` удаляются
 (например, Classic_Match_Modes — P0–P6 shipped; Hull_Titan — 2026-09-11,
 итог разнесён по `../Approved/Tank_Movement.md`, `../Approved/Garage_Loadout.md`

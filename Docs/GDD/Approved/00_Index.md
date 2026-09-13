@@ -26,17 +26,20 @@
 | [[AI_Bots]] | ИИ ботов | `AIController`, `aiRoles` |
 | [[Scoring]] | Очки и убийства | `scoring`, `SCORE` |
 | [[Garage_Loadout]] | Гараж 5×3 (корпуса + Titan) | `RunState`, `HULLS`/`TURRETS` |
+| [[Garage_Viewport_Safe_Zone]] | Кадрирование предпросмотра в свободной от UI зоне + peek-осмотр | `CameraRig`, `GarageInput`, `Garage` |
 | [[Arena_Physics]] | Арена и коллизии | `Arena`, `physics`, `PhysicsSystem` |
 | [[Maps]] | Карты и выбор арены (300×300) | `mapCatalog`, `Arena.rebuild`, `MapSelect` |
 | [[UI_Polish]] | Единый дизайн-язык UI/HUD: токены, состояния, раскладки | `variables.css`, `styles/*.css`, `uiUxPresentation.test.ts` |
 | [[Factory_Level_Design]] | Завод: foundry, containers, crane, tank farm | `buildFactoryContent`, `factoryGroundTexture` |
 | [[City_Level_Design]] | Город: grid, districts, overpass | `buildCityContent`, `cityGroundTexture` |
 | [[Village_Level_Design]] | Деревня: площадь, часовня, амбары, пруды, сад | `buildVillageContent`, `villageGroundTexture` |
-| [[Game_Lifecycle]] | Режимы, пауза, death cam | `RunState`, `deathLifecycle` |
+| [[Game_Lifecycle]] | Режимы, пауза, death cam, быстрая игра | `RunState`, `deathLifecycle` |
 
 ## Архитектура
 
 - [[../../Architecture/Core|Core Architecture]] — слои, симуляция, порты, фабрики
+- [[../../Architecture/Standard_UI_Input|Standard UI Input]] — каналы UI↔симуляция, гейт ре-рендера, ввод
+- [[../../Architecture/Standard_UI_Safe_Zone|Standard UI Safe Zone]] — камера кадрирует 3D-субъект в свободном от UI прямоугольнике
 - [[../../Architecture/Standard_Tank|Standard Tank]] — entity, systems, фабрика меша
 - [[../../Architecture/Standard_Hull_Models|Standard Hull Models]] — процедурные корпуса, слоты материалов, бюджет детализации
 - [[../../Architecture/Standard_Turret_Models|Standard Turret Models]] — процедурные башни + стволы, слоты, per-tank `railGlowMat`

@@ -27,6 +27,17 @@ const FLAME_SLOT = 0;
 const FLAME_LIGHT_COLOR = 0xff6600;
 const FLAME_LIGHT_DIST = 22;
 
+/**
+ * Arbitration for the shared 'flame' rig slot (capacity 1, used by every
+ * firebird in the match). Idle pools must never write the slot: their
+ * intensity-0 updates used to extinguish the muzzle light of an actively
+ * firing weapon that updated earlier in the tick. The first firing pool
+ * claims the slot and keeps it through its fade; a second firing pool does
+ * not steal it (no per-frame position strobe between two muzzles) and takes
+ * over once the owner stops firing.
+ */
+const flameSlot = { owner: null as FlameParticlePool | null };
+
 export class FlameParticlePool {
   private instancedMesh: THREE.InstancedMesh;
   private particleMat: THREE.MeshBasicMaterial;
@@ -35,6 +46,8 @@ export class FlameParticlePool {
   /** Current muzzle-light intensity; written to the rig slot every frame. */
   private muzzleIntensity = 0;
   private spawnAcc = 0;
+  /** True while the trigger is held this frame (read by the shared-slot arbiter). */
+  firingNow = false;
 
   constructor(private scene: THREE.Scene, count: number, rig: LightRig) {
     this.rig = rig;
@@ -87,6 +100,8 @@ export class FlameParticlePool {
     firing: boolean,
     muzzle: THREE.Vector3,
   ) {
+    this.firingNow = firing;
+
     // --- Спавн новых частиц из пула пока кнопка зажата ---
     if (firing) {
       this.spawnAcc += dt * WEAPON_TUNING.flamethrower.spawnRate;
@@ -103,7 +118,20 @@ export class FlameParticlePool {
     } else {
       this.muzzleIntensity = Math.max(0, this.muzzleIntensity - dt * 100);
     }
-    this.rig.set('flame', FLAME_SLOT, muzzle, FLAME_LIGHT_COLOR, this.muzzleIntensity, FLAME_LIGHT_DIST);
+
+    // --- Shared-slot arbitration (see flameSlot docstring) ---
+    // A firing pool claims the slot unless another pool is actively firing;
+    // only the owner writes the light, and it releases the slot exactly once
+    // when its fade reaches zero. Idle pools never touch the rig.
+    if (firing && !flameSlot.owner?.firingNow) flameSlot.owner = this;
+    if (flameSlot.owner === this) {
+      if (this.muzzleIntensity > 0) {
+        this.rig.set('flame', FLAME_SLOT, muzzle, FLAME_LIGHT_COLOR, this.muzzleIntensity, FLAME_LIGHT_DIST);
+      } else {
+        this.rig.off('flame', FLAME_SLOT);
+        flameSlot.owner = null;
+      }
+    }
 
     // --- Обновление жизненного цикла и матриц InstancedMesh ---
     let anyActive = false;
@@ -184,8 +212,12 @@ export class FlameParticlePool {
   }
 
   dispose() {
-    // The muzzle light is a shared rig slot — extinguish it, never detach.
-    this.rig.off('flame', FLAME_SLOT);
+    // Shared rig slot: only the current owner may extinguish it — a non-owner
+    // dispose must not kill another firebird's active muzzle light.
+    if (flameSlot.owner === this) {
+      flameSlot.owner = null;
+      this.rig.off('flame', FLAME_SLOT);
+    }
     this.scene.remove(this.instancedMesh);
     this.instancedMesh.geometry.dispose();
     this.instancedMesh.dispose();

@@ -31,6 +31,37 @@ describe('captureLogic', () => {
     expect(frozen.progress).toBeCloseTo(0.5, 5);
   });
 
+  it('contest does not wipe progress: the same capturer resumes from the frozen value', () => {
+    // Regression: a single defender frame used to null `actor`, and the
+    // resumed capture restarted the bar from 0 instead of the frozen 0.5.
+    let z = createZone('A', 0, 0);
+    z = stepCaptureZone(z, { alpha: 1, bravo: 0 }, 4);
+    z = stepCaptureZone(z, { alpha: 1, bravo: 1 }, 1); // contested — freeze
+    expect(z.contested).toBe(true);
+    expect(z.progress).toBeCloseTo(0.5, 5);
+    z = stepCaptureZone(z, { alpha: 1, bravo: 0 }, 1); // contest clears
+    expect(z.contested).toBe(false);
+    expect(z.progress).toBeCloseTo(0.5 + 1 / CAPTURE.captureSec, 5);
+  });
+
+  it('a different capturer after a contest still restarts the bar', () => {
+    let z = createZone('A', 0, 0);
+    z = stepCaptureZone(z, { alpha: 1, bravo: 0 }, 4); // 0.5 by alpha
+    z = stepCaptureZone(z, { alpha: 1, bravo: 1 }, 1); // contested
+    z = stepCaptureZone(z, { alpha: 0, bravo: 1 }, 1); // bravo takes over
+    expect(z.actor).toBe('bravo');
+    expect(z.progress).toBeCloseTo(1 / CAPTURE.captureSec, 5);
+  });
+
+  it('empty zone keeps frozen progress for the returning capturer', () => {
+    let z = createZone('B', 0, 0);
+    z = stepCaptureZone(z, { alpha: 1, bravo: 0 }, 4); // 0.5
+    z = stepCaptureZone(z, { alpha: 0, bravo: 0 }, 2); // empty — freeze
+    expect(z.progress).toBeCloseTo(0.5, 5);
+    z = stepCaptureZone(z, { alpha: 1, bravo: 0 }, 1); // alpha returns
+    expect(z.progress).toBeCloseTo(0.5 + 1 / CAPTURE.captureSec, 5);
+  });
+
   it('neutral capture completes in captureSec exclusive', () => {
     let z = createZone('A', 0, 0);
     z = stepCaptureZone(z, { alpha: 1, bravo: 0 }, CAPTURE.captureSec);

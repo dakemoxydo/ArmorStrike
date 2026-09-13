@@ -40,18 +40,23 @@
 |----------------|------|------|
 | `PlayerController` | `src/game/PlayerController.ts` | Клавиши, мышь, fire, reload |
 | `CameraLookState` | `src/game/camera/CameraLookState.ts` | Yaw/pitch взгляда |
-| `PlayerInputStage` | `src/game/engine/stages/PlayerInputStage.ts` | Тик: `input.update` → `weapon.setFire` |
+| `PlayerInputStage` | `src/game/engine/stages/PlayerInputStage.ts` | Тик: `input.update` (триггер — в `WeaponFireStage`) |
 | `PlayingCameraMode` | `src/game/camera/PlayingCameraMode.ts` | Камера в бою |
 
 ## Состояния
 
 ```
-enabled = false  →  меню / гараж / over
-enabled = true   →  playing
+enabled = false  →  меню / гараж / over / пауза
+enabled = true   →  playing (unpaused)
 locked  = pointerLockElement === canvas
 ```
+
+> `onKeyDown` гейтится по `enabled`: вне боя клавиши принадлежат странице —
+> Space активирует сфокусированную кнопку, Tab двигает фокус (пауза тоже
+> выставляет `enabled = false`, включая auto-pause).
 
 ## Заметки дизайна
 
 - Space и ЛКМ — оба «спуск»; оружие само интерпретирует удержание (рельса / огонь / пушка).
-- `swallow` блокирует scroll/default на стрелках, Space, Tab в бою.
+- `swallow` блокирует scroll/default на стрелках, Space, Tab **только в бою**
+  (пока `enabled`; вне боя обработчик не мешает странице).

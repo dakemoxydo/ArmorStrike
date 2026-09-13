@@ -84,7 +84,6 @@ export class BotAiStage implements SimSystem {
 
     for (const b of this.bots.bots) {
       if (!b.tank.alive) {
-        b.tank.weapon?.setFire(false);
         this._aiSticky.delete(b.tank.id);
         this._objSticky.delete(b.tank.id);
         continue;
@@ -137,7 +136,7 @@ export class BotAiStage implements SimSystem {
         bounds,
         moveHint,
       });
-      b.tank.weapon?.setFire(b.ai.wantsFire);
+      // setFire deferred to WeaponFireStage (fires after the turret sync).
     }
   }
 

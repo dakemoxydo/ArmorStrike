@@ -91,7 +91,9 @@ function makeWorld(level: QualityLevel) {
   Reflect.set(rw, 'quality', level);
   Reflect.set(rw, 'renderer', deps.renderer);
   Reflect.set(rw, 'sun', deps.sun);
-  Reflect.set(rw, 'scene', {});
+  // applyQuality may traverse the scene (shadowMap.enabled toggle forces a
+  // material recompile pass) — the stub only needs to accept the walk.
+  Reflect.set(rw, 'scene', { traverse: (_cb: (o: unknown) => void) => {} });
   Reflect.set(rw, 'camera', {});
   Reflect.set(rw, 'composer', null);
   Reflect.set(rw, 'bloomPass', null);

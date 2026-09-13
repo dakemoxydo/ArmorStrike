@@ -1,4 +1,6 @@
 // ===== Стадия: ввод игрока + учёт перезарядки =====
+// Триггер оружия (setFire) сюда больше НЕ входит — его применяет WeaponFireStage
+// после TankSystemStage, чтобы выстрел шёл из дула текущего кадра (см. там).
 import type { FrameContext, SimSystem } from './types';
 import type { PlayerController } from '../../PlayerController';
 import type { AudioPort } from '../../ports/AudioPort';
@@ -14,8 +16,9 @@ export class PlayerInputStage implements SimSystem {
   update(ctx: FrameContext): void {
     const p = ctx.player;
     if (p.alive) {
-      const wantsFire = this.input.update(p);
-      p.weapon?.setFire(wantsFire);
+      // WASD/mouse → tank fields; wantsFire/requestReload фиксируются в
+      // контроллере и применяются позже (WeaponFireStage).
+      this.input.update(p);
       const ammo = p.weapon?.getAmmoState();
       const reloading = ammo?.reloading ?? false;
       // Railgun reports isCharging as "reloading" for HUD progress, but charging
@@ -24,8 +27,6 @@ export class PlayerInputStage implements SimSystem {
       if (isReloadNotCharge && !ctx.prevReloading.value) this.audio.reload();
       ctx.prevReloading.value = reloading;
     } else {
-      // M8: cut flamethrower/weapon fire on death so audio/state do not leak.
-      p.weapon?.setFire(false);
       ctx.prevReloading.value = false;
     }
   }

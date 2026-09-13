@@ -141,7 +141,12 @@ export class FlamethrowerWeapon implements Weapon {
   }
 
   dispose() {
-    this.deps.audio.stopFlameLoop();
+    // Keep the start/stopFlameLoop ref-count balanced: only a weapon that was
+    // firing releases its voice claim (an unconditional stop muted siblings).
+    if (this.isFiring) {
+      this.isFiring = false;
+      this.deps.audio.stopFlameLoop();
+    }
     this.flamePool.dispose();
   }
 }

@@ -102,7 +102,9 @@ export class ProjectileManager {
       this.shots.push({
         group, coreMesh, glow, mat, glowMat,
         dir: new THREE.Vector3(), alive: false, traveled: 0,
-        maxRange: PROJECTILE.range, speed: PROJECTILE.speed,
+        // speed is owned by the weapon behavior (set in init() on fire);
+        // pooled slots are never in flight before init, so 0 is safe.
+        maxRange: PROJECTILE.range, speed: 0,
         weaponType: 'cannon', owner: null, damage: 0, trailT: 0,
         color: new THREE.Color(), splashRadius: 0, splashDmg: 0,
       });

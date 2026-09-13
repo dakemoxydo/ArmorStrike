@@ -47,11 +47,14 @@ interface Weapon {
 
 ## 3. Fire pipeline (кадр)
 
-1. Input/AI: `setFire(wantsFire)`
-2. `WeaponSystemStage` → `WeaponSystem.update` → `weapon.update`
-3. Оружие само решает charge / ammo / spawn projectile / hitscan
-4. `owner.onFired(recoil)` — cooldown + knockback + barrel kick
-5. Урон → `DamageSystem` / `applyHit` (не прямой `health -=` снаружи entity)
+1. Input/AI фиксируют `wantsFire` (`PlayerInputStage` / `BotAiStage`)
+2. `TankSystemStage` — motion/aim интегрируются, презентация башни синкаится
+3. `WeaponFireStage` → `weapon.setFire(wantsFire)` — строго после синка башни,
+   иначе выстрел вылетает из дула прошлого кадра
+4. `WeaponSystemStage` → `WeaponSystem.update` → `weapon.update`
+5. Оружие само решает charge / ammo / spawn projectile / hitscan
+6. `owner.onFired(recoil)` — cooldown + knockback + barrel kick
+7. Урон → `DamageSystem` / `applyHit` (не прямой `health -=` снаружи entity)
 
 `canFire()` на entity — только `alive && fireTimer <= 0`.  
 Контракт «есть ли патроны/заряд» — **внутри** weapon.

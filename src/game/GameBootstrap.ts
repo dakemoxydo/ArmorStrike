@@ -132,6 +132,7 @@ function buildDerivedSystems(
 function registerWindowHandlers(
   canvas: HTMLCanvasElement,
   renderWorld: RenderWorld,
+  cameraRig: RenderWorld['cameraRig'],
   sim: GameSimulation,
   input: PlayerController,
   emitEvent: (e: GameEvent) => void,
@@ -143,6 +144,8 @@ function registerWindowHandlers(
     const w = canvas.clientWidth || window.innerWidth;
     const h = canvas.clientHeight || window.innerHeight;
     renderWorld.resize(w, h);
+    // Размер нужен камере для safe-zone сдвига гаража (setViewOffset).
+    cameraRig.setViewportSize(w, h);
   };
   onResize();
   window.addEventListener('resize', onResize);
@@ -154,6 +157,9 @@ function registerWindowHandlers(
       shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT)
     ) {
       sim.run.paused = true;
+      // Pause owns the keyboard: menu buttons must keep Space/Tab (see
+      // PlayerController.onKeyDown enabled gate).
+      sim.input.enabled = false;
       emitEvent({ type: 'pauseChanged', value: true });
     }
   };
@@ -163,6 +169,7 @@ function registerWindowHandlers(
     // Root fix C1: intentional lock release on death must NOT pause.
     if (shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT)) {
       sim.run.paused = true;
+      sim.input.enabled = false;
       emitEvent({ type: 'pauseChanged', value: true });
     }
   };
@@ -175,11 +182,17 @@ function buildGarageInput(
   canvas: HTMLCanvasElement,
   sim: GameSimulation,
   cameraRig: RenderWorld['cameraRig'],
+  emitEvent: (e: GameEvent) => void,
 ): GarageInput {
   const garageInput = new GarageInput({
     canvas,
     isInteractive: () => sim.run.mode === 'garage',
     cameraRig,
+    // Peek-осмотр: камера демпфирует safe-zone, UI скрывает док по событию.
+    onPeekChange: (active) => {
+      cameraRig.garagePeek = active;
+      emitEvent({ type: 'garagePeek', value: active });
+    },
   });
   garageInput.attach();
   return garageInput;
@@ -256,8 +269,8 @@ export async function bootstrapGame(canvas: HTMLCanvasElement): Promise<GameCont
   await previewController.rebuild(sim.run.currentHull, sim.run.currentTurret);
   renderWorld.applyQuality(getQualityPreset(loadQuality()));
 
-  const { onResize, onVisibility } = registerWindowHandlers(canvas, renderWorld, sim, input, emitEvent);
-  const garageInput = buildGarageInput(canvas, sim, cameraRig);
+  const { onResize, onVisibility } = registerWindowHandlers(canvas, renderWorld, cameraRig, sim, input, emitEvent);
+  const garageInput = buildGarageInput(canvas, sim, cameraRig, emitEvent);
   const { gameLoop, hudSink, hud } = buildGameLoop(sim, cameraRig, renderWorld, hudModel, emitEvent, previewController);
 
   // Hit-stop / slow-mo — только за убийство ИГРОКОМ. Раньше hitStop() стоял без

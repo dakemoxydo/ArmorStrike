@@ -18,7 +18,10 @@ export const BOOST = {
 };
 
 export const PROJECTILE = {
-  speed: 58,
+  // No `speed` here on purpose: the flight speed lives in
+  // WEAPON_TUNING.<weapon>.speed (catalogData) and is applied by each
+  // ProjectileBehavior in init(). A legacy global `speed: 58` diverged from
+  // the real cannon shell speed (48) and leaked into the AI lead math.
   range: 85,
   radius: 0.18,
 };

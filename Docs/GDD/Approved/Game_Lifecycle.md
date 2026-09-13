@@ -27,11 +27,17 @@ type GameMode = 'menu' | 'garage' | 'playing' | 'over'
 
 ```
 Играть → ModeSelect → MapSelect → GameApi.startRound(mapId)
+Быстрая игра → pickQuickMatch (случайный mode + map) → startRound
 Реванш (results) → startRound(lastMap)   // тот же mode
 Сменить режим → ModeSelect → MapSelect
 ```
 
 - `ModeSelect` — DM / TDM / CP; пишет `setMatchMode`.
+- **Быстрая игра** (кнопка в MainMenu): `pickQuickMatch`
+  (`src/game/quickMatch.ts`) — равномерно случайные режим из
+  `MATCH_MODE_IDS` (`match/matchConfig.ts`) и карта из `MAP_IDS`
+  (`maps/mapCatalog.ts`); выбранное пишется и в контроллер (`setMatchMode`),
+  и в `lastMatchMode` / `lastMapId` App — реванш повторяет тот же матч.
 - `MapSelect` — оверлей; Cancel возвращает к ModeSelect.
 - `startRound(mapId)` всегда делает `Arena.rebuild(mapId)` + `HudModel.rebuildMinimap`.
 - Карты: `factory` | `village` | `city` — см. [[Maps]].
@@ -46,7 +52,9 @@ type GameMode = 'menu' | 'garage' | 'playing' | 'over'
 - Параллельные вызовы становятся в очередь, применяется только последний —
   промежуточные сбрасывают свой ростер, чтобы не удвоить танки.
 - Выход в `menu` / `garage` инвалидирует старт «в полёте» **в любом режиме** —
-  иначе догрузка выкинула бы игрока в бой из гаража.
+  иначе догрузка выкинула бы игрока в бой из гаража. seq-проверка повторяется
+  после **каждого** `await` (ростер и `renderWorld.warmUp()`): выход в меню
+  прямо во время компиляции шейдеров тоже отменяет применение `playing`.
 - UI держит оверлей «ЗАГРУЗКА» на время ожидания (`App.runStartRound`).
 - Перед `mode = 'playing'` — `renderWorld.warmUp()`: компиляция шейдеров всех материалов
   сцены, пока виден оверлей (см. [[../../Architecture/Standard_Frame_Stability|Standard Frame Stability]] §2).
@@ -98,20 +106,21 @@ applyPlayerDeathState:
 
 ## Порядок тика (playing, !paused)
 
-1. PlayerInput  
-2. BotAi (team modes: nearest enemy focus)  
-3. Weapons  
-4. Tanks (motion → timers → aim → presentation)  
-5. TankAnimation  
-6. Tank FX  
-7. Ambient  
-8. Nameplates  
-9. Physics  
-10. Projectiles  
-11. Minimap  
-12. **Match** (invuln, respawn, capture, win)  
-13. Boost (нитро-выхлоп игрока)  
-14. Engine audio
+1. PlayerInput (WASD/mouse → tank; wantsFire фиксируется)
+2. BotAi (team modes: nearest enemy focus; решает wantsFire)
+3. **Tanks** (motion → timers → aim → presentation sync башни)
+4. WeaponFire (триггеры `setFire` — после синка башни, дуло текущего кадра)
+5. Weapons (weapon.update: charge FSM, flame particles)
+6. TankAnimation
+7. Tank FX
+8. Ambient
+9. Nameplates
+10. Physics
+11. Projectiles
+12. Minimap
+13. **Match** (invuln, respawn, capture, win)
+14. Boost (нитро-выхлоп игрока)
+15. Engine audio
 
 Полный реестр — `buildSimulationStages` (`src/game/engine/stages/index.ts`).
 

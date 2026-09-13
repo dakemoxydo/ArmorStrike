@@ -69,7 +69,13 @@ DPS номинал: `12 / 0.1 = 120 HP/s` (без учёта движения/п
 
 ## Визуал
 
-`FlameParticlePool` — InstancedMesh частицы, градиент цвета, muzzle light.
+`FlameParticlePool` — InstancedMesh частицы, градиент цвета, muzzle light
+из общего слота `LightRig` (канал `flame`, ёмкость 1). Слот разделяемый:
+арбитраж в пуле — пишет только владелец-стрелок; idle-огнемёт никогда не
+гасит чужой свет (см. Standard Frame Stability §1).
+
+Flame loop SFX — один общий голос на все огнемёты, ref-count в `AudioFX`:
+гаснет только когда стрелять перестал последний.
 
 ## Классы
 

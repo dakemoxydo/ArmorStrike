@@ -154,6 +154,16 @@ export class GameModeController {
     // compiles on the first shot / first death.
     await renderWorld.warmUp();
 
+    // Superseded while warming shaders (leave-to-menu / newer startRound) —
+    // the roster is live in the scene already, so drop it and bail BEFORE
+    // applying the playing mode. Without this check the stale job re-applied
+    // `playing` + pointer lock over the menu the user just opened.
+    if (seq !== this.startSeq) {
+      sim.clearTanks(scene);
+      sim.projectiles.clear();
+      return;
+    }
+
     sim.run.mode = 'playing';
     sim.run.paused = false;
     sim.input.enabled = true;
@@ -168,6 +178,9 @@ export class GameModeController {
     const { sim, emit } = this.d;
     if (sim.run.mode !== 'playing' || sim.deathT >= 0) return;
     sim.run.paused = !sim.run.paused;
+    // Pause owns the keyboard too: Space/Tab must drive the PauseMenu, not
+    // the combat controller (mirrors the auto-pause paths in GameBootstrap).
+    sim.input.enabled = !sim.run.paused;
     if (sim.run.paused) {
       sim.input.releaseLock();
     } else {

@@ -79,6 +79,7 @@ export class AudioFX implements AudioPort {
   /** Full teardown (L-5): stop voices, clear timers, close the context. */
   dispose() {
     this.stopChargeRailgun(false);
+    this.flameUsers = 0; // force-stop the shared flame voice below
     this.stopFlameLoop();
     this.stopEngine();
     this.engineOn = false;
@@ -258,8 +259,19 @@ export class AudioFX implements AudioPort {
     this.chargeBaseFreqs.push({ f0, f1 });
   }
 
+  /**
+   * Firebird weapons currently firing. The flame loop is ONE shared voice for
+   * the whole match (constant node budget), so it is ref-counted: it must
+   * fade out only when the LAST weapon stops — the first weapon's stop used
+   * to mute a still-firing sibling.
+   */
+  private flameUsers = 0;
+
   startFlameLoop() {
-    if (!this.ctx || !this.master || this.flameSource || !this.noiseBuf) return;
+    if (!this.ctx || !this.master || !this.noiseBuf) return;
+    this.flameUsers += 1;
+    // Voice already running for another firebird — keep it (single shared loop).
+    if (this.flameSource) return;
     const src = this.ctx.createBufferSource();
     src.buffer = this.noiseBuf;
     src.loop = true;
@@ -276,6 +288,9 @@ export class AudioFX implements AudioPort {
   }
 
   stopFlameLoop() {
+    // Ref-counted shared voice: only the last stop actually fades it out.
+    if (this.flameUsers > 0) this.flameUsers -= 1;
+    if (this.flameUsers > 0) return;
     if (!this.ctx || !this.flameSource || !this.flameGain) return;
     const src = this.flameSource;
     this.flameGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.05);

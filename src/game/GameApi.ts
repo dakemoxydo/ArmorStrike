@@ -6,6 +6,7 @@ import type {
   CaptureHudPoint,
   GameEvent,
   GameMode,
+  GarageViewportInset,
   HudSnapshot,
   MatchModeId,
   MinimapDynamic,
@@ -36,7 +37,21 @@ export interface GameApi {
   getQuality(): QualityLevel;
   cycleQuality(): QualityLevel;
 
-  setGarageSelection(hullId: HullId, turretId: TurretId): void;
+  /**
+   * Select the garage loadout. Resolves after the 3D preview is rebuilt and
+   * the selection is committed (saved + `garageChanged` emitted); rejects if
+   * the rebuild fails — the committed state then stays at the previous pick,
+   * so UI can revert its optimistic selection.
+   */
+  setGarageSelection(hullId: HullId, turretId: TurretId): Promise<void>;
+
+  /**
+   * Report the garage UI footprint (CSS px occupied at each viewport edge) so
+   * the preview camera can frame the tank inside the remaining free area.
+   * Pass null when the garage UI is not mounted. Cheap to call — the rig
+   * ignores repeats.
+   */
+  setGarageViewportInset(inset: GarageViewportInset | null): void;
 
   getHud(): HudSnapshot;
   getMinimapStatic(): MinimapStatic[];

@@ -17,6 +17,7 @@ import { DEFAULT_MAP_ID } from './game/maps/mapCatalog';
 import type { MatchModeId } from './game/types';
 import { isInteractiveKeyboardTarget } from './ui/keyboardTarget';
 import { loadMuted } from './game/audio';
+import { pickQuickMatch } from './game/quickMatch';
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -176,6 +177,19 @@ export default function App() {
     void runStartRound(game, lastMapId);
   }, [game, lastMapId, runStartRound]);
 
+  /** Быстрая игра: случайный режим + карта, без экранов подготовки. */
+  const quickGame = useCallback(() => {
+    if (!game) return;
+    const pick = pickQuickMatch();
+    setLastMatchMode(pick.mode);
+    setLastMapId(pick.mapId);
+    setModeSelectOpen(false);
+    setMapSelectOpen(false);
+    setPaused(false);
+    game.setMatchMode(pick.mode);
+    void runStartRound(game, pick.mapId);
+  }, [game, runStartRound]);
+
   const goGarage = useCallback(() => {
     if (!game) return;
     setMapSelectOpen(false);
@@ -275,6 +289,7 @@ export default function App() {
           hull={currHull}
           turret={currTurret}
           onStart={openModeSelect}
+          onQuickGame={quickGame}
           onGarage={goGarage}
         />
       )}

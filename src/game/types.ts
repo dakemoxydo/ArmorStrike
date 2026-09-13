@@ -57,6 +57,18 @@ export interface CaptureHudPoint {
   contested: boolean;
 }
 
+/**
+ * Сколько CSS-пикселей каждого края вьюпорта занято UI гаража (safe zone).
+ * Камера гаража центрирует предпросмотр танка в оставшемся свободном
+ * прямоугольнике; источник истины — измерение DOM в `Garage.tsx`.
+ */
+export interface GarageViewportInset {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 export type GameEvent =
   | { type: 'playerHit'; dir: number }
   | { type: 'enemyHit'; killed: boolean }
@@ -80,7 +92,8 @@ export type GameEvent =
     }
   | { type: 'pauseChanged'; value: boolean }
   | { type: 'modeChanged'; mode: GameMode }
-  | { type: 'garageChanged' };
+  | { type: 'garageChanged' }
+  | { type: 'garagePeek'; value: boolean };
 
 export interface MinimapStatic { id: number; x: number; z: number; w: number; d: number; kind: string; alive: boolean }
 /** Relation of blip to local player for team coloring (FFA: others = enemy). */

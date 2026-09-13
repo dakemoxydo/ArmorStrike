@@ -21,6 +21,11 @@ export class PlayerController {
   private dom: HTMLElement | null = null;
 
   private onKeyDown = (e: KeyboardEvent) => {
+    // Combat-only handler: while disabled (menu / garage / over / pause) the
+    // page keeps the keys — Space must still press focused buttons and Tab
+    // must keep focus traversal alive. The handler used to preventDefault
+    // them globally, breaking keyboard activation in every screen.
+    if (!this.enabled) return;
     if (e.repeat) { this.swallow(e); return; }
     this.keys.add(e.code);
     if (e.code === 'Space') this.wantsFire = true;
@@ -29,6 +34,8 @@ export class PlayerController {
     this.swallow(e);
   };
   private onKeyUp = (e: KeyboardEvent) => {
+    // Keyup always clears state: releasing a key held before enabled flipped
+    // off must not leave it stuck in `keys`/wantsFire.
     this.keys.delete(e.code);
     if (e.code === 'Space') this.wantsFire = false;
     if (e.code === 'Tab') this.scoreHeld = false;

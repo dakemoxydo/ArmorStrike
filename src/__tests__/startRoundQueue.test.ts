@@ -20,7 +20,11 @@ function createStartQueue() {
   async function execute(seq: number, delayMs: number) {
     if (seq !== startSeq) return;
     started.push(seq);
-    await new Promise((r) => setTimeout(r, delayMs));
+    await new Promise((r) => setTimeout(r, delayMs)); // e.g. spawnMatchRoster
+    if (seq !== startSeq) return;
+    await new Promise((r) => setTimeout(r, delayMs)); // e.g. renderWorld.warmUp
+    // Mirrors GameModeController: the seq must survive BOTH awaits — leaving
+    // to menu during the shader warm-up window must not apply the round.
     if (seq !== startSeq) return;
     applied.push(seq);
   }
@@ -48,6 +52,17 @@ describe('startRound queue (seq + chain)', () => {
   it('leave/invalidate after start prevents apply', async () => {
     const q = createStartQueue();
     const p = q.startRound(20);
+    q.invalidate();
+    await p;
+    expect(q.applied).toEqual([]);
+  });
+
+  it('invalidate during the warm-up window (second await) prevents apply', async () => {
+    // Regression: the stale-seq check used to exist only after the spawn
+    // await; leaving to menu while shaders compiled still applied `playing`.
+    const q = createStartQueue();
+    const p = q.startRound(20);
+    await new Promise((r) => setTimeout(r, 25)); // first await done, second running
     q.invalidate();
     await p;
     expect(q.applied).toEqual([]);

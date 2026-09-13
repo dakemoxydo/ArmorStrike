@@ -1,6 +1,6 @@
 // ===== ИИ: наведение башни и решение стрелять (без смены логики) =====
 import { clamp, segmentHitsCircle, wrapAngle } from './engine/physics';
-import { PROJECTILE } from './constants';
+import { WEAPON_TUNING } from '../core/catalog';
 import { aimTolerance } from './aiTuning';
 import type { AIBody, AITarget, AIPersona } from './AI';
 import type { WeaponType } from '../core/catalog';
@@ -33,8 +33,11 @@ export function updateTurretAndFire(
   state.wantsFire = false;
   if (engage && player.alive) {
     const w = tank.params.weaponType as WeaponType | undefined;
+    // Lead time = flight time at the REAL shell speed. Reading the same
+    // tuning value the cannon behavior uses — a stale global constant (58 vs
+    // the actual 48) made bots under-lead moving targets by ~17%.
     const lead = w === 'cannon'
-      ? clamp(dist / PROJECTILE.speed, 0, 1.4) * persona.lead
+      ? clamp(dist / WEAPON_TUNING.cannon.speed, 0, 1.4) * persona.lead
       : 0;
     const ax = player.position.x + player.vel.x * lead;
     const az = player.position.z + player.vel.z * lead;

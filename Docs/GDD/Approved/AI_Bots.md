@@ -99,7 +99,11 @@ engage ──(lose sight timeout)──► patrol
 
 ## Fire
 
-`wantsFire` → `BotAiStage` → `tank.weapon.setFire(wantsFire)`.
+`wantsFire` → `BotAiStage` (решает) → `WeaponFireStage` → `tank.weapon.setFire(wantsFire)`
+(применение после синка башни — см. [[Game_Lifecycle]] «Порядок тика»).
+
+Lead пушки — по реальной скорости снаряда `WEAPON_TUNING.cannon.speed` (48),
+как и полёт самого снаряда: один источник истины в каталоге.
 
 Оружие бота то же, что у игрока (`createWeapon`).
 

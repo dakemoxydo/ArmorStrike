@@ -13,9 +13,13 @@
 
 | Поле | Значение | Примечание |
 |------|----------|------------|
-| `speed` | 58 | legacy global; cannon behavior ставит **48** |
-| `range` | 85 | fallback |
+| `range` | 85 | fallback (реальный range задаёт behavior из `WEAPON_TUNING`) |
 | `radius` | 0.18 | hit-test радиус |
+
+> `speed` здесь больше **нет**: скорость полёта живёт в
+> `WEAPON_TUNING.<weapon>.speed` (`catalogData`) и применяется behavior'ом в
+> `init()`. Легаси-глобал `speed: 58` расходился с реальной скоростью снаряда
+> пушки (48) и протекал в математику упреждения ИИ.
 
 ## Shot lifecycle
 

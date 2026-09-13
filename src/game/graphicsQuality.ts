@@ -9,6 +9,13 @@ export interface QualityPreset {
   pixelRatioMax: number;
   /** Размер shadow map (квадрат) */
   shadowMapSize: number;
+  /**
+   * Scene-wide shadow toggle. Deliberately `true` at every tier (shadows scale
+   * by map size only — see Docs/Architecture/Graphics_Presets_Matrix.md);
+   * the flag stays so a future tier can disable them. The runtime toggle in
+   * RenderWorld.applyQuality forces a one-time material recompile (three.js
+   * does not recompile already-compiled materials on its own).
+   */
   shadows: boolean;
 }
 

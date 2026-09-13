@@ -19,9 +19,13 @@ export class GarageBinding {
 
   async setSelection(hullId: HullId, turretId: TurretId) {
     const { sim, previewController, emit } = this.d;
+    // Rebuild the preview FIRST, commit only on success: `run.currentHull` /
+    // `currentTurret` (and the persisted loadout) must never point at a hull
+    // whose preview failed to build. A rejection propagates to the caller
+    // (Game → Garage UI reverts its optimistic selection).
+    await previewController.rebuild(hullId, turretId);
     sim.run.currentHull = hullId;
     sim.run.currentTurret = turretId;
-    await previewController.rebuild(hullId, turretId);
     sim.audio.click();
     sim.run.save();
     emit({ type: 'garageChanged' });

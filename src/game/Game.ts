@@ -9,6 +9,7 @@ import type {
   CaptureHudPoint,
   GameEvent,
   GameMode,
+  GarageViewportInset,
   HudSnapshot,
   MatchModeId,
   MinimapDynamic,
@@ -116,8 +117,15 @@ export class Game implements GameApi {
     return this.ctx?.previewController.previewVisual ?? null;
   }
 
-  setGarageSelection(hullId: HullId, turretId: TurretId) {
-    this.requireGarage().setSelection(hullId, turretId);
+  setGarageSelection(hullId: HullId, turretId: TurretId): Promise<void> {
+    // Promise flows through: Garage awaits/reverts on rejection (the old
+    // `void` contract hid the async rebuild and swallowed its failures).
+    return this.requireGarage().setSelection(hullId, turretId);
+  }
+
+  /** UI footprint → camera rig; no-op before bootstrap (garage is not rendered yet). */
+  setGarageViewportInset(inset: GarageViewportInset | null) {
+    this.ctx?.cameraRig.setGarageInset(inset);
   }
 
   setMode(mode: GameMode) { this.requireModes().setMode(mode); }

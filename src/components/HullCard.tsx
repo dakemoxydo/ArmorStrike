@@ -22,17 +22,19 @@ export default function HullCard({ hull, isSelected, delay, onSelect, disabled }
       onClick={() => onSelect(hull.id)}
       disabled={disabled}
       aria-pressed={isSelected}
-      className={`hud-panel garage-card anim-up p-4${isSelected ? ' is-selected hull-selected' : ''}`}
+      title={hull.desc}
+      className={`hud-panel garage-card anim-up p-3${isSelected ? ' is-selected hull-selected' : ''}`}
       style={{ '--d': delay } as React.CSSProperties}
     >
       <div className="flex items-center justify-between mb-2">
         <span className="font-display text-lg tracking-wide text-white">{hull.name}</span>
         {isSelected && <Check size={18} className="g-check text-cyan-300" aria-hidden />}
       </div>
-      <div className="card-badge cut-chip px-2 py-0.5 mb-3 text-[10px] tracking-wider uppercase bg-cyan-500/20 text-cyan-200 border border-cyan-500/40">
+      <div className="card-badge cut-chip px-2 py-0.5 mb-2 text-[10px] tracking-wider uppercase bg-cyan-500/20 text-cyan-200 border border-cyan-500/40">
         {hull.badge}
       </div>
-      <p className="text-[11px] text-white/60 leading-relaxed mb-4">{hull.desc}</p>
+      {/* Компактная карточка: без описания — паспорт справа несёт факты,
+          флейвор доступен в тултипе; 1fr-ряд выше держит бары на одной линии. */}
       <div className="space-y-2 text-[10px]">
         <div>
           <div className="flex justify-between text-white/70 mb-1">

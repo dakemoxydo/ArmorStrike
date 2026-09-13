@@ -195,6 +195,13 @@ export class RenderWorld {
   applyQuality(preset: QualityPreset) {
     this.quality = preset.id;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, preset.pixelRatioMax));
+
+    // three.js pitfall: `shadowMap.enabled` is baked into lit-material
+    // programs; flipping it at runtime does NOT recompile already-compiled
+    // materials, so the toggle would silently no-op visually. Shipped presets
+    // keep shadows on at every tier by design (Graphics_Presets_Matrix.md),
+    // but if a preset ever disables them this forces the one-time recompile.
+    const shadowToggled = this.renderer.shadowMap.enabled !== preset.shadows;
     this.renderer.shadowMap.enabled = preset.shadows;
     this.sun.castShadow = preset.shadows;
     const size = preset.shadowMapSize;
@@ -202,6 +209,18 @@ export class RenderWorld {
       this.sun.shadow.mapSize.set(size, size);
       this.sun.shadow.map?.dispose();
       this.sun.shadow.map = null;
+    }
+    if (shadowToggled) {
+      const seen = new Set<THREE.Material>();
+      this.scene.traverse((o) => {
+        const mat = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+        if (!mat) return;
+        for (const m of Array.isArray(mat) ? mat : [mat]) {
+          if (seen.has(m)) continue;
+          seen.add(m);
+          m.needsUpdate = true;
+        }
+      });
     }
     // Bloom only on 'high'. Tear the composer down on every downgrade (frees
     // its full-size render targets) and rebuild on return — a fresh composer
