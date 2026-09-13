@@ -7,8 +7,6 @@ export type WeaponId = WeaponType;
 
 export interface WeaponMeta {
   id: WeaponId;
-  /** Короткий бренд-лейбл (англ.), напр. RAILGUN / FIREBIRD / СМОКИ. */
-  label: string;
   /** Полное русское название оружия. */
   name: string;
   /** Краткая характеристика типа снаряда/луча (для паспорта гаража). */
@@ -22,7 +20,6 @@ export interface WeaponMeta {
 export const WEAPONS: Record<WeaponId, WeaponMeta> = {
   railgun: {
     id: 'railgun',
-    label: 'RAILGUN',
     name: 'РЕЛЬСОТРОН',
     kind: 'ЭНЕРГЕТИЧЕСКИЙ ЛУЧ',
     color: '#2ee6c0',
@@ -30,7 +27,6 @@ export const WEAPONS: Record<WeaponId, WeaponMeta> = {
   },
   flamethrower: {
     id: 'flamethrower',
-    label: 'FIREBIRD',
     name: 'ОГНЕМЁТ',
     kind: 'ОГНЕННАЯ СТРУЯ',
     color: '#ff8a3d',
@@ -38,7 +34,6 @@ export const WEAPONS: Record<WeaponId, WeaponMeta> = {
   },
   cannon: {
     id: 'cannon',
-    label: 'СМОКИ',
     name: 'ПУШКА',
     kind: 'ФУГАСНЫЙ СНАРЯД',
     color: '#ffd24a',

@@ -46,7 +46,7 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
 
   return (
     <div className="absolute inset-0 z-40 flex flex-col justify-between p-4 md:p-8 pointer-events-none select-none">
-      {/* Шапка гаража */}
+      {/* Шапка — только навигация: назад слева, табы по центру (S2/U10). */}
       <div className="garage-header">
         <div className="garage-header-actions anim-left" style={{ '--d': '0.05s' } as React.CSSProperties}>
           <button
@@ -87,19 +87,6 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
             <Target size={14} aria-hidden /> БАШНЯ
           </button>
         </div>
-
-        <div className="garage-header-actions anim-left" style={{ '--d': '0.05s' } as React.CSSProperties}>
-          <button
-            type="button"
-            onClick={onStart}
-            disabled={!ready}
-            aria-disabled={!ready}
-            className={`btn-game btn-primary px-8 py-3 text-sm${!ready ? ' garage-disabled' : ''}`}
-          >
-            <Play size={17} className="bicon" aria-hidden />
-            <span>В БОЙ</span>
-          </button>
-        </div>
       </div>
 
       {!ready && (
@@ -111,7 +98,7 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
       {/* Нижняя зона: карточки + паспорт */}
       <div className="garage-bottom pointer-events-auto">
         <div className="garage-cards-col flex flex-col gap-3">
-          <div className="anim-up hud-label text-cyan-300/80 mb-1 flex items-center gap-2" style={{ '--d': '0.1s' } as React.CSSProperties}>
+          <div className="anim-up hud-label garage-hint-label mb-1 flex items-center gap-2" style={{ '--d': '0.1s' } as React.CSSProperties}>
             <MoveUp size={12} aria-hidden />
             {activeTab === 'hulls' ? 'ВЫБЕРИТЕ КОРПУС — ОПРЕДЕЛЯЕТ ЗДОРОВЬЕ И СКОРОСТЬ' : 'ВЫБЕРИТЕ БАШНЮ — ОПРЕДЕЛЯЕТ ТИП ОРУЖИЯ И УРОН'}
           </div>
@@ -151,13 +138,13 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
           </div>
 
           <div className="anim-up flex pointer-events-none" style={{ '--d': '0.25s' } as React.CSSProperties}>
-            <span className="text-[11px] tracking-wider text-white/55 border border-white/10 rounded px-2 py-1 bg-white/5">
+            <span className="cut-chip text-[11px] tracking-wider text-white/55 border border-white/10 px-2 py-1 bg-white/5">
               ЗАЖМИТЕ ЛКМ — ВРАЩЕНИЕ · КОЛЕСО — ПРИБЛИЖЕНИЕ
             </span>
           </div>
         </div>
 
-        <div className="garage-passport">
+        <div className="garage-passport flex flex-col gap-3">
           <div className="anim-up hud-panel p-5" style={{ '--d': '0.3s' } as React.CSSProperties}>
             <div className="hud-label text-cyan-300/90 mb-3 flex items-center gap-1.5">
               <HardDrive size={14} aria-hidden /> СБОРОЧНЫЙ ПАСПОРТ
@@ -172,41 +159,60 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
                 <span className="font-display text-sm text-amber-300">{currTurret.name}</span>
               </div>
               <div className="grid grid-cols-2 gap-2 pt-1 text-center">
-                <div className="bg-white/5 p-2 rounded border border-white/10">
+                <div className="cut-chip bg-white/5 p-2 border border-white/10">
                   <div className="text-[10px] tracking-widest text-white/55 mb-0.5">ПРОЧНОСТЬ</div>
                   <div className="font-display text-lg text-emerald-400">{currHull.maxHealth}</div>
                 </div>
-                <div className="bg-white/5 p-2 rounded border border-white/10">
+                <div className="cut-chip bg-white/5 p-2 border border-white/10">
                   <div className="text-[10px] tracking-widest text-white/55 mb-0.5">СКОРОСТЬ</div>
                   <div className="font-display text-lg text-cyan-300">{currHull.speed}</div>
                 </div>
-                <div className="bg-white/5 p-2 rounded border border-white/10">
+                <div className="cut-chip bg-white/5 p-2 border border-white/10">
                   <div className="text-[10px] tracking-widest text-white/55 mb-0.5">УРОН / ВЫСТРЕЛ</div>
                   <div className="font-display text-lg text-amber-300">{currTurret.damage}</div>
                 </div>
-                <div className="bg-white/5 p-2 rounded border border-white/10">
+                <div className="cut-chip bg-white/5 p-2 border border-white/10">
                   <div className="text-[10px] tracking-widest text-white/55 mb-0.5">МАГАЗИН</div>
                   <div className="font-display text-lg text-white">{currTurret.magazine}</div>
                 </div>
               </div>
               <div key={currTurret.weaponType} className="anim-pop" style={{ '--d': '0s' } as React.CSSProperties}>
                 {currTurret.weaponType === 'cannon' && (
-                  <div className="text-[10px] text-amber-200/70 bg-amber-500/10 border border-amber-500/20 rounded p-2 text-center tracking-wider">
+                  <div className="text-[10px] text-amber-200/70 bg-amber-500/10 border border-amber-500/20 cut-chip p-2 text-center tracking-wider">
                     ФУГАСНЫЙ УРОН · РАДИУС ВЗРЫВА 5 М
                   </div>
                 )}
                 {currTurret.weaponType === 'flamethrower' && (
-                  <div className="text-[10px] text-orange-200/70 bg-orange-500/10 border border-orange-500/20 rounded p-2 text-center tracking-wider">
+                  <div className="text-[10px] text-orange-200/70 bg-orange-500/10 border border-orange-500/20 cut-chip p-2 text-center tracking-wider">
                     НЕПРЕРЫВНЫЙ КОНУС ПЛАМЕНИ
                   </div>
                 )}
                 {currTurret.weaponType === 'railgun' && (
-                  <div className="text-[10px] text-cyan-200/70 bg-cyan-500/10 border border-cyan-500/20 rounded p-2 text-center tracking-wider">
+                  <div className="text-[10px] text-cyan-200/70 bg-cyan-500/10 border border-cyan-500/20 cut-chip p-2 text-center tracking-wider">
                     ТОЧНЫЙ ЭНЕРГЕТИЧЕСКИЙ ЛУЧ · {currTurret.damage} ЕД.
                   </div>
                 )}
               </div>
             </div>
+          </div>
+
+          {/* CTA в конце того же движения, что и выбор: игрок только что кликал
+              по карточкам внизу, а кнопка была в правом верхнем углу — ~1000 px
+              хода курсора на 1080p (S2, закон Фиттса). `:disabled` вместо
+              класса — состояние кнопки теперь одно на всё приложение (U13).
+              Вход анимирует ОБЁРТКА: `.btn-primary` задаёт собственный
+              `animation: gradient-drift`, который перебил бы `anim-up` и
+              оставил кнопку с `opacity: 0` навсегда. */}
+          <div className="anim-up mt-auto" style={{ '--d': '0.4s' } as React.CSSProperties}>
+            <button
+              type="button"
+              onClick={onStart}
+              disabled={!ready}
+              className="btn-game btn-primary w-full px-8 py-3.5 text-base"
+            >
+              <Play size={18} className="bicon" aria-hidden />
+              <span>В БОЙ</span>
+            </button>
           </div>
         </div>
       </div>

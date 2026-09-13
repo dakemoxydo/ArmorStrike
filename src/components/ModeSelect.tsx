@@ -90,7 +90,7 @@ export default function ModeSelect({
   return (
     <div
       ref={trapRef}
-      className="absolute inset-0 z-50 flex items-center justify-center bg-[#04060bf0] p-4 md:p-8"
+      className="scrim-menu absolute inset-0 z-50 flex items-center justify-center p-4 md:p-8"
       role="dialog"
       aria-modal="true"
       aria-labelledby="mode-select-title"
@@ -99,17 +99,20 @@ export default function ModeSelect({
       <div className="menu-stripes pointer-events-none absolute inset-x-0 bottom-0 h-2" />
 
       <div className="relative z-10 w-full max-w-4xl">
-        <div className="anim-up mb-6 flex flex-wrap items-end justify-between gap-4" style={{ '--d': '0.05s' } as React.CSSProperties}>
-          <div>
-            <div className="hud-label mb-1 text-cyan-300/70">ПОДГОТОВКА К БОЮ</div>
-            <h2 id="mode-select-title" className="font-display text-3xl tracking-wider md:text-4xl">
-              ВЫБОР РЕЖИМА
-            </h2>
-          </div>
+        {/* Шапка каркаса: назад слева, номер шага справа (U10). */}
+        <div className="anim-up mb-6 flex flex-wrap items-center justify-between gap-4" style={{ '--d': '0.05s' } as React.CSSProperties}>
           <button type="button" onClick={onCancel} className="btn-game btn-ghost px-5 py-2.5 text-xs">
             <ArrowLeft size={16} className="bicon" aria-hidden />
             <span>НАЗАД</span>
           </button>
+          <span className="cut-chip prep-step">ШАГ 1 ИЗ 2 · РЕЖИМ</span>
+        </div>
+
+        <div className="anim-up mb-6" style={{ '--d': '0.1s' } as React.CSSProperties}>
+          <div className="hud-label mb-1">ПОДГОТОВКА К БОЮ</div>
+          <h2 id="mode-select-title" className="font-display text-3xl tracking-hero md:text-4xl">
+            ВЫБОР РЕЖИМА
+          </h2>
         </div>
 
         <div
@@ -129,26 +132,19 @@ export default function ModeSelect({
                 disabled={!m.enabled}
                 onClick={() => m.enabled && setSelected(m.id)}
                 className={[
-                  'hud-panel relative flex flex-col items-start gap-3 p-5 text-left transition-all',
-                  m.enabled
-                    ? active
-                      ? 'border-cyan-400/70 shadow-[0_0_28px_rgba(46,230,192,0.28)]'
-                      : 'border-white/10 hover:border-cyan-400/40'
-                    : 'cursor-not-allowed opacity-45',
+                  'hud-panel mode-card relative flex flex-col items-start gap-3 p-5 text-left transition-all',
+                  active ? 'is-active' : '',
                 ].join(' ')}
               >
-                <div className={`flex h-12 w-12 items-center justify-center rounded border ${
-                  active && m.enabled
-                    ? 'border-cyan-400/50 bg-cyan-950/50 text-cyan-300'
-                    : 'border-white/15 bg-black/30 text-white/70'
-                }`}>
+                {active && <span className="picked-flag">ВЫБРАНО</span>}
+                <div className="mode-icon">
                   {icon(m.id)}
                 </div>
                 <div>
                   <div className="font-display text-sm tracking-wider text-white">{m.title}</div>
                   <p className="mt-1.5 text-[11px] leading-relaxed text-white/55">{m.blurb}</p>
                 </div>
-                <div className="mt-auto font-display text-[10px] tracking-[0.18em] text-cyan-300/70">
+                <div className="mode-meta">
                   {m.meta}
                 </div>
               </button>
@@ -156,7 +152,10 @@ export default function ModeSelect({
           })}
         </div>
 
-        <div className="anim-up mt-8 flex justify-end" style={{ '--d': '0.28s' } as React.CSSProperties}>
+        <div className="anim-up mt-8 flex flex-wrap items-center justify-between gap-4" style={{ '--d': '0.28s' } as React.CSSProperties}>
+          <p className="prep-hint">
+            ← → смена режима · Enter — далее · Esc — назад
+          </p>
           <button
             type="button"
             className="btn-game btn-primary px-10 py-3.5 text-base"

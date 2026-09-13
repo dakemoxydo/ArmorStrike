@@ -122,14 +122,13 @@ motionQuery?.addEventListener?.('change', (e) => { reducedMotion = e.matches; })
 
 export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: MinimapDynamic[]) {
   if (!cv) return;
-  // Canvas is sized in device pixels while CSS keeps MAP_SIZE — otherwise the
-  // radar is blurry on HiDPI displays. getCache() rebuilds when the size moves.
+  // Canvas is sized in device pixels; its CSS size is owned by `.radar-panel`
+  // (see hud.css) so one breakpoint can shrink the radar on small viewports.
+  // getCache() rebuilds when the backing size moves.
   const backing = Math.round(MAP_SIZE * deviceScale());
   if (cv.width !== backing || cv.height !== backing) {
     cv.width = backing;
     cv.height = backing;
-    cv.style.width = `${MAP_SIZE}px`;
-    cv.style.height = `${MAP_SIZE}px`;
   }
   const cache = getCache(cv);
   if (!cache) return;

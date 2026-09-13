@@ -8,6 +8,72 @@ html, body, #root {
 
 .font-display { font-family: 'Russo One', 'Exo 2', sans-serif; }
 
+/* Срез вместо скругления. Язык игры — срезанный угол, поэтому Tailwind-класс
+   `rounded*` в разметке не используется (U17): утилита даёт ту же геометрию,
+   что `.hud-panel` и `.btn-game`, и не заводит второй визуальный словарь. */
+.cut-control {
+  clip-path: polygon(
+    var(--control-cut) 0,
+    100% 0,
+    100% calc(100% - var(--control-cut)),
+    calc(100% - var(--control-cut)) 100%,
+    0 100%,
+    0 var(--control-cut)
+  );
+}
+.cut-chip {
+  clip-path: polygon(
+    var(--chip-cut) 0,
+    100% 0,
+    100% calc(100% - var(--chip-cut)),
+    calc(100% - var(--chip-cut)) 100%,
+    0 100%,
+    0 var(--chip-cut)
+  );
+}
+/* Клавиша как физическая кнопка: тёмная площадка + светлая нижняя грань. Один
+   примитив на меню и бой — раньше `ControlCard` в меню и `.hint-panel b` в бою
+   были двумя разными визуальными языками для одного и того же (S1). */
+.key-chip {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 2px 6px;
+  font-family: 'Russo One', sans-serif;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: var(--track-tight);
+  color: #d6fff6;
+  background: linear-gradient(180deg, rgba(20, 44, 54, 0.95), rgba(8, 20, 28, 0.95));
+  border: 1px solid rgba(var(--glow), 0.35);
+  border-bottom-width: 2px;
+  clip-path: polygon(var(--chip-cut) 0, 100% 0, calc(100% - var(--chip-cut)) 100%, 0 100%);
+  box-shadow: 0 0 var(--glow-r-sm) rgba(var(--glow), 0.18);
+}
+
+/* Единственное легальное скругление — круг (кольцо перезарядки, точки захвата). */
+.as-circle { border-radius: var(--radius-circle); }
+
+/* Единое отключённое состояние (U13). Раньше оно делалось тремя способами:
+   `opacity .55` в гараже, `opacity-45` у карточки режима и никак у `.btn-game`.
+   Класс безслойный, поэтому перебивает Tailwind-утилиты прозрачности. */
+.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Единое фокус-кольцо (U14): одна толщина, один отступ, один цвет во всех ролях.
+   Живёт здесь одним правилом — в ролях кольцо больше не дублируется. */
+.btn-game:focus-visible,
+.garage-card:focus-visible,
+.garage-tab:focus-visible,
+.map-card:focus-visible,
+.mode-card:focus-visible,
+.build-chip:focus-visible {
+  outline: 2px solid rgba(var(--glow), 0.85);
+  outline-offset: 3px;
+}
+
 .ingame, .ingame * { cursor: none !important; }
 
 /* Screen-reader only (threshold live regions) */

@@ -20,6 +20,7 @@ export default function HudCrosshair({ crossRef, hitmark }: HudCrosshairProps) {
           }
         }}
       >
+        <span className="ch-outer" />
         <span className="ch-dot" />
         <span className="ch-ring" />
         <span className="ch-tick t" /><span className="ch-tick b" />

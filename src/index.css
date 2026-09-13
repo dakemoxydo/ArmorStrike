@@ -1,5 +1,16 @@
 @import './styles/fonts.css';
 @import "tailwindcss";
+
+/* Разрядка: четыре ступени вместо пятнадцати локальных значений (U18).
+   Значения — токены `--track-*` из variables.css; `var()` здесь резолвится в
+   момент вычисления, поэтому источник правды остаётся один. */
+@theme {
+  --tracking-wide: var(--track-tight);
+  --tracking-wider: var(--track-base);
+  --tracking-widest: var(--track-wide);
+  --tracking-hero: var(--track-hero);
+}
+
 @import './styles/variables.css';
 @import './styles/base.css';
 @import './styles/animations.css';

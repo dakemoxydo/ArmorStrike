@@ -177,7 +177,7 @@ export class HudModel {
     target.muted = audio.muted;
     target.turretId = run.currentTurret;
     target.weaponName = wmeta.name;
-    target.weaponLabel = wmeta.label;
+    target.weaponLabel = wmeta.kind;
     target.weaponAccentClass = wmeta.accentClass;
     target.showScore = showScore;
     target.scoreboard = board;

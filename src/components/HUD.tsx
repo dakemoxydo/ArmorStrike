@@ -3,6 +3,7 @@ import { memo, useCallback } from 'react';
 import { Skull, Timer, Trophy } from 'lucide-react';
 import type { GameApi } from '../game/GameApi';
 import { useGameHud } from '../hooks/useGameHud';
+import { configForMode } from '../game/match/matchConfig';
 import HudCrosshair from './hud/HudCrosshair';
 import HudRadar from './hud/HudRadar';
 import HudVitals from './hud/HudVitals';
@@ -28,6 +29,11 @@ function clock(totalSec: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
+/** Доля выполнения порога победы, 0…100. */
+function winPct(value: number, target: number): number {
+  return Math.max(0, Math.min(100, (value / Math.max(1, target)) * 100));
+}
+
 export default function HUD({ game, active }: HudProps) {
   const {
     snap, feed, vignette, dmgArc, hitmark, showHint, frag, streak,
@@ -41,7 +47,6 @@ export default function HUD({ game, active }: HudProps) {
 
   if (!game) return null;
   const st = snap.current;
-  const time = clock(st.timeSec);
   const inGame = st.mode === 'playing';
   /** Оставшееся время матча: матч может закончиться по лимиту (reason: 'time'). */
   const remainSec = Math.max(0, st.timeLimitSec - st.timeSec);
@@ -53,6 +58,15 @@ export default function HUD({ game, active }: HudProps) {
     st.matchMode === 'deathmatch'
       ? `Счёт ${st.score}`
       : `Alpha ${teamLeft}, Bravo ${teamRight}, цель ${st.winTarget}`;
+  /** Прогресс до порога: DM — личные фраги, командные — «перетяжка» по доле. */
+  const dmProgress = winPct(st.kills, st.winTarget);
+  const teamTotal = teamLeft + teamRight;
+  const alphaShare = teamTotal > 0 ? (teamLeft / teamTotal) * 100 : 50;
+  /** Полоса респауна в оверлее смерти. Total берётся из того же конфига матча,
+      что и сам отсчёт, — иначе полоса разошлась бы с цифрой при смене баланса. */
+  const respawnFrac = st.alive
+    ? 0
+    : Math.max(0, Math.min(1, st.respawnInSec / configForMode(st.matchMode).respawnDelaySec));
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 select-none overflow-hidden">
@@ -100,19 +114,24 @@ export default function HUD({ game, active }: HudProps) {
 
           <div className="anim-up absolute left-1/2 top-5 -translate-x-1/2" style={{ '--d': '0.15s' } as React.CSSProperties}>
             <div className="hud-panel score-panel px-8 py-2.5 text-center" aria-label={scoreLabel}>
+              <span className="panel-inset" aria-hidden />
               {st.matchMode === 'deathmatch' ? (
                 <>
-                  <div className="flex items-center justify-center gap-2 text-[11px] tracking-[0.28em] text-cyan-200/75">
+                  <div className="score-mode justify-center">
                     <Trophy size={11} aria-hidden /> СЧЁТ
                   </div>
                   <div className="score-num">{String(st.score).padStart(6, '0')}</div>
-                  <div className="hud-meta mt-0.5">
-                    {time} · {st.kills}/{st.winTarget}
+                  {/* Прогресс до порога победы: видно, сколько осталось, без чтения цифр. */}
+                  <div className="score-progress" aria-hidden>
+                    <i className="sp-fill" style={{ width: `${dmProgress}%` }} />
+                  </div>
+                  <div className="hud-meta mt-1">
+                    ФРАГИ {st.kills}/{st.winTarget}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="flex items-center justify-center gap-2 text-[11px] tracking-[0.28em] text-cyan-200/75">
+                  <div className="score-mode justify-center">
                     <Trophy size={11} aria-hidden />{' '}
                     {st.matchMode === 'team_deathmatch' ? 'КОМАНДНЫЙ БОЙ' : 'ЗАХВАТ ТОЧКИ'}
                   </div>
@@ -121,8 +140,13 @@ export default function HUD({ game, active }: HudProps) {
                     <span className="team-score-sep">—</span>
                     <span className="team-bravo">{teamRight} BRAVO</span>
                   </div>
+                  {/* «Перетяжка» Alpha ↔ Bravo: ширина сторон — доля от суммы. */}
+                  <div className="score-progress" aria-hidden>
+                    <i className="sp-alpha" style={{ width: `${alphaShare}%` }} />
+                    <i className="sp-bravo" style={{ width: `${100 - alphaShare}%` }} />
+                  </div>
                   {cpMode && st.capturePoints.length > 0 && (
-                    <div className="cp-points mt-1" aria-label="Точки захвата">
+                    <div className="cp-points mt-1.5" aria-label="Точки захвата">
                       {st.capturePoints.map((cp) => (
                         <span
                           key={cp.id}
@@ -148,16 +172,19 @@ export default function HUD({ game, active }: HudProps) {
                       ))}
                     </div>
                   )}
-                  <div className="hud-meta mt-0.5">
-                    {time} · вы {st.kills}/{st.deaths} · до {st.winTarget}
+                  <div className="hud-meta mt-1">
+                    вы {st.kills}/{st.deaths} · цель {st.winTarget}
                   </div>
                 </>
               )}
+              {/* Единственная шкала времени в панели: раньше рядом стояли двое
+                  часов разного смысла (прошедшее 00:00 и остаток 11:59) без
+                  подписи — читалось как дубль (U3). */}
               <div
-                className={`hud-timer mt-1${lowTime ? ' is-low' : ''}`}
+                className={`hud-timer${lowTime ? ' is-low' : ''}`}
                 aria-label={`До конца матча ${clock(remainSec)}`}
               >
-                <Timer size={11} aria-hidden /> {clock(remainSec)}
+                <Timer size={11} aria-hidden /> ДО КОНЦА {clock(remainSec)}
               </div>
             </div>
           </div>
@@ -182,41 +209,51 @@ export default function HUD({ game, active }: HudProps) {
           {!st.alive && (
             <div className="death-overlay" aria-hidden>
               <div className="hud-panel death-panel">
-                <Skull size={30} className="death-icon" />
+                <Skull size={30} className="death-icon skull-pulse" />
                 <div className="death-title">УНИЧТОЖЕН</div>
                 <div className="death-sub">
                   Возрождение через <b>{Math.ceil(st.respawnInSec)}</b> с
+                </div>
+                {/* Ширина обновляется раз в секунду (квант `respawnInSec` в
+                    hudRenderGate), CSS-переход 1s линейно сглаживает шаги. */}
+                <div className="death-bar">
+                  <i style={{ width: `${respawnFrac * 100}%` }} />
                 </div>
               </div>
             </div>
           )}
 
-          {showHint && (
-            <div className="hud-hint-wrap" aria-hidden>
-              <div className="hud-panel hint-panel">
-                <span><b>WASD</b> ДВИЖЕНИЕ</span>
-                <span><b>SHIFT</b> НИТРО</span>
-                <span><b>МЫШЬ</b> ОБЗОР/ПРИЦЕЛ</span>
-                <span><b>ЛКМ</b> ОГОНЬ</span>
-                <span><b>R</b> МАГАЗИН</span>
-                <span><b>TAB</b> ТАБЛО</span>
-                <span><b>M</b> ЗВУК</span>
-                <span><b>ESC</b> ПАУЗА</span>
-              </div>
+          {/* Подсказка живёт в DOM постоянно и гаснет классом: выход по
+              состоянию (`showHint`) проигрывает переход, а не обрывает его. */}
+          <div className={`hud-hint-wrap${showHint ? '' : ' is-hidden'}`} aria-hidden>
+            <div className="hud-panel hint-panel">
+              <span><b className="key-chip">WASD</b> ДВИЖЕНИЕ</span>
+              <span><b className="key-chip">SHIFT</b> НИТРО</span>
+              <span><b className="key-chip">МЫШЬ</b> ОБЗОР/ПРИЦЕЛ</span>
+              <span><b className="key-chip">ЛКМ</b> ОГОНЬ</span>
+              <span><b className="key-chip">R</b> МАГАЗИН</span>
+              <span><b className="key-chip">TAB</b> ТАБЛО</span>
+              <span><b className="key-chip">M</b> ЗВУК</span>
+              <span><b className="key-chip">ESC</b> ПАУЗА</span>
             </div>
-          )}
+          </div>
 
-          {frag && (
-            <div key={frag.key} className="frag-popup" aria-hidden>
-              <span className="frag-plus">+ ФРАГ</span>
-              <span className="frag-victim">{frag.victim}</span>
-            </div>
-          )}
-
-          {streak && (
-            <div key={streak.key} className="streak-banner" aria-hidden>
-              <span className="streak-label">{streak.label}</span>
-              <span className="streak-count">×{streak.count}</span>
+          {/* Одна полоса на оба тоста (U16): серия сверху, фраг под ней. Раньше
+              это были два независимых `top: %`, и при серии они накладывались. */}
+          {(frag || streak) && (
+            <div className="toast-lane" aria-hidden>
+              {streak && (
+                <div key={streak.key} className="streak-banner">
+                  <span className="streak-label">{streak.label}</span>
+                  <span className="streak-count">×{streak.count}</span>
+                </div>
+              )}
+              {frag && (
+                <div key={frag.key} className="frag-popup">
+                  <span className="frag-plus">+ ФРАГ</span>
+                  <span className="frag-victim">{frag.victim}</span>
+                </div>
+              )}
             </div>
           )}
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Clock3, Flame, Layers, RefreshCcw, Skull, Target, Trophy, Users, Wrench } from 'lucide-react';
+import { ArrowLeft, Clock3, Flame, Layers, RefreshCcw, Skull, Target, Trophy, Users, Wrench } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { MatchEndReason, MatchModeId, TeamId } from '../game/types';
 import {
@@ -71,7 +71,7 @@ export default function GameOverScreen({
   return (
     <div
       ref={trapRef}
-      className="absolute inset-0 z-40 flex items-center justify-center bg-[#04060bd9] backdrop-blur-sm"
+      className="scrim-over absolute inset-0 z-40 flex items-center justify-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="gameover-title"
@@ -87,18 +87,18 @@ export default function GameOverScreen({
               : <Skull size={46} className="skull-pulse mb-4 text-red-400" aria-hidden />}
         </div>
 
-        <p className="anim-up text-xs tracking-[0.35em] text-white/50" style={{ '--d': '0.1s' } as React.CSSProperties}>
+        <p className="anim-up text-xs tracking-hero text-white/60" style={{ '--d': '0.1s' } as React.CSSProperties}>
           {modeLabelRu(mode)}
           {reason === 'time' ? ' · ЛИМИТ ВРЕМЕНИ' : ' · ПОРОГ'}
         </p>
         <h2
           id="gameover-title"
-          className={`anim-up font-display text-3xl tracking-[0.16em] md:text-5xl ${titleColor}`}
+          className={`anim-up font-display text-3xl tracking-wider md:text-5xl ${titleColor}`}
           style={{ '--d': '0.15s' } as React.CSSProperties}
         >
           {headline}
         </h2>
-        <p className="anim-up mt-3 flex items-center gap-2 text-sm tracking-[0.3em] text-white/60" style={{ '--d': '0.25s' } as React.CSSProperties}>
+        <p className="anim-up mt-3 flex items-center gap-2 text-sm tracking-hero text-white/60" style={{ '--d': '0.25s' } as React.CSSProperties}>
           <Clock3 size={14} aria-hidden />
           {formatMatchClock(matchTimeSec)}
         </p>
@@ -115,7 +115,7 @@ export default function GameOverScreen({
           </div>
         )}
         {isTeam && (
-          <p className="anim-up mt-1 text-[11px] tracking-[0.22em] text-white/45" style={{ '--d': '0.34s' } as React.CSSProperties}>
+          <p className="anim-up mt-1 text-[11px] tracking-widest text-white/60" style={{ '--d': '0.34s' } as React.CSSProperties}>
             {teamUnit.toUpperCase()}
           </p>
         )}
@@ -125,11 +125,9 @@ export default function GameOverScreen({
           <StatCard icon={<Skull size={16} />} label="ФРАГИ" value={kills} accent="text-red-300" />
           <StatCard icon={<Target size={16} />} label="СМЕРТИ" value={deaths} accent="text-cyan-300" />
           <StatCard icon={<Flame size={16} />} label="ЛУЧШАЯ СЕРИЯ" value={bestStreak} accent="text-orange-300" />
-          <div className="hud-panel min-w-[7.5rem] px-5 py-4">
-            <div className="flex justify-center text-emerald-300"><Layers size={16} aria-hidden /></div>
-            <div className="font-display mt-2 text-3xl text-emerald-300">{formatKd(kills, deaths)}</div>
-            <div className="mt-1 text-[11px] tracking-[0.2em] text-white/55">K/D</div>
-          </div>
+          {/* K/D — на том же StatCard, а не отдельной разметкой: раньше он был
+              единственной карточкой, собранной руками (S5). */}
+          <StatCard icon={<Layers size={16} />} label="K/D" value={formatKd(kills, deaths)} accent="text-emerald-300" />
         </div>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
@@ -145,9 +143,11 @@ export default function GameOverScreen({
             <Wrench size={17} className="bicon" />
             <span>ГАРАЖ</span>
           </button>
-          <button type="button" onClick={onMenu} className="btn-game btn-ghost px-7 py-3.5 text-sm">
-            <Target size={17} className="bicon" />
-            <span>МЕНЮ</span>
+          {/* Выход из матча — одно действие в обоих экранах: `btn-danger` +
+              `ArrowLeft`, как в паузе (U11). */}
+          <button type="button" onClick={onMenu} className="btn-game btn-danger px-7 py-3.5 text-sm">
+            <ArrowLeft size={17} className="bicon" aria-hidden />
+            <span>В МЕНЮ</span>
           </button>
         </div>
       </div>
@@ -160,16 +160,17 @@ function StatCard({
 }: {
   icon: React.ReactNode;
   label: string;
-  value: number;
+  /** Число анимируется счётчиком; строка (K/D) выводится как есть. */
+  value: number | string;
   accent: string;
 }) {
   return (
     <div className="hud-panel min-w-[7.5rem] px-5 py-4">
-      <div className={`flex justify-center ${accent}`}>{icon}</div>
+      <div className={`flex justify-center ${accent}`} aria-hidden>{icon}</div>
       <div className={`font-display mt-2 text-3xl ${accent}`}>
-        <CountUp value={value} />
+        {typeof value === 'number' ? <CountUp value={value} /> : value}
       </div>
-      <div className="mt-1 text-[11px] tracking-[0.2em] text-white/55">{label}</div>
+      <div className="mt-1 text-[11px] tracking-wider text-white/60">{label}</div>
     </div>
   );
 }

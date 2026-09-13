@@ -1,48 +1,163 @@
-/* --- панели HUD --- */
+/* --- панели HUD ---------------------------------------------------------
+   Хром панели: градиентная «плита» + лёгкая диагональная штриховка + двойной
+   контур (внешняя рамка и внутренняя hairline). Угловые скобки и верхний рейл
+   рисуются псевдоэлементами: это нулевая стоимость по DOM и по layout — только
+   слои background-image, которые браузер запекает один раз.
+
+   Скобки стоят с отступом 9px по каждой оси. Срез угла — 12px, линия среза
+   описывается как x + y = 12, поэтому точка (9, 9) уже внутри панели
+   (9 + 9 = 18 > 12) и скобку не срезает clip-path родителя. */
 .hud-panel {
   position: relative;
-  background: linear-gradient(135deg, rgba(10, 20, 30, 0.78), rgba(6, 12, 20, 0.62));
-  border: 1px solid rgba(var(--glow), 0.22);
+  background-color: rgba(6, 13, 22, 0.78);
+  background-image:
+    linear-gradient(135deg, var(--panel-bg-top), var(--panel-bg-bottom)),
+    repeating-linear-gradient(45deg, var(--panel-hatch) 0 2px, transparent 2px 7px);
+  border: 1px solid var(--panel-line);
   backdrop-filter: blur(6px);
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-  box-shadow: 0 0 26px rgba(0, 0, 0, 0.45), inset 0 0 22px rgba(var(--glow), 0.05);
+  clip-path: polygon(
+    var(--panel-cut) 0,
+    100% 0,
+    100% calc(100% - var(--panel-cut)),
+    calc(100% - var(--panel-cut)) 100%,
+    0 100%,
+    0 var(--panel-cut)
+  );
+  box-shadow:
+    var(--panel-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 0 var(--glow-r-md) rgba(var(--glow), 0.05);
+}
+
+/* Угловые скобки: 4 «Г»-образных уголка из восьми градиентных полос. */
+.hud-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  --bc: var(--panel-bracket);
+  background-image:
+    linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc)),
+    linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc)),
+    linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc)),
+    linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc));
+  background-repeat: no-repeat;
+  background-size:
+    14px 2px, 2px 14px,
+    14px 2px, 2px 14px,
+    14px 2px, 2px 14px,
+    14px 2px, 2px 14px;
+  background-position:
+    left 9px top 9px, left 9px top 9px,
+    right 9px top 9px, right 9px top 9px,
+    left 9px bottom 9px, left 9px bottom 9px,
+    right 9px bottom 9px, right 9px bottom 9px;
+}
+
+/* Верхний рейл — световая линия, гаснущая к краям. Даёт панели «источник света». */
+.hud-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+      90deg,
+      transparent,
+      var(--panel-rail) 16%,
+      var(--panel-rail) 84%,
+      transparent
+    )
+    top center / 100% 1px no-repeat;
+  opacity: 0.75;
+}
+
+/* Внутренняя hairline-рамка: второй контур, читается как «стекло в оправе».
+   Срез на 3px меньше внешнего — иначе внутренняя рамка легла бы ровно на срез
+   панели и «двойного контура» не читалось бы. */
+.hud-panel > .panel-inset {
+  position: absolute;
+  inset: 4px;
+  pointer-events: none;
+  border: 1px solid var(--panel-line-soft);
+  clip-path: polygon(
+    calc(var(--panel-cut) - 3px) 0,
+    100% 0,
+    100% calc(100% - var(--panel-cut) + 3px),
+    calc(100% - var(--panel-cut) + 3px) 100%,
+    0 100%,
+    0 calc(var(--panel-cut) - 3px)
+  );
 }
 
 .hud-label {
-  font-size: 11px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-wide);
   color: var(--text-faint, rgba(255, 255, 255, 0.55));
   display: inline-flex;
   align-items: center;
 }
 
+/* Ведущий «штрих» метки: маленький маркер, отделяющий подпись от значения. */
+.hud-label::before {
+  content: '';
+  width: 3px;
+  height: 3px;
+  margin-right: 6px;
+  background: var(--accent, #2ee6c0);
+  transform: rotate(45deg);
+  box-shadow: 0 0 var(--glow-r-xs) rgba(var(--glow), 0.8);
+  flex-shrink: 0;
+}
+/* Метки без маркера (заголовки секций, служебные подписи). */
+.hud-label.is-plain::before { content: none; }
+
 /* --- здоровье --- */
 .hp-shell {
   position: relative;
-  height: 18px;
-  background: rgba(255, 255, 255, 0.06);
-  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  height: 20px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.25)),
+    var(--bar-track);
+  clip-path: polygon(var(--bar-cut) 0, 100% 0, calc(100% - var(--bar-cut)) 100%, 0 100%);
   overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 /* Ghost bar — показывает недавний урон (белая полоса за основным fill) */
 .hp-ghost {
   position: absolute;
   inset: 0;
   height: 100%;
-  background: rgba(255, 255, 255, 0.55);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.7));
   transition: width 0.6s ease-out 0.35s; /* задержка перед началом движения */
 }
 .hp-fill {
   position: relative;
   height: 100%;
   background: linear-gradient(90deg, #0fbf9c, #2ee6c0 60%, #8fffe8);
-  box-shadow: 0 0 16px rgba(var(--glow), 0.7);
+  box-shadow:
+    0 0 var(--glow-r-sm) rgba(var(--glow), 0.7),
+    inset 0 -6px 10px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
   transition: width 0.18s ease-out;
   z-index: 1;
 }
+/* Кромка-«курсор»: яркая риска на текущем значении полосы. Делает движение
+   HP читаемым боковым зрением, не требуя смотреть на цифру. */
+.hp-fill .hp-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 3px;
+  background: #eafffb;
+  box-shadow: 0 0 var(--glow-r-sm) rgba(234, 255, 251, 0.95);
+}
 .hp-fill.danger {
   background: linear-gradient(90deg, #bf2f1f, #ff4d3d 60%, #ff9a8f);
-  box-shadow: 0 0 16px rgba(255, 77, 61, 0.8);
+  box-shadow:
+    0 0 var(--glow-r-sm) rgba(255, 77, 61, 0.8),
+    inset 0 -6px 10px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
   animation: hp-blink 0.7s infinite;
 }
 @keyframes hp-blink { 50% { opacity: 0.55; } }
@@ -54,24 +169,85 @@
   pointer-events: none;
   background: repeating-linear-gradient(90deg, transparent 0 15px, rgba(4, 10, 14, 0.85) 15px 17px);
 }
+/* Риски четвертей: 25 / 50 / 75 %. Тоньше сегментов, поверх них. */
+.hp-ticks {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  display: flex;
+}
+.hp-ticks i {
+  flex: 1 1 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.35);
+}
+.hp-ticks i:last-child { border-right: none; }
 
 /* --- буст --- */
 .boost-shell {
   position: relative;
-  height: 9px;
-  background: rgba(255, 255, 255, 0.06);
-  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  height: 10px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.2)),
+    var(--bar-track);
+  clip-path: polygon(var(--bar-cut) 0, 100% 0, calc(100% - var(--bar-cut)) 100%, 0 100%);
   overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 .boost-fill {
   height: 100%;
   background: linear-gradient(90deg, #1f8fff, #3cf5d0 65%, #bff6ff);
-  box-shadow: 0 0 12px rgba(60, 200, 255, 0.7);
+  box-shadow:
+    0 0 var(--glow-r-sm) rgba(60, 200, 255, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transition: width 0.1s linear;
 }
 .boost-fill.low {
   background: linear-gradient(90deg, #7a5a10, #d99a1e 65%, #ffd27a);
-  box-shadow: 0 0 12px rgba(217, 154, 30, 0.7);
+  box-shadow:
+    0 0 var(--glow-r-sm) rgba(217, 154, 30, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+/* Штриховка «делений» буста — тот же язык, что у брони, но мельче. */
+.boost-segments {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 9px, rgba(4, 10, 14, 0.7) 9px 10px);
+}
+
+/* --- шапка/подвал карточки состояния --- */
+.vitals-head,
+.vitals-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.vitals-head { margin-bottom: 0.5rem; }
+.vitals-foot { margin: 0.6rem 0 0.35rem; }
+.hp-num {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-family: 'Russo One', sans-serif;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #eafffb;
+  text-shadow: 0 0 var(--glow-r-sm) rgba(var(--glow), 0.5);
+  font-variant-numeric: tabular-nums;
+}
+.hp-num .hp-max {
+  font-size: 0.68rem;
+  letter-spacing: var(--track-tight);
+  color: rgba(255, 255, 255, 0.62);
+  text-shadow: none;
+}
+.vitals-key {
+  font-family: 'Russo One', sans-serif;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--track-wide);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 /* --- оружие --- */
@@ -79,15 +255,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   /* reserve width for longest status label (ПЕРЕЗАРЯДКА / ⚡ ЗАРЯДКА / ПУСТО · R) */
   min-width: 7.5rem;
 }
 .weapon-status {
   display: block;
   min-height: 1em;
-  font-size: 9px;
-  letter-spacing: 0.2em;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--track-wide);
   line-height: 1.1;
   text-align: center;
   white-space: nowrap;
@@ -114,52 +290,154 @@
   background: rgba(255, 77, 61, 0.18);
   box-shadow: inset 0 0 0 1px rgba(255, 77, 61, 0.35);
 }
+/* Кольцо перезарядки. Фон (conic-gradient) пишется императивно из useGameHud,
+   поэтому трек и «стакан» внутри — только псевдоэлементы. */
 .reload-ring {
-  width: 52px; height: 52px;
-  border-radius: 50%;
+  width: 56px; height: 56px;
+  border-radius: var(--radius-circle);
   display: flex; align-items: center; justify-content: center;
   background: conic-gradient(#2ee6c0 360deg, transparent 0deg);
   position: relative;
   flex-shrink: 0;
+  box-shadow:
+    0 0 var(--glow-r-md) rgba(var(--glow), 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 .reload-ring::before {
-  content: ''; position: absolute; inset: 4px;
-  border-radius: 50%;
-  background: #08121c;
+  content: ''; position: absolute; inset: 5px;
+  border-radius: var(--radius-circle);
+  background:
+    radial-gradient(circle at 50% 32%, rgba(var(--glow), 0.16), transparent 68%),
+    #08121c;
+  box-shadow: inset 0 0 var(--glow-r-sm) rgba(0, 0, 0, 0.85);
 }
 .reload-ring > * { position: relative; z-index: 1; }
+/* Насечка на внешнем кольце — «барабан» читается как механизм, а не как круг. */
+.reload-ring::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--radius-circle);
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(var(--glow), 0.5) 0deg 1.6deg,
+    transparent 1.6deg 12deg
+  );
+  mask: radial-gradient(circle, transparent 0 27px, #000 27px);
+  -webkit-mask: radial-gradient(circle, transparent 0 27px, #000 27px);
+  opacity: 0.55;
+  pointer-events: none;
+}
 
+/* Магазин: стойка патронов + числовой счётчик. */
+.ammo-rack {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.ammo-strip {
+  display: flex;
+  gap: 3px;
+  padding: 3px 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  clip-path: polygon(var(--bar-cut) 0, 100% 0, calc(100% - var(--bar-cut)) 100%, 0 100%);
+}
+.ammo-count {
+  font-family: 'Russo One', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: var(--track-tight);
+  color: #eafffb;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ammo-count i {
+  font-style: normal;
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.62);
+}
 .ammo-pip {
   width: 10px; height: 26px;
   background: rgba(255, 255, 255, 0.07);
-  clip-path: polygon(0 6px, 100% 0, 100% 100%, 0 100%);
+  clip-path: polygon(0 var(--bar-cut), 100% 0, 100% 100%, 0 100%);
   transition: all 0.15s;
 }
 .ammo-pip.full {
   background: linear-gradient(180deg, #8fffe8, #2ee6c0);
-  box-shadow: 0 0 10px rgba(var(--glow), 0.7);
+  box-shadow: 0 0 var(--glow-r-sm) rgba(var(--glow), 0.7);
 }
 .ammo-pip.cannon {
   background: linear-gradient(180deg, #ffe080, #ffb020);
-  box-shadow: 0 0 10px rgba(255, 176, 32, 0.7);
+  box-shadow: 0 0 var(--glow-r-sm) rgba(255, 176, 32, 0.7);
+}
+
+/* Топливная шкала огнемёта: та же оправа, что у магазина. */
+.flame-shell {
+  position: relative;
+  width: 9rem;
+  height: 14px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 176, 32, 0.4);
+  clip-path: polygon(var(--bar-cut) 0, 100% 0, calc(100% - var(--bar-cut)) 100%, 0 100%);
+}
+.flame-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f97316, #fbbf24 60%, #fde68a);
+  box-shadow: 0 0 var(--glow-r-sm) rgba(249, 115, 22, 0.7);
+  transition: width 75ms linear;
+}
+.flame-shell .boost-segments { opacity: 0.5; }
+
+.weapon-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-wide);
+  margin-bottom: 0.45rem;
+}
+.weapon-title .weapon-sep { color: rgba(255, 255, 255, 0.45); }
+.weapon-title .weapon-name { letter-spacing: var(--track-base); }
+.weapon-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
 }
 
 .bot-dot {
   width: 9px; height: 9px;
   background: #ff4d3d;
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  box-shadow: 0 0 8px rgba(255, 77, 61, 0.8);
+  box-shadow: 0 0 var(--glow-r-xs) rgba(255, 77, 61, 0.8);
 }
 
-/* --- подсказка управления (над нижними панелями, не пересекает vitals/weapon) --- */
+/* --- подсказка управления (под панелью счёта, не поверх машины) ---
+   Раньше блок стоял внизу по центру — ровно там, где камера держит собственную
+   машину игрока, и закрывал её на 800×600 (U6). Теперь он под панелью счёта.
+   Отступ 11.5rem — это `--hud-inset` + высота самой высокой панели счёта
+   (режим захвата точки: замер 195 px при 1600×900) + зазор. Снятие по первому
+   вводу живёт в useGameHud: подсказка не должна висеть, пока игрок уже играет. */
 .hud-hint-wrap {
   position: absolute;
   left: 50%;
-  bottom: calc(1.5rem + 9rem); /* clears bottom-6 vitals/weapon stack incl. status line */
+  top: calc(var(--hud-inset) + 11.5rem);
   transform: translateX(-50%);
-  z-index: 22;
+  /* `width: max-content` обязателен: у абсолютного блока с `left: 50%` доступная
+     ширина — половина вьюпорта, и `max-width` не спасал — на 800 px подсказка
+     ломалась на три строки вместо двух. */
+  width: max-content;
   max-width: min(92vw, 720px);
+  z-index: 22;
   pointer-events: none;
+  transition: opacity 0.35s ease;
+  animation: hint-in 0.4s ease-out;
+}
+.hud-hint-wrap.is-hidden { opacity: 0; }
+@keyframes hint-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 .hint-panel {
   display: flex;
@@ -167,34 +445,129 @@
   align-items: center;
   justify-content: center;
   gap: 0.55rem 1.1rem;
-  padding: 0.45rem 1rem;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  padding: 0.5rem 1rem;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--track-base);
   color: rgba(255, 255, 255, 0.62);
 }
-.hint-panel b {
-  color: #7ef0d8;
-  font-weight: 600;
-}
+/* Клавиша — общий примитив `.key-chip` из base.css: тот же чип, что в меню. */
 
 /* --- счёт --- */
-.score-panel { min-width: 230px; }
+.score-panel {
+  min-width: 240px;
+  padding-top: 0.7rem;
+  padding-bottom: 0.6rem;
+}
+/* Заголовок режима: узкая полоса с иконкой и разрядкой. */
+.score-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--track-hero);
+  color: rgba(126, 240, 216, 0.8);
+}
 .score-num {
   font-family: 'Russo One', sans-serif;
-  font-size: 2rem;
-  letter-spacing: 0.12em;
+  font-size: 2.15rem;
+  letter-spacing: var(--track-base);
   color: #eafffb;
-  text-shadow: 0 0 18px rgba(var(--glow), 0.55);
-  line-height: 1.1;
+  text-shadow:
+    0 0 var(--glow-r-md) rgba(var(--glow), 0.55),
+    0 0 var(--glow-r-lg) rgba(var(--glow), 0.25);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+/* Полоса прогресса до порога победы: у DM — личный счёт, у командных режимов
+   двухцветная «перетяжка» Alpha ↔ Bravo. */
+.score-progress {
+  position: relative;
+  display: flex;
+  height: 4px;
+  margin: 0.4rem auto 0;
+  width: 100%;
+  max-width: 15rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  clip-path: polygon(var(--chip-cut) 0, 100% 0, calc(100% - var(--chip-cut)) 100%, 0 100%);
+}
+.score-progress i {
+  display: block;
+  height: 100%;
+  transition: width 0.35s ease-out;
+}
+.score-progress .sp-fill {
+  background: linear-gradient(90deg, #0fbf9c, #8fffe8);
+  box-shadow: 0 0 var(--glow-r-sm) rgba(var(--glow), 0.85);
+}
+.score-progress .sp-alpha {
+  background: linear-gradient(90deg, rgba(var(--team-alpha-rgb), 0.45), var(--team-alpha));
+  box-shadow: 0 0 var(--glow-r-sm) rgba(var(--team-alpha-rgb), 0.7);
+}
+.score-progress .sp-bravo {
+  margin-left: auto;
+  background: linear-gradient(90deg, var(--team-bravo), rgba(var(--team-bravo-rgb), 0.45));
+  box-shadow: 0 0 var(--glow-r-sm) rgba(var(--team-bravo-rgb), 0.7);
 }
 
 /* --- миникарта --- */
+/* Размер радара живёт здесь, а не в инлайновом стиле компонента: только так
+   один брейкпоинт может его уменьшить (S4). На 800×600 панель в 196 px занимала
+   24 % ширины и 41 % высоты экрана. Канвас рисуется в полном размере (атрибуты
+   `width`/`height` ставит minimapDraw), а CSS лишь масштабирует его вывод,
+   поэтому картинка не мылится. Значение обязано совпадать с `MAP_SIZE` —
+   это стережёт тест. */
+.radar-panel {
+  --radar-size: 172px;
+  width: calc(var(--radar-size) + 24px);
+}
+.radar-panel canvas {
+  width: var(--radar-size);
+  height: var(--radar-size);
+}
+@media (max-width: 1100px), (max-height: 800px) {
+  .radar-panel { --radar-size: 120px; }
+  /* Полоса целей обязана остаться одной строкой: на 120 px девять точек по
+     9 px с шагом 4 px не влезали и панель росла в высоту. */
+  .radar-panel .bot-dot { width: 7px; height: 7px; }
+  .radar-targets { gap: 2px; }
+}
+
 .minimap-frame {
   position: relative;
   border: 1px solid rgba(var(--glow), 0.25);
-  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.7);
+  background: #050c12;
+  box-shadow:
+    inset 0 0 var(--glow-r-md) rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(0, 0, 0, 0.5);
 }
 .minimap-frame canvas { display: block; }
+/* Сетка поверх канваса: кольца дальности + оси. Статичный CSS-оверлей, поэтому
+   не стоит ни одного вызова отрисовки в кадре (сам канвас рисует только мир). */
+.radar-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 50% 50%, transparent 0 33.5%, rgba(var(--glow), 0.16) 33.5% 34%, transparent 34%),
+    radial-gradient(circle at 50% 50%, transparent 0 66.5%, rgba(var(--glow), 0.12) 66.5% 67%, transparent 67%),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(var(--glow), 0.14) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(0deg, transparent calc(50% - 0.5px), rgba(var(--glow), 0.14) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  opacity: 0.9;
+}
+/* Север: карта не вращается, поэтому метка «N» осмысленна. */
+.radar-north {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Russo One', sans-serif;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--track-wide);
+  color: rgba(126, 240, 216, 0.85);
+  text-shadow: 0 0 var(--glow-r-xs) rgba(var(--glow), 0.8);
+  pointer-events: none;
+}
 .minimap-frame .corner {
   position: absolute; width: 12px; height: 12px;
   border-color: rgba(var(--glow), 0.9); border-style: solid;
@@ -206,14 +579,30 @@
 
 /* --- лента убийств --- */
 .feed-item {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11px; letter-spacing: 0.12em;
+  display: flex; align-items: center; gap: 7px;
+  font-size: var(--fs-label); letter-spacing: var(--track-base);
   color: rgba(255, 255, 255, 0.85);
-  background: rgba(8, 14, 22, 0.75);
+  background: linear-gradient(90deg, rgba(8, 16, 24, 0.92), rgba(8, 14, 22, 0.72));
   border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 5px 10px;
-  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  border-left: 2px solid rgba(255, 255, 255, 0.22);
+  padding: 5px 10px 5px 8px;
+  /* Прямой левый край: акцентная полоса по краю не режется срезом. */
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--control-cut)) 100%, 0 100%);
   animation: feed-in 0.25s ease-out;
+}
+.feed-item.is-player {
+  border-left-color: var(--accent, #2ee6c0);
+  box-shadow: -1px 0 12px rgba(var(--glow), 0.35);
+}
+.feed-item .feed-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  clip-path: polygon(var(--chip-cut) 0, 100% 0, calc(100% - var(--chip-cut)) 100%, 0 100%);
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
 }
 @keyframes feed-in {
   from { transform: translateX(24px); opacity: 0; }
@@ -231,25 +620,58 @@
   position: relative;
   width: 44px; height: 44px;
   transform: translate(-50%, -50%);
+  /* Тёмный ореол: без него прицел пропадает на светлом небе, песке и на
+     пересвеченной вспышкой броне. Два слоя — резкая кромка + мягкая тень. */
+  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 var(--glow-r-xs) rgba(0, 0, 0, 0.75));
   /* static reticle — motion only on shot-pulse (M5) */
 }
 .cross-core .ch-dot {
   position: absolute; left: 50%; top: 50%;
-  width: 4px; height: 4px;
+  width: 5px; height: 5px;
   transform: translate(-50%, -50%);
   background: #2ee6c0;
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(var(--glow), 0.9);
+  border-radius: var(--radius-circle);
+  box-shadow:
+    0 0 0 1.5px rgba(0, 0, 0, 0.9),
+    0 0 var(--glow-r-xs) rgba(var(--glow), 0.95);
 }
 .cross-core .ch-ring {
   position: absolute; inset: 8px;
-  border: 1px solid rgba(var(--glow), 0.55);
-  border-radius: 50%;
+  border: 1px solid rgba(var(--glow), 0.7);
+  border-radius: var(--radius-circle);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+/* Внешнее «сигнатурное» кольцо с четырьмя разрывами по осям — узнаваемая форма
+   прицела, не мешающая центру. */
+.cross-core .ch-outer {
+  position: absolute; inset: -1px;
+  border-radius: var(--radius-circle);
+  background: conic-gradient(
+    from 45deg,
+    rgba(var(--glow), 0.7) 0 40deg,
+    transparent 40deg 50deg,
+    rgba(var(--glow), 0.7) 50deg 90deg,
+    transparent 90deg 100deg,
+    rgba(var(--glow), 0.7) 100deg 140deg,
+    transparent 140deg 150deg,
+    rgba(var(--glow), 0.7) 150deg 190deg,
+    transparent 190deg 200deg,
+    rgba(var(--glow), 0.7) 200deg 240deg,
+    transparent 240deg 250deg,
+    rgba(var(--glow), 0.7) 250deg 290deg,
+    transparent 290deg 300deg,
+    rgba(var(--glow), 0.7) 300deg 340deg,
+    transparent 340deg 350deg,
+    rgba(var(--glow), 0.7) 350deg 360deg
+  );
+  mask: radial-gradient(circle, transparent 0 15px, #000 15px 16.5px, transparent 16.5px);
+  -webkit-mask: radial-gradient(circle, transparent 0 15px, #000 15px 16.5px, transparent 16.5px);
+  opacity: 0.85;
 }
 .cross-core .ch-tick {
   position: absolute;
   background: #2ee6c0;
-  box-shadow: 0 0 6px rgba(var(--glow), 0.8);
+  box-shadow: 0 0 var(--glow-r-xs) rgba(var(--glow), 0.8);
 }
 .ch-tick.t { left: 50%; top: 0; width: 2px; height: 8px; transform: translateX(-50%); }
 .ch-tick.b { left: 50%; bottom: 0; width: 2px; height: 8px; transform: translateX(-50%); }
@@ -266,15 +688,16 @@
   left: 0; top: 0;
   width: 30px; height: 30px;
   transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 var(--glow-r-xs) rgba(0, 0, 0, 0.9));
   animation: hm-pop 0.3s ease-out forwards;
 }
 .hitmarker span {
   position: absolute; left: 50%; top: 50%;
   width: 3px; height: 11px;
   background: #ffd24a;
-  box-shadow: 0 0 8px rgba(255, 210, 74, 0.9);
+  box-shadow: 0 0 var(--glow-r-xs) rgba(255, 210, 74, 0.9);
 }
-.hitmarker.kill span { background: #ff4d3d; box-shadow: 0 0 10px rgba(255, 77, 61, 1); }
+.hitmarker.kill span { background: #ff4d3d; box-shadow: 0 0 var(--glow-r-sm) rgba(255, 77, 61, 1); }
 .hitmarker span:nth-child(1) { transform: translate(-50%, -50%) rotate(45deg) translateY(-10px); }
 .hitmarker span:nth-child(2) { transform: translate(-50%, -50%) rotate(-45deg) translateY(-10px); }
 .hitmarker span:nth-child(3) { transform: translate(-50%, -50%) rotate(45deg) translateY(10px) scaleY(-1); }
@@ -310,37 +733,47 @@
   100% { opacity: 0; }
 }
 
-/* --- frag-popup --- */
-.frag-popup {
+/* --- очередь тостов (U16) -------------------------------------------------
+   Фраг и баннер серии висели на двух независимых `top: 34 %` и `top: 28 %`
+   и при серии накладывались. Теперь у них одна вертикальная полоса: элементы
+   встают в общий поток, поэтому наложение невозможно по построению, а не
+   подбором процентов. */
+.toast-lane {
   position: absolute;
   left: 50%;
-  top: 34%; /* ниже панели счёта (M13) */
+  top: 26%; /* ниже панели счёта */
   transform: translateX(-50%);
   z-index: 27;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
   text-align: center;
   pointer-events: none;
+}
+.frag-popup {
   animation: frag-pop 1.15s ease-out forwards;
 }
 .frag-plus {
   display: block;
   font-family: 'Russo One', sans-serif;
   font-size: 2.2rem;
-  letter-spacing: 0.22em;
+  letter-spacing: var(--track-wide);
   color: #6ef2c8;
-  text-shadow: 0 0 22px rgba(46, 230, 192, 0.9);
+  text-shadow: 0 0 var(--glow-r-md) rgba(46, 230, 192, 0.9);
 }
 .frag-victim {
   display: block;
   margin-top: 2px;
   font-size: 0.72rem;
-  letter-spacing: 0.3em;
+  letter-spacing: var(--track-hero);
   color: rgba(255, 120, 110, 0.9);
 }
 @keyframes frag-pop {
-  0% { opacity: 0; transform: translateX(-50%) scale(1.4); }
-  15% { opacity: 1; transform: translateX(-50%) scale(1); }
+  0% { opacity: 0; transform: scale(1.4); }
+  15% { opacity: 1; transform: scale(1); }
   75% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-26px); }
+  100% { opacity: 0; transform: translateY(-26px); }
 }
 
 /* --- табло счёта --- */
@@ -351,17 +784,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(3, 7, 12, 0.55);
+  background: var(--scrim-hud);
   backdrop-filter: blur(3px);
   animation: sb-fade 0.18s ease-out forwards;
 }
 @keyframes sb-fade { from { opacity: 0; } to { opacity: 1; } }
 .scoreboard-panel {
   width: min(640px, 92vw);
-  padding: 20px 22px;
+  padding: 20px 22px 22px;
 }
 .scoreboard-panel-teams {
   width: min(920px, 96vw);
+}
+.scoreboard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.scoreboard-head .hud-label { margin-bottom: 0; }
+.scoreboard-hint {
+  font-size: var(--fs-caption);
+  letter-spacing: var(--track-wide);
+  color: rgba(255, 255, 255, 0.62);
 }
 .scoreboard-teams {
   display: grid;
@@ -374,13 +822,13 @@
 .scoreboard-team-title {
   font-family: 'Russo One', sans-serif;
   font-size: 0.72rem;
-  letter-spacing: 0.28em;
+  letter-spacing: var(--track-hero);
   margin-bottom: 8px;
 }
-.team-col-alpha .scoreboard-team-title { color: #6eb8ff; }
-.team-col-bravo .scoreboard-team-title { color: #ff8a7a; }
-.team-col-alpha { border-left: 2px solid rgba(59, 158, 255, 0.45); padding-left: 10px; }
-.team-col-bravo { border-left: 2px solid rgba(255, 77, 61, 0.45); padding-left: 10px; }
+.team-col-alpha .scoreboard-team-title { color: var(--team-alpha); }
+.team-col-bravo .scoreboard-team-title { color: var(--team-bravo); }
+.team-col-alpha { border-left: 2px solid rgba(var(--team-alpha-rgb), 0.45); padding-left: 10px; }
+.team-col-bravo { border-left: 2px solid rgba(var(--team-bravo-rgb), 0.45); padding-left: 10px; }
 
 /* TDM / CP top score strip */
 .team-score-line {
@@ -390,12 +838,12 @@
   gap: 0.65rem;
   font-family: 'Russo One', sans-serif;
   font-size: 1.35rem;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-tight);
   line-height: 1.2;
 }
-.team-alpha { color: #6eb8ff; text-shadow: 0 0 12px rgba(59, 158, 255, 0.45); }
-.team-bravo { color: #ff8a7a; text-shadow: 0 0 12px rgba(255, 77, 61, 0.4); }
-.team-score-sep { color: rgba(255, 255, 255, 0.35); font-size: 1rem; }
+.team-alpha { color: var(--team-alpha); text-shadow: 0 0 var(--glow-r-sm) rgba(var(--team-alpha-rgb), 0.45); }
+.team-bravo { color: var(--team-bravo); text-shadow: 0 0 var(--glow-r-sm) rgba(var(--team-bravo-rgb), 0.4); }
+.team-score-sep { color: rgba(255, 255, 255, 0.5); font-size: 1rem; }
 
 /* Capture Point ownership strip */
 .cp-points {
@@ -410,10 +858,10 @@
   justify-content: center;
   width: 1.55rem;
   height: 1.55rem;
-  border-radius: 999px;
+  border-radius: var(--radius-circle);
   font-family: 'Russo One', sans-serif;
   font-size: 0.72rem;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-tight);
   border: 1.5px solid rgba(255, 255, 255, 0.35);
   overflow: hidden;
 }
@@ -426,14 +874,14 @@
   opacity: 0.85;
 }
 .cp-neutral { color: #c0c8d0; border-color: rgba(160, 170, 180, 0.55); }
-.cp-alpha { color: #6eb8ff; border-color: rgba(59, 158, 255, 0.75); background: rgba(59, 158, 255, 0.12); }
-.cp-bravo { color: #ff8a7a; border-color: rgba(255, 77, 61, 0.75); background: rgba(255, 77, 61, 0.12); }
+.cp-alpha { color: var(--team-alpha); border-color: rgba(var(--team-alpha-rgb), 0.75); background: rgba(var(--team-alpha-rgb), 0.12); }
+.cp-bravo { color: var(--team-bravo); border-color: rgba(var(--team-bravo-rgb), 0.75); background: rgba(var(--team-bravo-rgb), 0.12); }
 .cp-contested { color: #ffd24a; border-color: rgba(255, 210, 74, 0.8); background: rgba(255, 210, 74, 0.12); }
 .scoreboard-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.74rem;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track-base);
   color: rgba(255, 255, 255, 0.78);
 }
 .scoreboard-table th {
@@ -448,15 +896,17 @@
   padding: 7px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
+.scoreboard-table tbody tr:last-child td { border-bottom: none; }
 .scoreboard-table tr.row-player td {
   color: #6ef2c8;
   background: rgba(46, 230, 192, 0.08);
+  box-shadow: inset 2px 0 0 rgba(var(--glow), 0.9);
 }
 .scoreboard-table td.dead { color: rgba(255, 90, 80, 0.55); text-decoration: line-through; }
 .sb-hp {
   width: 96px; height: 7px;
   background: rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
+  clip-path: polygon(var(--chip-cut) 0, 100% 0, calc(100% - var(--chip-cut)) 100%, 0 100%);
   overflow: hidden;
 }
 .sb-hp > div {
@@ -468,54 +918,44 @@
 .sb-hp > div.hp-mid { background: var(--warn, #ffd24a); }
 .sb-hp > div.hp-low { background: var(--danger, #ff4d3d); }
 
-/* --- kill streak banner --- */
+/* --- kill streak banner (позиция — в .toast-lane) --- */
 .streak-banner {
-  position: absolute;
-  left: 50%;
-  top: 28%;
-  transform: translateX(-50%);
-  z-index: 28;
-  text-align: center;
-  pointer-events: none;
   animation: streak-pop 1.4s ease-out forwards;
 }
 .streak-label {
   display: block;
   font-family: 'Russo One', sans-serif;
   font-size: 2.8rem;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--track-wide);
   color: #ffd24a;
-  text-shadow: 0 0 28px rgba(255, 180, 60, 0.9), 0 0 60px rgba(255, 120, 40, 0.5);
+  text-shadow: 0 0 var(--glow-r-md) rgba(255, 180, 60, 0.9), 0 0 var(--glow-r-lg) rgba(255, 120, 40, 0.5);
 }
 .streak-count {
   display: block;
   margin-top: 4px;
   font-family: 'Russo One', sans-serif;
   font-size: 1.4rem;
-  letter-spacing: 0.3em;
+  letter-spacing: var(--track-hero);
   color: #ff8a5a;
-  text-shadow: 0 0 18px rgba(255, 120, 60, 0.8);
+  text-shadow: 0 0 var(--glow-r-md) rgba(255, 120, 60, 0.8);
 }
 @keyframes streak-pop {
-  0% { opacity: 0; transform: translateX(-50%) scale(1.6); }
-  12% { opacity: 1; transform: translateX(-50%) scale(1); }
+  0% { opacity: 0; transform: scale(1.6); }
+  12% { opacity: 1; transform: scale(1); }
   70% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(0.95); }
+  100% { opacity: 0; transform: translateY(-30px) scale(0.95); }
 }
 
 /* low HP number chrome (M4) */
 .hp-num.danger {
   color: #ffb4ac;
-  text-shadow: 0 0 12px rgba(255, 77, 61, 0.85);
-}
-.hp-num.danger .hp-heart {
-  color: var(--danger, #ff4d3d);
+  text-shadow: 0 0 var(--glow-r-sm) rgba(255, 77, 61, 0.85);
 }
 
 /* HUD muted meta */
 .hud-meta {
-  font-size: 11px;
-  letter-spacing: 0.22em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-wide);
   color: var(--text-muted, rgba(255, 255, 255, 0.62));
 }
 
@@ -523,14 +963,23 @@
 .hud-timer {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  color: rgba(255, 255, 255, 0.62);
+  gap: 6px;
+  margin-top: 0.35rem;
+  padding: 2px 9px 2px 7px;
+  font-family: 'Russo One', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: var(--track-wide);
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  clip-path: polygon(var(--bar-cut) 0, 100% 0, calc(100% - var(--bar-cut)) 100%, 0 100%);
+  font-variant-numeric: tabular-nums;
 }
 .hud-timer.is-low {
-  color: var(--danger, #ff4d3d);
-  text-shadow: 0 0 12px rgba(255, 77, 61, 0.8);
+  color: #ffb4ac;
+  border-color: rgba(255, 77, 61, 0.55);
+  background: rgba(255, 77, 61, 0.12);
+  box-shadow: 0 0 var(--glow-r-sm) rgba(255, 77, 61, 0.3);
   animation: hp-blink 1s infinite;
 }
 
@@ -543,7 +992,9 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, rgba(60, 6, 6, 0.18) 0%, rgba(3, 7, 12, 0.55) 100%);
+  background:
+    radial-gradient(ellipse at center, rgba(60, 6, 6, 0.18) 0%, rgba(3, 7, 12, 0.55) 100%),
+    linear-gradient(0deg, rgba(255, 40, 30, 0.05) 0 1px, transparent 1px 4px);
   animation: sb-fade 0.25s ease-out forwards;
 }
 .death-panel {
@@ -551,25 +1002,90 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 18px 34px;
+  padding: 18px 34px 16px;
   text-align: center;
+  border-color: rgba(255, 77, 61, 0.4);
+  box-shadow:
+    var(--panel-shadow),
+    0 0 var(--glow-r-lg) rgba(255, 40, 30, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.death-panel::before { --bc: rgba(255, 77, 61, 0.6); }
+/* Рейл панели смерти — красный, а не бирюзовый: панель обязана читаться как
+   «опасность» даже боковым зрением. */
+.death-panel::after {
+  background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 77, 61, 0.8) 20%,
+      rgba(255, 77, 61, 0.8) 80%,
+      transparent
+    )
+    top center / 100% 1px no-repeat;
 }
 .death-icon { color: var(--danger, #ff4d3d); }
 .death-title {
   font-family: 'Russo One', sans-serif;
   font-size: 1.6rem;
-  letter-spacing: 0.24em;
+  letter-spacing: var(--track-wide);
   color: #ffb4ac;
-  text-shadow: 0 0 22px rgba(255, 77, 61, 0.75);
+  text-shadow: 0 0 var(--glow-r-md) rgba(255, 77, 61, 0.75);
 }
 .death-sub {
-  font-size: 11px;
-  letter-spacing: 0.2em;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-wide);
   color: rgba(255, 255, 255, 0.7);
 }
 .death-sub b {
   color: #ffd24a;
   font-weight: 600;
+}
+/* Полоса респауна: ширина тикает по секундам, CSS-переход сглаживает шаги в
+   непрерывную убывающую шкалу. Длительность перехода = секунда квантования
+   `respawnInSec` в hudRenderGate, иначе полоса «дёргалась» бы. */
+.death-bar {
+  width: 100%;
+  height: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+  clip-path: polygon(var(--chip-cut) 0, 100% 0, calc(100% - var(--chip-cut)) 100%, 0 100%);
+}
+.death-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #bf2f1f, #ff8a7a);
+  box-shadow: 0 0 var(--glow-r-sm) rgba(255, 77, 61, 0.8);
+  transition: width 1s linear;
+}
+
+/* --- загрузчик (U26) -------------------------------------------------------
+   Был единственным `rounded-full` в проекте и читался как чужой элемент.
+   Теперь это срезанный квадрат в языке панелей: конусный «прожектор» вращается
+   под маской-кольцом, форма задана `--control-cut`. Псевдоэлемент, не DOM. */
+.loader {
+  position: relative;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  clip-path: polygon(var(--control-cut) 0, 100% 0, 100% calc(100% - var(--control-cut)), calc(100% - var(--control-cut)) 100%, 0 100%, 0 var(--control-cut));
+}
+.loader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 55%,
+    rgba(var(--glow), 0.25) 55% 78%,
+    var(--accent, #2ee6c0) 78% 100%
+  );
+  mask: radial-gradient(closest-side, transparent 0 68%, #000 68%);
+  -webkit-mask: radial-gradient(closest-side, transparent 0 68%, #000 68%);
+  animation: loader-sweep 1s linear infinite;
+}
+@keyframes loader-sweep {
+  to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -588,12 +1104,22 @@
   .shot-pulse {
     animation: none !important;
   }
+  .hud-hint-wrap {
+    animation: none;
+    transition: none;
+  }
+  .loader::before {
+    animation: none;
+  }
   /* Полосы состояния не «догоняют» значение — под reduced motion они должны
      менять ширину мгновенно, а не проигрывать переход. */
   .hp-fill,
   .hp-ghost,
   .boost-fill,
   .ammo-pip,
+  .flame-fill,
+  .score-progress i,
+  .death-bar i,
   .sb-hp > div {
     transition: none;
   }

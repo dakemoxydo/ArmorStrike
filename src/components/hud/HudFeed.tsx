@@ -10,26 +10,30 @@ interface HudFeedProps {
 
 export default function HudFeed({ feed, muted, onToggleMute }: HudFeedProps) {
   return (
-    <div className="anim-up absolute right-5 top-5 flex flex-col items-end gap-2" style={{ '--d': '0.2s' } as React.CSSProperties}>
+    <div className="anim-up absolute right-[var(--hud-inset)] top-[var(--hud-inset)] flex flex-col items-end gap-2" style={{ '--d': '0.2s' } as React.CSSProperties}>
       <div className="pointer-events-auto anim-up" style={{ '--d': '0.1s' } as React.CSSProperties}>
         <button
           type="button"
           onClick={onToggleMute}
-          className="btn-game btn-ghost h-9 w-9 px-0 py-0"
+          className="btn-game btn-ghost btn-icon"
           title="Звук [M]"
           aria-label={muted ? 'Включить звук' : 'Выключить звук'}
-          style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}
         >
           {muted ? <VolumeX size={16} className="bicon" /> : <Volume2 size={16} className="bicon" />}
         </button>
       </div>
       <div className="flex flex-col items-end gap-1.5" aria-live="polite" aria-atomic="false">
         {feed.map((f) => (
-          <div key={f.id} className="feed-item">
+          <div key={f.id} className={`feed-item${f.byPlayer ? ' is-player' : ''}`}>
+            <span className="feed-icon" aria-hidden>
+              {f.byPlayer
+                ? <Zap size={11} className="text-emerald-300" />
+                : <Skull size={11} className="text-red-400" />}
+            </span>
             {f.byPlayer ? (
-              <><Zap size={11} className="text-emerald-300" /> ВЫ <span className="text-white/30">▸</span> <span className="text-red-300">{f.victim}</span></>
+              <>ВЫ <span className="text-white/60">▸</span> <span className="text-red-300">{f.victim}</span></>
             ) : (
-              <><Skull size={11} className="text-red-400" /> {f.victim} <span className="text-white/30">уничтожен</span></>
+              <>{f.victim} <span className="text-white/60">уничтожен</span></>
             )}
           </div>
         ))}

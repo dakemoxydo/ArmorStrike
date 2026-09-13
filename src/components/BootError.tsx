@@ -16,11 +16,11 @@ export default function BootError({ message, detail }: BootErrorProps) {
       <h1 className="font-display text-2xl tracking-wider text-red-300">НЕ УДАЛОСЬ ЗАПУСТИТЬ</h1>
       <p className="max-w-md text-sm text-white/70">{message}</p>
       {detail && (
-        <pre className="max-w-lg overflow-auto rounded border border-white/10 bg-black/50 p-3 text-left text-[11px] text-white/40">
+        <pre className="cut-chip max-w-lg overflow-auto border border-white/10 bg-black/50 p-3 text-left text-[11px] text-white/60">
           {detail}
         </pre>
       )}
-      <p className="max-w-md text-xs text-white/40">
+      <p className="max-w-md text-xs text-white/60">
         Нужен современный браузер с поддержкой WebGL. Обновите GPU-драйверы или попробуйте Chrome / Edge / Firefox.
       </p>
       <button

@@ -107,8 +107,12 @@ export default function HudScoreboard({ rows }: HudScoreboardProps) {
   return (
     <div className="scoreboard-overlay" role="region" aria-label="Табло боя">
       <div className={`scoreboard-panel hud-panel ${teamMode ? 'scoreboard-panel-teams' : ''}`}>
-        <div className="hud-label mb-3 flex items-center gap-2">
-          <Trophy size={14} aria-hidden /> ТАБЛО БОЯ
+        <span className="panel-inset" aria-hidden />
+        <div className="scoreboard-head">
+          <div className="hud-label flex items-center gap-2">
+            <Trophy size={14} aria-hidden /> ТАБЛО БОЯ
+          </div>
+          <span className="scoreboard-hint">TAB — ЗАКРЫТЬ</span>
         </div>
         {teamMode ? (
           <div className="scoreboard-teams">

@@ -60,7 +60,7 @@ export const HULLS: Record<HullId, HullDef> = {
     reverseSpeed: 9.5,
     turnSpeed: 2.9,
     desc: 'Универсальный средний корпус. Отличное сочетание брони и скорости для любых задач.',
-    badge: 'Средняя броня',
+    badge: 'УНИВЕРСАЛ',
   },
   viking: {
     id: 'viking',
@@ -70,7 +70,7 @@ export const HULLS: Record<HullId, HullDef> = {
     reverseSpeed: 12.0,
     turnSpeed: 3.6,
     desc: 'Штурмовой низкопрофильный корпус. Высокая скорость и манёвренность для быстрых атак.',
-    badge: 'Высокая скорость',
+    badge: 'ШТУРМОВОЙ',
   },
   mammoth: {
     id: 'mammoth',
@@ -80,7 +80,7 @@ export const HULLS: Record<HullId, HullDef> = {
     reverseSpeed: 7.0,
     turnSpeed: 2.1,
     desc: 'Сверхтяжёлая монолитная броня. Пониженная мобильность компенсируется огромным запасом прочности.',
-    badge: 'Тяжёлая броня',
+    badge: 'ТЯЖЁЛЫЙ',
   },
   speedy: {
     id: 'speedy',
@@ -90,7 +90,7 @@ export const HULLS: Record<HullId, HullDef> = {
     reverseSpeed: 14.5,
     turnSpeed: 4.4,
     desc: 'Сверхлёгкий низкопрофильный корпус-перехватчик. Абсолютная скорость и разворот — ценой почти полного отсутствия брони.',
-    badge: 'Макс. скорость',
+    badge: 'ПЕРЕХВАТЧИК',
   },
   titan: {
     id: 'titan',
@@ -100,7 +100,7 @@ export const HULLS: Record<HullId, HullDef> = {
     reverseSpeed: 6.0,
     turnSpeed: 1.8,
     desc: 'Флагман брони: разнесённые экраны, навесная защита лба и самая большая масса в игре. Скорость и разворот — самые низкие в каталоге.',
-    badge: 'Макс. броня',
+    badge: 'ФЛАГМАН',
   },
 };
 
@@ -117,7 +117,7 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     recoil: WEAPON_TUNING.railgun.knockback,
     range: WEAPON_TUNING.railgun.range,
     desc: 'Hitscan-орудие с накоплением заряда и сквозным пробитием нескольких целей.',
-    badge: 'Снайперское',
+    badge: 'СНАЙПЕР',
   },
   flamethrower: {
     id: 'flamethrower',
@@ -131,7 +131,7 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     recoil: WEAPON_TUNING.flamethrower.knockback,
     range: WEAPON_TUNING.flamethrower.range,
     desc: 'Выпускает раскалённый конус пламени. Непрерывный тиковый урон по геометрии конуса.',
-    badge: 'Пламенный конус',
+    badge: 'ОГНЕМЁТ',
   },
   cannon: {
     id: 'cannon',
@@ -145,7 +145,7 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     recoil: WEAPON_TUNING.cannon.knockback,
     range: WEAPON_TUNING.cannon.range,
     desc: 'Скорострельная крупнокалиберная автопушка с фугасным поражением площади.',
-    badge: 'Скорострельная',
+    badge: 'АВТОМАТ',
   },
 };
 

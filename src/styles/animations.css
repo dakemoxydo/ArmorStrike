@@ -35,8 +35,8 @@
 
 .skull-pulse { animation: skull-pulse 1.6s ease-in-out infinite; }
 @keyframes skull-pulse {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px rgba(255, 77, 61, 0.6)); }
-  50% { transform: scale(1.14); filter: drop-shadow(0 0 30px rgba(255, 77, 61, 0.95)); }
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 var(--glow-r-sm) rgba(255, 77, 61, 0.6)); }
+  50% { transform: scale(1.14); filter: drop-shadow(0 0 var(--glow-r-md) rgba(255, 77, 61, 0.95)); }
 }
 
 .pause-breathe { animation: pause-breathe 2s ease-in-out infinite; }
@@ -65,7 +65,7 @@
     animation: none;
   }
   .skull-pulse {
-    filter: drop-shadow(0 0 12px rgba(255, 77, 61, 0.6));
+    filter: drop-shadow(0 0 var(--glow-r-sm) rgba(255, 77, 61, 0.6));
   }
   .pause-breathe {
     opacity: 1;

@@ -52,7 +52,7 @@ export default function MapSelect({
   return (
     <div
       ref={trapRef}
-      className="absolute inset-0 z-50 flex items-center justify-center bg-[#04060bf0] p-4 md:p-8"
+      className="scrim-menu absolute inset-0 z-50 flex items-center justify-center p-4 md:p-8"
       role="dialog"
       aria-modal="true"
       aria-labelledby="map-select-title"
@@ -61,17 +61,20 @@ export default function MapSelect({
       <div className="menu-stripes pointer-events-none absolute inset-x-0 bottom-0 h-2" />
 
       <div className="relative z-10 w-full max-w-4xl">
-        <div className="anim-up mb-6 flex flex-wrap items-end justify-between gap-4" style={{ '--d': '0.05s' } as React.CSSProperties}>
-          <div>
-            <div className="hud-label mb-1 text-cyan-300/70">ПОДГОТОВКА К БОЮ</div>
-            <h2 id="map-select-title" className="font-display text-3xl tracking-wider md:text-4xl">
-              ВЫБОР КАРТЫ
-            </h2>
-          </div>
+        {/* Тот же каркас, что у выбора режима (U9/U10). */}
+        <div className="anim-up mb-6 flex flex-wrap items-center justify-between gap-4" style={{ '--d': '0.05s' } as React.CSSProperties}>
           <button type="button" onClick={onCancel} className="btn-game btn-ghost px-5 py-2.5 text-xs">
             <ArrowLeft size={16} className="bicon" aria-hidden />
             <span>НАЗАД</span>
           </button>
+          <span className="cut-chip prep-step">ШАГ 2 ИЗ 2 · КАРТА</span>
+        </div>
+
+        <div className="anim-up mb-6" style={{ '--d': '0.1s' } as React.CSSProperties}>
+          <div className="hud-label mb-1">ПОДГОТОВКА К БОЮ</div>
+          <h2 id="map-select-title" className="font-display text-3xl tracking-hero md:text-4xl">
+            ВЫБОР КАРТЫ
+          </h2>
         </div>
 
         <div
@@ -96,21 +99,17 @@ export default function MapSelect({
                   ['--map-accent-rgb' as string]: m.accentRgb,
                 }}
               >
+                {active && <span className="picked-flag">ВЫБРАНО</span>}
                 <div className="map-card-icon">{ICONS[id]}</div>
                 <div className="font-display text-lg tracking-wider" style={{ color: m.accent }}>
                   {m.name}
                 </div>
-                <div className="mt-0.5 text-[10px] tracking-[0.25em] text-white/40 uppercase">
+                <div className="mt-0.5 text-[10px] tracking-widest text-white/60 uppercase">
                   {m.nameEn}
                 </div>
-                <p className="mt-3 text-xs leading-relaxed text-white/55">
+                <p className="mt-3 text-xs leading-relaxed text-white/60">
                   {m.blurb}
                 </p>
-                {active && (
-                  <div className="mt-3 font-display text-[10px] tracking-widest" style={{ color: m.accent }}>
-                    ВЫБРАНО
-                  </div>
-                )}
               </button>
             );
           })}
@@ -120,9 +119,8 @@ export default function MapSelect({
           className="anim-up mt-8 flex flex-wrap items-center justify-between gap-4"
           style={{ '--d': '0.28s' } as React.CSSProperties}
         >
-          <p className="max-w-md text-xs text-white/45">
-            ← → смена карты · Enter — в бой · Esc — назад.
-            Сейчас: <span style={{ color: def.accent }}>{def.name}</span>
+          <p className="prep-hint">
+            ← → смена карты · Enter — в бой · Esc — назад
           </p>
           <button
             type="button"

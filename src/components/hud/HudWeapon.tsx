@@ -11,7 +11,7 @@ interface HudWeaponProps {
    * `snap.current` — объект, который мутируется на месте каждый кадр, поэтому
    * `memo` со ссылкой на него не перерисовывал бы панель никогда (патроны и
    * статус перезарядки замирали бы после маунта). Регресс-тест:
-   * `src/__tests__/hudWeaponPanel.test.tsx`.
+   * `src/__tests__/hudLiveUpdates.test.tsx`.
    */
   turretId: string;
   weaponLabel: string;
@@ -37,17 +37,19 @@ export default function HudWeapon({
 }: HudWeaponProps) {
   const status = weaponStatusKind({ isCharging, reloading, turretId, ammo, magazine });
   const emptyMag = status === 'empty';
+  const isFlame = turretId === 'flamethrower';
   const flamePct = Math.max(0, Math.min(100, ammo));
 
   return (
-    <div className="anim-up absolute bottom-6 right-6" style={{ '--d': '0.3s' } as React.CSSProperties}>
+    <div className="anim-up absolute bottom-[var(--hud-inset)] right-[var(--hud-inset)]" style={{ '--d': '0.3s' } as React.CSSProperties}>
       <div
         className={`hud-panel weapon-panel flex items-center gap-4 p-4${emptyMag ? ' is-empty' : ''}`}
         aria-label={`Оружие: ${weaponName}`}
       >
+        <span className="panel-inset" aria-hidden />
         <div className="weapon-ring-col">
           <div ref={reloadRef} className="reload-ring">
-            <Crosshair size={20} className={turretId === 'flamethrower' ? 'text-orange-300' : 'text-cyan-200'} aria-hidden />
+            <Crosshair size={20} className={isFlame ? 'text-orange-300' : 'text-cyan-200'} aria-hidden />
           </div>
           <span
             className={`weapon-status${
@@ -70,33 +72,42 @@ export default function HudWeapon({
           </span>
         </div>
         <div>
-          <div className={`hud-label mb-1.5 ${weaponAccentClass}`}>
-            {`${weaponLabel} · ${weaponName}`}
+          <div className={`weapon-title ${weaponAccentClass}`}>
+            <span>{weaponLabel}</span>
+            <span className="weapon-sep" aria-hidden>·</span>
+            <span className="weapon-name">{weaponName}</span>
           </div>
-          {turretId === 'flamethrower' ? (
-            <div className="w-36 h-3.5 bg-white/10 rounded-sm overflow-hidden border border-amber-500/40 relative">
+          {isFlame ? (
+            <div className="flame-shell">
               <div
                 ref={flameFillRef}
-                className="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-300 transition-all duration-75"
+                className="flame-fill"
                 style={{ width: `${flamePct}%` }}
               />
+              <div className="boost-segments" aria-hidden />
             </div>
           ) : (
-            <div className="flex gap-1" aria-label={`Патроны ${ammo} из ${magazine}`}>
-              {Array.from({ length: magazine }).map((_, i) => (
-                <span
-                  key={i}
-                  className={`ammo-pip ${
-                    i < ammo
-                      ? turretId === 'cannon'
-                        ? 'cannon'
-                        : 'full'
-                      : emptyMag
-                        ? 'is-empty-mag'
-                        : ''
-                  }`}
-                />
-              ))}
+            <div className="ammo-rack" aria-label={`Патроны ${ammo} из ${magazine}`}>
+              <div className="ammo-strip" aria-hidden>
+                {Array.from({ length: magazine }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={`ammo-pip ${
+                      i < ammo
+                        ? turretId === 'cannon'
+                          ? 'cannon'
+                          : 'full'
+                        : emptyMag
+                          ? 'is-empty-mag'
+                          : ''
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="ammo-count">
+                {ammo}
+                <i> / {magazine}</i>
+              </span>
             </div>
           )}
         </div>

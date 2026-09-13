@@ -28,6 +28,7 @@
 | [[Garage_Loadout]] | Гараж 5×3 (корпуса + Titan) | `RunState`, `HULLS`/`TURRETS` |
 | [[Arena_Physics]] | Арена и коллизии | `Arena`, `physics`, `PhysicsSystem` |
 | [[Maps]] | Карты и выбор арены (300×300) | `mapCatalog`, `Arena.rebuild`, `MapSelect` |
+| [[UI_Polish]] | Единый дизайн-язык UI/HUD: токены, состояния, раскладки | `variables.css`, `styles/*.css`, `uiUxPresentation.test.ts` |
 | [[Factory_Level_Design]] | Завод: foundry, containers, crane, tank farm | `buildFactoryContent`, `factoryGroundTexture` |
 | [[City_Level_Design]] | Город: grid, districts, overpass | `buildCityContent`, `cityGroundTexture` |
 | [[Village_Level_Design]] | Деревня: площадь, часовня, амбары, пруды, сад | `buildVillageContent`, `villageGroundTexture` |

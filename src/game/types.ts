@@ -28,6 +28,7 @@ export interface HudSnapshot {
   muted: boolean;
   turretId: TurretId;
   weaponName: string;
+  /** Роль оружия («ЭНЕРГЕТИЧЕСКИЙ ЛУЧ») — не второе имя. */
   weaponLabel: string;
   weaponAccentClass: string;
   showScore: boolean;

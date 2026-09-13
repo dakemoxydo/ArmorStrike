@@ -23,7 +23,7 @@ function createSnapInit(): HudSnapshot {
     mode: 'menu', paused: false, health: 100, maxHealth: 100, ammo: 0, magazine: 0,
     reloading: false, reloadProgress: 0, isCharging: false, boost: 1, score: 0, kills: 0, deaths: 0,
     enemiesAlive: 0, alive: false, respawnInSec: 0, timeSec: 0, muted: false, turretId: 'railgun',
-    weaponName: _defaultWeapon.name, weaponLabel: _defaultWeapon.label,
+    weaponName: _defaultWeapon.name, weaponLabel: _defaultWeapon.kind,
     weaponAccentClass: _defaultWeapon.accentClass,
     showScore: false, scoreboard: [],
     matchMode: 'deathmatch', winTarget: 30, timeLimitSec: 720,
@@ -134,8 +134,18 @@ export function useGameHud(game: GameApi | null, active: boolean) {
   useEffect(() => {
     if (!active) return;
     setShowHint(true);
-    const t = setTimeout(() => setShowHint(false), 11000);
-    return () => clearTimeout(t);
+    // Подсказка уходит по первому же вводу, а не только по таймеру: раньше она
+    // висела 11 секунд поверх боя, пока игрок уже играл (U6). Таймер остаётся
+    // страховкой для тех, кто смотрит, но не трогает управление.
+    const hide = () => setShowHint(false);
+    const t = setTimeout(hide, 11000);
+    window.addEventListener('keydown', hide);
+    window.addEventListener('pointerdown', hide);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('keydown', hide);
+      window.removeEventListener('pointerdown', hide);
+    };
   }, [active]);
 
   useEffect(() => {

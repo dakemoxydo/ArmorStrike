@@ -318,7 +318,7 @@ export default function App() {
 
       {roundError && !roundLoading && (
         <div
-          className="absolute inset-x-0 top-5 z-50 mx-auto w-fit max-w-[min(20rem,calc(100vw-3rem))] px-4 py-2.5 text-center text-xs tracking-[0.2em] text-amber-200 hud-panel"
+          className="absolute inset-x-0 top-5 z-50 mx-auto w-fit max-w-[min(20rem,calc(100vw-3rem))] px-4 py-2.5 text-center text-xs tracking-widest text-amber-200 hud-panel"
           role="alert"
         >
           {roundError}
@@ -327,13 +327,13 @@ export default function App() {
 
       {roundLoading && (
         <div
-          className="absolute inset-0 z-40 flex items-center justify-center bg-[#04060b]/85"
+          className="scrim-over absolute inset-0 z-40 flex items-center justify-center"
           role="status"
           aria-live="polite"
         >
           <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[var(--accent,#2ee6c0)]" />
-            <span className="text-sm tracking-[0.3em] text-white/70">ЗАГРУЗКА</span>
+            <div className="loader" aria-hidden />
+            <span className="text-sm tracking-hero text-white/70">ЗАГРУЗКА</span>
           </div>
         </div>
       )}

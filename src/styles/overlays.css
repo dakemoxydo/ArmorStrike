@@ -20,7 +20,7 @@
 
 .title-glitch {
   color: #eef7ff;
-  text-shadow: 0 0 40px rgba(var(--glow), 0.35);
+  text-shadow: 0 0 var(--glow-r-lg) rgba(var(--glow), 0.35);
   animation: title-flicker 5s infinite;
 }
 @keyframes title-flicker {
@@ -32,37 +32,74 @@
   97% { opacity: 1; }
 }
 
-.hint-panel { animation: hint 11s forwards; }
-@keyframes hint {
-  0%, 85% { opacity: 1; }
-  100% { opacity: 0; visibility: hidden; }
+/* --- Скримы оверлеев (U15) ------------------------------------------------
+   Одна константа на поверхность вместо пяти локальных `bg-[#…]`. Размытие
+   разрешено только двум: табло (3px) и пауза (6px). Больше `backdrop-filter`
+   не заводить — это прямо запрещено `Standard_UI_Input.md` §8. */
+.scrim-hud {
+  background: var(--scrim-hud);
+  backdrop-filter: blur(3px);
+}
+.scrim-menu { background: var(--scrim-menu); }
+.scrim-pause {
+  background: var(--scrim-pause);
+  backdrop-filter: blur(6px);
+}
+.scrim-over { background: var(--scrim-over); }
+
+/* Линия-подчёркивание под заголовком экрана (пауза). Живёт рядом с остальной
+   хромировкой меню, а не в garage.css: владелец — меню, не гараж (U23). */
+.head-rule {
+  height: 2px;
+  background: linear-gradient(90deg, rgba(var(--glow), 0.9), rgba(var(--glow), 0.05));
+  transform-origin: left;
+  animation: rule-grow 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--d, 0s);
+  scale: 0 1;
+}
+@keyframes rule-grow {
+  to { scale: 1 1; }
 }
 
-/* Map select cards */
+/* Map select cards. `background-color` (а не шорткат `background`) — иначе
+   Tailwind-утилита стирает градиент и штриховку .hud-panel и карточка
+   проваливается в плоский чёрный. */
 .map-card {
+  position: relative;
   pointer-events: auto;
   cursor: pointer;
   padding: 1.15rem 1.1rem 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.45);
+  background-color: rgba(3, 8, 14, 0.62);
   color: inherit;
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  clip-path: polygon(var(--panel-cut) 0, 100% 0, 100% calc(100% - var(--panel-cut)), calc(100% - var(--panel-cut)) 100%, 0 100%, 0 var(--panel-cut));
 }
 .map-card:hover {
   border-color: rgba(var(--map-accent-rgb, 46, 230, 192), 0.45);
   transform: translateY(-3px);
-  box-shadow: 0 0 28px rgba(var(--map-accent-rgb, 46, 230, 192), 0.18);
+  box-shadow: 0 0 var(--glow-r-md) rgba(var(--map-accent-rgb, 46, 230, 192), 0.18);
 }
-.map-card:focus-visible {
-  outline: 2px solid rgba(var(--map-accent-rgb, 46, 230, 192), 0.85);
-  outline-offset: 3px;
+.map-card:active {
+  transform: translateY(1px) scale(0.99);
 }
 .map-card-active {
   border-color: rgba(var(--map-accent-rgb, 46, 230, 192), 0.75);
-  background: rgba(var(--map-accent-rgb, 46, 230, 192), 0.08);
+  background-color: rgba(var(--map-accent-rgb, 46, 230, 192), 0.08);
   box-shadow:
-    0 0 32px rgba(var(--map-accent-rgb, 46, 230, 192), 0.28),
+    0 0 var(--glow-r-md) rgba(var(--map-accent-rgb, 46, 230, 192), 0.28),
     inset 0 0 0 1px rgba(var(--map-accent-rgb, 46, 230, 192), 0.25);
+}
+/* Акцентная кромка выбранной карты — слева, поверх среза. */
+.map-card-active::after {
+  background: linear-gradient(
+      180deg,
+      transparent,
+      var(--map-accent, #2ee6c0) 20%,
+      var(--map-accent, #2ee6c0) 80%,
+      transparent
+    )
+    left center / 2px 100% no-repeat;
+  opacity: 0.9;
 }
 .map-card-icon {
   display: flex;
@@ -72,9 +109,140 @@
   height: 3rem;
   margin-bottom: 0.85rem;
   border: 1px solid rgba(var(--map-accent-rgb, 46, 230, 192), 0.4);
-  border-radius: 4px;
+  clip-path: polygon(var(--control-cut) 0, 100% 0, 100% calc(100% - var(--control-cut)), calc(100% - var(--control-cut)) 100%, 0 100%, 0 var(--control-cut));
   color: var(--map-accent, #2ee6c0);
-  background: rgba(var(--map-accent-rgb, 46, 230, 192), 0.1);
+  background:
+    radial-gradient(circle at 50% 120%, rgba(var(--map-accent-rgb, 46, 230, 192), 0.28), transparent 70%),
+    rgba(var(--map-accent-rgb, 46, 230, 192), 0.08);
+  box-shadow: inset 0 0 var(--glow-r-md) rgba(var(--map-accent-rgb, 46, 230, 192), 0.12);
+}
+
+/* --- Каркас «подготовка к бою» (U9, U10) ---------------------------------
+   Один шаблон на оба шага: назад слева, номер шага справа, подсказка слева в
+   футере, CTA справа. Раньше режим и карта выглядели как два разных экрана, а
+   «назад» жило в четырёх местах приложения. */
+.prep-step {
+  padding: 0.4rem 0.8rem;
+  font-family: 'Russo One', sans-serif;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--track-wide);
+  color: rgba(var(--glow), 0.9);
+  border: 1px solid rgba(var(--glow), 0.32);
+  background: rgba(var(--glow), 0.07);
+  white-space: nowrap;
+}
+.prep-hint {
+  max-width: 30rem;
+  font-size: var(--fs-body);
+  color: var(--text-muted);
+}
+
+/* Секция паузы: волосяной разделитель между смысловыми группами — сводка,
+   действия, настройки, выход (S5). Разделитель, а не рамка: панели уже несут
+   свой контур, второй контур на каждой группе превратил бы экран в решётку. */
+.pause-section {
+  width: 100%;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Строка-чип сборки в меню (S1): вторичный вход в гараж вместо отдельной
+   кнопки и панели на четыре блока. */
+.build-chip {
+  cursor: pointer;
+  transition: transform var(--ease-base), border-color var(--ease-base), box-shadow var(--ease-base);
+}
+.build-chip:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--glow), 0.5);
+  box-shadow: 0 0 var(--glow-r-md) rgba(var(--glow), 0.22);
+}
+.build-chip:active {
+  transform: translateY(1px);
+}
+
+/* Маркер выбора: одна и та же плашка в правом верхнем углу обеих карточек —
+   плюс общая левая кромка. Раньше режим показывал выбор только рамкой, а карта
+   ещё и подписью снизу (U8). */
+.picked-flag {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  font-family: 'Russo One', sans-serif;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--track-wide);
+  color: var(--map-accent, var(--accent, #2ee6c0));
+  pointer-events: none;
+}
+
+/* Режимы матча: иконка-диск и подсветка выбранной карточки.
+   Состояния заданы здесь, а не Tailwind-утилитами в разметке: утилиты живут в
+   слое и проигрывают безслойному `.hud-panel`/`.mode-card`, из-за чего
+   `border-cyan-400/70` и `opacity-45` не применялись вовсе и выбранный режим
+   выглядел так же, как остальные (U8). Маркер выбора — та же левая кромка, что
+   у карты, поэтому оба экрана подготовки читаются одинаково. */
+.mode-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: auto;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+.mode-card:hover:not(:disabled) {
+  border-color: rgba(var(--glow), 0.45);
+  transform: translateY(-3px);
+}
+.mode-card:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+.mode-card.is-active {
+  border-color: rgba(var(--glow), 0.7);
+  background-color: rgba(var(--glow), 0.08);
+  box-shadow:
+    0 0 var(--glow-r-md) rgba(var(--glow), 0.28),
+    inset 0 0 0 1px rgba(var(--glow), 0.22);
+}
+.mode-card.is-active::after {
+  background: linear-gradient(
+      180deg,
+      transparent,
+      var(--accent, #2ee6c0) 20%,
+      var(--accent, #2ee6c0) 80%,
+      transparent
+    )
+    left center / 2px 100% no-repeat;
+  opacity: 0.9;
+}
+.mode-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mode-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  clip-path: polygon(var(--control-cut) 0, 100% 0, 100% calc(100% - var(--control-cut)), calc(100% - var(--control-cut)) 100%, 0 100%, 0 var(--control-cut));
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.mode-card.is-active .mode-icon {
+  color: var(--accent, #2ee6c0);
+  border-color: rgba(var(--glow), 0.55);
+  background: rgba(var(--glow), 0.1);
+  box-shadow: 0 0 var(--glow-r-md) rgba(var(--glow), 0.28);
+}
+.mode-card .mode-meta {
+  margin-top: auto;
+  font-family: 'Russo One', sans-serif;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--track-wide);
+  color: rgba(var(--glow), 0.7);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -85,10 +253,16 @@
   .title-glitch {
     animation: none;
   }
-  .hint-panel {
+  .head-rule {
     animation: none;
+    scale: 1 1;
   }
-  .map-card:hover {
+  .map-card:hover,
+  .map-card:active,
+  .mode-card:hover,
+  .mode-card:active,
+  .build-chip:hover,
+  .build-chip:active {
     transform: none;
   }
 }

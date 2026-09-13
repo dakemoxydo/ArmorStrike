@@ -22,25 +22,25 @@ export default function HullCard({ hull, isSelected, delay, onSelect, disabled }
       onClick={() => onSelect(hull.id)}
       disabled={disabled}
       aria-pressed={isSelected}
-      className={`hud-panel garage-card anim-up p-4${isSelected ? ' is-selected hull-selected' : ''}${disabled ? ' garage-disabled' : ''}`}
+      className={`hud-panel garage-card anim-up p-4${isSelected ? ' is-selected hull-selected' : ''}`}
       style={{ '--d': delay } as React.CSSProperties}
     >
       <div className="flex items-center justify-between mb-2">
         <span className="font-display text-lg tracking-wide text-white">{hull.name}</span>
         {isSelected && <Check size={18} className="g-check text-cyan-300" aria-hidden />}
       </div>
-      <div className="inline-block px-2 py-0.5 mb-3 text-[9px] tracking-widest uppercase bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 rounded-sm">
+      <div className="card-badge cut-chip px-2 py-0.5 mb-3 text-[10px] tracking-wider uppercase bg-cyan-500/20 text-cyan-200 border border-cyan-500/40">
         {hull.badge}
       </div>
-      <p className="text-[11px] text-white/60 leading-relaxed mb-4 min-h-[34px]">{hull.desc}</p>
+      <p className="text-[11px] text-white/60 leading-relaxed mb-4">{hull.desc}</p>
       <div className="space-y-2 text-[10px]">
         <div>
           <div className="flex justify-between text-white/70 mb-1">
             <span className="flex items-center gap-1"><Shield size={10} aria-hidden /> БРОНЯ</span>
             <span className="font-display text-emerald-300">{hull.maxHealth} HP</span>
           </div>
-          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-            <div className="g-stat-bar bg-emerald-400 h-full rounded-full" style={{ width: `${(hull.maxHealth / MAX_HULL_HP) * 100}%` }} />
+          <div className="g-bar">
+            <i className="g-stat-bar bg-emerald-400" style={{ width: `${(hull.maxHealth / MAX_HULL_HP) * 100}%` }} />
           </div>
         </div>
         <div>
@@ -48,8 +48,8 @@ export default function HullCard({ hull, isSelected, delay, onSelect, disabled }
             <span className="flex items-center gap-1"><Gauge size={10} aria-hidden /> СКОРОСТЬ</span>
             <span className="font-display text-cyan-300">{hull.speed}</span>
           </div>
-          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-            <div className="g-stat-bar bg-cyan-400 h-full rounded-full" style={{ width: `${(hull.speed / MAX_HULL_SPEED) * 100}%` }} />
+          <div className="g-bar">
+            <i className="g-stat-bar bg-cyan-400" style={{ width: `${(hull.speed / MAX_HULL_SPEED) * 100}%` }} />
           </div>
         </div>
       </div>
