@@ -24,7 +24,23 @@ export default defineConfig({
   // и браузер, идущий на `127.0.0.1:5178`, получает
   // ERR_CONNECTION_REFUSED / «Страница не найдена». Явный IPv4-хост это чинит.
   // Нужен доступ с других устройств — `npm run dev -- --host` (перекроет на 0.0.0.0).
-  server: { port: 5178, host: '127.0.0.1' },
+  //
+  // `watch.ignored` — против падения сервера на `EBUSY: resource busy or locked,
+  // watch '...\<file>.<pid>.<uuid>.tmpdir\<file>.tmp'`: атомарное сохранение
+  // редактора (Studio/VSCode) создаёт соседний каталог-временюху, chokidar не
+  // может его открыть и роняет весь dev-сервер — посреди игры это означает
+  // «эффекта выстрела просто нет» на полугорячей странице. Дефолтные паттерны
+  // перечислены явно: при явном `ignored` Vite не обязан подмешивать свои.
+  server: {
+    port: 5178,
+    host: '127.0.0.1',
+    // `**/screenshots/**` — там скретч-инструменты (beam-preview, map-plan,
+    // game-probe) пишут артефакты и держат chrome-профили: залоченный Chrome
+    // `Network/Cookies` даёт ровно тот же EBUSY. В графе приложения их нет.
+    watch: {
+      ignored: ['**/node_modules/**', '**/.git/**', '**/.*tmpdir/**', '**/screenshots/**'],
+    },
+  },
   plugins: [react(), tailwindcss(), viteSingleFile()],
   build: {
     // Вровень с tsconfig (ES2020): parse-fail на старых браузерах вместо
