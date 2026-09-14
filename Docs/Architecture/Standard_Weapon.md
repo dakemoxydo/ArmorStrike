@@ -23,7 +23,7 @@ interface Weapon {
 
 Реализации:
 - `CannonWeapon` — ballistic projectile pool
-- `RailgunWeapon` — hitscan + charge FSM
+- `RailgunWeapon` — hitscan + неотменяемый charge FSM (M20), отложенный показ (M19–M21)
 - `FlamethrowerWeapon` — cone / overlap damage + particle pool
 
 Запрещено: `switch (weaponType)` в `Game` / stage. Ветвление — только в `createWeapon` (и catalog).
@@ -108,3 +108,36 @@ createDamageSystem(arena, hooks): DamageSystem
 - [ ] Ammo state через `buildAmmoState` shape
 - [ ] Player & bot factory path без дублирования
 - [ ] Unit tests на pure fire logic / cone / FSM
+
+## 9. Оружейные FX: pure-слой + presentation-классы (M20–M21)
+
+Паттерн из рельсотрона; новое оружие со сложной презентацией следует ему:
+
+1. **Чистый слой без Three** — решения/таймлайны в отдельных маленьких модулях
+   `src/game/weapons/*.ts`, тестируемых как обычные функции/классы:
+   `railgunFireLogic.ts` (гейт `railgunShouldStartCharge`, геометрия шаров
+   `chargeBallRadii`), `railgunBeamSweep.ts` (`BeamSweep` — события по
+   дистанции `d` бегущего фронта), `railgunBlockers.ts`. Никаких mesh'ей,
+   никаких портов — только числа и порядок.
+2. **Presentation-класс владеет своими mesh'ами** (`RailgunBeamFx`,
+   `RailgunChargeBalls`): конструкция получает `scene` (+ `LightRig` для
+   лучей), сам никогда не добавляет/не удаляет источники света — только пишет
+   в слоты рига (бюджет света, [Standard Frame Stability](Standard_Frame_Stability.md) §1).
+   Прозрачность `depthWrite:false`, `frustumCulled=false`; glow — additive
+   поверх «материи» (NormalBlending) через `renderOrder`.
+3. **Ref-counted shared геометрия уровня модуля** — N экземпляров оружия делят
+   одну `BufferGeometry` (цилиндры по радиусу у beam, unit-сфера у шаров);
+   acquire в конструкторе, release в `dispose()`, гео жива до последней ссылки
+   (hot-reload/test-safe).
+4. **Оркестрация из FSM явными хуками**, не самонаблюдением:
+   `beginCharge()` в кадре старта, `setProgress(p)` каждый кадр CHARGING,
+   `confirmFire()` в кадре выстрела, `update(dt, owner)` каждый кадр (ранний
+   выход в off), `hide()` в `onOwnerDeath`, `dispose()` в `dispose`. Позиция
+   берётся живой с muzzle каждый кадр (`fillMuzzleAndAim`) — FX трясутся
+   вместе со стволом бесплатно.
+5. **Урон мгновенен, показ отложен** (контракт hitscan-оружия): урон/knockback/
+   пинги резолвятся в кадре firing; визуалы собираются в payload
+   (`PendingShotVisual`), воспроизводятся через `tracerDelay`, а внутри окна событие за
+   событием отдаёт `BeamSweep`. Синхронность под-эффектов (glow/FOV/pull/шары
+   → «соприкосновение» = кадр выстрела) получается естественно: всё едет от
+   одного FSM-овского `progress`, отдельных связок нет.

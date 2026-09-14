@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   railgunShouldStartCharge,
-  railgunShouldCancelCharge,
+  chargeBallRadii,
   type RailgunTriggerState,
+  type ChargeBallConfig,
 } from '../game/weapons/railgunFireLogic';
 
 describe('railgunShouldStartCharge (C3 bot re-fire)', () => {
@@ -32,21 +33,64 @@ describe('railgunShouldStartCharge (C3 bot re-fire)', () => {
   });
 });
 
-describe('railgunShouldCancelCharge (M18 cancel-on-release)', () => {
-  it('player releasing fire mid-charge cancels', () => {
-    expect(railgunShouldCancelCharge(false, 'CHARGING', true)).toBe(true);
+describe('M20 un-cancellable trigger', () => {
+  it('railgunShouldCancelCharge is gone (start-logic is the only gate)', () => {
+    // The cancel path was removed: nothing to import, nothing to call. A
+    // charge begun in IDLE always runs to firing; release is a no-op (tested
+    // at the weapon level in RailgunWeaponTrigger.test.ts).
+    expect(railgunShouldStartCharge(true, 'CHARGING', true, true)).toBe(false);
+  });
+});
+
+const BALL_CFG: ChargeBallConfig = {
+  electricStart: 0.05,
+  airStart: 0.9,
+  contactRadius: 0.3,
+};
+
+describe('chargeBallRadii (M21 contact-ball geometry)', () => {
+  it('starts wide air / tiny electric, converges to contactRadius at full charge', () => {
+    const a = chargeBallRadii(0, BALL_CFG);
+    expect(a.electric).toBeCloseTo(BALL_CFG.electricStart, 5);
+    expect(a.air).toBeCloseTo(BALL_CFG.airStart, 5);
+
+    const full = chargeBallRadii(1, BALL_CFG);
+    expect(full.electric).toBeCloseTo(BALL_CFG.contactRadius, 5);
+    expect(full.air).toBeCloseTo(BALL_CFG.contactRadius, 5);
   });
 
-  it('holding fire never cancels', () => {
-    expect(railgunShouldCancelCharge(true, 'CHARGING', true)).toBe(false);
+  it('electric grows (p²) while air shrinks monotonically toward contact', () => {
+    let prevElectric = 0;
+    let prevAir = Infinity;
+    for (let p = 0; p <= 1.0001; p += 0.1) {
+      const { electric, air } = chargeBallRadii(p, BALL_CFG);
+      expect(electric).toBeGreaterThanOrEqual(prevElectric);
+      expect(air).toBeLessThanOrEqual(prevAir);
+      // Air never dips below the meeting point; electric never overshoots.
+      expect(electric).toBeLessThanOrEqual(BALL_CFG.contactRadius + 1e-9);
+      expect(air).toBeGreaterThanOrEqual(BALL_CFG.contactRadius - 1e-9);
+      prevElectric = electric;
+      prevAir = air;
+    }
   });
 
-  it('bots never cancel (wantsFire flickers frame-to-frame; charge commits)', () => {
-    expect(railgunShouldCancelCharge(false, 'CHARGING', false)).toBe(false);
+  it('air collapses fastest early (concave), so contact only happens at p=1', () => {
+    // At half charge, most of the air travel is done but electric is barely
+    // grown — the two are far apart until the very last fraction.
+    const mid = chargeBallRadii(0.5, BALL_CFG);
+    expect(mid.air - mid.electric).toBeGreaterThan(0.1);
+    // The final 10% closes most of the remaining gap (slow creep → snap).
+    const at90 = chargeBallRadii(0.9, BALL_CFG);
+    expect(at90.air - at90.electric).toBeLessThan(mid.air - mid.electric);
   });
 
-  it('no cancel outside CHARGING', () => {
-    expect(railgunShouldCancelCharge(false, 'IDLE', true)).toBe(false);
-    expect(railgunShouldCancelCharge(false, 'COOLDOWN', true)).toBe(false);
+  it('clamps out-of-range progress (dt overshoot never inverts the balls)', () => {
+    for (const p of [-1, 2, 99]) {
+      const { electric, air } = chargeBallRadii(p, BALL_CFG);
+      expect(electric).toBeGreaterThanOrEqual(BALL_CFG.electricStart - 1e-9);
+      expect(electric).toBeLessThanOrEqual(BALL_CFG.contactRadius + 1e-9);
+      expect(air).toBeGreaterThanOrEqual(BALL_CFG.contactRadius - 1e-9);
+      expect(air).toBeLessThanOrEqual(BALL_CFG.airStart + 1e-9);
+    }
   });
 });

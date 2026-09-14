@@ -16,7 +16,7 @@
 | [[Damage_System]] | Урон / knockback / блоки | `DamageSystem`, `CombatSystem`, `applyHit` |
 | [[Kill_Feedback]] | Hit-stop / slow-mo за убийство игроком | `TimeScale`, `CombatSystem.setOnKillPunch` |
 | [[Weapon_Cannon]] | Пушка «Смоки» | `CannonWeapon`, `ProjectileManager` |
-| [[Weapon_Railgun]] | Рельсотрон | `RailgunWeapon` |
+| [[Weapon_Railgun]] | Рельсотрон | `RailgunWeapon`, `BeamSweep`, `RailgunChargeBalls` |
 | [[Weapon_Flamethrower]] | Огнемёт Firebird | `FlamethrowerWeapon`, `inFlameConeXZ` |
 | [[Projectile_System]] | Снаряды (пул) | `ProjectileManager`, `ProjectileBehavior` |
 | [[Match_Framework]] | Режимы DM/TDM/CP, roster, respawn, win | `MatchRuntime`, `spawnMatchRoster` |

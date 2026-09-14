@@ -26,9 +26,12 @@ const IMPACT_SLOT = 1;
 const MUZZLE_LIGHT_COLOR = 0x2ee6c0;
 const IMPACT_LIGHT_COLOR = 0xfff0a0;
 
-const CORE_RADIUS = 0.055;
-const BODY_RADIUS = 0.18;
-const GLOW_RADIUS = 0.42;
+// M21: thinner beam — effective radii ≈ half of the original (0.13/0.33/0.65).
+// Punch multipliers in layoutBeam/update are intentionally kept: the fire→settle
+// contrast reads even stronger against the slimmer line.
+const CORE_RADIUS = 0.035;
+const BODY_RADIUS = 0.11;
+const GLOW_RADIUS = 0.26;
 
 /**
  * Shared geometry per radius across all beam instances (perf: avoid N×CylinderGeometry).

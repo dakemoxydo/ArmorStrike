@@ -1,6 +1,10 @@
 // ===== RAILGUN (Рельсотрон) =====
 // Hitscan-оружие мгновенного действия с FSM (IDLE -> CHARGING -> COOLDOWN; выстрел синхронно в конце CHARGING)
 // Визуальный луч вынесен в RailgunBeamFx. Juice: charge pull, shake/FOV, layered beam/SFX.
+// M20: заряд запускается кликом и НЕ отменяется отпускением; показ выстрела —
+// бегущий фронт (BeamSweep), а не мгновенная вспышка всей длины.
+// M21: на дуле контактные шары заряда (RailgunChargeBalls): электрический
+// растёт, белый воздух схлопывается; их соприкосновение = кадр выстрела.
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
 import type { Collider } from '../engine/physics';
@@ -12,7 +16,9 @@ import { applyHit } from '../engine/applyHit';
 import { BARREL_REST_Y, BARREL_REST_Z } from '../tuning';
 import { fillMuzzleAndAim } from './muzzle';
 import { RailgunBeamFx } from './RailgunBeamFx';
-import { railgunShouldCancelCharge, railgunShouldStartCharge } from './railgunFireLogic';
+import { RailgunChargeBalls } from './railgunChargeBalls';
+import { railgunShouldStartCharge } from './railgunFireLogic';
+import { BeamSweep, type BeamSweepEvent } from './railgunBeamSweep';
 import { nearestShotBlockerDist } from './railgunBlockers';
 import { resolveWeaponDamage } from './weaponDamage';
 import { ownerReloadMul } from './reloadMul';
@@ -35,15 +41,26 @@ const WALL_IMPACT_COLOR = 0xffa040;
  * Beam-side visuals captured at fire time, replayed `tracerDelay` later
  * (M19 #4: hitscan damage is instant; the beam arrives a beat after the
  * muzzle flash so the shot has weight instead of popping in frame-one).
+ * M20: события не применяются разом — они идут в BeamSweep и срабатывают,
+ * когда бегущий от дула фронт проходит их расстояние `d`.
  */
 interface PendingShotVisual {
   muzzle: THREE.Vector3;
   dir: THREE.Vector3;
   /** Final beam length (wall.dist when blocked, else full range). */
   dist: number;
-  pierces: Array<{ p: THREE.Vector3; color: number; heavy: boolean }>;
-  wall: { p: THREE.Vector3 } | null;
+  pierces: Array<{ p: THREE.Vector3; color: number; heavy: boolean; d: number }>;
+  wall: { p: THREE.Vector3; d: number } | null;
 }
+
+/**
+ * Стартовая длина луча в кадре flush — фронт «выплёскивается» из дула.
+ * M21: равна диаметру контактного шара, так что луч вырастает из точки
+ * соприкосновения зарядных шаров (они «схлопнулись» кадром ранее).
+ */
+const BEAM_SWEEP_START_LEN = Math.max(
+  0.5, WEAPON_TUNING.railgun.chargeBalls.contactRadius * 2,
+);
 
 export class RailgunWeapon implements Weapon {
   readonly owner: WeaponOwner;
@@ -54,6 +71,8 @@ export class RailgunWeapon implements Weapon {
   reloadTimer = 0;
 
   private beamFx: RailgunBeamFx;
+  /** M21: контактные шары заряда на дуле (electric ↑ / air ↓, pop при выстреле). */
+  private chargeBalls: RailgunChargeBalls;
   private raycaster = new THREE.Raycaster();
 
   private deps: WeaponDeps;
@@ -73,17 +92,21 @@ export class RailgunWeapon implements Weapon {
   /** Delayed beam visuals — see PendingShotVisual docstring. */
   private pendingShot: PendingShotVisual | null = null;
   private shotDelayTimer = 0;
+  /** M20: активный бегущий фронт луча (null — свипа нет). */
+  private beamSweep: BeamSweep | null = null;
 
   constructor(owner: WeaponOwner, deps: WeaponDeps) {
     this.owner = owner;
     this.deps = deps;
     this.beamFx = new RailgunBeamFx(deps.scene, deps.lights);
+    this.chargeBalls = new RailgunChargeBalls(deps.scene);
   }
 
   /**
    * Спуск: заряд стартует в IDLE при удержании/нажатии (level-trigger).
    * Charge start is owned by railgunShouldStartCharge.
-   * Cancel-on-release (player only) — see railgunShouldCancelCharge.
+   * M20: выстрел неотменяем — отпущенный триггер во время CHARGING ничего
+   * не делает, начатый заряд всегда доходит до выстрела.
    */
   setFire(active: boolean) {
     if (railgunShouldStartCharge(
@@ -93,21 +116,9 @@ export class RailgunWeapon implements Weapon {
       this.chargeTimer = 0;
       this.chargeFxAcc = 0;
       this.chargingAudioActive = true;
+      this.chargeBalls.beginCharge();
       this.chargeHandle = this.deps.audio.chargeRailgun(this.chargeDuration());
-    } else if (railgunShouldCancelCharge(active, this.state, this.owner.isPlayer)) {
-      this.cancelCharge();
     }
-  }
-
-  /** Player released fire mid-charge: abort and settle visuals/audio. */
-  private cancelCharge(): void {
-    this.state = 'IDLE';
-    this.chargeTimer = 0;
-    this.chargeFxAcc = 0;
-    this.stopChargeAudio(false);
-    if (this.owner.isPlayer) this.deps.effects.setFovTighten(0);
-    // Barrel pull was driven by charge progress; damp-to-rest happens in idle FX.
-    this.owner.setBarrelKick?.(0);
   }
 
   /** Stop OUR charge voice only (hard cut on fire, soft fade otherwise). */
@@ -159,6 +170,13 @@ export class RailgunWeapon implements Weapon {
       }
     }
 
+    // M20: бегущий фронт луча — impact-события срабатывают по мере прохода.
+    if (this.beamSweep) {
+      if (this.beamSweep.step(dt, (len) => this.beamFx.setLength(len))) {
+        this.beamSweep = null;
+      }
+    }
+
     switch (this.state) {
       case 'IDLE': {
         applyRailgunIdleChargeFx(this.owner, this.deps.effects, dt);
@@ -172,6 +190,9 @@ export class RailgunWeapon implements Weapon {
         this.chargeFxAcc = applyRailgunChargingFx(
           this.owner, this.deps.effects, progress, this.chargeFxAcc, dt,
         );
+        // M21: шары живут тем же progress, что и glow/FOV/pull — сходится в
+        // один кадр с «соприкосновением».
+        this.chargeBalls.setProgress(progress);
         // M19 #3: live pitch ramp — charge whine climbs with progress².
         if (this.chargingAudioActive && this.chargeHandle) {
           this.deps.audio.setChargeRailgunPitch(this.chargeHandle, progress);
@@ -183,6 +204,8 @@ export class RailgunWeapon implements Weapon {
           // no transient FIRING state, no 1-frame latency before the shot.
           // Hard-cut our charge voice; shoot('railgun') only layers the crack.
           this.stopChargeAudio(true);
+          // M21: «соприкосновение» = этот кадр: pop шаров и луч из точки контакта.
+          this.chargeBalls.confirmFire();
           this.executeFiring(ctx.tanks, ctx.colliders);
           this.state = 'COOLDOWN';
           this.reloadTimer = this.cooldownDuration();
@@ -205,6 +228,9 @@ export class RailgunWeapon implements Weapon {
     }
 
     this.beamFx.update(dt);
+    // M21: ранний выход когда шаров нет; в charge/release ведёт позиции за
+    // трясущимся дулом и проигрывает pop после выстрела.
+    this.chargeBalls.update(dt, this.owner);
   }
 
   /** Выполнение Hitscan-выстрела: мгновенный урон + juice; луч — через tracerDelay. */
@@ -243,33 +269,61 @@ export class RailgunWeapon implements Weapon {
     if (this.shotDelayTimer <= 0) this.flushPendingShot();
   }
 
-  /** Replay the delayed beam + impact visuals (end of tracer delay). */
+  /**
+   * Показать луч и запустить бегущий фронт (M20): impact/debris/trail события
+   * собираются в таймлайн BeamSweep и срабатывают, когда фронт их проходит.
+   * show() сначала рисует короткий stub у дула — дальнюю границу ведёт свип.
+   */
   private flushPendingShot(): void {
     const shot = this.pendingShot;
     if (!shot) return;
     this.pendingShot = null;
 
-    this.beamFx.show(shot.muzzle, shot.dir, shot.dist);
+    this.beamFx.show(shot.muzzle, shot.dir, Math.min(BEAM_SWEEP_START_LEN, shot.dist));
+
+    const events: BeamSweepEvent[] = [];
     for (const imp of shot.pierces) {
-      this.deps.effects.railgunImpact(imp.p, imp.color, imp.heavy);
-      this.beamFx.setImpactPosition(imp.p);
-    }
-    if (shot.wall) {
-      this.deps.effects.railgunImpact(shot.wall.p, WALL_IMPACT_COLOR, true);
-      this.deps.effects.debris(shot.wall.p, WALL_IMPACT_COLOR, 10);
-      this.beamFx.setImpactPosition(shot.wall.p);
+      events.push({
+        d: imp.d,
+        run: () => {
+          this.deps.effects.railgunImpact(imp.p, imp.color, imp.heavy);
+          this.beamFx.setImpactPosition(imp.p);
+        },
+      });
     }
 
-    // Along-beam ion trail (midpoints)
+    // Along-beam ion trail (midpoints) — каждая puff'а срабатывает, когда
+    // фронт проходит её дистанцию.
     const segs = Math.min(6, Math.max(2, Math.floor(shot.dist / 18)));
+    const midIdx = Math.ceil(segs / 2);
+    const midColor = shot.pierces[0]?.color ?? 0x8fffe8;
     for (let i = 1; i <= segs; i++) {
       const u = i / (segs + 1);
-      tmpSpark.copy(shot.muzzle).addScaledVector(shot.dir, shot.dist * u);
-      this.deps.effects.trailPuff(tmpSpark, BEAM_SPARK_COLOR);
-      if (i === Math.ceil(segs / 2)) {
-        this.deps.effects.railgunImpact(tmpSpark, shot.pierces[0]?.color ?? 0x8fffe8, false);
-      }
+      const d = shot.dist * u;
+      const pos = tmpSpark.copy(shot.muzzle).addScaledVector(shot.dir, d).clone();
+      const atMid = i === midIdx;
+      events.push({
+        d,
+        run: () => {
+          this.deps.effects.trailPuff(pos, BEAM_SPARK_COLOR);
+          if (atMid) this.deps.effects.railgunImpact(pos, midColor, false);
+        },
+      });
     }
+
+    if (shot.wall) {
+      const wallP = shot.wall.p;
+      events.push({
+        d: shot.wall.d,
+        run: () => {
+          this.deps.effects.railgunImpact(wallP, WALL_IMPACT_COLOR, true);
+          this.deps.effects.debris(wallP, WALL_IMPACT_COLOR, 10);
+          this.beamFx.setImpactPosition(wallP);
+        },
+      });
+    }
+
+    this.beamSweep = new BeamSweep(shot.dist, WEAPON_TUNING.railgun.beamFrontSpeed, events);
   }
 
   /**
@@ -351,9 +405,10 @@ export class RailgunWeapon implements Weapon {
       const heavy = hitCount === 1;
       // M19 #5: per-pierce feedback — impact color steps down per pierced tank
       // (bright 1st → dim 3rd+), plus a descending railgunPierce ping per hit.
+      // M20: hit.distance — позиция на таймлайне бегущего фронта (от дула).
       const pierceColor = rt.pierceColors[Math.min(hitCount - 1, rt.pierceColors.length - 1)];
       this.deps.audio.railgunPierce(hitCount - 1);
-      shot.pierces.push({ p: hit.point.clone(), color: pierceColor, heavy });
+      shot.pierces.push({ p: hit.point.clone(), color: pierceColor, heavy, d: hit.distance });
       applyHit(
         this.deps.damageSystem, hitTank, dmg, this.owner, tmpDir, force,
         // Effect callback intentionally empty: beam FX are deferred via shot.pierces.
@@ -370,7 +425,7 @@ export class RailgunWeapon implements Weapon {
       if (wallDmg > 0) {
         this.deps.damageSystem.damageBlock(wall.id, wallDmg, wall.point);
       }
-      shot.wall = { p: wall.point.clone() };
+      shot.wall = { p: wall.point.clone(), d: wall.dist };
       maxHitDist = wall.dist;
     }
     // Without a wall the beam draws to full range for sniper feel (per GDD).
@@ -414,8 +469,12 @@ export class RailgunWeapon implements Weapon {
     // Death cuts ALL railgun visuals — drop a still-pending delayed beam too.
     this.pendingShot = null;
     this.shotDelayTimer = 0;
+    // …и незавершённый бегущий фронт: его события не должны срабатывать за мёртвый танк.
+    this.beamSweep = null;
     // Cut the beam so lights/meshes don't linger frozen while owner is dead.
     this.beamFx.hide();
+    // M21: и зарядные шары — гасятся мгновенно (анимации разрядной нет).
+    this.chargeBalls.hide();
     // Respawn restoreDeathVisuals resets barrelGroup.rotation but NOT position.
     // Without this hard reset, a tank dying mid-charge keeps the jitter/pull
     // offset through respawn until TankAnimationSystem damps it back.
@@ -427,9 +486,11 @@ export class RailgunWeapon implements Weapon {
   dispose() {
     this.stopChargeAudio(false);
     if (this.owner.isPlayer) this.deps.effects.setFovTighten(0);
-    // beamFx is being torn down — drop any pending delayed shot.
+    // beamFx is being torn down — drop any pending delayed shot / live sweep.
     this.pendingShot = null;
     this.shotDelayTimer = 0;
+    this.beamSweep = null;
+    this.chargeBalls.dispose();
     this.beamFx.dispose();
   }
 }

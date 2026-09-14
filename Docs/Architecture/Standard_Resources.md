@@ -69,6 +69,19 @@ before/after числами из census (пример: village 940 → 845 по�
 `InstancedMesh` на сегмент со своей геометрией (разрушение сегмента
 диспозит только свою геометрию).
 
+## 4. Оружейная shared-геометрия: module-level ref-count
+
+**Где:** `src/game/weapons/RailgunBeamFx.ts` (`SHARED_GEO_REFS`, по радиусу),
+`src/game/weapons/railgunChargeBalls.ts` (unit-сфера)
+
+N экземпляров оружия делят одну `BufferGeometry`: acquire в конструкторе,
+release в `dispose()`, `geometry.dispose()` — только когда refs упали в 0.
+Владение — у module-кэша, mesh'и чужие гео не диспозят; горячая перезагрузка
+и повторные прогоны тестов не оставляют висячих GPU-буферов (фиксировано
+тестами `RailgunBeamFx.test.ts` / `railgunChargeBalls.test.ts`). Отличие от
+текстурного `markShared` (§1): здесь владелец переживает инстанс, но может
+быть освобождён последним владельцем, а не живёт «до конца процесса».
+
 ---
 *Паттерны извлечены из коммитов 6ad7740 (memoize texture factories) и
 257c23c (audit fixes F-1..H-5); обновляется автоматически после рефакторингов.*

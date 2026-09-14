@@ -24,6 +24,21 @@ export const WEAPON_TUNING = {
     fireFovPunch: 5.5,
     /** Visual beam delay after hitscan resolve (seconds) — weight/anticipation. */
     tracerDelay: 0.025,
+    /** M20: speed (units/s) at which the beam front runs from muzzle to terminus. */
+    beamFrontSpeed: 2400,
+    /** M21: contact charge balls at the muzzle (RailgunChargeBalls / chargeBallRadii). */
+    chargeBalls: {
+      /** Electric ball radius at charge start (grows to contactRadius ∝ p²). */
+      electricStart: 0.05,
+      /** White "air" ball radius at charge start (collapses to contactRadius ∝ 1−(1−p)²). */
+      airStart: 0.9,
+      /** Both radii meet here at p = 1 — the "contact" frame is the fire frame. */
+      contactRadius: 0.3,
+      /** Air pop expands to this radius while fading after the shot. */
+      airPopRadius: 0.75,
+      /** Release animation duration (s): spark collapses, air pops. */
+      releaseDuration: 0.09,
+    },
     /** Per-pierce impact colors [1st, 2nd, 3rd+]. Bright → dim for penetration feedback. */
     pierceColors: [0x8fffe8, 0x6fe8ff, 0x4ecfe0] as const,
   },
