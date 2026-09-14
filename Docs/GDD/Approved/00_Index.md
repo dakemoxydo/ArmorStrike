@@ -11,6 +11,7 @@
 | [[Player_Controls]] | Ввод игрока | `PlayerController`, `CameraLookState` |
 | [[Tank_Movement]] | Движение корпуса + нитро | `TankMotionSystem`, `BOOST` |
 | [[Tank_Aim]] | Наведение башни | `TankAimSystem` |
+| [[Target_Highlight_Aim]] | Подсветка врага в конусе прицела (P7) | `TargetHighlightStage`, `AimHighlighter`, `modelOutline.ts` |
 | [[Health_And_Regen]] | HP, реген, смерть | `TankEntity` (`combat`/`fx`), `TankCombatTimersSystem` |
 | [[Damage_System]] | Урон / knockback / блоки | `DamageSystem`, `CombatSystem`, `applyHit` |
 | [[Kill_Feedback]] | Hit-stop / slow-mo за убийство игроком | `TimeScale`, `CombatSystem.setOnKillPunch` |
@@ -65,7 +66,7 @@
 | Корпуса / башни / тюнинг оружия | `src/core/catalogData.ts` |
 | Арена, boost, score | `src/game/constants.ts` |
 | Match win/roster/time | `src/game/match/matchConfig.ts` |
-| Heal, knockback decay, damp | `src/game/tuning.ts` |
+| Heal, knockback decay, damp, target highlight (P7) | `src/game/tuning.ts` |
 | Порядок тика симуляции | `src/game/engine/stages/` (`index.ts`) |
 | Bootstrap | `src/game/GameBootstrap.ts` |
 | Модель vs код для корпуса/башни | `src/game/tank/TankConfig.ts` |

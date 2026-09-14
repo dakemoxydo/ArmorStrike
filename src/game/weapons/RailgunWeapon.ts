@@ -4,9 +4,10 @@
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
 import type { Collider } from '../engine/physics';
-import type { CombatPeer, WeaponOwner } from './types';
+import type { RailgunChargeHandle } from '../ports/AudioPort';
+import type { CombatPeer, WeaponOwner, WeaponAmmoState } from './types';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
-import { buildAmmoState } from './types';
+import { fillAmmoState } from './types';
 import { applyHit } from '../engine/applyHit';
 import { BARREL_REST_Y, BARREL_REST_Z } from '../tuning';
 import { fillMuzzleAndAim } from './muzzle';
@@ -63,6 +64,12 @@ export class RailgunWeapon implements Weapon {
   private chargeFxAcc = 0;
   /** True while this weapon owns the active chargeRailgun sound. */
   private chargingAudioActive = false;
+  /**
+   * This weapon's charge voice handle. Railgun charges overlap (player +
+   * bot snipers); every stop/pitch call is scoped to OUR session only —
+   * a shared "current charge" used to cut a sibling's whine mid-charge.
+   */
+  private chargeHandle: RailgunChargeHandle | null = null;
   /** Delayed beam visuals — see PendingShotVisual docstring. */
   private pendingShot: PendingShotVisual | null = null;
   private shotDelayTimer = 0;
@@ -86,7 +93,7 @@ export class RailgunWeapon implements Weapon {
       this.chargeTimer = 0;
       this.chargeFxAcc = 0;
       this.chargingAudioActive = true;
-      this.deps.audio.chargeRailgun(this.chargeDuration());
+      this.chargeHandle = this.deps.audio.chargeRailgun(this.chargeDuration());
     } else if (railgunShouldCancelCharge(active, this.state, this.owner.isPlayer)) {
       this.cancelCharge();
     }
@@ -97,13 +104,19 @@ export class RailgunWeapon implements Weapon {
     this.state = 'IDLE';
     this.chargeTimer = 0;
     this.chargeFxAcc = 0;
-    if (this.chargingAudioActive) {
-      this.deps.audio.stopChargeRailgun(false);
-      this.chargingAudioActive = false;
-    }
+    this.stopChargeAudio(false);
     if (this.owner.isPlayer) this.deps.effects.setFovTighten(0);
     // Barrel pull was driven by charge progress; damp-to-rest happens in idle FX.
     this.owner.setBarrelKick?.(0);
+  }
+
+  /** Stop OUR charge voice only (hard cut on fire, soft fade otherwise). */
+  private stopChargeAudio(hard: boolean): void {
+    if (this.chargeHandle) {
+      this.deps.audio.stopChargeRailgun(this.chargeHandle, hard);
+      this.chargeHandle = null;
+    }
+    this.chargingAudioActive = false;
   }
 
   private chargeDuration(): number {
@@ -160,15 +173,16 @@ export class RailgunWeapon implements Weapon {
           this.owner, this.deps.effects, progress, this.chargeFxAcc, dt,
         );
         // M19 #3: live pitch ramp — charge whine climbs with progress².
-        if (this.chargingAudioActive) {
-          this.deps.audio.setChargeRailgunPitch(progress);
+        if (this.chargingAudioActive && this.chargeHandle) {
+          this.deps.audio.setChargeRailgunPitch(this.chargeHandle, progress);
         }
 
         if (this.chargeTimer >= chargeDur) {
           visual.barrelGroup.position.set(0, BARREL_REST_Y, BARREL_REST_Z);
           // Fire synchronously in the same frame the charge completes —
           // no transient FIRING state, no 1-frame latency before the shot.
-          this.chargingAudioActive = false;
+          // Hard-cut our charge voice; shoot('railgun') only layers the crack.
+          this.stopChargeAudio(true);
           this.executeFiring(ctx.tanks, ctx.colliders);
           this.state = 'COOLDOWN';
           this.reloadTimer = this.cooldownDuration();
@@ -373,9 +387,9 @@ export class RailgunWeapon implements Weapon {
 
   requestReload(): void {}
 
-  getAmmoState() {
+  getAmmoState(out?: WeaponAmmoState): WeaponAmmoState {
     const reloading = this.isCharging || this.isCooldown;
-    return buildAmmoState({
+    return fillAmmoState(out, {
       ammo: reloading ? 0 : 1,
       magazine: 1,
       reloading,
@@ -389,11 +403,9 @@ export class RailgunWeapon implements Weapon {
    * Вызывается один раз при переходе alive → !alive (Tank.takeDamage).
    */
   onOwnerDeath(): void {
-    // Stop charge audio only if THIS weapon started it (shared AudioPort caveat).
-    if (this.chargingAudioActive) {
-      this.deps.audio.stopChargeRailgun(false);
-      this.chargingAudioActive = false;
-    }
+    // Stop OUR charge voice (sessions are per-weapon; a sibling railgun
+    // charging in the same frame keeps its own whine).
+    this.stopChargeAudio(false);
     this.state = 'IDLE';
     this.chargeTimer = 0;
     this.reloadTimer = 0;
@@ -413,10 +425,7 @@ export class RailgunWeapon implements Weapon {
   }
 
   dispose() {
-    if (this.chargingAudioActive) {
-      this.deps.audio.stopChargeRailgun(false);
-      this.chargingAudioActive = false;
-    }
+    this.stopChargeAudio(false);
     if (this.owner.isPlayer) this.deps.effects.setFovTighten(0);
     // beamFx is being torn down — drop any pending delayed shot.
     this.pendingShot = null;

@@ -18,16 +18,20 @@ export interface WeaponAmmoState {
   isCharging: boolean;
 }
 
-/** Дополняет неполные поля аммуниции значениями по умолчанию.
- *  Устраняет дублирование формы возврата в каждом оружии. */
-export function buildAmmoState(partial: Partial<WeaponAmmoState> & { magazine: number }): WeaponAmmoState {
-  return {
-    ammo: 0,
-    reloading: false,
-    reloadProgress: 0,
-    isCharging: false,
-    ...partial,
+/** Fill an existing ammo-state object in place (HUD hot path, 60fps). */
+export function fillAmmoState(
+  out: WeaponAmmoState | undefined,
+  partial: Partial<WeaponAmmoState> & { magazine: number },
+): WeaponAmmoState {
+  const target: WeaponAmmoState = out ?? {
+    ammo: 0, magazine: 0, reloading: false, reloadProgress: 0, isCharging: false,
   };
+  target.ammo = partial.ammo ?? 0;
+  target.reloading = partial.reloading ?? false;
+  target.reloadProgress = partial.reloadProgress ?? 0;
+  target.isCharging = partial.isCharging ?? false;
+  target.magazine = partial.magazine;
+  return target;
 }
 
 /** Визуальный срез владельца, который трогает оружие (не весь TankVisual). */
@@ -94,7 +98,11 @@ export interface WeaponDeps {
   onShotFired?: () => void;
 }
 
-/** Единый интерфейс оружия — устраняет разветвления по weaponType в Game. */
+/**
+ * Единый интерфейс оружия — устраняет разветвления по weaponType в Game.
+ * `getAmmoState(out?)` может заполнить переданный объект на месте (без
+ * аллокации на кадре HUD); без аргумента возвращает свежий объект.
+ */
 export interface Weapon {
   readonly owner: WeaponOwner;
   /** Установить состояние спуска (зажат/отпущен). Каждое оружие интерпретирует по-своему. */
@@ -111,5 +119,5 @@ export interface Weapon {
    */
   onOwnerDeath?(): void;
   dispose(): void;
-  getAmmoState(): WeaponAmmoState;
+  getAmmoState(out?: WeaponAmmoState): WeaponAmmoState;
 }

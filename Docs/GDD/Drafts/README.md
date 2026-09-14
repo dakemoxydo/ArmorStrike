@@ -9,6 +9,10 @@
 
 _Нет активных черновиков._
 
+_(Target_Highlight_Aim — 2026-09-13, реализовано (P7) и перенесено в
+`../Approved/Target_Highlight_Aim.md`; порядок тика — `../../Architecture/Core.md`;
+история — в git.)_
+
 _(Garage_Viewport_Safe_Zone — 2026-09-12, реализовано и разнесено в
 `../Approved/Garage_Viewport_Safe_Zone.md` + `../../Architecture/Standard_UI_Safe_Zone.md`;
 история — в git.)_

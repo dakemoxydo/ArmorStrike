@@ -45,7 +45,9 @@ export class PlayerController {
     this.look.applyPointerDelta(e.movementX, e.movementY);
   };
   private onMouseDown = (e: MouseEvent) => {
-    if (e.button === 0) this.wantsFire = true;
+    // Fire only in combat: a menu/garage/death-cam click is navigation,
+    // not a trigger (used to arm wantsFire for the next round / respawn).
+    if (e.button === 0 && this.enabled) this.wantsFire = true;
     if (this.enabled && !this.locked) this.requestLock();
   };
   private onMouseUp = (e: MouseEvent) => {
@@ -54,6 +56,9 @@ export class PlayerController {
   private onBlur = () => {
     this.keys.clear();
     this.wantsFire = false;
+    // Tab never sees keyup when the window loses focus mid-hold — without
+    // this the scoreboard overlay stayed stuck open after refocusing.
+    this.scoreHeld = false;
   };
   private onContext = (e: Event) => e.preventDefault();
   private onLockChange = () => {

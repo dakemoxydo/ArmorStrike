@@ -29,3 +29,31 @@ export const HEAL_DELAY = 10;
 export const BARREL_REST_Z = 0.55;
 /** Rest Y ствола для railgun charge jitter reset. */
 export const BARREL_REST_Y = 0.5;
+
+/**
+ * Подсветка цели в прицеле (Target Highlight): красная обводка по силуэту
+ * модели врага (inverted hull, modelOutline.ts). Не кольцо и не прицел
+ * игрока — обводится сам танк.
+ * Источник истины для конуса детекции, гистерезиса и толщины обводки.
+ */
+export const TARGET_HIGHLIGHT = {
+  /** Полуугол конуса «в прицеле», рад (≈4°) — пушка/рельса. Огнемёт берёт свой coneAngle. */
+  coneRad: (4 * Math.PI) / 180,
+  /** Задержка снятия подсветки, с: гистерезис против мигания на границе конуса. */
+  holdSec: 0.15,
+  /** Fallback дальности, если у танка не задан params.range. */
+  defaultRange: 60,
+  /** Цвет danger-красного (как hit-arc/HUD danger, 0xff2d3c). */
+  color: 0xff2d3c,
+  /**
+   * Двухслойная обводка: core — толщина сплошной чёткой линии (м), halo —
+   * толщина аддитивного ореола снаружи от неё (м). haloFall/haloExp — форма
+   * затухания ореола к внешнему краю (шкара яркости у линии / степень мягкости).
+   * pulse — «дыхание» ореола: base ± amp на скорости speed (рад/с).
+   */
+  coreWidth: 0.05,
+  haloWidth: 0.17,
+  haloFall: 2.6,
+  haloExp: 1.6,
+  pulse: { base: 0.85, amp: 0.25, speed: 3.2 },
+};

@@ -86,7 +86,11 @@ const FIELD_DIFFERS: Partial<Record<keyof HudSnapshot, FieldDiffers>> = {
 
 /** Нужен ли ре-рендер HUD, чтобы показать `next` вместо `prev`. */
 export function hudNeedsRender(prev: HudSnapshot, next: HudSnapshot): boolean {
-  for (const key of Object.keys(next) as (keyof HudSnapshot)[]) {
+  // Reusable key buffer: this runs every frame at 60fps; Object.keys(next)
+  // allocated a fresh array per call (the gate exists to make frames cheap).
+  const keys = hudKeys(next);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
     const differs = FIELD_DIFFERS[key];
     if (differs) {
       if (differs(prev, next)) return true;
@@ -95,4 +99,21 @@ export function hudNeedsRender(prev: HudSnapshot, next: HudSnapshot): boolean {
     if (!Object.is(prev[key], next[key])) return true;
   }
   return false;
+}
+
+/**
+ * Snapshot key list — memoized per HudSnapshot shape. The first call keys the
+ * actual object (60fps path reuses the cached array), later calls for unknown
+ * objects fall back to Object.keys so the "new field is covered
+ * automatically" invariant keeps holding for any snapshot-like input.
+ */
+const keysCache = new WeakMap<object, (keyof HudSnapshot)[]>();
+
+function hudKeys(snap: object): (keyof HudSnapshot)[] {
+  let keys = keysCache.get(snap);
+  if (!keys) {
+    keys = Object.keys(snap) as (keyof HudSnapshot)[];
+    keysCache.set(snap, keys);
+  }
+  return keys;
 }

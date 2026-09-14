@@ -42,6 +42,8 @@ export class FlameParticlePool {
   private instancedMesh: THREE.InstancedMesh;
   private particleMat: THREE.MeshBasicMaterial;
   private particles: FlameParticle[] = [];
+  /** Round-robin cursor for O(1) slot acquisition (replaces find() per spawn). */
+  private cursor = 0;
   private rig: LightRig;
   /** Current muzzle-light intensity; written to the rig slot every frame. */
   private muzzleIntensity = 0;
@@ -186,10 +188,23 @@ export class FlameParticlePool {
 
   /** Спавн одной частицы пламени из пула с правильным конусом разброса */
   private spawnParticle(muzzleQuat: THREE.Quaternion, muzzle: THREE.Vector3) {
-    let p = this.particles.find((x) => !x.active);
-    if (!p) {
-      p = this.particles[0]; // переиспользование
+    // Round-robin free slot; on exhaustion steal the OLDEST particle
+    // (shortest remaining life) instead of always overwriting slot 0 —
+    // slot-0 stealing visibly popped the same "first" particle every time.
+    let p: FlameParticle | undefined;
+    let oldest: FlameParticle = this.particles[0];
+    for (let i = 0; i < this.particles.length; i++) {
+      const idx = (this.cursor + i) % this.particles.length;
+      const cand = this.particles[idx];
+      if (!cand.active) {
+        p = cand;
+        this.cursor = (idx + 1) % this.particles.length;
+        break;
+      }
+      // life counts UP to maxLife → oldest = closest to expiry.
+      if (cand.life > oldest.life) oldest = cand;
     }
+    p = p ?? oldest;
 
     p.active = true;
     p.life = 0;

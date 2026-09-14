@@ -162,7 +162,7 @@ export function segmentHitT(
 
 /** Прямая видимость между двумя точками (учитываются только коллайдеры blocksSight). */
 export function losClear(
-  ax: number, az: number, bx: number, bz: number, colliders: Collider[],
+  ax: number, az: number, bx: number, bz: number, colliders: readonly Collider[],
 ): boolean {
   // Segment bounding box for broad-phase reject.
   const segMinX = ax < bx ? ax : bx;

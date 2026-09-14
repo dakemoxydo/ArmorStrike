@@ -3,8 +3,8 @@
 // Теперь это обычное оружие с единым интерфейсом Weapon.
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
-import type { Weapon, WeaponContext, WeaponDeps, WeaponOwner } from './types';
-import { buildAmmoState } from './types';
+import type { Weapon, WeaponContext, WeaponDeps, WeaponOwner, WeaponAmmoState } from './types';
+import { fillAmmoState } from './types';
 import { fillMuzzleAndAim } from './muzzle';
 import { ownerReloadMul } from './reloadMul';
 
@@ -43,10 +43,14 @@ export class CannonWeapon implements Weapon {
     const recoil = t.isPlayer ? WEAPON_TUNING.cannon.knockback : 4;
     const range = t.params.range ?? WEAPON_TUNING.cannon.range;
 
+    // Pool exhausted → no shot: keep the round, skip recoil/FX/sfx so the
+    // player never pays for a silent dry-fire (fire() reports success).
+    if (!this.deps.projectiles.fire(t, muzzle, dir, t.params.damage, 'cannon', range)) {
+      return;
+    }
+
     t.onFired(recoil);
     this.ammo = Math.max(0, this.ammo - 1);
-    this.deps.projectiles.fire(t, muzzle, dir, t.params.damage, 'cannon', range);
-
     this.deps.effects.muzzle(muzzle, 0xffcc44);
     this.deps.effects.addShake(0.08);
     this.deps.audio.shoot('cannon');
@@ -91,11 +95,11 @@ export class CannonWeapon implements Weapon {
     // Пушка мгновенно спавнит снаряд; вся симуляция — в ProjectileManager.
   }
 
-  getAmmoState() {
+  getAmmoState(out?: WeaponAmmoState): WeaponAmmoState {
     const reloading = this.fullReloading;
     const dur = this.effectiveReloadTime();
     const reloadProgress = reloading && dur > 0 ? 1 - this.reloadTimer / dur : 0;
-    return buildAmmoState({
+    return fillAmmoState(out, {
       ammo: reloading ? 0 : this.ammo,
       magazine: this.magazine,
       reloading,

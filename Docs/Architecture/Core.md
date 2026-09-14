@@ -79,11 +79,12 @@ Ordered stages (`engine/stages/` — `buildSimulationStages` in `index.ts`):
 | 8 | `AmbientStage` | ambient effects center |
 | 9 | `NameplateSystemStage` | nameplate sync |
 | 10 | `PhysicsSystemStage` | walls + tank separation |
-| 11 | `ProjectileStage` | flight & hits |
-| 12 | `MinimapStage` | minimap sync |
-| 13 | `MatchStage` | invuln, respawn, capture, win |
-| 14 | `BoostStage` | player boost jet FX |
-| 15 | `EngineAudioStage` | engine audio |
+| 11 | `TargetHighlightStage` | red two-layer inverted-hull outline (core line + additive breathing halo) on enemy model in aim cone (presentation-only) |
+| 12 | `ProjectileStage` | flight & hits |
+| 13 | `MinimapStage` | minimap sync |
+| 14 | `MatchStage` | invuln, respawn, capture, win |
+| 15 | `BoostStage` | player boost jet FX |
+| 16 | `EngineAudioStage` | engine audio |
 
 `dt` clamp ~0.05s in game loop.  
 Полный контракт стадий: [Core Patterns §3](Core_Patterns.md).

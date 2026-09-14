@@ -4,10 +4,10 @@
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
 import type { TankLike } from '../../core/types';
-import type { WeaponOwner } from './types';
+import type { WeaponOwner, WeaponAmmoState } from './types';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
 import { applyHit } from '../engine/applyHit';
-import { buildAmmoState } from './types';
+import { fillAmmoState } from './types';
 import { FlameParticlePool } from './FlameParticlePool';
 import { inFlameConeXZ } from './flameCone';
 import { resolveWeaponDamage } from './weaponDamage';
@@ -131,8 +131,8 @@ export class FlamethrowerWeapon implements Weapon {
 
   requestReload(): void {}
 
-  getAmmoState() {
-    return buildAmmoState({
+  getAmmoState(out?: WeaponAmmoState): WeaponAmmoState {
+    return fillAmmoState(out, {
       ammo: Math.round(this.energy),
       magazine: Math.round(WEAPON_TUNING.flamethrower.energyMax),
       reloading: this.energy < 10,

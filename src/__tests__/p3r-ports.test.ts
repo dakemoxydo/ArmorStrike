@@ -15,7 +15,7 @@ import {
   type AICtx,
 } from '../game/AI';
 import type { CombatPeer, WeaponContext, WeaponOwner } from '../game/weapons/types';
-import { buildAmmoState } from '../game/weapons/types';
+import { fillAmmoState } from '../game/weapons/types';
 import * as THREE from 'three';
 
 const srcRoot = resolve(__dirname, '..');
@@ -92,7 +92,12 @@ describe('P3r residual TankEntity fan-in ports', () => {
       colliders: [],
     };
     expect(ctx.tanks[0].visual.group).toBeInstanceOf(THREE.Object3D);
-    expect(buildAmmoState({ magazine: 1, ammo: 1 }).magazine).toBe(1);
+    // fillAmmoState is the shipped ammo-state helper: it must write into the
+    // caller's object (HUD hot path, no per-frame allocation) and default the
+    // fields the weapon did not set.
+    const reused = fillAmmoState(undefined, { magazine: 3, ammo: 2 });
+    expect(fillAmmoState(reused, { magazine: 1, ammo: 1 })).toBe(reused);
+    expect(reused).toMatchObject({ magazine: 1, ammo: 1, reloading: false, isCharging: false });
   });
 
   it('WeaponOwner is structural super-set of TankLike for createWeapon boundary', () => {

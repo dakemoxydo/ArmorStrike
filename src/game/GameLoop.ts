@@ -61,14 +61,19 @@ export class GameLoop {
     const combatLive = sim.run.mode === 'playing' && !sim.run.paused;
     if (combatLive) {
       sim.step(dt, emit);
-    } else if (sim.tanks.length > 0) {
-      // Анимация гибели/затухания мёртвых танков вне боевого шага
-      // (step уже обновляет их во время playing — без дубля).
+    } else if (!sim.run.paused && sim.tanks.length > 0) {
+      // Death-pose/decay animation outside the combat step (mode 'over':
+      // playing already handled it inside step — no double update).
+      // PAUSED frames deliberately skip it: the pause must freeze the world,
+      // not accumulate death timers behind the scrim (instant respawns after
+      // a long pause were the visible symptom).
       TankAnimationSystem.updateDead(sim.tanks, dt);
     }
 
-    sim.arena.update(dt, this.elapsed);
-    sim.effects.update(dt);
+    if (!sim.run.paused) {
+      sim.arena.update(dt, this.elapsed);
+      sim.effects.update(dt);
+    }
     cameraRig.update(dt, {
       mode: sim.run.mode, elapsed: this.elapsed, look: sim.input.look,
       player: sim.player, previewVisual: getPreviewVisual(),

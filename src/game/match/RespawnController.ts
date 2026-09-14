@@ -21,24 +21,38 @@ export interface RespawnHooks {
 export class RespawnController {
   constructor(private hooks: RespawnHooks) {}
 
-  /** Проверяет и выполняет респаун всех погибших танков. */
+  /**
+   * Проверяет и выполняет респаун всех погибших танков.
+   * Танки, респавнящиеся в один кадр, не делят одну точку: каждый следующий
+   * берёт пулем, исключая уже занятые в этом прогоне (dead-дедуп).
+   */
   update(_dt: number, tanks: TankEntity[], respawnDelaySec: number, spawnInvulnSec: number) {
+    const claimed = new Set<number>();
     for (const t of tanks) {
       if (canRespawn(t, respawnDelaySec)) {
-        this.respawnTank(t, tanks, spawnInvulnSec);
+        this.respawnTank(t, tanks, spawnInvulnSec, claimed);
       }
     }
   }
 
-  private respawnTank(tank: TankEntity, tanks: TankEntity[], spawnInvulnSec: number) {
+  private respawnTank(
+    tank: TankEntity,
+    tanks: TankEntity[],
+    spawnInvulnSec: number,
+    claimed: Set<number>,
+  ) {
     const pool = respawnPoolFor(tank.teamId as TeamId);
     // Prefer rosterSpawn helper (same pools)
     const points = pool.length ? pool : FFA_FALLBACK;
-    const threats = tanks
-      .filter((t) => t.alive && t.id !== tank.id && isEnemy(tank, t))
-      .map((t) => ({ x: t.position.x, z: t.position.z }));
+    // Threats for point scoring: enemies only (same threat model as before).
+    const threats: { x: number; z: number }[] = [];
+    for (const t of tanks) {
+      if (!t.alive || t.id === tank.id || !isEnemy(tank, t)) continue;
+      threats.push({ x: t.position.x, z: t.position.z });
+    }
 
-    const [x, z] = pickRespawnPoint(points, threats);
+    const [x, z, pickedIdx] = pickRespawnPoint(points, threats, Math.random, claimed);
+    claimed.add(pickedIdx);
     const yaw = Math.atan2(-x, -z);
 
     applyRespawnCombat(tank, spawnInvulnSec);

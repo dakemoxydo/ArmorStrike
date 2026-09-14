@@ -34,10 +34,16 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
   }, [game]);
 
   // Peek: GarageInput включает осмотр на drag и выключает на pointerup.
+  // garageChanged: async commit может прийти позже локального optimistic-выбора
+  // (или его отката) — синхронизируемся с фактически закоммиченным лодаутом.
   useEffect(() => {
     if (!game) return;
     const onEvent = (e: GameEvent) => {
       if (e.type === 'garagePeek') setPeeking(e.value);
+      if (e.type === 'garageChanged') {
+        setSelectedHullId(game.currentHull);
+        setSelectedTurretId(game.currentTurret);
+      }
     };
     game.addListener(onEvent);
     return () => game.removeListener(onEvent);

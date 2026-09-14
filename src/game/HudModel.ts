@@ -10,6 +10,7 @@ import { HULLS } from '../core/catalog';
 import type { HullId, TurretId } from '../core/catalog';
 
 import type { CaptureHudPoint, HudSnapshot, MinimapDynamic, MinimapStatic, ScoreRow } from './types';
+import type { WeaponAmmoState } from './weapons/types';
 import { getWeaponMeta } from '../core/WeaponCatalog';
 import { isAlly, isEnemy } from './match/teams';
 import type { TeamId } from './match/matchTypes';
@@ -21,6 +22,12 @@ export class HudModel {
   private _captureCache: CaptureHudPoint[] = [];
   /** Reusable dynamic-blip rows — mutated in place each frame. */
   private readonly _dynPool: MinimapDynamic[] = [];
+  /** Reusable ammo-state sink — weapons fill it instead of allocating per frame. */
+  private readonly _ammoSink: WeaponAmmoState = { ammo: 0, magazine: 0, reloading: false, reloadProgress: 0, isCharging: false };
+  /** Reusable scoreboard rows — refilled in place while Tab is held. */
+  private readonly _boardPool: ScoreRow[] = [];
+  /** Scratch list for scoreboard ordering (sorted in place, no per-frame alloc). */
+  private readonly _boardScratch: ScoreRow[] = [];
 
   constructor(private deps: {
     run: RunState;
@@ -97,10 +104,7 @@ export class HudModel {
 
   getHud(
     player: (HudUnit & {
-      weapon?: { getAmmoState(): {
-        ammo: number; magazine: number; reloading: boolean;
-        reloadProgress: number; isCharging: boolean;
-      } };
+      weapon?: { getAmmoState(out?: WeaponAmmoState): WeaponAmmoState };
       boostEnergy?: number;
       kills?: number;
       deaths?: number;
@@ -112,7 +116,9 @@ export class HudModel {
     const { run, audio, input } = this.deps;
     const match = this.deps.getMatch();
 
-    const ammoState = player?.weapon?.getAmmoState();
+    // Weapons fill the reusable sink in place (was: a fresh ammo object every
+    // frame from every weapon implementation).
+    const ammoState = player?.weapon?.getAmmoState(this._ammoSink);
     const ammo = ammoState?.ammo ?? 0;
     const magazine = ammoState?.magazine ?? 0;
     const reloading = ammoState?.reloading ?? false;
@@ -121,29 +127,7 @@ export class HudModel {
 
     const showScore = run.mode === 'playing' && input.scoreHeld && !run.paused;
     const board: ScoreRow[] = includeScoreboard
-      ? tanks
-        .map((t) => {
-          const hullId = t.hullId as HullId | undefined;
-          const turretId = t.turretId as TurretId | undefined;
-          return {
-            name: t.name,
-            hull: hullId ? HULLS[hullId].name : '-',
-            weaponName: turretId ? getWeaponMeta(turretId).name : '-',
-            hpFrac: t.maxHealth > 0 ? t.health / t.maxHealth : 0,
-            isPlayer: t.isPlayer,
-            alive: t.alive,
-            kills: t.kills ?? 0,
-            deaths: t.deaths ?? 0,
-            teamId: (t.teamId ?? null) as TeamId,
-          };
-        })
-        .sort((a, b) => {
-          // Team modes: Alpha first, then Bravo; within team by kills.
-          if (a.teamId && b.teamId && a.teamId !== b.teamId) {
-            return a.teamId === 'alpha' ? -1 : 1;
-          }
-          return b.kills - a.kills || (b.isPlayer ? 1 : 0) - (a.isPlayer ? 1 : 0);
-        })
+      ? this.buildScoreboard(tanks)
       : this._emptyBoard;
 
     const wmeta = getWeaponMeta(run.currentTurret);
@@ -190,6 +174,45 @@ export class HudModel {
     target.teamScoreBravo = match?.teamScore.bravo ?? 0;
     target.capturePoints = this._fillCapturePoints(match);
     return target;
+  }
+
+  /**
+   * Scoreboard rows reused in place (was: fresh `.map()` of N objects + sort
+   * every frame while Tab is held). Rows are mutated, then ordered via a
+   * scratch list sorted in place — no allocation on the steady path.
+   */
+  private buildScoreboard(tanks: (HudUnit & { kills?: number; deaths?: number })[]): ScoreRow[] {
+    const pool = this._boardPool;
+    const scratch = this._boardScratch;
+    scratch.length = 0;
+    for (let i = 0; i < tanks.length; i++) {
+      const t = tanks[i];
+      const hullId = t.hullId as HullId | undefined;
+      const turretId = t.turretId as TurretId | undefined;
+      const row = pool[i] ?? (pool[i] = {
+        name: '', hull: '', weaponName: '', hpFrac: 0,
+        isPlayer: false, alive: false, kills: 0, deaths: 0, teamId: null,
+      });
+      row.name = t.name;
+      row.hull = hullId ? HULLS[hullId].name : '-';
+      row.weaponName = turretId ? getWeaponMeta(turretId).name : '-';
+      row.hpFrac = t.maxHealth > 0 ? t.health / t.maxHealth : 0;
+      row.isPlayer = t.isPlayer;
+      row.alive = t.alive;
+      row.kills = t.kills ?? 0;
+      row.deaths = t.deaths ?? 0;
+      row.teamId = (t.teamId ?? null) as TeamId;
+      scratch.push(row);
+    }
+    pool.length = tanks.length;
+    scratch.sort((a, b) => {
+      // Team modes: Alpha first, then Bravo; within team by kills.
+      if (a.teamId && b.teamId && a.teamId !== b.teamId) {
+        return a.teamId === 'alpha' ? -1 : 1;
+      }
+      return b.kills - a.kills || (b.isPlayer ? 1 : 0) - (a.isPlayer ? 1 : 0);
+    });
+    return scratch;
   }
 
   /** Reusable capture-point snapshot — clears/refills the cache each frame (no .map allocation). */

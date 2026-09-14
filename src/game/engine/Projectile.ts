@@ -111,10 +111,15 @@ export class ProjectileManager {
     }
   }
 
+  /**
+   * Acquire a pooled slot and launch. Returns false when the pool is fully
+   * occupied (caller decides whether to consume ammo/FX — a silent dry-fire
+   * used to eat a magazine round plus recoil with no projectile).
+   */
   fire(
     owner: TankLike, origin: THREE.Vector3, dir: THREE.Vector3,
     damage: number, weaponType: WeaponType = 'cannon', customRange?: number,
-  ) {
+  ): boolean {
     // Round-robin search for a free slot (avoids O(n) Array.find on every shot).
     let s: Shot | undefined;
     for (let i = 0; i < POOL_SIZE; i++) {
@@ -125,9 +130,9 @@ export class ProjectileManager {
         break;
       }
     }
-    if (!s) return;
+    if (!s) return false;
     const beh = BEHAVIORS[weaponType];
-    if (!beh) return;
+    if (!beh) return false;
 
     s.alive = true;
     s.owner = owner;
@@ -144,6 +149,7 @@ export class ProjectileManager {
     s.mat.color.copy(s.color);
     s.glowMat.color.copy(s.color);
     s.group.visible = true;
+    return true;
   }
 
   update(dt: number, ctx: HitContext) {

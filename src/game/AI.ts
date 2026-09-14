@@ -93,6 +93,13 @@ export class AIController {
   /** LOD skip counter for far-away patrol bots. */
   private _lodSkip = 0;
   /**
+   * Real-time accumulator for the LOD-skipped region: far patrol bots run
+   * heavy logic on 1 of 4 frames, and that frame must consume the SUM of the
+   * skipped frames' dt — otherwise avoidT/stuckT/strafeT/coverT decay at ¼ of
+   * real time (avoidance bursts lasting 4× their tuning).
+   */
+  private _lodDtAcc = 0;
+  /**
    * Reusable aim-state bag for updateTurretAndFire (was: fresh object per bot
    * per frame). Also the persistent home of aimNoise/aimNoiseT (M11 servo).
    */
@@ -344,9 +351,16 @@ export class AIController {
     this.updateStateMachine(canSee, dt, ctx.player);
 
     // LOD: far-away patrol bots (beyond 3× sight) skip 3 of 4 frames
-    // for heavy logic (target computation, steering, combat).
+    // for heavy logic (target computation, steering, combat). The skipped
+    // dt accumulates so the processed frame advances timers by the REAL
+    // elapsed time (was: ¼-rate timers while driving at full throttle).
     if (this.state === 'patrol' && distToPlayer > this.sight * 3) {
+      this._lodDtAcc += dt;
       if (this._lodSkip % 4 !== 0) return;
+      dt = this._lodDtAcc;
+      this._lodDtAcc = 0;
+    } else {
+      this._lodDtAcc = 0;
     }
 
     // Шаг 3-4: целевая точка + предпочтительная дистанция (+ low-HP cover)

@@ -39,7 +39,7 @@ function makeDeps(): WeaponDeps {
     effects: { muzzle: vi.fn(), addShake: vi.fn(), impact: vi.fn() } as any,
     audio: { shoot: vi.fn(), reload: vi.fn() } as any,
     damageSystem: {} as any,
-    projectiles: { fire: vi.fn() } as any,
+    projectiles: { fire: vi.fn(() => true) } as any,
     lights: new LightRig(new THREE.Scene()),
     onShotFired: vi.fn(),
   };

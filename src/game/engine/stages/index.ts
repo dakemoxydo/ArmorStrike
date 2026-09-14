@@ -14,6 +14,7 @@ import { PlayerInputStage } from './PlayerInputStage';
 import { BotAiStage } from './BotAiStage';
 import { WeaponFireStage } from './WeaponFireStage';
 import { WeaponSystemStage, TankSystemStage, TankAnimationSystemStage, TankFxSystemStage } from './TankStages';
+import { TargetHighlightStage } from './TargetHighlightStage';
 import {
   AmbientStage,
   NameplateSystemStage,
@@ -53,6 +54,7 @@ export function buildSimulationStages(d: StageDeps): SimSystem[] {
     new AmbientStage(d.effects),
     new NameplateSystemStage(d.bots, d.nameplates),
     new PhysicsSystemStage(d.arena),
+    new TargetHighlightStage(d.arena),
     new ProjectileStage(d.projectiles, d.arena, d.effects, d.combat),
     new MinimapStage(d.arena, d.hudModel),
     new MatchStage(d.match),

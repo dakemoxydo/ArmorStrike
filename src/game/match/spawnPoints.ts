@@ -55,30 +55,42 @@ export function pickPointIndex(
   return scored.slice().sort((a, b) => b.d - a.d)[0]?.i ?? 0;
 }
 
-/** Respawn: furthest from nearest threat among pool (random among top-3). */
+/** Respawn: furthest from nearest threat among pool (random among top-3).
+ *  Returns [x, z, pointIndex] — the index lets same-frame respawns exclude
+ *  already-claimed points (passed back via the `used` set). */
 export function pickRespawnPoint(
   points: readonly [number, number][],
   threats: readonly { x: number; z: number }[],
   rng: () => number = Math.random,
-): [number, number] {
-  if (points.length === 0) return [0, 0];
-  if (threats.length === 0) {
-    const i = Math.floor(rng() * points.length) % points.length;
-    return points[i];
-  }
+  used: ReadonlySet<number> = new Set(),
+): [number, number, number] {
+  if (points.length === 0) return [0, 0, -1];
 
+  // Rank by distance to the nearest threat, ignoring points claimed this frame.
   const ranked = points
-    .map(([x, z]) => {
+    .map(([x, z], i) => {
       let minD = Infinity;
       for (const t of threats) {
         const d = Math.hypot(x - t.x, z - t.z);
         if (d < minD) minD = d;
       }
-      return { x, z, minD };
+      return { i, x, z, minD };
     })
+    .filter((p) => !used.has(p.i))
     .sort((a, b) => b.minD - a.minD);
+
+  if (ranked.length === 0) {
+    // Every point claimed this frame (roster > pool): reuse without the set —
+    // stacking is unavoidable, but late claimers still pick the safest spot.
+    return pickRespawnPoint(points, threats, rng);
+  }
+
+  if (threats.length === 0) {
+    const pick = ranked[Math.floor(rng() * ranked.length) % ranked.length];
+    return [pick.x, pick.z, pick.i];
+  }
 
   const top = ranked.slice(0, Math.min(3, ranked.length));
   const pick = top[Math.floor(rng() * top.length) % top.length];
-  return [pick.x, pick.z];
+  return [pick.x, pick.z, pick.i];
 }

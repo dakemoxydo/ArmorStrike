@@ -1,6 +1,15 @@
 // ===== Процедурный звук на WebAudio =====
 import type { WeaponType } from '../core/catalog';
-import type { AudioPort } from './ports/AudioPort';
+import type { AudioPort, RailgunChargeHandle } from './ports/AudioPort';
+
+/** Per-charge voice state — one session per RailgunWeapon, never shared. */
+interface ChargeSession {
+  oscs: OscillatorNode[];
+  gains: GainNode[];
+  /** Base f0/f1 per layer — captured at spawn so pitch rescale stays stable. */
+  baseFreqs: Array<{ f0: number; f1: number }>;
+  tickTimers: number[];
+}
 
 const MUTE_LS_KEY = 'as2_muted';
 
@@ -28,12 +37,14 @@ export class AudioFX implements AudioPort {
 
   private flameSource: AudioBufferSourceNode | null = null;
   private flameGain: GainNode | null = null;
-  /** Active railgun charge oscillators (stopped hard on fire). */
-  private chargeOscs: OscillatorNode[] = [];
-  private chargeGains: GainNode[] = [];
-  private chargeTickTimers: number[] = [];
-  /** Base f0/f1 per charge osc layer — captured at spawn so setChargeRailgunPitch can rescale. */
-  private chargeBaseFreqs: Array<{ f0: number; f1: number }> = [];
+  /**
+   * Live railgun charge sessions keyed by handle id. Each RailgunWeapon owns
+   * its session: a second charge starting never cuts the first one, and a
+   * fire/cancel only stops the voice its owner started (shared arrays used to
+   * mute sibling railguns charging in the same frame).
+   */
+  private chargeSessions = new Map<number, ChargeSession>();
+  private nextChargeId = 1;
   /**
    * Engine voice state. The oscillator is created once and NEVER stopped —
    * stop/start just ramps its gain, so rapid transitions can't spawn a second
@@ -78,7 +89,7 @@ export class AudioFX implements AudioPort {
 
   /** Full teardown (L-5): stop voices, clear timers, close the context. */
   dispose() {
-    this.stopChargeRailgun(false);
+    for (const handle of this.liveChargeHandles()) this.stopChargeRailgun(handle, false);
     this.flameUsers = 0; // force-stop the shared flame voice below
     this.stopFlameLoop();
     this.stopEngine();
@@ -93,9 +104,7 @@ export class AudioFX implements AudioPort {
       this.engineFilter = null;
       this.flameSource = null;
       this.flameGain = null;
-      this.chargeOscs = [];
-      this.chargeGains = [];
-      this.chargeBaseFreqs = [];
+      this.chargeSessions.clear();
       void ctx.close().catch(() => undefined);
     }
   }
@@ -136,22 +145,23 @@ export class AudioFX implements AudioPort {
     o.stop(t0 + dur + 0.1);
   }
 
-  /** Rising charge hum + accelerating ticks. Cancel with stopChargeRailgun(). */
-  chargeRailgun(duration = 1.1) {
-    if (!this.ctx || !this.master) return;
-    this.stopChargeRailgun(false);
+  /** Rising charge hum + accelerating ticks. Cancel with stopChargeRailgun(handle). */
+  chargeRailgun(duration = 1.1): RailgunChargeHandle {
+    const handle: RailgunChargeHandle = { id: this.nextChargeId++ };
+    if (!this.ctx || !this.master) return handle;
+    const session: ChargeSession = { oscs: [], gains: [], baseFreqs: [], tickTimers: [] };
     const t0 = this.ctx.currentTime;
     const dur = Math.max(0.2, duration);
 
     // Controllable layers so we can cut them on fire
-    this.spawnChargeOsc('sine', t0, dur, 140, 980, 0.28);
-    this.spawnChargeOsc('sawtooth', t0, dur, 68, 380, 0.16);
-    this.spawnChargeOsc('triangle', t0, dur * 0.95, 220, 1400, 0.1);
+    this.spawnChargeOsc(session, 'sine', t0, dur, 140, 980, 0.28);
+    this.spawnChargeOsc(session, 'sawtooth', t0, dur, 68, 380, 0.16);
+    this.spawnChargeOsc(session, 'triangle', t0, dur * 0.95, 220, 1400, 0.1);
 
     // Overcharge whine in final stretch
     const whineStart = t0 + dur * 0.78;
-    this.spawnChargeOsc('sine', whineStart, dur * 0.28, 700, 1600, 0.22);
-    this.spawnChargeOsc('square', whineStart, dur * 0.22, 180, 90, 0.08);
+    this.spawnChargeOsc(session, 'sine', whineStart, dur * 0.28, 700, 1600, 0.22);
+    this.spawnChargeOsc(session, 'square', whineStart, dur * 0.22, 180, 90, 0.08);
 
     // Accelerating capacitor ticks (scheduled; cleared if fire early)
     const tickCount = 14;
@@ -161,31 +171,30 @@ export class AudioFX implements AudioPort {
       const when = t0 + dur * (u * u);
       const delayMs = Math.max(0, (when - this.ctx.currentTime) * 1000);
       const id = window.setTimeout(() => {
-        if (!this.ctx || !this.master) return;
-        // Only play if still charging (nodes still tracked)
-        if (this.chargeOscs.length === 0) return;
+        const s = this.chargeSessions.get(handle.id);
+        if (!s || !this.ctx || !this.master) return;
+        // Only play while this session is still charging.
         const tt = this.ctx.currentTime;
         this.osc('square', tt, 0.028, 880 + i * 40, 640, 0.07 + u * 0.06);
       }, delayMs);
-      this.chargeTickTimers.push(id);
+      session.tickTimers.push(id);
     }
+    this.chargeSessions.set(handle.id, session);
+    return handle;
   }
 
   /** Hard-cut charge (on fire) or soft fade (dispose/interrupt). */
-  stopChargeRailgun(hard = true) {
-    for (const id of this.chargeTickTimers) window.clearTimeout(id);
-    this.chargeTickTimers = [];
-    if (!this.ctx) {
-      this.chargeOscs = [];
-      this.chargeGains = [];
-      this.chargeBaseFreqs = [];
-      return;
-    }
+  stopChargeRailgun(handle: RailgunChargeHandle, hard = true) {
+    const session = this.chargeSessions.get(handle.id);
+    if (!session) return;
+    this.chargeSessions.delete(handle.id);
+    for (const id of session.tickTimers) window.clearTimeout(id);
+    if (!this.ctx) return;
     const t = this.ctx.currentTime;
     const fade = hard ? 0.012 : 0.06;
-    for (let i = 0; i < this.chargeOscs.length; i++) {
-      const g = this.chargeGains[i];
-      const o = this.chargeOscs[i];
+    for (let i = 0; i < session.oscs.length; i++) {
+      const g = session.gains[i];
+      const o = session.oscs[i];
       try {
         g.gain.cancelScheduledValues(t);
         g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), t);
@@ -193,26 +202,29 @@ export class AudioFX implements AudioPort {
         o.stop(t + fade + 0.02);
       } catch { /* already stopped */ }
     }
-    this.chargeOscs = [];
-    this.chargeGains = [];
-    this.chargeBaseFreqs = [];
+  }
+
+  /** Snapshot of live charge handles (teardown iterates it). */
+  private liveChargeHandles(): RailgunChargeHandle[] {
+    return [...this.chargeSessions.keys()].map((id) => ({ id }));
   }
 
   /**
-   * Live pitch boost for the active charge voice. progress ∈ [0,1].
+   * Live pitch boost for that charge voice. progress ∈ [0,1].
    * Ramps target frequency by up to 35% at full charge using a squared curve
    * so the whine rises sharply in the last ~30% — matches the visual "overcharge" feel.
-   * No-op when no charge is active (cancel / death safety).
+   * No-op for an unknown/finished handle (cancel / death / fire safety).
    */
-  setChargeRailgunPitch(progress: number): void {
-    if (!this.ctx || this.chargeOscs.length === 0) return;
+  setChargeRailgunPitch(handle: RailgunChargeHandle, progress: number): void {
+    const session = this.chargeSessions.get(handle.id);
+    if (!session || !this.ctx) return;
     const p2 = Math.min(1, Math.max(0, progress)) ** 2;
     const mul = 1 + p2 * 0.35; // 1.0 → 1.35× at full charge
     const t = this.ctx.currentTime;
-    for (let i = 0; i < this.chargeOscs.length; i++) {
-      const base = this.chargeBaseFreqs[i];
+    for (let i = 0; i < session.oscs.length; i++) {
+      const base = session.baseFreqs[i];
       if (!base) continue;
-      const o = this.chargeOscs[i];
+      const o = session.oscs[i];
       try {
         // Rescale the ramp's endpoint; current value follows naturally via WebAudio interpolation.
         o.frequency.cancelScheduledValues(t);
@@ -238,6 +250,7 @@ export class AudioFX implements AudioPort {
   }
 
   private spawnChargeOsc(
+    session: ChargeSession,
     type: OscillatorType, t0: number, dur: number, f0: number, f1: number, peak: number,
   ) {
     if (!this.ctx || !this.master) return;
@@ -254,9 +267,9 @@ export class AudioFX implements AudioPort {
     o.connect(g).connect(this.master);
     o.start(t0);
     o.stop(t0 + dur + 0.12);
-    this.chargeOscs.push(o);
-    this.chargeGains.push(g);
-    this.chargeBaseFreqs.push({ f0, f1 });
+    session.oscs.push(o);
+    session.gains.push(g);
+    session.baseFreqs.push({ f0, f1 });
   }
 
   /**
@@ -308,8 +321,9 @@ export class AudioFX implements AudioPort {
       this.osc('square', t, 0.14, 220, 35, 0.45);
       this.noise(t, 0.18, 'lowpass', 1400, 120, 0.5);
     } else {
-      // Railgun snap: cut charge, then compact layered crack (fewer nodes = less main-thread spike)
-      this.stopChargeRailgun(true);
+      // Railgun snap: compact layered crack (fewer nodes = less main-thread spike).
+      // The charge voice itself is NOT cut here — the firing weapon stops its
+      // own charge handle right before this call (see RailgunWeapon).
       this.osc('sine', t, 0.16, 78, 26, 0.85);
       this.osc('square', t, 0.18, 240, 32, 0.5);
       this.noise(t, 0.06, 'highpass', 3800, 800, 0.65);
