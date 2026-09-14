@@ -2,8 +2,9 @@
  * Подсветка «враг в прицеле» (Target Highlight, P7):
  *  • selectAimedEnemy — конус/дальность/LOS/командность и выбор ближайшего к центру;
  *  • AimHighlighter — гистерезис удержания и мгновенный разрыв при смерти/потере LOS;
- *  • TargetHighlightStage — красная обводка (inverted hull) на модели врага,
- *    сброс при смене цели, смерти игрока и очистке ростера.
+ *  • TargetHighlightStage — красная обводка (inverted hull + stencil-маска
+ *    силуэта) на модели врага, сброс при смене цели, смерти игрока и
+ *    очистке ростера.
  */
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
@@ -137,7 +138,9 @@ describe('AimHighlighter (гистерезис)', () => {
   });
 });
 
-// ===== Стадия: двухслойная красная обводка (core + halo) на модели врага =====
+// ===== Стадия: обводка по силуэту врага (rim + core + halo) =====
+// Слои режутся stencil-маской (mask-меш на каждую деталь), поэтому на каждый
+// исходный меш приходится четвёрка: [mask, rim, core, halo].
 
 function makeParams(over: Partial<TankParams> = {}): TankParams {
   return {
@@ -214,11 +217,13 @@ function compileStub(mat: THREE.MeshBasicMaterial) {
 }
 
 describe('TargetHighlightStage', () => {
-  // shell'ы идут парами на меш: [core, halo].
-  const isCore = (m: THREE.Mesh) =>
-    (m.material as THREE.MeshBasicMaterial).blending === THREE.NormalBlending;
-  const isHalo = (m: THREE.Mesh) =>
-    (m.material as THREE.MeshBasicMaterial).blending === THREE.AdditiveBlending;
+  // shell'ы идут четвёрками на меш: [mask, rim, core, halo] — слои помечены name.
+  const byName = (n: string) => (m: THREE.Mesh) =>
+    (m.material as THREE.MeshBasicMaterial).name === n;
+  const isMask = byName('aimMask');
+  const isRim = byName('aimRim');
+  const isCore = byName('aimCore');
+  const isHalo = byName('aimHalo');
 
   function shownEnemy(): { stage: TargetHighlightStage; enemy: TankEntity; player: TankEntity } {
     const stage = makeStage();
@@ -231,12 +236,19 @@ describe('TargetHighlightStage', () => {
     return { stage, enemy, player };
   }
 
-  it('загорается на враге в прицеле: core+halo только над Standard-мешами', () => {
+  it('загорается на враге в прицеле: mask+rim+core+halo только над Standard-мешами', () => {
     const { enemy, player } = shownEnemy();
     const s = shells(enemy);
-    expect(s?.length).toBe(2); // 1 Standard-меш × 2 слоя; кольцо (Basic) не обводится
+    expect(s?.length).toBe(4); // 1 Standard-меш × 4 слоя; кольцо (Basic) не обводится
     expect(s?.every((m) => m.visible)).toBe(true);
+    expect(s?.filter(isMask).length).toBe(1);
+    expect(s?.filter(isRim).length).toBe(1);
     expect(s?.filter(isCore).length).toBe(1);
+    expect(s?.filter(isHalo).length).toBe(1);
+    const rim = s!.find(isRim)!.material as THREE.MeshBasicMaterial;
+    expect(rim.side).toBe(THREE.BackSide);
+    expect(rim.blending).toBe(THREE.NormalBlending); // opaque — перекрывается core по depth
+    expect(rim.color.getHex()).not.toBe(TARGET_HIGHLIGHT.color); // тёмный, не красный
     const halo = s!.find(isHalo)!.material as THREE.MeshBasicMaterial;
     expect(halo.side).toBe(THREE.BackSide);
     expect(halo.transparent).toBe(true);
@@ -246,12 +258,75 @@ describe('TargetHighlightStage', () => {
     expect(shells(player)).toBeUndefined(); // игрок не обводится
   });
 
-  it('шейдер core: uniform толщины линии + сдвиг вдоль нормалей в вершинном', () => {
+  it('силуэт: маска пишет stencil-бит, shell-слои рисуются только где он пуст', () => {
+    const { enemy } = shownEnemy();
+    const s = shells(enemy)!;
+    const mask = s.find(isMask)!;
+    const rim = s.find(isRim)!;
+    const core = s.find(isCore)!;
+    const maskMat = mask.material as THREE.MeshBasicMaterial;
+    const rimMat = rim.material as THREE.MeshBasicMaterial;
+    const coreMat = core.material as THREE.MeshBasicMaterial;
+    const haloMat = s.find(isHalo)!.material as THREE.MeshBasicMaterial;
+    // Маска: невидимая проекция детали, всегда пишет SILHOUETTE_BIT (=1).
+    expect(maskMat.colorWrite).toBe(false);
+    expect(maskMat.depthWrite).toBe(false);
+    expect(maskMat.stencilWrite).toBe(true); // в three это включает и сам тест
+    expect(maskMat.stencilFunc).toBe(THREE.AlwaysStencilFunc);
+    expect(maskMat.stencilRef).toBe(1);
+    expect(maskMat.stencilZPass).toBe(THREE.ReplaceStencilOp);
+    expect(maskMat.stencilFail).toBe(THREE.KeepStencilOp);
+    // Порядок opaque-очереди: маска (-12) → rim (-6) → core (0); halo — transparent.
+    expect(mask.renderOrder).toBeLessThan(rim.renderOrder);
+    expect(rim.renderOrder).toBeLessThan(core.renderOrder);
+    // Все три shell-слоя: рисуем только где маска пуста, сами stencil не трогаем.
+    for (const mat of [rimMat, coreMat, haloMat]) {
+      expect(mat.stencilWrite).toBe(true);
+      expect(mat.stencilFunc).toBe(THREE.EqualStencilFunc);
+      expect(mat.stencilRef).toBe(0);
+      expect(mat.stencilFuncMask).toBe(1);
+      expect(mat.stencilWriteMask).toBe(0);
+      expect(mat.stencilZPass).toBe(THREE.KeepStencilOp);
+    }
+  });
+
+  it('шейдер core: uniform толщины линии + экранный сдвиг вдоль нормалей в вершинном', () => {
     const { enemy } = shownEnemy();
     const mat = shells(enemy)!.find(isCore)!.material as THREE.MeshBasicMaterial;
     const shader = compileStub(mat);
     expect((shader.uniforms.uOutlineWidth as { value: number }).value).toBe(TARGET_HIGHLIGHT.coreWidth);
-    expect(shader.vertexShader).toContain('transformed += normalize( normal ) * uOutlineWidth;');
+    expect(shader.vertexShader).toContain(
+      'transformed += normalize( normal ) * ( uOutlineWidth * mix( 1.0, length( ( modelViewMatrix * vec4( transformed, 1.0 ) ).xyz ) / uWidthRefDist, uWidthDistMix ) );',
+    );
+  });
+
+  it('контр-кант (E): rim-шейдер шире core на rimWidth', () => {
+    const { enemy } = shownEnemy();
+    const mat = shells(enemy)!.find(isRim)!.material as THREE.MeshBasicMaterial;
+    const shader = compileStub(mat);
+    expect((shader.uniforms.uOutlineWidth as { value: number }).value).toBe(
+      TARGET_HIGHLIGHT.coreWidth + TARGET_HIGHLIGHT.rimWidth,
+    );
+    // Тот же экранный сдвиг, что у core — полоски остаются пропорциональными.
+    expect(shader.vertexShader).toContain('uWidthRefDist');
+  });
+
+  it('экранные толщины (C): все shell-слои делят общие uniforms поправки', () => {
+    const { enemy } = shownEnemy();
+    const s = shells(enemy)!;
+    for (const pred of [isRim, isCore, isHalo]) {
+      const mat = s.find(pred)!.material as THREE.MeshBasicMaterial;
+      const shader = compileStub(mat);
+      expect((shader.uniforms.uWidthRefDist as { value: number }).value).toBe(
+        TARGET_HIGHLIGHT.widthRefDist,
+      );
+      expect((shader.uniforms.uWidthDistMix as { value: number }).value).toBe(
+        TARGET_HIGHLIGHT.widthDistMix,
+      );
+    }
+    // Маска — ванильный MeshBasic, сдвига не имеет вовсе.
+    const maskShader = compileStub(s.find(isMask)!.material as THREE.MeshBasicMaterial);
+    expect(maskShader.vertexShader).not.toContain('uOutlineWidth');
   });
 
   it('шейдер halo: широкий сдвиг + fresnel-затухание и «дыхание» во фрагментном', () => {

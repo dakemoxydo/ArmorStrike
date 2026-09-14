@@ -44,6 +44,9 @@ export class RenderWorld {
       canvas,
       antialias: preset.id !== 'low',
       powerPreference: 'high-performance',
+      // Контекст по умолчанию (r185) — без stencil-буфера; outline по силуэту
+      // (modelOutline.ts) пишется через stencil-маску, нужен буфер.
+      stencil: true,
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, preset.pixelRatioMax));
     this.renderer.shadowMap.enabled = preset.shadows;
@@ -136,6 +139,11 @@ export class RenderWorld {
       return;
     }
     this.composer = new EffectComposer(this.renderer);
+    // Дефолтный RT EffectComposer — без stencil-attachment; маска силуэтной
+    // обводки (modelOutline.ts) пишется именно в stencil. FB создаётся лениво
+    // при первом рендере, поэтому флагов на обоих RT достаточно.
+    this.composer.renderTarget1.stencilBuffer = true;
+    this.composer.renderTarget2.stencilBuffer = true;
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),

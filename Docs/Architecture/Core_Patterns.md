@@ -67,7 +67,7 @@ interface SimSystem {
 8. `AmbientStage` — ambient center
 9. `NameplateSystemStage` — nameplate sync
 10. `PhysicsSystemStage` — walls + tank separation
-11. `TargetHighlightStage` — двухслойная красная обводка (core + additive halo) на модели вражеского танка (presentation-only)
+11. `TargetHighlightStage` — двухслойная красная обводка (core + additive halo) по внешнему силуэту вражеского танка (stencil-маска, modelOutline.ts; presentation-only)
 12. `ProjectileStage` — flight & hits
 13. `MinimapStage` — minimap sync
 14. `MatchStage` — invuln, respawn, capture, win

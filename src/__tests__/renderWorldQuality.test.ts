@@ -17,12 +17,19 @@ import { RenderWorld } from '../game/RenderWorld';
 interface FakeComposer {
   setSize: ReturnType<typeof vi.fn>;
   dispose: ReturnType<typeof vi.fn>;
+  renderTarget1: { stencilBuffer: boolean };
+  renderTarget2: { stencilBuffer: boolean };
 }
 
 // Shared recording sinks; hoisted so the vi.mock factories below can close
 // over them (mock factories are lifted above imports).
 const h = vi.hoisted(() => ({
-  composers: [] as Array<{ setSize: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> }>,
+  composers: [] as Array<{
+    setSize: ReturnType<typeof vi.fn>;
+    dispose: ReturnType<typeof vi.fn>;
+    renderTarget1: { stencilBuffer: boolean };
+    renderTarget2: { stencilBuffer: boolean };
+  }>,
   blooms: [] as Array<{ dispose: ReturnType<typeof vi.fn> }>,
 }));
 
@@ -31,6 +38,10 @@ vi.mock('three/addons/postprocessing/EffectComposer.js', () => ({
     setSize = vi.fn();
     dispose = vi.fn();
     addPass = vi.fn();
+    // Реальный EffectComposer носит два полноформатных RT; setupBloom
+    // включает им stencilBuffer (маска силуэтной обводки, modelOutline.ts).
+    renderTarget1 = { stencilBuffer: false };
+    renderTarget2 = { stencilBuffer: false };
     constructor(_renderer: unknown) {
       h.composers.push(this);
     }
@@ -103,7 +114,12 @@ function makeWorld(level: QualityLevel) {
 
 /** Inject a "live" bloom rig as if setupBloom had built one. */
 function injectLiveBloom(rw: RenderWorld) {
-  const composer: FakeComposer = { setSize: vi.fn(), dispose: vi.fn() };
+  const composer: FakeComposer = {
+    setSize: vi.fn(),
+    dispose: vi.fn(),
+    renderTarget1: { stencilBuffer: true },
+    renderTarget2: { stencilBuffer: true },
+  };
   const bloomPass = { dispose: vi.fn() };
   Reflect.set(rw, 'composer', composer);
   Reflect.set(rw, 'bloomPass', bloomPass);
@@ -154,6 +170,10 @@ describe('RenderWorld.applyQuality bloom lifecycle', () => {
     // Canvas CSS size (640x360), NOT window.innerWidth/Height (1280x720):
     // the F-3 regression was sizing from window after cycling.
     expect(composer.setSize).toHaveBeenCalledWith(640, 360);
+    // Дефолтный RT EffectComposer — без stencil; setupBloom обязан включить
+    // его на обоих, иначе mask-обводка силуэта (modelOutline) мертва в high.
+    expect(composer.renderTarget1.stencilBuffer).toBe(true);
+    expect(composer.renderTarget2.stencilBuffer).toBe(true);
   });
 
   it('high→low→high cycle disposes the old rig and constructs exactly one replacement', () => {
