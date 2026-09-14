@@ -3,7 +3,7 @@ setlocal
 
 set "PROJECT_DIR=%~dp0"
 set "PORT=5178"
-set "GAME_URL=http://localhost:%PORT%/"
+set "GAME_URL=http://127.0.0.1:%PORT%/"
 
 echo ============================================
 echo   ArmorStrike - Launcher
