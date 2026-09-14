@@ -68,6 +68,9 @@ const FIELD_DIFFERS: Partial<Record<keyof HudSnapshot, FieldDiffers>> = {
   health: () => false,
   boost: () => false,
   reloadProgress: () => false,
+  // Позиция прицела на линии выстрела — непрерывный ref-painted канал.
+  crossX: () => false,
+  crossY: () => false,
 
   // Дискретные патроны (рельса/пушка) требуют рендера; энергия огнемёта — нет.
   ammo: (a, b) => ammoForcesHudRender(a.turretId, b.turretId, a.ammo, b.ammo),

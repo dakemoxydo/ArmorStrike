@@ -25,6 +25,7 @@ function baseSnap(): HudSnapshot {
     scoreboard: [], matchMode: 'deathmatch', winTarget: 30, timeLimitSec: 720,
     teamKillsAlpha: 0, teamKillsBravo: 0, teamScoreAlpha: 0, teamScoreBravo: 0,
     capturePoints: [],
+    crossX: 50, crossY: 50,
   };
 }
 

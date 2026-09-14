@@ -1,4 +1,6 @@
 // ===== Игровой цикл: владеет RAF, dt-клампом и порядком обновления кадра =====
+import * as THREE from 'three';
+import { WEAPON_TUNING } from '../core/catalog';
 import { TankAnimationSystem } from './engine/systems/TankAnimationSystem';
 import type { GameSimulation } from './engine/GameSimulation';
 import type { CameraRig } from './CameraRig';
@@ -7,6 +9,8 @@ import type { HudModel } from './HudModel';
 import type { HudSnapshot, GameEvent } from './types';
 import type { TankVisual } from './Tank';
 import { TimeScale } from './effects/TimeScale';
+import { reticleImpactDistance } from './aimReticle';
+import { clamp } from './engine/physics';
 
 export interface GameLoopDeps {
   sim: GameSimulation;
@@ -31,6 +35,11 @@ export class GameLoop {
   private running = false;
   /** TimeScale для hit-stop и slow-mo. */
   readonly timeScale = new TimeScale();
+
+  // Scratch-векторы прицела (см. updateCrosshair) — без аллокаций на кадр.
+  private readonly _muzzleW = new THREE.Vector3();
+  private readonly _aimDir = new THREE.Vector3();
+  private readonly _impactP = new THREE.Vector3();
 
   constructor(private deps: GameLoopDeps) {}
 
@@ -84,8 +93,42 @@ export class GameLoop {
     const showScoreboard =
       sim.run.mode === 'playing' && sim.input.scoreHeld && !sim.run.paused;
     hudModel.getHud(sim.player, sim.tanks, showScoreboard, hud);
+    this.updateCrosshair(hud);
     onHud(hud);
 
     renderWorld.render();
   };
+
+  /**
+   * Прицел на реальной линии выстрела: пуля/луч летит горизонтально от дула
+   * по aimYaw (см. Tank.aimDir), а не вдоль взгляда камеры с pitch. Берём
+   * точку, где выстрел реально остановится (стена/чужой танк/дальность),
+   * проецируем её камерой текущего кадра в % вьюпорта — HUD красит позицию
+   * через ref. Сцена ещё не отрендерена, но камера после cameraRig.update
+   * финальна (тряска/FOV учтены), проекция совпадает с картинкой этого кадра.
+   */
+  private updateCrosshair(hud: HudSnapshot): void {
+    const { sim, cameraRig } = this.deps;
+    const pl = sim.player;
+    if (sim.run.mode !== 'playing' || !pl || !pl.alive) return;
+
+    pl.muzzleWorld(this._muzzleW);
+    pl.aimDir(this._aimDir);
+    const wt = pl.params.weaponType;
+    const range = pl.params.range ?? WEAPON_TUNING[wt ?? 'cannon'].range;
+    const dist = reticleImpactDistance(
+      this._muzzleW.x, this._muzzleW.z, this._muzzleW.y,
+      this._aimDir.x, this._aimDir.z,
+      range, sim.arena.colliders, sim.tanks, pl.id,
+    );
+    this._impactP.copy(this._muzzleW).addScaledVector(this._aimDir, dist);
+
+    const cam = cameraRig.camera;
+    cam.updateMatrixWorld();
+    this._impactP.project(cam);
+    // Точка за камерой (x/w меняет знак) — зеркалим clamp'ом к краю: на практике
+    // линия выстрела всегда в секторе обзора (камера и башня делят один yaw).
+    hud.crossX = clamp((this._impactP.x * 0.5 + 0.5) * 100, 1, 99);
+    hud.crossY = clamp((-this._impactP.y * 0.5 + 0.5) * 100, 1, 99);
+  }
 }

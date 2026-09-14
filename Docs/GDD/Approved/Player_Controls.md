@@ -26,7 +26,21 @@
 
 - Камера следует за мышью (`CameraLookState.applyPointerDelta`).
 - Башня целится туда же, куда смотрит камера (`aimYaw` = look yaw).
-- Прицел HUD — центр экрана (crosshair).
+- Выстрел летит **горизонтально** от дула: `aimDir = (sin(aimYaw), 0, cos(aimYaw))`
+  (`Tank.aimDir`, общий для пушки/рельсы/огнемёта). Взгляд камеры с pitch —
+  это только yaw + ориентир, баллистику pitch не задаёт.
+- Прицел HUD **не** фиксирован в центре экрана: каждый кадр он ставится на
+  точку реальной остановки выстрела. `GameLoop.updateCrosshair` берёт дуло
+  (`muzzleWorld`), считает дистанцию трассы `reticleImpactDistance`
+  (`src/game/aimReticle.ts`: min из дальности оружия, ближайшего
+  blocksShots-коллайдера на высоте дула — тот же тест, что у рельсы
+  (`nearestShotBlockerDist`), и входа в круг чужого танка `radius +
+  PROJECTILE.radius` — тот же тест, что у полёта снаряда), проецирует точку
+  камерой текущего кадра в % вьюпорта → `HudSnapshot.crossX/crossY`.
+- `crossX/crossY` — ref-painted непрерывный канал: исключены из
+  `hudRenderGate`, DOM (`style.left/top` у `.crosshair`) красит `useGameHud`
+  каждый кадр без ре-рендера. Вне `playing` / при смерти / на паузе
+  дефолт — 50/50 (сам прицел в эти состояния скрыт).
 
 ## Pointer Lock
 
@@ -42,6 +56,8 @@
 | `CameraLookState` | `src/game/camera/CameraLookState.ts` | Yaw/pitch взгляда |
 | `PlayerInputStage` | `src/game/engine/stages/PlayerInputStage.ts` | Тик: `input.update` (триггер — в `WeaponFireStage`) |
 | `PlayingCameraMode` | `src/game/camera/PlayingCameraMode.ts` | Камера в бою |
+| `reticleImpactDistance` | `src/game/aimReticle.ts` | Точка попадания на линии выстрела (чистая логика) |
+| `GameLoop.updateCrosshair` | `src/game/GameLoop.ts` | Проекция точки попадания в экран % → `HudSnapshot.crossX/crossY` |
 
 ## Состояния
 

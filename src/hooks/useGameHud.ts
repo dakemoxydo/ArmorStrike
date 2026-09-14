@@ -30,6 +30,7 @@ function createSnapInit(): HudSnapshot {
     teamKillsAlpha: 0, teamKillsBravo: 0,
     teamScoreAlpha: 0, teamScoreBravo: 0,
     capturePoints: [],
+    crossX: 50, crossY: 50,
   };
 }
 
@@ -183,6 +184,12 @@ export function useGameHud(game: GameApi | null, active: boolean) {
       if (s.turretId === 'flamethrower' && flameFillRef.current) {
         const pct = Math.max(0, Math.min(100, s.ammo));
         flameFillRef.current.style.width = `${pct}%`;
+      }
+      // Прицел едет на точку реальной остановки выстрела (линия дула),
+      // а не висит в центре экрана над танком. Непрерывный ref-paint.
+      if (crossRef.current && Number.isFinite(s.crossX) && Number.isFinite(s.crossY)) {
+        crossRef.current.style.left = `${s.crossX}%`;
+        crossRef.current.style.top = `${s.crossY}%`;
       }
       if (game) drawMinimap(game, mapRef.current, mmBuf.current);
 

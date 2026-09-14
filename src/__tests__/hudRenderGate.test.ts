@@ -20,6 +20,7 @@ function snap(over: Partial<HudSnapshot> = {}): HudSnapshot {
     scoreboard: [], matchMode: 'deathmatch', winTarget: 30, timeLimitSec: 720,
     teamKillsAlpha: 0, teamKillsBravo: 0, teamScoreAlpha: 0, teamScoreBravo: 0,
     capturePoints: [],
+    crossX: 50, crossY: 50,
     ...over,
   };
 }
@@ -55,6 +56,10 @@ describe('hudNeedsRender — ref-painted channels never force', () => {
     expect(hudNeedsRender(snap({ health: 100 }), snap({ health: 37 }))).toBe(false);
     expect(hudNeedsRender(snap({ boost: 1 }), snap({ boost: 0.2 }))).toBe(false);
     expect(hudNeedsRender(snap({ reloadProgress: 0 }), snap({ reloadProgress: 0.9 }))).toBe(false);
+  });
+
+  it('crossX/crossY (линия выстрела) are painted imperatively every frame', () => {
+    expect(hudNeedsRender(snap({ crossX: 50, crossY: 50 }), snap({ crossX: 63.7, crossY: 22.1 }))).toBe(false);
   });
 });
 

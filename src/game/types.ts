@@ -45,6 +45,12 @@ export interface HudSnapshot {
   teamScoreBravo: number;
   /** CP zone strip for HUD (empty outside capture_point). */
   capturePoints: CaptureHudPoint[];
+  /**
+   * Позиция прицела на РЕАЛЬНОЙ линии выстрела — экранные % вьюпорта
+   * (ref-painted каждый кадр, см. GameLoop.updateCrosshair / useGameHud).
+   */
+  crossX: number;
+  crossY: number;
 }
 
 /** Lightweight CP zone for HUD / minimap. */

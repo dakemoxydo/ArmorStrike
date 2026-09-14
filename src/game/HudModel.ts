@@ -173,6 +173,10 @@ export class HudModel {
     target.teamScoreAlpha = match?.teamScore.alpha ?? 0;
     target.teamScoreBravo = match?.teamScore.bravo ?? 0;
     target.capturePoints = this._fillCapturePoints(match);
+    // Прицел по умолчанию — центр экрана; боевой кадр перетирает его проекцией
+    // линии выстрела (GameLoop.updateCrosshair).
+    target.crossX = 50;
+    target.crossY = 50;
     return target;
   }
 
