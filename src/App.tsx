@@ -80,6 +80,12 @@ export default function App() {
           return;
         }
         g = instance;
+        // DEV-only ручка в консоль (`__as2`): «стреляет ли игра вообще, какой
+        // пресет, идёт ли раунд» проверяется без единого проброса по дереву React.
+        // Только узкий GameApi — sim/движок наружу не течёт, в прод не попадает.
+        if (import.meta.env.DEV) {
+          (window as unknown as { __as2?: GameApi }).__as2 = g;
+        }
         g.addListener((e) => {
           if (e.type === 'modeChanged') {
             setUiMode(e.mode);
