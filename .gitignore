@@ -5,16 +5,13 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Local dev evidence (screenshots via scripts/screenshot.sh; numbers live in PROGRESS.md)
+# Local dev evidence (npm run map-plan / preview:models write here; numbers live in PROGRESS.md)
 screenshots/
 
 # Env / secrets
 .env
 .env.*
 !.env.example
-
-# Graphify CLI regenerates artifacts on git hooks if still installed locally
-graphify-out/
 
 # Agent / IDE local configs (machine-specific paths)
 .agents/

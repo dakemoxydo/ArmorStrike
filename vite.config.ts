@@ -1,12 +1,7 @@
-import path from "path";
-import { fileURLToPath } from "url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 import { viteSingleFile } from "vite-plugin-singlefile";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * Деплой: корень сайта по умолчанию. Для подпапки — `BASE_PATH=/game/ npm run build`.
@@ -21,21 +16,16 @@ const base = process.env.BASE_PATH?.trim() || '/';
 // https://vite.dev/config/
 export default defineConfig({
   base,
-  // Dev-порт — единый источник правды (scripts/screenshot.sh ходит сюда).
+  // Dev-порт — единый источник правды для всех локальных инструментов.
   //
   // `host: '127.0.0.1'` обязателен: дефолт Vite — `localhost`, а Node 17+ больше
   // не переупорядочивает результат `dns.lookup` под IPv4-first. На Windows
   // `localhost` резолвится в `::1`, сервер биндится ТОЛЬКО на IPv6-loopback,
-  // и браузер, идущий на `127.0.0.1:5178` (как и screenshot.sh), получает
+  // и браузер, идущий на `127.0.0.1:5178`, получает
   // ERR_CONNECTION_REFUSED / «Страница не найдена». Явный IPv4-хост это чинит.
   // Нужен доступ с других устройств — `npm run dev -- --host` (перекроет на 0.0.0.0).
   server: { port: 5178, host: '127.0.0.1' },
   plugins: [react(), tailwindcss(), viteSingleFile()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-    },
-  },
   build: {
     // Вровень с tsconfig (ES2020): parse-fail на старых браузерах вместо
     // молчаливого esnext-артефакта, который не ловит ErrorBoundary (M1).

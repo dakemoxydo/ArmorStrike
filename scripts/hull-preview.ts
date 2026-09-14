@@ -4,7 +4,7 @@
  *   turret  : railgun | flamethrower | cannon   (default railgun)
  *   palette : player | bot                      (default player)
  *
- * Why: `scripts/screenshot.sh` needs a browser + dev server, which is awkward
+ * Why: a browser-based capture needs a running dev server, which is awkward
  * when iterating on procedural models. This builds the real hull/turret code
  * (`hullGeometry` + `buildTurret`), projects the triangles with a camera, and
  * z-buffers them into a PNG sheet (4 views per hull) under
