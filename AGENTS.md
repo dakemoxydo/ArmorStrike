@@ -14,6 +14,8 @@ Self-contained workflow. Works in any IDE/CLI that reads AGENTS.md.
 - `npm test` — `vitest run` (tests live in `src/__tests__/*.test.ts`).
 - `npm run lint` — `eslint src`. `no-explicit-any` is an **error** in shipped code, off under `src/__tests__/` (partial test doubles).
 - `npm run census` — draw-call census (`scripts/draw-call-census.ts`).
+- `npm run map-plan [mapId]` — map plan report: collider density, zones, spawn points from real colliders (`scripts/map-plan.ts` → `screenshots/<mapId>-plan.html`).
+- `npm run preview:models` — procedural hull/turret previews via headless CPU render (`scripts/hull-preview.ts` → `screenshots/hull-preview/*.png`).
 - `npm run build` — typecheck + Vite production build.
 
 **Verified** = `npm run typecheck` + `npm test` green.
@@ -70,7 +72,7 @@ NEVER invent content not in code.
 
 - GDD Approved contradicts code → fix code (unless user says GDD outdated).
 - Small diffs. No invented APIs.
-- Language: GDD/Architecture docs in **Russian**; code, comments, commits in **English**; respond in the user's language.
+- Language: GDD/Architecture docs in **Russian**; identifiers, APIs, commit messages in **English**; user-facing UI strings in **Russian** (the game is localized). Code comments: Russian is the established convention in `src/` (~1600 lines) — keep new comments consistent with their file; do not mass-translate. Respond in the user's language.
 
 ## 7. Stack
 

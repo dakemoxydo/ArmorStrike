@@ -1,5 +1,10 @@
 # ArmorStrike — Progress Log
 
+> **Status: log closed (2026-09-14).** The `/loop` autonomous-improvement process this file served
+> is gone (see cleanup note below). Iterations 1–19 (2026-08-24 … 2026-09-11) are kept as
+> **read-only history**; do not append new entries. Current state of mechanics →
+> `Docs/GDD/Approved/00_Index.md`; open tasks → `BACKLOG.md`; everything after 2026-09-11 → git history.
+
 Loop log for the /loop-driven autonomous improvement agent. One entry per iteration.
 
 > **2026-09-10 cleanup:** `graphify/` (code-graph tooling + `graphify-out/`), `AUTONOMOUS_PROMPT.md`,

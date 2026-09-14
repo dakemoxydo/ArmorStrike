@@ -2,7 +2,7 @@
 
 Карта готовых механик, извлечённых из кода. Статус **Approved** = реализовано в репозитории и согласовано с текущим балансом в `src/core/catalogData.ts` / `src/game/constants.ts` / `src/game/tuning.ts`.
 
-> **Правило:** правки баланса сначала в коде, затем синхронизация этого GDD. Черновики — в [[../Drafts/|Drafts]].
+> **Правило:** правки баланса сначала в коде, затем синхронизация этого GDD. Черновики — в [Drafts](../Drafts/README.md).
 
 ## Навигация
 
@@ -19,8 +19,6 @@
 | [[Weapon_Railgun]] | Рельсотрон | `RailgunWeapon` |
 | [[Weapon_Flamethrower]] | Огнемёт Firebird | `FlamethrowerWeapon`, `inFlameConeXZ` |
 | [[Projectile_System]] | Снаряды (пул) | `ProjectileManager`, `ProjectileBehavior` |
-| [[Wave_System]] | **Removed (P0)** — был wave loop | — |
-| [[Wave_Buffs]] | **Removed (P0)** — intermission buffs | — |
 | [[Match_Framework]] | Режимы DM/TDM/CP, roster, respawn, win | `MatchRuntime`, `spawnMatchRoster` |
 | [[Team_Deathmatch]] | TDM 5v5, FF off, team HUD (P3) | `ModeSelect`, `teams`, `HudScoreboard` |
 | [[Capture_Point]] | CP A/B/C, score tick, markers (P4) | `captureLogic`, `CaptureMarkers`, `MatchRuntime` |
@@ -36,15 +34,23 @@
 | [[Village_Level_Design]] | Деревня: площадь, часовня, амбары, пруды, сад | `buildVillageContent`, `villageGroundTexture` |
 | [[Game_Lifecycle]] | Режимы, пауза, death cam, быстрая игра | `RunState`, `deathLifecycle` |
 
+**Removed-механики** (wave-era, удалены в P0) — надгробные доки в `../Archive/`: [[../Archive/Wave_System|Wave_System]], [[../Archive/Wave_Buffs|Wave_Buffs]]. Approved = только реализованное; история — в git.
+
 ## Архитектура
 
 - [[../../Architecture/Core|Core Architecture]] — слои, симуляция, порты, фабрики
+- [[../../Architecture/Core_Patterns|Core Patterns]] — сквозные правила: layering, bootstrap, pipeline стадий, port-паттерн, event bus → React, ожидания тестов
 - [[../../Architecture/Standard_UI_Input|Standard UI Input]] — каналы UI↔симуляция, гейт ре-рендера, ввод
 - [[../../Architecture/Standard_UI_Safe_Zone|Standard UI Safe Zone]] — камера кадрирует 3D-субъект в свободном от UI прямоугольнике
 - [[../../Architecture/Standard_Tank|Standard Tank]] — entity, systems, фабрика меша
 - [[../../Architecture/Standard_Hull_Models|Standard Hull Models]] — процедурные корпуса, слоты материалов, бюджет детализации
 - [[../../Architecture/Standard_Turret_Models|Standard Turret Models]] — процедурные башни + стволы, слоты, per-tank `railGlowMat`
 - [[../../Architecture/Standard_Frame_Stability|Standard Frame Stability]] — постоянный бюджет света, warm-up шейдеров, пул обломков, hit-stop гейт, HUD-квантование
+- [[../../Architecture/Standard_Match|Standard Match]] — каркас матча: `GameMode` vs `MatchModeId`, правила roster/respawn/win
+- [[../../Architecture/Standard_Weapon|Standard Weapon]] — weapon-стратегия (единый интерфейс), снаряды, урон (`weapons/*`, `DamageSystem`)
+- [[../../Architecture/Standard_Arena_Level_Design|Standard Arena Level Design]] — content-builder-правила арены и верификация (factory/city/village)
+- [[../../Architecture/Standard_Resources|Standard Resources]] — memoized-фабрики текстур, `markShared`-владение, dispose
+- [[../../Architecture/Graphics_Presets_Matrix|Graphics Presets Matrix]] — матрица low/med/high: pixel ratio, тени, bloom, частицы
 
 ## Жанр и петля
 
