@@ -10,10 +10,13 @@ import HudVitals from './hud/HudVitals';
 import HudWeapon from './hud/HudWeapon';
 import HudScoreboard from './hud/HudScoreboard';
 import HudFeed from './hud/HudFeed';
+import type { CrosshairStyle } from '../ui/crosshairStyle';
 
 interface HudProps {
   game: GameApi | null;
   active: boolean;
+  /** Пресет прицела из настроек (значение по умолчанию задан в HudCrosshair). */
+  crosshair?: CrosshairStyle;
 }
 
 const MemoRadar = memo(HudRadar);
@@ -34,7 +37,7 @@ function winPct(value: number, target: number): number {
   return Math.max(0, Math.min(100, (value / Math.max(1, target)) * 100));
 }
 
-export default function HUD({ game, active }: HudProps) {
+export default function HUD({ game, active, crosshair }: HudProps) {
   const {
     snap, feed, vignette, dmgArc, hitmark, showHint, frag, streak,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
@@ -82,7 +85,7 @@ export default function HUD({ game, active }: HudProps) {
       {/* Прицел прячется под открытым табло (оверлей с backdrop-blur иначе
           размывает его) и в состоянии смерти. */}
       {inGame && !st.paused && st.alive && !st.showScore && (
-        <MemoCrosshair crossRef={crossRef} hitmark={hitmark} />
+        <MemoCrosshair crossRef={crossRef} hitmark={hitmark} crosshair={crosshair} />
       )}
 
       {vignette > 0 && <div key={vignette} className="damage-vignette" aria-hidden />}

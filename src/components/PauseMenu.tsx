@@ -1,4 +1,4 @@
-// ===== МЕНЮ ПАУЗЫ: продолжить, рестарт, гараж, выход, звук, качество =====
+// ===== МЕНЮ ПАУЗЫ: продолжить, рестарт, гараж, выход, звук, качество, прицел =====
 import { useState } from 'react';
 import {
   ArrowLeft, Clock3, Home, Monitor, Pause, Play, RefreshCcw,
@@ -7,12 +7,16 @@ import {
 import { HULLS, TURRETS } from '../core/catalog';
 import type { GameApi } from '../game/GameApi';
 import { QUALITY_PRESETS, type QualityLevel } from '../game/graphicsQuality';
+import { CROSSHAIR_STYLES, type CrosshairStyle } from '../ui/crosshairStyle';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface PauseMenuProps {
   game: GameApi;
   muted: boolean;
   stats: { score: number; kills: number; timeSec: number };
+  /** Активный пресет прицела (настройка хранится в App + localStorage). */
+  crosshair: CrosshairStyle;
+  onCrosshair: (style: CrosshairStyle) => void;
   onResume: () => void;
   onRestart: () => void;
   onGarage: () => void;
@@ -21,7 +25,7 @@ interface PauseMenuProps {
 }
 
 export default function PauseMenu({
-  game, muted, stats, onResume, onRestart, onGarage, onMenu, onToggleMute,
+  game, muted, stats, crosshair, onCrosshair, onResume, onRestart, onGarage, onMenu, onToggleMute,
 }: PauseMenuProps) {
   const hull = HULLS[game.currentHull];
   const turret = TURRETS[game.currentTurret];
@@ -101,29 +105,46 @@ export default function PauseMenu({
             </div>
           </div>
 
-          {/* Секция 2 — настройки: одна ступень размера на обе кнопки. */}
-          <div className="pause-section anim-up grid grid-cols-2 gap-2.5" style={{ '--d': '0.5s' } as React.CSSProperties}>
-            <button
-              type="button"
-              onClick={onToggleMute}
-              className="btn-game btn-ghost px-4 py-2.5 text-[11px]"
-              aria-label={muted ? 'Включить звук' : 'Выключить звук'}
-              style={{ letterSpacing: '0.12em' }}
-            >
-              {muted ? <VolumeX size={14} className="bicon" aria-hidden /> : <Volume2 size={14} className="bicon" aria-hidden />}
-              <span>{muted ? 'ЗВУК ВЫКЛ' : 'ЗВУК ВКЛ'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={cycleQuality}
-              className="btn-game btn-ghost px-4 py-2.5 text-[11px]"
-              aria-label={`Качество графики: ${QUALITY_PRESETS[quality].label}. Нажмите для смены`}
-              title="Графика: low / medium / high"
-              style={{ letterSpacing: '0.12em' }}
-            >
-              <Monitor size={14} className="bicon" aria-hidden />
-              <span>ГРАФ. {QUALITY_PRESETS[quality].label}</span>
-            </button>
+          {/* Секция 2 — настройки: звук, графика и прицел одной ступенью размера. */}
+          <div className="pause-section anim-up flex flex-col gap-2.5" style={{ '--d': '0.5s' } as React.CSSProperties}>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={onToggleMute}
+                className="btn-game btn-ghost px-4 py-2.5 text-[11px]"
+                aria-label={muted ? 'Включить звук' : 'Выключить звук'}
+                style={{ letterSpacing: '0.12em' }}
+              >
+                {muted ? <VolumeX size={14} className="bicon" aria-hidden /> : <Volume2 size={14} className="bicon" aria-hidden />}
+                <span>{muted ? 'ЗВУК ВЫКЛ' : 'ЗВУК ВКЛ'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={cycleQuality}
+                className="btn-game btn-ghost px-4 py-2.5 text-[11px]"
+                aria-label={`Качество графики: ${QUALITY_PRESETS[quality].label}. Нажмите для смены`}
+                title="Графика: low / medium / high"
+                style={{ letterSpacing: '0.12em' }}
+              >
+                <Monitor size={14} className="bicon" aria-hidden />
+                <span>ГРАФ. {QUALITY_PRESETS[quality].label}</span>
+              </button>
+            </div>
+            <div className="ch-picker" role="group" aria-label="Настройка прицела">
+              {CROSSHAIR_STYLES.map((style) => (
+                <button
+                  key={style.id}
+                  type="button"
+                  onClick={() => onCrosshair(style.id)}
+                  aria-pressed={crosshair === style.id}
+                  className={`ch-pick${crosshair === style.id ? ' is-active' : ''}`}
+                  title={`Прицел: ${style.label}`}
+                >
+                  <span className={`ch-prev ch-prev-${style.id}`} aria-hidden />
+                  <span className="ch-pick-label">{style.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Секция 3 — выход. Единственное деструктивное действие, поэтому

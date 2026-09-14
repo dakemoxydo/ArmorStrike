@@ -677,6 +677,15 @@
 .ch-tick.b { left: 50%; bottom: 0; width: 2px; height: 8px; transform: translateX(-50%); }
 .ch-tick.l { left: 0; top: 50%; width: 8px; height: 2px; transform: translateY(-50%); }
 .ch-tick.r { right: 0; top: 50%; width: 8px; height: 2px; transform: translateY(-50%); }
+/* --- пресеты прицела (настройка в меню паузы, src/ui/crosshairStyle.ts) ---
+   Разметка не меняется — все элементы на месте, `data-ch` прячет лишние.
+   Так хитмаркер и shot-pulse живут общей логикой на любой настройке. */
+.crosshair:not([data-ch='ring']) .ch-outer { display: none; }
+.crosshair[data-ch='dot'] .ch-ring,
+.crosshair[data-ch='cross'] .ch-ring,
+.crosshair[data-ch='dot'] .ch-tick { display: none; }
+/* «Крест» — компактная база: засечки ближе к центру, чем у полного прицела. */
+.crosshair[data-ch='cross'] .cross-core { width: 28px; height: 28px; }
 .shot-pulse { animation: ch-pulse 0.22s ease-out !important; }
 @keyframes ch-pulse {
   0% { transform: translate(-50%, -50%) scale(1.45) rotate(0deg); }

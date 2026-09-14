@@ -1,13 +1,16 @@
 import type { RefObject } from 'react';
+import type { CrosshairStyle } from '../../ui/crosshairStyle';
 
 interface HudCrosshairProps {
   crossRef: RefObject<HTMLDivElement | null>;
   hitmark: { kill: boolean; key: number } | null;
+  /** Пресет из настроек; `data-ch` выбирает видимые слои прицела в hud.css. */
+  crosshair?: CrosshairStyle;
 }
 
-export default function HudCrosshair({ crossRef, hitmark }: HudCrosshairProps) {
+export default function HudCrosshair({ crossRef, hitmark, crosshair = 'dot' }: HudCrosshairProps) {
   return (
-    <div ref={crossRef} className="crosshair" style={{ left: '50%', top: '50%' }} aria-hidden>
+    <div ref={crossRef} className="crosshair" data-ch={crosshair} style={{ left: '50%', top: '50%' }} aria-hidden>
       <div
         className="cross-core"
         onAnimationEnd={(e) => {

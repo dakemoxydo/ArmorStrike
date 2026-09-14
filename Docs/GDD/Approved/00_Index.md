@@ -28,7 +28,7 @@
 | [[Garage_Viewport_Safe_Zone]] | Кадрирование предпросмотра в свободной от UI зоне + peek-осмотр | `CameraRig`, `GarageInput`, `Garage` |
 | [[Arena_Physics]] | Арена и коллизии | `Arena`, `physics`, `PhysicsSystem` |
 | [[Maps]] | Карты и выбор арены (300×300) | `mapCatalog`, `Arena.rebuild`, `MapSelect` |
-| [[UI_Polish]] | Единый дизайн-язык UI/HUD: токены, состояния, раскладки | `variables.css`, `styles/*.css`, `uiUxPresentation.test.ts` |
+| [[UI_Polish]] | Единый дизайн-язык UI/HUD: токены, состояния, раскладки, настройка прицела | `variables.css`, `styles/*.css`, `ui/crosshairStyle.ts`, `uiUxPresentation.test.ts`, `crosshairSettings.test.tsx` |
 | [[Factory_Level_Design]] | Завод: foundry, containers, crane, tank farm | `buildFactoryContent`, `factoryGroundTexture` |
 | [[City_Level_Design]] | Город: grid, districts, overpass | `buildCityContent`, `cityGroundTexture` |
 | [[Village_Level_Design]] | Деревня: площадь, часовня, амбары, пруды, сад | `buildVillageContent`, `villageGroundTexture` |

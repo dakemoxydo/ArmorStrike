@@ -17,6 +17,11 @@ import { DEFAULT_MAP_ID } from './game/maps/mapCatalog';
 import type { MatchModeId } from './game/types';
 import { isInteractiveKeyboardTarget } from './ui/keyboardTarget';
 import { loadMuted } from './game/audio';
+import {
+  loadCrosshairStyle,
+  saveCrosshairStyle,
+  type CrosshairStyle,
+} from './ui/crosshairStyle';
 import { pickQuickMatch } from './game/quickMatch';
 
 export default function App() {
@@ -44,6 +49,8 @@ export default function App() {
   const [lastMapId, setLastMapId] = useState<MapId>(DEFAULT_MAP_ID);
   const [lastMatchMode, setLastMatchMode] = useState<MatchModeId>('deathmatch');
   const [muted, setMuted] = useState(loadMuted);
+  /** Пресет прицела из настроек (меню паузы); persist — as2_crosshair. */
+  const [crosshair, setCrosshair] = useState<CrosshairStyle>(loadCrosshairStyle);
   /** startRound асинхронен (GLB-корпуса) — без этого арена молча пустует. */
   const [roundLoading, setRoundLoading] = useState(false);
   /** Видимая ошибка старта раунда (M13b): раньше был только console.error. */
@@ -234,6 +241,11 @@ export default function App() {
     setMuted(nowMuted);
   }, [game]);
 
+  const changeCrosshair = useCallback((style: CrosshairStyle) => {
+    saveCrosshairStyle(style);
+    setCrosshair(style);
+  }, []);
+
   const resume = () => {
     if (!game) return;
     game.togglePause();
@@ -265,13 +277,15 @@ export default function App() {
       <div className="fx-scanlines pointer-events-none absolute inset-0 z-30" />
       <div className="fx-vignette pointer-events-none absolute inset-0 z-10" />
 
-      <HUD game={game} active={uiMode === 'playing' && !hideChrome} />
+      <HUD game={game} active={uiMode === 'playing' && !hideChrome} crosshair={crosshair} />
 
       {uiMode === 'playing' && paused && game && snap && !hideChrome && (
         <PauseMenu
           game={game}
           muted={muted}
           stats={{ score: snap.score, kills: snap.kills, timeSec: snap.timeSec }}
+          crosshair={crosshair}
+          onCrosshair={changeCrosshair}
           onResume={resume}
           onRestart={openModeSelect}
           onGarage={goGarage}
