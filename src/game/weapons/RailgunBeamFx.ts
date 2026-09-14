@@ -1,5 +1,16 @@
-// ===== Визуальный луч рельсотрона (multi-layer beam + lights + punch) =====
-// Выделен из RailgunWeapon: владеет mesh-слоями, PointLight и fade.
+// ===== Визуальный луч рельсотрона: ЕДИНАЯ электрическая дуга =====
+// M22: один слой вместо трёх (core/body/glow). «Обводок» больше нет: единственная
+// ширина луча — это сама дуга, ни мягкого ореола, ни тело-цилиндра поверх ядра.
+// Форму рисует шейдер, а не геометрия: 1D-шум вдоль оси луча даёт живой излом
+// молнии, который скачко́м перестраивается uSnapRate раз/с и чуть «течёт» между
+// перестройками. Толщина — пиксельный пол (VERTEX_SHADER): линия держит заданное
+// число экранных пикселей на любой дистанции и жирнеет перспективой только вблизи
+// дула. Пол считается от высоты окна и номинального fov (cssPxScale) — НИКАКИХ
+// обращений к renderer/камере в момент рендера: цена ошибки в этом числе — разду́тая
+// до невидимости трубка, а таких ошибок шейдер не прощает. Внутри этой ширины —
+// жгут из нитей плюс неровность толщины по звеньям, чтобы жирная линия осталась
+// разрядом, а не залитым цилиндром.
+// Выделен из RailgunWeapon: владеет mesh'ем, PointLight и fade.
 // Чисто визуально — уроном / hitscan не занимается.
 // Perf: свет берётся из LightRig и НИКОГДА не добавляется/не удаляется из
 // сцены — смена числа источников заставляет three пересобирать программу
@@ -12,9 +23,37 @@ const tmpMid = new THREE.Vector3();
 const tmpLook = new THREE.Vector3();
 const tmpEnd = new THREE.Vector3();
 
+/** Номинальный fov мировой камеры (RenderWorld / CameraRig держат 58°). */
+const CAMERA_FOV_DEG = 58;
+const NOMINAL_PROJ_Y = 1 / Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV_DEG / 2));
+/** CSS-размер окна (канвас во весь экран) с разумным диапазоном: ноль/Infinity
+ *  из `innerWidth/innerHeight` иначе унёс бы либо толщину линии, либо весь экран. */
+function cssViewport(): { w: number; h: number } {
+  const rawW = typeof window === 'undefined' ? 1280 : window.innerWidth;
+  const rawH = typeof window === 'undefined' ? 720 : window.innerHeight;
+  const num = (v: number, dflt: number) => (Number.isFinite(v) && v > 0 ? v : dflt);
+  return {
+    w: Math.min(8192, Math.max(160, num(rawW, 1280))),
+    h: Math.min(8192, Math.max(110, num(rawH, 720))),
+  };
+}
+/**
+ * Мировых единиц на один CSS-пиксель на глубине 1: `2 / (H · projY)`. H — высота
+ * окна, fov — номинальный: FOV-панч выстрела (±5.5°) меняет ширину линии на ~3 %,
+ * и платить за точность обращением к живой камере нечем. Вне браузера (тесты) —
+ * дефолт 720p. Диапазон — страховка: уронить пол в ноль или раздуть линию до
+ * размера сцены хуже, чем ошибиться на пару пикселей. Покрывает окно от ~110 px.
+ */
+function cssPxScale(): number {
+  return Math.min(1e-2, Math.max(1e-4, 2 / (cssViewport().h * NOMINAL_PROJ_Y)));
+}
+/** NDC-шаг на один CSS-пиксель по X и Y: связывает пиксельную толщину с клипом. */
+function cssPxToNdc(target: THREE.Vector2): THREE.Vector2 {
+  const { w, h } = cssViewport();
+  return target.set(2 / w, 2 / h);
+}
+
 const PUNCH_DUR = 0.055;
-const CORE_FADE_FRAC = 0.42;
-const GLOW_HOLD = 1.35;
 
 // Modest intensities/ranges — high values + many lights stall the GPU hard.
 const MUZZLE_LIGHT_PEAK = 28;
@@ -26,26 +65,271 @@ const IMPACT_SLOT = 1;
 const MUZZLE_LIGHT_COLOR = 0x2ee6c0;
 const IMPACT_LIGHT_COLOR = 0xfff0a0;
 
-// M21: thinner beam — effective radii ≈ half of the original (0.13/0.33/0.65).
-// Punch multipliers in layoutBeam/update are intentionally kept: the fire→settle
-// contrast reads even stronger against the slimmer line.
-const CORE_RADIUS = 0.035;
-const BODY_RADIUS = 0.11;
-const GLOW_RADIUS = 0.26;
+/**
+ * Внешность дуги — единый источник правды (GDD: `Weapon_Railgun.md` →
+ * «Луч: единая электрическая дуга (M22)»). Экспортировано ради тестов: они
+ * сверяются с этими числами, а не с продублированными литералами.
+ */
+export const BEAM_ARC = {
+  /**
+   * Перспективная база луча (мировые единицы): тоньше этой толщины линия не
+   * становится никогда, а ближе к дулу она жирнеет по-настоящему.
+   */
+  radius: 0.06,
+  /**
+   * Пиксельный пол ширины линии, CSS-пиксели. Единица измерения — экран, а не
+   * метры: на снайперской дистанции мировая толщина ушла бы в доли пикселя, а
+   * физическая ширина разряда обязана оставаться читаемой.
+   * 7 px было «еле видно»: яркость ядра упирается в плато ACES (~214 sRGB),
+   * поднять её нельзя, поэтому читаемость добирается площадью — 12 px это
+   * ~1 мм линии на экране и на дуельной, и на предельной дистанции.
+   */
+  pixelWidth: 12,
+  /** Сегментов вдоль оси: ≥2.5 вершин на звено дуги даже на максимальной длине. */
+  lengthSegments: 192,
+  /**
+   * Столбцов поперёк линии. Двух достаточно: координата `vWide` интерполируется
+   * линейно, а весь профиль (ядро, нити) считается во фрагменте с неё.
+   */
+  widthSegments: 2,
+  /** Длина «звена» дуги в мировых единицах: чем короче, тем чаще изломы. */
+  cellLength: 1.8,
+  /** Амплитуда излома в покое (мировые единицы). */
+  amplitude: 0.3,
+  /** Полных перестроек формы в секунду («повторный пробой» молнии). */
+  snapRate: 42,
+  /** Первые N мировых единиц от дула дуга прямая — иначе линия липнет к стволу. */
+  muzzleStraight: 1.2,
+  /** Кадр выстрела: дуга толще и «расслабленнее», затем стягивается в провод. */
+  punchScale: 1.9,
+  /** Неровность толщины вдоль дуги (±доля): звенья то раздувает, то ссыхает. */
+  thicknessNoise: 0.3,
+  /**
+   * Резкость горячего ядра внутри ширины: профиль `pow(1 − |vWide|, coreExp)`.
+   * На риббоне экспонента заведомо меньше трубочной (3): 1 − |v| падает от центра
+   * к кромке линейно, и при 3 видимая полоса сжалась бы обратно в ~4 px.
+   */
+  coreExp: 2,
+  /** Число нитей жгута внутри одной линии (на 12 px их должно быть больше). */
+  filaments: 4,
+  /** Глубина модуляции яркости нитей (0 = одна жила, 0.26 = ±26% поперёк линии). */
+  strandAmount: 0.26,
+  /**
+   * Ядро пробивает ACES + порог bloom (0.85), но НЕ должно упираться в 255:
+   * при 12 px и gain 2 плато ядра заливалось на 12 пикселей подряд, bloom
+   * размазывал его до ~28 px, и жгут внутри линии переставал читаться (вместо
+   * электричества — светящаяся кишка). Вклад аддитивного слоя = яркость ×
+   * площадь, поэтому с шириной gain уехал вниз: плато ~235, нити видны.
+   */
+  gain: 1.5,
+  /**
+   * Кривая гашения: `uOpacity = t^fadeExp`, `t` — остаток жизни. Линейное
+   * затухание (fadeExp = 1) съедало половину яркости уже к середине жизни, и на
+   * светлом фоне дневной карты трассер становился «еле виден» ровно тогда, когда
+   * его и видно лучше всего. 0.45: до половины жизни линия держит ~73% яркости,
+   * а гаснет так же полностью и за то же `beamDuration`.
+   */
+  fadeExp: 0.45,
+  /** Цвет ядра / цвет кромки линии. */
+  coreColor: 0xffffff,
+  edgeColor: 0x8fffe8,
+} as const;
 
 /**
- * Shared geometry per radius across all beam instances (perf: avoid N×CylinderGeometry).
+ * Вершины: форма дуги = 1D value-noise по дистанции вдоль луча. Аргумент шума —
+ * `t * uCells`, где `uCells = длина / cellLength`, т.е. это мировая дистанция в
+ * «звенах»: пока фронт бежит (setLength), уже нарисованная часть луча форму не
+ * меняет, дуга просто растёт из дула.
+ * Геометрия — лента из двух колонок: `position.z` даёт дистанцию вдоль оси,
+ * `position.x` — поперечную координату `vWide` (−1..1). Толщина назначается
+ * ПОСЛЕ проекции: в CSS-пикселях и перпендикулярно спроецированной оси. Push
+ * вдоль мирового радиала (как было раньше) схлопывался в ноль, когда луч уходит
+ * от камеры, — а в шутере это основной ракурс, поэтому «пол в пикселях» на
+ * экране оставался 1–2 px и линия была еле заметной.
+ */
+const VERTEX_SHADER = /* glsl */ `
+uniform float uTime;
+uniform float uAmp;
+uniform float uCells;
+uniform float uLen;
+uniform float uSnap;
+uniform float uStraight;
+uniform float uRadius;
+uniform float uPxWidth;
+uniform float uPxScale;
+uniform float uThick;
+uniform vec2 uPxToNdc;
+
+varying float vT;
+varying float vWide;
+varying float vPhase;
+varying float vSpark;
+varying float vFlicker;
+
+float hash11(float p) {
+  p = fract(p * 0.1031);
+  p *= p + 33.33;
+  p *= p + p;
+  return fract(p);
+}
+
+float vnoise1(float x) {
+  float i = floor(x);
+  float f = fract(x);
+  float u = f * f * (3.0 - 2.0 * f);
+  return mix(hash11(i), hash11(i + 1.0), u) * 2.0 - 1.0;
+}
+
+// Профиль дуги: форма берётся из «ступенки» времени (скачкообразные перестройки
+// разряда) плюс малая непрерывно плывущая доля, чтобы между скачками жила.
+float arcProfile(float x, float seed) {
+  float stepped = vnoise1(x + seed) * 0.72 + vnoise1(x * 2.3 + seed * 1.7) * 0.28;
+  float drift = vnoise1(x * 1.7 - uTime * 2.6 + seed) * 0.72
+              + vnoise1(x * 3.9 + uTime * 3.3) * 0.28;
+  return stepped * 0.76 + drift * 0.24;
+}
+
+void main() {
+  float t = position.z + 0.5;            // геометрия: ось вдоль +Z, длина 1
+  vT = t;
+  vWide = position.x;                    // −1..1 поперёк линии (экранный профиль)
+
+  float snapSeed = floor(uTime * uSnap) * 11.31;
+  float x = t * uCells;
+
+  // Перпендикуляры оси луча в мире (для излома дуги) и сама ось (для экрана).
+  vec3 ax = normalize(modelMatrix[0].xyz);
+  vec3 ay = normalize(modelMatrix[1].xyz);
+  vec3 axis = normalize(modelMatrix[2].xyz);
+  float grow = smoothstep(0.0, uStraight, t * uLen);
+  vec2 j = vec2(arcProfile(x, snapSeed), arcProfile(x + 57.13, snapSeed + 7.31));
+  // Центр сечения — строго на оси: position.x здесь намеренно не участвует,
+  // поперечный координат добавляется ниже, уже в экранных пикселях.
+  vec3 world = (modelMatrix * vec4(0.0, 0.0, position.z, 1.0)).xyz
+             + (ax * j.x + ay * j.y) * (uAmp * grow);
+
+  float rs = max(length(modelMatrix[0].xyz), 1e-4);   // радиальный масштаб = punch
+
+  vec4 mvPosition = viewMatrix * vec4(world, 1.0);
+  float depth = max(-mvPosition.z, 1e-4);
+  vec4 clip = projectionMatrix * mvPosition;
+
+  // Ширина линии считается В ПИКСЕЛЯХ: basePx — мировая база uRadius в пикселях
+  // на этой глубине, uPxWidth/2 — пиксельный пол. max() даёт «у дула луч жирнеет
+  // перспективой по-настоящему, вдали держит заданное число пикселей»; lump —
+  // неровность толщины по звеньям; rs доходит и до пола, иначе кадр выстрела
+  // раздувал бы только ближнюю часть луча.
+  float lump = 1.0 + uThick * arcProfile(x * 1.7 + 41.3, snapSeed + 3.17);
+  float basePx = (uRadius * rs * lump) / (depth * uPxScale);
+  float rPx = max(uPxWidth * 0.5 * rs, basePx) * lump;
+
+  // d(NDC) на единицу мирового шага вдоль оси — производная перспективы (частное
+  // правило для clip.xy / clip.w), перевод в пиксели — делением на uPxToNdc.
+  vec4 axClip = projectionMatrix * vec4((viewMatrix * vec4(axis, 0.0)).xyz, 0.0);
+  float w = max(clip.w, 1e-4);
+  vec2 dNdc = (axClip.xy * w - clip.xy * axClip.w) / (w * w);
+  vec2 dPx = vec2(dNdc.x / uPxToNdc.x, dNdc.y / uPxToNdc.y);
+  float dl = length(dPx);
+  // Луч смотрит ровно «в камеру»: экранное направление оси вырождено, сечение и
+  // так пятно — перпендикуляр берём любой.
+  vec2 perp = dl > 1e-4 ? vec2(-dPx.y, dPx.x) / dl : vec2(1.0, 0.0);
+  clip.xy += perp * (vWide * rPx) * uPxToNdc * w;
+
+  // Нити жгута ползут вдоль луча: фаза зависит от дистанции и времени.
+  vPhase = x * 2.1 + uTime * 2.4;
+
+  // Неравномерность «горения» по звеньям + общее мерцание разряда.
+  // Разброс намеренно узкий (0.68..1): линия должна пульсировать, а не моргать
+  // в прозрачность — при 0.5 тонкая дуга местами пропадала целиком.
+  vSpark = 0.68 + 0.32 * hash11(floor(x * 2.0) + snapSeed);
+  vFlicker = 0.78 + 0.22 * hash11(floor(uTime * uSnap * 1.7) + 5.0);
+
+  gl_Position = clip;
+}
+`;
+
+/**
+ * Фрагменты: ядро линии там, где поверхность трубки смотрит в камеру, к кромкам
+ * мягко гаснет. Это единственная ширина луча — второго (ореольного) слоя нет,
+ * вся «масса» набрана структурой внутри неё: неровной толщиной (вершины) и
+ * переплетением нитей (здесь).
+ */
+const FRAGMENT_SHADER = /* glsl */ `
+uniform float uOpacity;
+uniform float uGain;
+uniform float uCoreExp;
+uniform float uFilaments;
+uniform float uStrandAmt;
+uniform vec3 uCoreColor;
+uniform vec3 uEdgeColor;
+
+varying float vT;
+varying float vWide;
+varying float vPhase;
+varying float vSpark;
+varying float vFlicker;
+
+void main() {
+  // профиль поперёк линии: горячая нить в середине, к кромкам — в ноль.
+  // vWide — экранный поперечный координат, поэтому профиль одинаковый и когда луч
+  // идёт через экран, и когда он уходит от камеры (с vFacing-проксимой трубки в
+  // последнем случае ядро уезжало к краю линии).
+  float core = pow(max(0.0, 1.0 - abs(vWide)), uCoreExp);
+  if (core <= 0.002) discard;
+  // Переплетение uFilaments нитей поперёк линии: толщина читается жгутом, а не
+  // залитой полосой — второго слоя ради «массы» не добавляется.
+  float s = 0.5 + 0.5 * cos(vWide * 3.14159265 * uFilaments + vPhase);
+  float strands = 1.0 - uStrandAmt + 2.0 * uStrandAmt * pow(s, 1.5);
+  // Голова луча чуть горячее: туда приходит бегущий фронт (BeamSweep).
+  float head = 1.0 + 0.5 * smoothstep(0.86, 1.0, vT);
+  float a = uOpacity * core * strands * vSpark * vFlicker * head * uGain;
+  vec3 col = mix(uEdgeColor, uCoreColor, pow(core, 2.4));
+  gl_FragColor = vec4(col * a, a);
+  // Те же выходные чанки, что у MeshBasicMaterial (tonemapping_pars_fragment и
+  // linearToOutputTexel three кладёт в префикс сам): ACES + конвертация в
+  // выходное пространство, иначе линия была бы ярче на bloom-пресете, чем на
+  // прямом рендере.
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}
+`;
+
+/**
+ * Shared geometry across all beam instances (perf: avoid rebuilding the strip).
  * Ref-counted: each RailgunBeamFx instance acquires on construction and releases
  * on dispose; the geometry is disposed only when the last user is gone (fixes
  * module-level leak under hot-reload / repeated test runs).
  */
-const SHARED_GEO_REFS = new Map<number, { geo: THREE.CylinderGeometry; refs: number }>();
+const SHARED_GEO_REFS = new Map<number, { geo: THREE.BufferGeometry; refs: number }>();
 
-function acquireSharedBeamGeo(radius: number): THREE.CylinderGeometry {
+function acquireSharedBeamGeo(radius: number): THREE.BufferGeometry {
   let entry = SHARED_GEO_REFS.get(radius);
   if (!entry) {
-    const geo = new THREE.CylinderGeometry(radius, radius, 1, 8);
-    geo.rotateX(Math.PI / 2);
+    // Лента из `lengthSegments + 1` строк по `widthSegments` колонок: ось вдоль
+    // +Z (длина 1 — масштабируется mesh.scale.z), position.x = vWide ∈ [−1, 1]
+    // поперёк линии. Нормалей нет: профиль считается из vWide во фрагменте.
+    const rows = BEAM_ARC.lengthSegments + 1;
+    const cols = Math.max(2, BEAM_ARC.widthSegments);
+    const pos = new Float32Array(rows * cols * 3);
+    let p = 0;
+    for (let r = 0; r < rows; r += 1) {
+      const z = r / (rows - 1) - 0.5;
+      for (let c = 0; c < cols; c += 1) {
+        pos[p] = (c / (cols - 1)) * 2 - 1;
+        pos[p + 1] = 0;
+        pos[p + 2] = z;
+        p += 3;
+      }
+    }
+    const idx: number[] = [];
+    for (let r = 0; r < rows - 1; r += 1) {
+      const a = r * cols;
+      const b = a + cols;
+      idx.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setIndex(idx);
     entry = { geo, refs: 0 };
     SHARED_GEO_REFS.set(radius, entry);
   }
@@ -63,54 +347,86 @@ function releaseSharedBeamGeo(radius: number): void {
   }
 }
 
-function makeBeamMesh(
-  radius: number,
-  color: number,
-): { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial } {
-  const mat = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
-  const mesh = new THREE.Mesh(acquireSharedBeamGeo(radius), mat);
-  mesh.frustumCulled = false;
-  mesh.visible = false;
-  mesh.matrixAutoUpdate = true;
-  return { mesh, mat };
-}
-
 export class RailgunBeamFx {
-  private coreMesh: THREE.Mesh;
-  private coreMat: THREE.MeshBasicMaterial;
-  private bodyMesh: THREE.Mesh;
-  private bodyMat: THREE.MeshBasicMaterial;
-  private glowMesh: THREE.Mesh;
-  private glowMat: THREE.MeshBasicMaterial;
+  private mesh: THREE.Mesh;
+  private mat: THREE.ShaderMaterial;
+  private uni: {
+    uTime: { value: number };
+    uOpacity: { value: number };
+    uAmp: { value: number };
+    uCells: { value: number };
+    uLen: { value: number };
+    uSnap: { value: number };
+    uStraight: { value: number };
+    uRadius: { value: number };
+    uPxWidth: { value: number };
+    uPxScale: { value: number };
+    uPxToNdc: { value: THREE.Vector2 };
+    uThick: { value: number };
+    uGain: { value: number };
+    uCoreExp: { value: number };
+    uFilaments: { value: number };
+    uStrandAmt: { value: number };
+    uCoreColor: { value: THREE.Color };
+    uEdgeColor: { value: THREE.Color };
+  };
   private muzzleLight: THREE.PointLight;
   private impactLight: THREE.PointLight;
   private beamFadeTimer = 0;
   private punchTimer = 0;
+  /** Локальные часы шейдера: идут, только пока луч жив. */
+  private time = 0;
   private rayLength = 1;
   /** Beam frame captured at show(): origin + direction, so length can change later. */
   private beamOrigin = new THREE.Vector3();
   private beamDir = new THREE.Vector3(0, 0, 1);
 
   constructor(private scene: THREE.Scene, private rig: LightRig) {
-    const core = makeBeamMesh(CORE_RADIUS, 0xffffff);
-    const body = makeBeamMesh(BODY_RADIUS, 0x8fffe8);
-    const glow = makeBeamMesh(GLOW_RADIUS, 0x4ee6c8);
-    this.coreMesh = core.mesh;
-    this.coreMat = core.mat;
-    this.bodyMesh = body.mesh;
-    this.bodyMat = body.mat;
-    this.glowMesh = glow.mesh;
-    this.glowMat = glow.mat;
+    this.uni = {
+      uTime: { value: 0 },
+      uOpacity: { value: 0 },
+      uAmp: { value: BEAM_ARC.amplitude },
+      uCells: { value: 1 },
+      uLen: { value: 1 },
+      uSnap: { value: BEAM_ARC.snapRate },
+      uStraight: { value: BEAM_ARC.muzzleStraight },
+      uRadius: { value: BEAM_ARC.radius },
+      uPxWidth: { value: BEAM_ARC.pixelWidth },
+      uPxScale: { value: cssPxScale() },
+      uPxToNdc: { value: cssPxToNdc(new THREE.Vector2()) },
+      uThick: { value: BEAM_ARC.thicknessNoise },
+      uGain: { value: BEAM_ARC.gain },
+      uCoreExp: { value: BEAM_ARC.coreExp },
+      uFilaments: { value: BEAM_ARC.filaments },
+      uStrandAmt: { value: BEAM_ARC.strandAmount },
+      uCoreColor: { value: new THREE.Color(BEAM_ARC.coreColor) },
+      uEdgeColor: { value: new THREE.Color(BEAM_ARC.edgeColor) },
+    };
 
-    this.scene.add(this.glowMesh);
-    this.scene.add(this.bodyMesh);
-    this.scene.add(this.coreMesh);
+    this.mat = new THREE.ShaderMaterial({
+      uniforms: this.uni,
+      vertexShader: VERTEX_SHADER,
+      fragmentShader: FRAGMENT_SHADER,
+      transparent: true,
+      // Лента лежит в плоскости оси луча, а раздвигается в экранных пикселях —
+      // намотка может оказаться обратной относительно камеры.
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      // rgb уже умножен на вклад яркости, поэтому просим GPU не домножать ещё
+      // и на srcAlpha: иначе fade и ширина линии ушли бы по a².
+      premultipliedAlpha: true,
+      // Туман сцены начинается за пределами дистанции луча (fogNear 108+,
+      // range 120), а аддитивному разряду он и не нужен: смешивание с цветом
+      // тумана только замусорило бы линию.
+      fog: false,
+    });
+
+    this.mesh = new THREE.Mesh(acquireSharedBeamGeo(BEAM_ARC.radius), this.mat);
+    this.mesh.frustumCulled = false;
+    this.mesh.visible = false;
+    this.mesh.matrixAutoUpdate = true;
+    this.scene.add(this.mesh);
 
     // Rig lights are permanently attached; a beam only writes to them.
     this.muzzleLight = rig.light('beam', MUZZLE_SLOT);
@@ -123,24 +439,25 @@ export class RailgunBeamFx {
     this.impactLight.intensity = 0;
   }
 
-  /** Place/scale all three beam layers for the current origin/dir/rayLength. */
+  /** Place/scale the arc tube and re-seed the along-beam noise for this length. */
   private layoutBeam(): void {
     tmpMid.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength * 0.5);
-    tmpEnd.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength);
     tmpLook.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength + 1);
 
-    // Orient once on body, copy transform to siblings (avoid 3× lookAt).
-    this.bodyMesh.position.copy(tmpMid);
-    this.bodyMesh.scale.set(1.85, 1.85, this.rayLength);
-    this.bodyMesh.lookAt(tmpLook);
+    this.mesh.position.copy(tmpMid);
+    this.mesh.scale.set(this.punchWidth(), this.punchWidth(), this.rayLength);
+    this.mesh.lookAt(tmpLook);
 
-    this.coreMesh.position.copy(tmpMid);
-    this.coreMesh.quaternion.copy(this.bodyMesh.quaternion);
-    this.coreMesh.scale.set(2.4, 2.4, this.rayLength);
+    this.uni.uLen.value = this.rayLength;
+    this.uni.uCells.value = Math.max(1, this.rayLength / BEAM_ARC.cellLength);
+  }
 
-    this.glowMesh.position.copy(tmpMid);
-    this.glowMesh.quaternion.copy(this.bodyMesh.quaternion);
-    this.glowMesh.scale.set(1.55, 1.55, this.rayLength);
+  /** Текущий радиальный масштаб (1 в покое, punchScale в кадр выстрела). */
+  private punchWidth(): number {
+    if (this.punchTimer <= 0) return 1;
+    const u = 1 - this.punchTimer / PUNCH_DUR;
+    const ease = 1 - (1 - u) * (1 - u);
+    return THREE.MathUtils.lerp(BEAM_ARC.punchScale, 1, ease);
   }
 
   /** Показать луч от muzzle вдоль dir на длину rayLength; punch + fade. */
@@ -149,18 +466,22 @@ export class RailgunBeamFx {
     this.beamDir.copy(dir);
     this.rayLength = Math.max(0.5, rayLength);
 
-    this.layoutBeam();
-    this.bodyMesh.visible = true;
-    this.coreMesh.visible = true;
-    this.glowMesh.visible = true;
+    // Само-восстановление: mesh мог остаться без родителя (пересборка арены или
+    // teardown сцены между выстрелами) — иначе луч молча не рендерился бы.
+    if (this.mesh.parent !== this.scene) this.scene.add(this.mesh);
+    // Окно могли ресайзнуть между выстрелами — пиксельный пол пересчитывается.
+    this.uni.uPxScale.value = cssPxScale();
+    cssPxToNdc(this.uni.uPxToNdc.value);
 
-    this.coreMat.opacity = 1;
-    this.bodyMat.opacity = 1;
-    this.glowMat.opacity = 0.55;
+    this.punchTimer = PUNCH_DUR;
+    this.layoutBeam();
+    this.uni.uAmp.value = BEAM_ARC.amplitude * BEAM_ARC.punchScale;
+    this.mesh.visible = true;
+    this.uni.uOpacity.value = 1;
 
     this.beamFadeTimer = WEAPON_TUNING.railgun.beamDuration;
-    this.punchTimer = PUNCH_DUR;
 
+    tmpEnd.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength);
     // Colors/distances are re-applied on every show(): the rig slots are shared
     // with other railgun instances and with the flame channel's neighbours.
     this.rig.set('beam', MUZZLE_SLOT, muzzle, MUZZLE_LIGHT_COLOR, MUZZLE_LIGHT_PEAK, LIGHT_DIST);
@@ -170,11 +491,11 @@ export class RailgunBeamFx {
   /**
    * Shorten the visible beam to `dist` (a wall/block stopped it earlier than
    * the initial range) and move the impact light to the new beam end.
-   * M18 fix: previously only the light moved — mesh layers kept drawing
+   * M18 fix: previously only the light moved — the mesh kept drawing
    * straight through the wall to full range (GDD: walls stop the beam).
    */
   setLength(dist: number) {
-    if (!this.bodyMesh.visible) return; // no active beam to shorten
+    if (!this.mesh.visible) return; // no active beam to shorten
     this.rayLength = Math.max(0.5, dist);
     this.layoutBeam();
     tmpEnd.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength);
@@ -189,31 +510,31 @@ export class RailgunBeamFx {
 
   /** Мгновенно скрыть луч и погасить свет (смерть владельца mid-fade). */
   hide() {
-    this.coreMesh.visible = false;
-    this.bodyMesh.visible = false;
-    this.glowMesh.visible = false;
-    this.coreMat.opacity = 0;
-    this.bodyMat.opacity = 0;
-    this.glowMat.opacity = 0;
+    this.mesh.visible = false;
+    this.uni.uOpacity.value = 0;
     this.beamFadeTimer = 0;
     this.punchTimer = 0;
     this.offLights();
   }
 
-  /** Затухание слоёв + radial punch settle. */
+  /**
+   * Затухание дуги + radial punch settle + часы шейдера.
+   * Punch тянет за собой и ширину, и амплитуду излома: кадр выстрела — широкая
+   * «разболтанная» дуга, дальше она стягивается в натянутый провод, и уже
+   * натянутая гаснет по uOpacity. Радиальный масштаб mesh'а (scale.x/y) — не
+   * габарит геометрии, а именно множитель толщины: его читает шейдер как `punch`.
+   */
   update(dt: number) {
-    if (this.beamFadeTimer <= 0 && this.punchTimer <= 0) return;
+    const live = this.beamFadeTimer > 0 || this.punchTimer > 0;
+    if (!live) return;
+    this.time += dt;
+    this.uni.uTime.value = this.time;
 
     if (this.punchTimer > 0) {
       this.punchTimer = Math.max(0, this.punchTimer - dt);
-      const u = 1 - this.punchTimer / PUNCH_DUR;
-      const ease = 1 - (1 - u) * (1 - u);
-      const coreR = THREE.MathUtils.lerp(2.4, 1, ease);
-      const bodyR = THREE.MathUtils.lerp(1.85, 1, ease);
-      const glowR = THREE.MathUtils.lerp(1.55, 1, ease);
-      this.coreMesh.scale.x = this.coreMesh.scale.y = coreR;
-      this.bodyMesh.scale.x = this.bodyMesh.scale.y = bodyR;
-      this.glowMesh.scale.x = this.glowMesh.scale.y = glowR;
+      const p = this.punchWidth();
+      this.mesh.scale.x = this.mesh.scale.y = p;
+      this.uni.uAmp.value = BEAM_ARC.amplitude * p;
     }
 
     if (this.beamFadeTimer <= 0) return;
@@ -221,39 +542,27 @@ export class RailgunBeamFx {
     this.beamFadeTimer -= dt;
     const dur = WEAPON_TUNING.railgun.beamDuration;
     const t = Math.max(0, this.beamFadeTimer / dur);
+    // Гаснет по кривой (BEAM_ARC.fadeExp): трассеру важно быть ярким в ПЕРВУЮ
+    // половину жизни — именно там его замечает глаз, а к концу он всё равно
+    // схлопывается в ноль. Огни (вспышка/терминус) остаются на линейном t:
+    // их пики подобрались под быстрый спад, а не под площадную читаемость.
+    const op = Math.pow(t, BEAM_ARC.fadeExp);
 
-    const coreT = Math.max(0, (t - (1 - CORE_FADE_FRAC)) / CORE_FADE_FRAC);
-    this.coreMat.opacity = coreT * coreT;
-    this.bodyMat.opacity = t;
-    const glowT = Math.min(1, t * GLOW_HOLD);
-    this.glowMat.opacity = 0.55 * glowT * glowT;
-
+    this.uni.uOpacity.value = op;
     this.muzzleLight.intensity = t * t * MUZZLE_LIGHT_PEAK;
     this.impactLight.intensity = t * IMPACT_LIGHT_PEAK;
 
     if (this.beamFadeTimer <= 0) {
-      this.coreMesh.visible = false;
-      this.bodyMesh.visible = false;
-      this.glowMesh.visible = false;
-      this.coreMat.opacity = 0;
-      this.bodyMat.opacity = 0;
-      this.glowMat.opacity = 0;
-      this.offLights();
+      this.hide();
     }
   }
 
   dispose() {
     this.offLights();
-    for (const mesh of [this.coreMesh, this.bodyMesh, this.glowMesh]) {
-      this.scene.remove(mesh);
-    }
-    this.coreMat.dispose();
-    this.bodyMat.dispose();
-    this.glowMat.dispose();
+    this.scene.remove(this.mesh);
+    this.mat.dispose();
     // Rig lights are shared and scene-owned — never disposed here.
     // Shared geometry is ref-counted — release our references last.
-    releaseSharedBeamGeo(CORE_RADIUS);
-    releaseSharedBeamGeo(BODY_RADIUS);
-    releaseSharedBeamGeo(GLOW_RADIUS);
+    releaseSharedBeamGeo(BEAM_ARC.radius);
   }
 }

@@ -10,8 +10,8 @@ export const WEAPON_TUNING = {
     knockback: 18.0,
     emissiveIdle: 0.15,
     emissiveCharged: 4.5,
-    /** Body beam fade (core shorter, glow slightly longer in RailgunBeamFx). */
-    beamDuration: 0.32,
+    /** Life of the visual beam — one arc layer, fade curve in RailgunBeamFx. */
+    beamDuration: 0.42,
     magazine: 1,
     /** Camera trauma on fire (player / bot). */
     fireShakePlayer: 0.48,

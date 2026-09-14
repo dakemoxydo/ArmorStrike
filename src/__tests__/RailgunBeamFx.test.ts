@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { RailgunBeamFx } from '../game/weapons/RailgunBeamFx';
+import { RailgunBeamFx, BEAM_ARC } from '../game/weapons/RailgunBeamFx';
 import { LightRig, LIGHT_CHANNEL_CAPACITY } from '../game/effects/LightRig';
 import { WEAPON_TUNING } from '../core/catalog';
 
@@ -14,11 +14,15 @@ function makeFx() {
   const fx = new RailgunBeamFx(scene, rig);
   const meshes = () => scene.children.filter((c) => c instanceof THREE.Mesh) as THREE.Mesh[];
   const lightCount = () => scene.children.filter((c) => c instanceof THREE.PointLight).length;
+  const mat = () => meshes()[0].material as THREE.ShaderMaterial;
+  const uni = () => mat().uniforms;
   return {
     scene,
     rig,
     fx,
     meshes,
+    mat,
+    uni,
     lightCount,
     muzzleLight: rig.light('beam', 0),
     impactLight: rig.light('beam', 1),
@@ -26,12 +30,102 @@ function makeFx() {
 }
 
 describe('RailgunBeamFx', () => {
-  it('show places multi-layer beam and lights; update fades; dispose removes meshes', () => {
-    const { scene, fx, meshes, lightCount, muzzleLight, impactLight } = makeFx();
+  it('M22: ровно один слой — никаких core/body/glow обводок поверх линии', () => {
+    const { scene, fx, meshes, mat, lightCount } = makeFx();
 
-    // Idle: 3 beam meshes, hidden, no light output.
-    expect(meshes()).toHaveLength(3);
-    for (const m of meshes()) expect(m.visible).toBe(false);
+    expect(meshes()).toHaveLength(1);
+    const material = mat();
+    expect(material).toBeInstanceOf(THREE.ShaderMaterial);
+    // Форма дуги живёт в шейдере, а не в наложенных мешах-ореолах.
+    expect(material.blending).toBe(THREE.AdditiveBlending);
+    expect(material.transparent).toBe(true);
+    expect(material.depthWrite).toBe(false);
+    expect(scene.children.length).toBe(RIG_LIGHTS + 1);
+
+    fx.dispose();
+    expect(lightCount()).toBe(RIG_LIGHTS);
+  });
+
+  it('M22: пиксельный пол ширины считается из высоты окна, без жизни в кадре рендера', () => {
+    const { fx, meshes, uni } = makeFx();
+    const scale = uni().uPxScale.value as number;
+
+    // Конечное и в зажатом диапазоне: 0 = луч исчез, раздутая трубка = камера
+    // внутри трубки = все фрагменты отсекаются. Оба варианта — «эффекта нет».
+    expect(Number.isFinite(scale)).toBe(true);
+    expect(scale).toBeGreaterThanOrEqual(1e-4);
+    expect(scale).toBeLessThanOrEqual(1e-2);
+    expect(uni().uPxWidth.value).toBe(BEAM_ARC.pixelWidth);
+    // Масштаб = 2/(H · projY) на фактической высоте окна (в node без DOM или с
+    // нулевой высотой — дефолт 720p, как в самом модуле).
+    const win = typeof window === 'undefined' ? undefined : window;
+    const h = win && win.innerHeight > 0 ? win.innerHeight : 720;
+    const projY = 1 / Math.tan(THREE.MathUtils.degToRad(58 / 2));
+    expect(scale).toBeCloseTo(2 / (h * projY), 9);
+    // Никаких хуков в момент рендера: прежний onBeforeRender давал шейдеру
+    // состояние renderer/camera, которого эффект не переживёт, если то врастёт
+    // в неадекватные величины (ortho-камера, resize с нулевой высотой).
+    expect(Object.prototype.hasOwnProperty.call(meshes()[0], 'onBeforeRender')).toBe(false);
+
+    fx.dispose();
+  });
+
+  it('show() возвращает mesh в сцену, если тот остался без родителя', () => {
+    const { scene, fx, meshes } = makeFx();
+    fx.show(new THREE.Vector3(), new THREE.Vector3(0, 0, 1), 30);
+    expect(meshes()).toHaveLength(1);
+
+    // Пересборка арены / teardown сцены между выстрелами снимает mesh с родителя.
+    scene.remove(meshes()[0]);
+    expect(meshes()).toHaveLength(0);
+
+    fx.show(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1), 30);
+    expect(meshes()).toHaveLength(1); // само-восстановление, луч снова рендерится
+    expect(meshes()[0].visible).toBe(true);
+
+    fx.dispose();
+  });
+
+  it('M22: числа тюнинга доезжают до uniform’ов, а не дублируются в шейдере', () => {
+    const { fx, uni } = makeFx();
+    const map = {
+      radius: 'uRadius',
+      pixelWidth: 'uPxWidth',
+      thicknessNoise: 'uThick',
+      amplitude: 'uAmp',
+      snapRate: 'uSnap',
+      muzzleStraight: 'uStraight',
+      coreExp: 'uCoreExp',
+      filaments: 'uFilaments',
+      strandAmount: 'uStrandAmt',
+      gain: 'uGain',
+    } as const;
+    for (const [key, uniform] of Object.entries(map)) {
+      expect(uni()[uniform].value).toBe(BEAM_ARC[key as keyof typeof BEAM_ARC]);
+    }
+    // Страховка от «опять слишком тонкий»: пол не меньше 6 px, ядро острее
+    // прежнего (ширина выросла — нить должна остаться нитью), яркость
+    // компенсирована под возросшую площадь аддитивного слоя.
+    // Ширина — пиксельный пол, и он не должен деградировать в «ниточку»:
+    // 12 CSS-px (~1 мм на экране) держатся и на дуельной, и на предельной дистанции.
+    expect(BEAM_ARC.pixelWidth).toBeGreaterThanOrEqual(10);
+    expect(BEAM_ARC.coreExp).toBeGreaterThan(1.7);
+    expect(BEAM_ARC.gain).toBeGreaterThan(1.2);
+    expect(BEAM_ARC.gain).toBeLessThan(2.2);
+    // Гаснуть — не линейно: иначе трассер «еле виден» уже на середине жизни.
+    expect(BEAM_ARC.fadeExp).toBeGreaterThan(0);
+    expect(BEAM_ARC.fadeExp).toBeLessThan(0.8);
+
+    fx.dispose();
+  });
+
+  it('show places the arc + lights; update fades; dispose removes the mesh', () => {
+    const { scene, fx, meshes, uni, lightCount, muzzleLight, impactLight } = makeFx();
+
+    // Idle: one beam mesh, hidden, no opacity, no light output.
+    expect(meshes()).toHaveLength(1);
+    expect(meshes()[0].visible).toBe(false);
+    expect(uni().uOpacity.value).toBe(0);
     expect(muzzleLight.intensity).toBe(0);
     expect(impactLight.intensity).toBe(0);
 
@@ -39,16 +133,13 @@ describe('RailgunBeamFx', () => {
     const dir = new THREE.Vector3(0, 0, 1);
     fx.show(muzzle, dir, 40);
 
-    const beams = meshes();
-    expect(beams).toHaveLength(3);
-    for (const beam of beams) {
-      expect(beam.visible).toBe(true);
-      expect(beam.scale.z).toBe(40);
-    }
-
-    const body = beams.find((b) => (b.material as THREE.MeshBasicMaterial).color.getHex() === 0x8fffe8)!;
-    const bodyMat = body.material as THREE.MeshBasicMaterial;
-    expect(bodyMat.opacity).toBe(1);
+    const beam = meshes()[0];
+    expect(beam.visible).toBe(true);
+    expect(beam.scale.z).toBe(40);
+    // Мировая длина известна шейдеру: по ней считается число звеньев дуги.
+    expect(uni().uLen.value).toBe(40);
+    expect(uni().uCells.value).toBeCloseTo(40 / BEAM_ARC.cellLength, 5);
+    expect(uni().uOpacity.value).toBe(1);
 
     // Lights are rig slots: written on show, never attached/detached.
     expect(muzzleLight.intensity).toBeGreaterThan(0);
@@ -58,15 +149,20 @@ describe('RailgunBeamFx', () => {
     expect(muzzleLight.color.getHex()).toBe(0x2ee6c0);
     expect(impactLight.color.getHex()).toBe(0xfff0a0);
 
-    const half = WEAPON_TUNING.railgun.beamDuration / 2;
-    fx.update(half);
-    expect(bodyMat.opacity).toBeCloseTo(0.5, 5);
+    const dur = WEAPON_TUNING.railgun.beamDuration;
+    // Четверть жизни прошла — а линия всё ещё на ~88% яркости (fadeExp < 1):
+    // при линейном затухании трассер «еле виден» уже в самом начале.
+    fx.update(dur * 0.25);
+    expect(uni().uOpacity.value).toBeGreaterThan(0.85);
+    expect(BEAM_ARC.fadeExp).toBeLessThan(1);
 
-    fx.update(half + 0.001);
-    for (const beam of beams) {
-      expect(beam.visible).toBe(false);
-    }
-    expect(bodyMat.opacity).toBe(0);
+    fx.update(dur * 0.25);
+    expect(uni().uOpacity.value).toBeCloseTo(Math.pow(0.5, BEAM_ARC.fadeExp), 5);
+    expect(uni().uTime.value).toBeCloseTo(dur * 0.5, 5);
+
+    fx.update(dur * 0.5 + 0.001);
+    expect(meshes()[0].visible).toBe(false);
+    expect(uni().uOpacity.value).toBe(0);
     // Faded: lights extinguished in place, scene light count unchanged.
     expect(muzzleLight.intensity).toBe(0);
     expect(impactLight.intensity).toBe(0);
@@ -80,7 +176,7 @@ describe('RailgunBeamFx', () => {
   });
 
   it('setImpactPosition moves impact light', () => {
-    const { fx, impactLight } = makeFx();
+    const { fx, uni, impactLight } = makeFx();
     const p = new THREE.Vector3(10, 2, -5);
     fx.setImpactPosition(p);
 
@@ -88,36 +184,43 @@ describe('RailgunBeamFx', () => {
     expect(impactLight.position.y).toBe(2);
     expect(impactLight.position.z).toBe(-5);
     expect(impactLight.intensity).toBeGreaterThan(0);
+    // Позиция луча не зависит от импакта: сам он не двинулся.
+    expect(uni().uLen.value).toBe(1);
 
     fx.dispose();
   });
 
-  it('radial punch settles scale toward 1 on first frames', () => {
-    const { fx, meshes } = makeFx();
+  it('punch widens the arc and settles width + wiggle amplitude back to rest', () => {
+    const { fx, meshes, uni } = makeFx();
     fx.show(new THREE.Vector3(), new THREE.Vector3(0, 0, 1), 20);
 
-    const body = meshes()[1];
-    expect(body.scale.x).toBeGreaterThan(1.5);
+    const beam = meshes()[0];
+    expect(beam.scale.x).toBeGreaterThan(1.5);
+    expect(uni().uAmp.value).toBeGreaterThan(BEAM_ARC.amplitude);
 
     fx.update(0.06);
-    expect(body.scale.x).toBeCloseTo(1, 1);
+    expect(beam.scale.x).toBeCloseTo(1, 1);
+    expect(beam.scale.y).toBeCloseTo(1, 1);
+    expect(uni().uAmp.value).toBeCloseTo(BEAM_ARC.amplitude, 2);
 
     fx.dispose();
   });
 
-  it('setLength shortens the beam mesh layers and moves impact light to the new end', () => {
-    const { fx, meshes, impactLight } = makeFx();
+  it('setLength shortens the arc mesh, re-seeds cells and moves the impact light', () => {
+    const { fx, meshes, uni, impactLight } = makeFx();
     const muzzle = new THREE.Vector3(0, 1, 0);
     const dir = new THREE.Vector3(0, 0, 1);
     fx.show(muzzle, dir, 40);
 
-    // M18 fix: previously only the light moved — meshes kept drawing through walls.
+    // M18 fix: previously only the light moved — the mesh kept drawing through walls.
     fx.setLength(20);
-    for (const b of meshes()) {
-      expect(b.scale.z).toBe(20);
-      // Midpoint should be at z = 10 (muzzle.z + 20/2).
-      expect(b.position.z).toBeCloseTo(10, 5);
-    }
+    const beam = meshes()[0];
+    expect(beam.scale.z).toBe(20);
+    // Midpoint should be at z = 10 (muzzle.z + 20/2).
+    expect(beam.position.z).toBeCloseTo(10, 5);
+    // Звенья — по мировой длине: уже нарисованная часть луча форму не меняет.
+    expect(uni().uLen.value).toBe(20);
+    expect(uni().uCells.value).toBeCloseTo(20 / BEAM_ARC.cellLength, 5);
     expect(impactLight.position.z).toBeCloseTo(20, 5);
 
     fx.dispose();
@@ -127,20 +230,39 @@ describe('RailgunBeamFx', () => {
     const { scene, fx, lightCount } = makeFx();
     // No show() called — setLength must not throw or add children.
     expect(() => fx.setLength(10)).not.toThrow();
-    expect(scene.children.length).toBe(RIG_LIGHTS + 3); // rig + idle meshes
+    expect(scene.children.length).toBe(RIG_LIGHTS + 1); // rig + idle mesh
     expect(lightCount()).toBe(RIG_LIGHTS);
+    fx.dispose();
+  });
+
+  it('hide kills the arc instantly and stops the shader clock', () => {
+    const { fx, meshes, uni, muzzleLight } = makeFx();
+    fx.show(new THREE.Vector3(), new THREE.Vector3(0, 0, 1), 30);
+    fx.update(0.02);
+    const t = uni().uTime.value as number;
+    expect(t).toBeGreaterThan(0);
+
+    fx.hide();
+    expect(meshes()[0].visible).toBe(false);
+    expect(uni().uOpacity.value).toBe(0);
+    expect(muzzleLight.intensity).toBe(0);
+
+    fx.update(0.1);
+    expect(uni().uTime.value).toBe(t); // часы идут только пока луч жив
     fx.dispose();
   });
 
   it('shared geometry is ref-counted: disposed only after last instance disposes', () => {
     const scene = new THREE.Scene();
     const rig = new LightRig(scene);
+    const geoOf = (fx: RailgunBeamFx) => (Reflect.get(fx, 'mesh') as THREE.Mesh).geometry;
     const a = new RailgunBeamFx(scene, rig);
     const b = new RailgunBeamFx(scene, rig);
     a.dispose();
-    // Second instance still alive → geometries NOT yet disposed.
-    // Re-creating a third instance reuses the same shared geos (no duplicate construction).
+    // Second instance still alive → geometry NOT yet disposed.
+    // Re-creating a third instance reuses the same shared geo (no duplicate construction).
     const c = new RailgunBeamFx(scene, rig);
+    expect(geoOf(c)).toBe(geoOf(b));
     b.dispose();
     c.dispose();
     // After all instances gone, only the rig lights are left.
