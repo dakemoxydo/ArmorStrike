@@ -51,7 +51,9 @@ attach/detach в рантайме). Warm-up шейдеров — `renderWorld.wa
 ```ts
 interface SimSystem {
   readonly name: string;
-  update(ctx: SimContext): void;
+  update(ctx: FrameContext): void;
+  /** Optional: drop cached per-roster state (called from clearTanks). */
+  onRosterCleared?(): void;
 }
 ```
 
@@ -81,7 +83,7 @@ interface SimSystem {
 
 Правила:
 - `dt` clamp ~0.05s в game loop.
-- Стадия зависит от `SimContext` (или `Pick`-среза), не от concrete `Game`.
+- Стадия зависит от `FrameContext` (или `Pick`-среза), не от concrete `Game`.
 - Не вставлять тяжёлую презентацию до physics/projectiles без явной причины (порядок = детерминизм кадра).
 
 ## 4. Port pattern (I/O isolation)

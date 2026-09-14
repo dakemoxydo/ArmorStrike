@@ -229,7 +229,7 @@ Tailwind-класс `rounded*` в UI не используется: язык и�
 элемент с классом кнопки. Закреплено тестом.
 
 **Матрица состояний.** Одна таблица на все интерактивные роли (см. §3.5 плана
-`Docs/GDD/Drafts/UI_Polish.md`): `hover` + `active` + `focus-visible` обязательны
+`Docs/GDD/Approved/UI_Polish.md`): `hover` + `active` + `focus-visible` обязательны
 у кнопки, карточки и таба; `selected` — у карточки и таба; `disabled` — у кнопки и
 карточки. Отключённое состояние задаётся атрибутом `disabled` (`:disabled`) для
 кнопок и карточек; класс `.is-disabled` (base.css) — для не-кнопочных ролей.
