@@ -15,6 +15,7 @@ Self-contained workflow. Works in any IDE/CLI that reads AGENTS.md.
 - `npm run lint` — `eslint src`. `no-explicit-any` is an **error** in shipped code, off under `src/__tests__/` (partial test doubles).
 - `npm run census` — draw-call census (`scripts/draw-call-census.ts`).
 - `npm run map-plan [mapId]` — map plan report: collider density, zones, spawn points from real colliders (`scripts/map-plan.ts` → `screenshots/<mapId>-plan.html`).
+- `npm run docs:check` — docs consistency gate (`scripts/docs-check.ts`): .md links, `[[wiki-links]]`, code paths cited in backticks, `npm run` names vs package.json; runs in CI. Archive docs (`Docs/GDD/Archive/**`) may cite deleted files on purpose.
 - `npm run preview:models` — procedural hull/turret previews via headless CPU render (`scripts/hull-preview.ts` → `screenshots/hull-preview/*.png`).
 - `npm run build` — typecheck + Vite production build.
 

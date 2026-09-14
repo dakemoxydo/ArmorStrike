@@ -18,6 +18,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - name: docs consistency gate (.md links, wiki-links, cited paths, npm scripts)
+        run: npm run docs:check
       - run: npm test
       - run: npm run build
       - name: bundle size gate (dist/index.html + fonts)

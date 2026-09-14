@@ -14,6 +14,7 @@
     "test": "vitest run",
     "census": "vite-node scripts/draw-call-census.ts",
     "map-plan": "vite-node scripts/map-plan.ts",
+    "docs:check": "vite-node scripts/docs-check.ts",
     "preview": "vite preview",
     "preview:models": "vite-node scripts/hull-preview.ts"
   },
