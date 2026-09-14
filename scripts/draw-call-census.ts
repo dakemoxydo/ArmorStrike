@@ -61,7 +61,7 @@ function census(mapId: string) {
   const origBox = arenaProto.box;
   const skipFrames =
     /[\\/](Arena|ArenaBuilder)\.ts:\d+|[\\/]scripts[\\/]/;
-  arenaProto.box = function (this: Arena, ...args: unknown[]) {
+  arenaProto.box = function (this: InstanceType<typeof Arena>, ...args: unknown[]) {
     const frames = (new Error().stack ?? '')
       .split('\n')
       .map((l) => l.trim())

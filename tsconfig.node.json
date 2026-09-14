@@ -1,11 +1,12 @@
 {
-  // Node-flavoured TypeScript: the Vite config and the test suites. Both legitimately
-  // touch node builtins (vite.config reads process.env; p3r-ports/uiUxPresentation
-  // read files with node:fs and resolve __dirname), so @types/node is scoped here
-  // instead of leaking into the browser program in tsconfig.json.
+  // Node-flavoured TypeScript: the Vite config, the test suites and the tooling
+  // scripts. All three legitimately touch node builtins (vite.config reads
+  // process.env; p3r-ports/uiUxPresentation read files with node:fs and resolve
+  // __dirname; scripts/* are CLI tools run via vite-node), so @types/node is
+  // scoped here instead of leaking into the browser program in tsconfig.json.
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "types": ["node", "vite/client"]
   },
-  "include": ["vite.config.ts", "src/__tests__"]
+  "include": ["vite.config.ts", "src/__tests__", "scripts"]
 }
