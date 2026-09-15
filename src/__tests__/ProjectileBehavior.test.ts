@@ -48,13 +48,13 @@ describe('ProjectileBehavior (cannon pool only)', () => {
     expect(BEHAVIORS.flamethrower).toBeUndefined();
   });
 
-  it('cannon: splash = half damage rounded', () => {
+  it('cannon: splash scales with damage and catalog tuning', () => {
     const s = makeShot();
     BEHAVIORS.cannon!.init(s, makeOwner(), 32, 75);
-    expect(s.speed).toBe(48);
+    expect(s.speed).toBe(54);
     expect(s.maxRange).toBe(75);
     expect(s.splashRadius).toBe(5);
-    expect(s.splashDmg).toBe(16);
+    expect(s.splashDmg).toBe(15);
   });
 
   it('cannon onHitTank даёт knockback и эффекты', () => {

@@ -57,6 +57,8 @@ export interface HudSnapshot {
   lockTargetX?: number;
   lockTargetY?: number;
   lockTargetDist?: number;
+  /** Входящий снайперский захват (вражеский Гаусс нацелен на игрока). */
+  incomingLock?: boolean;
   /** Нано-луч «Изиды»: режим для HUD-статуса и тейнта полосы энергии. */
   beamMode?: BeamMode;
 }

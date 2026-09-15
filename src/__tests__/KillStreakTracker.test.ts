@@ -43,6 +43,19 @@ describe('KillStreakTracker', () => {
     expect(tracker.registerKill(4)?.label).toBe('MULTI KILL');
   });
 
+  it('re-awards after window shrink instead of staying silent (C9)', () => {
+    const tracker = new KillStreakTracker();
+    tracker.registerKill(10);
+    expect(tracker.registerKill(11)?.label).toBe('DOUBLE KILL');
+    expect(tracker.registerKill(12)?.label).toBe('TRIPLE KILL');
+    // 14.05: старейший кил (t=10) выпал из 4-секундного окна — в окне 11,12 +
+    // новый = тройная серия заново. До C9 lastStreakCount оставался 3 и метка
+    // молчала; теперь рекорд понижен при сужении и TRIPLE перевыставляется.
+    expect(tracker.registerKill(14.05)?.label).toBe('TRIPLE KILL');
+    // А одиночный кил в уже опустевшем окне метки не даёт.
+    expect(tracker.registerKill(20)).toBeNull();
+  });
+
   it('reset clears history and the best-streak gate', () => {
     const tracker = new KillStreakTracker();
     tracker.registerKill(10);

@@ -19,8 +19,8 @@ Blurbs (UI):
 | Id | blurb (ru) |
 |----|------------|
 | factory | Литейный комплекс: цеха, контейнеры, краны и разрушаемые укрытия. |
-| village | Сельский посёлок на закате: рыночная площадь с колодцем, часовня с колокольней, фахверковые дома и амбары, ветряк, пруды, сад и дым из труб. |
-| city | Огромный ночной downtown: широкий крест авеню, 4 квартала-district, плаза, эстакада и плотный неон. |
+| village | Сельский посёлок на закате: рыночная площадь с колодцем, часовня с колокольней, фахверковые дома и амбары, ветряк, пруд, сад и дым из труб. |
+| city | Огромный ночной мегаполис: широкий крест авеню, 4 квартала-района, плаза, эстакада и плотный неон. |
 
 ## Размер арены (глобальный)
 
@@ -32,9 +32,9 @@ Blurbs (UI):
 | Minimap half | `MAP_HALF = 156` | `src/components/hud/minimapDraw.ts` |
 | Bot spawns | corners ±128 + edge points | `src/game/match/spawnPoints.ts` (`FFA_SPAWN_POINTS`) |
 | Player start (DM) | `(0, 0, −120)` | `src/game/match/rosterSpawn.ts` |
-| Render | fog 130..440, camera far 900, shadow ±170 | `src/game/RenderWorld.ts` |
+| Render | fog/far/shadow — **per-map** пресеты (`src/game/atmospherePresets.ts`); в `src/game/RenderWorld.ts` только дефолт (J14) | `src/game/atmospherePresets.ts` |
 
-City и Village **заполняют всю 300**. Factory-контент (modules) исторически заточен под ~±75 — на 300-арене остаётся «остров» в центре с пустым outer ring (см. Known gaps).
+Factory перестроена на всю 300-арену (I0: 133 коллайдера, 4 района + кран над CP-B) — «острова» с пустым outer ring больше нет (см. [[Factory_Level_Design]]).
 
 ## Структура сборки
 

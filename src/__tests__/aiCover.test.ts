@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { findCoverPoint } from '../game/aiCover';
-import { losClear } from '../game/engine/physics';
+import { losClear, pointInCollider } from '../game/engine/physics';
 import type { Collider } from '../game/engine/physics';
 import { BOT_NORMAL } from '../game/match/matchConfig';
 
@@ -87,5 +87,36 @@ describe('aiCover — дистанции vs классы оружия (D3)', () 
     expect(pt).not.toBeNull();
     // Выбран блок в 8 (точка ~14.4 от бота), а не в 40.
     expect(pt!.x).toBeLessThan(near.maxX + 10);
+  });
+
+  // ===== D5: кандидат не должен залезать в чужой solid / за границы арены =====
+  describe('cover point validity (D5)', () => {
+    it('skips candidates buried inside a neighbouring collider', () => {
+      // Кластер: A (20,0) и впритык B (27,0), оба 6×6. Точка «за A» (26.4,0)
+      // лежала ВНУТРИ B — бот детерминированно упирался в соседний блок.
+      const a = block(1, 20, 0);
+      const b = block(2, 27, 0);
+      const pt = findCoverPoint(18, 0, 0, 0, [a, b]);
+      expect(pt).not.toBeNull();
+      // Выбранная точка вне обоих коллайдеров (с запасом радиуса танка).
+      expect(pointInCollider(pt!.x, pt!.z, a, 1.0)).toBe(false);
+      expect(pointInCollider(pt!.x, pt!.z, b, 1.0)).toBe(false);
+      // …и это всё ещё укрытие: LOS угрозы порван.
+      expect(losClear(0, 0, pt!.x, pt!.z, [a, b])).toBe(false);
+    });
+
+    it('clamps to arena bounds and never returns points through the wall', () => {
+      // Блок у самой границы: raw-точка 152.4 залезала за стену арены.
+      const a = block(1, 146, 0, 6, 6);
+      const outside = findCoverPoint(140, 0, 100, 0, [a], { arenaHalf: 150 });
+      // Clamp 147 попал бы в сам блок (+clearance) → валидных точек нет.
+      expect(outside).toBeNull();
+      // Чуть дальше от стены — точка валидна и внутри границ.
+      const c = block(2, 140, 0, 6, 6);
+      const pt = findCoverPoint(134, 0, 100, 0, [c], { arenaHalf: 150 });
+      expect(pt).not.toBeNull();
+      expect(Math.abs(pt!.x)).toBeLessThanOrEqual(147);
+      expect(pointInCollider(pt!.x, pt!.z, c, 1.0)).toBe(false);
+    });
   });
 });

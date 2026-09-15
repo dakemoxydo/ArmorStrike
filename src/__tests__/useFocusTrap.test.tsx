@@ -44,6 +44,21 @@ describe('useFocusTrap', () => {
     expect(btn('first')).toHaveFocus();
   });
 
+  it('prefers the [data-autofocus] element — the primary CTA (H7)', () => {
+    function CtaTrap() {
+      const ref = useFocusTrap(true);
+      return (
+        <div ref={ref}>
+          <button type="button">back</button>
+          <button type="button" data-autofocus>confirm</button>
+        </div>
+      );
+    }
+    render(<CtaTrap />);
+
+    expect(btn('confirm')).toHaveFocus();
+  });
+
   it('wraps Tab from the last element back to the first', () => {
     render(<Trap />);
 

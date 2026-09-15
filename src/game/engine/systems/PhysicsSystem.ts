@@ -9,7 +9,15 @@ import { solidColliders } from '../solidColliderCache';
 const _pa: TankXZ = { x: 0, z: 0 };
 const _pb: TankXZ = { x: 0, z: 0 };
 
-function resolveWalls(tanks: PhysicsBody[], colliders: Collider[]) {
+/**
+ * F4: стеновое трение — экспоненциальный затухание за секунду, а не фиксированный
+ * множитель на тик. K = −ln(0.86)·60 ≈ 9.05 сохраняет прежнее поведение
+ * на 60 fps (×0.86 за кадр) и делает его одинаковым на любом FPS
+ * (30 fps: было ×0.74/сек вместо ×0.86 — drift из-за клампнутого dt).
+ */
+const WALL_FRICTION_K = 9.05;
+
+function resolveWalls(tanks: PhysicsBody[], colliders: Collider[], dt: number, friction: boolean) {
   // M12: ramps are visual wedges; solid AABB footprints blocked climb and felt like invisible walls.
   // Tanks ignore ramp kind for hull collision (shots already pass via blocksShots:false).
   const solid = solidColliders(colliders);
@@ -20,14 +28,16 @@ function resolveWalls(tanks: PhysicsBody[], colliders: Collider[]) {
       const impact = Math.hypot(res.x - t.position.x, res.z - t.position.z);
       t.position.x = res.x;
       t.position.z = res.z;
-      if (impact > 0.01) t.speed *= 0.86;
+      // F4: friction — только первым проходом; второй pass — чистая
+      // позиционная коррекция после разведения танков, не «ещё одно касание».
+      if (friction && impact > 0.01) t.speed *= Math.exp(-WALL_FRICTION_K * dt);
     }
   }
 }
 
 export const PhysicsSystem = {
-  resolveCollisions(tanks: PhysicsBody[], colliders: Collider[]) {
-    resolveWalls(tanks, colliders);
+  resolveCollisions(tanks: PhysicsBody[], colliders: Collider[], dt = 1 / 60) {
+    resolveWalls(tanks, colliders, dt, true);
 
     for (let i = 0; i < tanks.length; i++) {
       const a = tanks[i];
@@ -55,6 +65,6 @@ export const PhysicsSystem = {
     }
 
     // M10: re-resolve walls after tank–tank so pairs cannot push hulls into colliders.
-    resolveWalls(tanks, colliders);
+    resolveWalls(tanks, colliders, dt, false);
   },
 };

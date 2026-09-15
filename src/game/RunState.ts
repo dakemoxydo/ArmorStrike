@@ -14,13 +14,24 @@ export class RunState {
   currentHull: HullId = 'hunter';
   currentTurret: TurretId = 'railgun';
 
+  constructor() {
+    // Восстановление прошлого loadout при создании (A6): раньше load() в проде
+    // не вызывался никогда, и F5 сбрасывал выбор к дефолту против Garage_Loadout.md.
+    this.load();
+  }
+
   /** Загрузить выбор корпуса/башни из предыдущих сессий. */
   load() {
     try {
       const raw = localStorage.getItem(LS_KEY);
       if (raw) {
         const o = JSON.parse(raw);
-        if (o && HULLS[o.hullId as HullId] && TURRETS[o.turretId as TurretId]) {
+        // hasOwnProperty.call: строки вроде 'toString' проходят через
+        // prototype-chain lookup и давали undefined-спеки → NaN-health (A8).
+        // (Object.hasOwn не используем — lib ES2020.)
+        if (o && typeof o.hullId === 'string' && typeof o.turretId === 'string'
+          && Object.prototype.hasOwnProperty.call(HULLS, o.hullId)
+          && Object.prototype.hasOwnProperty.call(TURRETS, o.turretId)) {
           this.currentHull = o.hullId;
           this.currentTurret = o.turretId;
         }

@@ -13,11 +13,12 @@ type TeamId = 'alpha' | 'bravo' | null  // null = FFA
 
 | Mode | Roster | Win | UI |
 |------|--------|-----|-----|
-| `deathmatch` | 1 player + **7** bots, `teamId=null` | first **30** personal kills | ModeSelect ✅ |
-| `team_deathmatch` | 5v5 (player Alpha + 4 allies, 5 Bravo) | team kills **75** (P6) | ModeSelect ✅ — см. [[Team_Deathmatch]] |
+| `deathmatch` | 1 player + **7** bots, `teamId=null` | first **25** personal kills | ModeSelect ✅ |
+| `team_deathmatch` | 5v5 (player Alpha + 4 allies, 5 Bravo) | team kills **50** (P6) | ModeSelect ✅ — см. [[Team_Deathmatch]] |
 | `capture_point` | same as TDM | team score **1000** (+1/s per owned point) | ModeSelect ✅ — см. [[Capture_Point]] |
 
-Time limit all modes: **12 min** → leader wins (`reason: 'time'`).
+Time limit all modes: **12 min** → leader wins (`reason: 'time'`); равный
+лидер / обе команды на пороге → **ничья** (`winnerName/winnerTeam = null`, C7).
 
 Bot difficulty: **Normal** (`BOT_NORMAL` in `matchConfig.ts`).
 
@@ -50,6 +51,11 @@ Handled by `RespawnController` (delegated from `MatchRuntime`) + `MatchStage`.
 ## Win
 
 `evaluateMatchEnd` pure (`winConditions.ts`) → `requestMatchOver` → event `gameOver` with winner fields.
+
+**No order bias (C7).** Порог, пересечённый несколькими участниками на одном
+тике, не отдаёт победу первому в ростере/массиве: лидер определяется по
+**максимуму** (килы/очки), а равный максимум → **draw** (`winnerName`/`winnerTeam`
+= `null`). Единое правило ничьей для всех трёх режимов; time-limit tie тоже → draw.
 
 ## Spawn tables
 
@@ -106,4 +112,4 @@ Win already evaluated via `teamScore` in `evaluateMatchEnd`.
 - `gameOver` event carries `matchTimeSec`, `teamKills`, `teamScore`.
 - `GameOverScreen`: headline + duration + team strip + XP/K/D/D + K/D.
 - Actions: **Реванш** (same mode+map) · **Режим/карта** · Гараж · Меню.
-- Balance: `winTeamKills = 75` in `matchConfig.ts`.
+- Balance: `winTeamKills = 50`, `winKills = 25` in `matchConfig.ts`.

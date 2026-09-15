@@ -76,6 +76,8 @@ const FIELD_DIFFERS: Partial<Record<keyof HudSnapshot, FieldDiffers>> = {
   lockTargetX: () => false,
   lockTargetY: () => false,
   lockTargetDist: () => false,
+  // Входящий снайперский захват — императивный ref-painted канал.
+  incomingLock: () => false,
 
   // Дискретные патроны (рельса/пушка) требуют рендера; энергия огнемёта — нет.
   ammo: (a, b) => ammoForcesHudRender(a.turretId, b.turretId, a.ammo, b.ammo),

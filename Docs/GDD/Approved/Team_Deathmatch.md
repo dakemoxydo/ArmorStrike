@@ -10,7 +10,7 @@
 |----------|----------|-----|
 | Формат | 5 vs 5 | `spawnMatchRoster` + `teamSize: 5` |
 | Состав | Игрок **Alpha** + 4 ally-бота; **Bravo** = 5 enemy-ботов | `rosterSpawn.ts` |
-| Win | Сумма team kills ≥ **75** (P6) | `evaluateMatchEnd` / `winTeamKills` |
+| Win | Сумма team kills ≥ **50** (P6) | `evaluateMatchEnd` / `winTeamKills` |
 | Time limit | **12 мин** → лидер по team kills | `timeLimitSec` |
 | Friendly fire | **Выкл** | `DamageSystem.applyDamage` same `teamId` |
 | Respawn | 4 с delay, 2 с invuln, team spawn pools | `MatchRuntime` + `ALPHA/BRAVO_SPAWN_POINTS` |
@@ -60,7 +60,7 @@
 - [x] ModeSelect: можно выбрать TDM и стартовать матч
 - [x] 5v5 roster, player Alpha
 - [x] Friendly fire off
-- [x] Team kills **75** → end; time → leader
+- [x] Team kills **50** → end; time → leader
 - [x] HUD ALPHA—BRAVO + personal K/D
 - [x] Tab two columns
 - [x] Minimap ally/enemy colors

@@ -16,7 +16,7 @@
 | E–W Main | z ∈ [−14, 14] | Primary fire lane |
 | Secondary | \|x\|≈56, \|z\|≈56 | Secondary lanes, low channels |
 | Outer ring | \|x\| or \|z\| ≈ 104–120 | Spawn-adjacent corridor |
-| Plaza core | \|x\|, \|z\| < 24 | Monument + soft planter ring |
+| Plaza core | \|x\|, \|z\| < 24 | CP-A: проходимый подиум монумента + голо-фонтан, плантеры вне осей |
 | Alleys | gaps between L-block offices | Flanks, AI retreat |
 
 **Rule:** no solid office/shop may intersect main avenues (x∈[−14,14] or z∈[−14,14]).
@@ -29,7 +29,7 @@
 | NE | Parking / Mall | Dense car rows, lot jersey walls, ticket kiosk |
 | SW | Neon Market | Kiosks, dumpsters, magenta billboards |
 | SE | Residential | Planters, bus stops, residential cars |
-| Center | Civic Plaza | Monument + fountain, planter ring, hard jersey approaches |
+| Center | Civic Plaza | CP-A подиум (drivable `ramp` 15×15×1.4) + голо-колонна/кольца без коллайдера, planter ring, jersey-подходы вне осей авеню |
 
 ## Cover hierarchy
 
@@ -38,15 +38,27 @@
 | Hard | Offices, shops, overpass pillars, dock containers | No | Yes |
 | Medium | Jersey rows, kiosks | Optional / yes | Yes |
 | Soft | Cars, vans, planters, delivery crates | Yes | Yes |
-| Non-LOS | Billboards (thin), lamps, ramps | No | False / ramp |
+| Non-LOS | Billboards (тонкие, `blocksSight:false`, но снаряды держат — `blocksShots:true` по дефолту), lamps (без коллайдера), ramps | No | False / ramp |
 
 ## Overpass (EW spine south of center)
 
 - Deck along **z ≈ −80**, length ~148 m (visual).
-- Solid **pillars only** at x ∈ {−64, −24, 24, 64} (hard cover under).
+- Solid **pillars only** at x ∈ {−56, −24, 24, 56} (hard cover under; внешняя
+  пара сдвинута с ±64 — у спавнов (±70, −90) держим клиренс ≥10 м, I4).
 - **Deck** visual + high enough tanks pass under; no shot-block slab.
 - Neon rails + under-glow strip.
-- Approach **ramps** at ends (`kind: ramp`, `blocksShots: false`).
+- Approach **ramps** at ends (`kind: ramp`, `blocksShots: false`); южные подъезды
+  за офисным рядом (±84, −108), вне спавн-афронов.
+
+## Capture points (батч-фикс I5)
+
+- **A** (0, 0) — центр плазы на проходимом подиуме: основание `ramp`
+  (танк въезжает = захватывает), колонна/капитель/кольцо — голография без
+  коллайдера; hard-объектов в диске (r=20) нет.
+- **B** (0, 78) / **C** (0, −78) — север/юг магистраль, зеркальны на 180°,
+  путь от своей базы (0, ±120) = 42 м у обоих.
+- Спавны вне дисков захвата (≥ CAPTURE.radius) и вне геометрии (≥10 м) —
+  контракт пинит `cityMap.test.ts`.
 
 ## Implemented layout (code)
 
@@ -54,7 +66,7 @@
 
 | Zone | Contents |
 |------|----------|
-| Plaza | Monument + fountain (scaled), 12 planters, 4 hard jersey approaches |
+| Plaza | CP-A: drivable monument-podium (`ramp` 15×15×1.4) + non-solid holo fountain (cap/ring — обелиск-анимация), 12 planters вне осей, 4 jersey-подхода |
 | Blocks | 16 offices (4 per quadrant) + 8 street shops; avenues clear |
 | NE | Parking cars, lot walls, ticket kiosk |
 | NW | Jersey rows, crates, scaffold frame |

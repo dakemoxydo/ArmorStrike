@@ -60,6 +60,11 @@ shadow-count в ключ и shadow-pass на кадр).
 4. **`clear()` при рестарте раунда** гасит все каналы, не меняя число источников.
 5. **Ёмкость канала исчерпана → переиспользовать самый «отработавший» слот**
    (`FlashSystem.flash`), а не добавлять свет.
+6. **Контент карт — тоже без источников света** (B7): ни один `arena/*Map.ts` не
+   добавляет `*Light` в сцену — статические PointLight в контенте меняли
+   `numPointLights` при смене карты (9↔7) = recompile lit-программ в первом
+   кадре боя. «Свечение» печей — additive glow-меши (конвенция `moltenPlane`),
+   мерцание — через общий пул `moltenMats`.
 
 `index` в `rig.light()` клампится к ёмкости канала — вызывающий может использовать
 локальный индекс пула, не зная раскладки рига.
@@ -163,6 +168,7 @@ combat.setOnKillPunch((byPlayer) => {
 | Что | Где |
 |-----|-----|
 | Постоянство бюджета света | `src/__tests__/lightRig.test.ts` (весь бюджет привязан один раз; переполнение пула флешей не меняет число источников) |
+| Ноль источников в контенте карт (B7) | `src/__tests__/factoryMap.test.ts` (traverse группы контента на `isLight`) |
 | Beam-свет из рига | `src/__tests__/RailgunBeamFx.test.ts` (слоты `rig.light('beam', …)`, счётчик постоянен) |
 | Hit-stop / slow-mo | `src/__tests__/timeScale.test.ts` |
 | Порядок round-start (в т.ч. warm-up) | `src/__tests__/gameModeLifecycle.test.ts` |

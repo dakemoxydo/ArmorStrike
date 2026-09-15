@@ -23,9 +23,20 @@ export interface WinEvalResult {
   playerWon: boolean;
 }
 
-function leadingPersonal(personals: PersonalStanding[]): PersonalStanding | null {
-  if (personals.length === 0) return null;
-  return personals.reduce((best, p) => (p.kills > best.kills ? p : best));
+function leadingPersonal(personals: PersonalStanding[]): { leader: PersonalStanding | null; tied: boolean } {
+  // C7: строгий `>` в reduce отдавал ничью первому в ростере (= игроку
+  // молча). Равный максимум теперь честно помечается tied.
+  let leader: PersonalStanding | null = null;
+  let tied = false;
+  for (const p of personals) {
+    if (!leader || p.kills > leader.kills) {
+      leader = p;
+      tied = false;
+    } else if (p.kills === leader.kills) {
+      tied = true;
+    }
+  }
+  return { leader, tied };
 }
 
 function teamLead(
@@ -46,45 +57,41 @@ export function evaluateMatchEnd(input: WinEvalInput): WinEvalResult | null {
   const mode: MatchModeId = config.mode;
 
   if (mode === 'deathmatch') {
-    const hit = personals.find((p) => p.kills >= config.winKills);
-    if (hit) {
+    // C7: «кто пересёк порог» определяется максимумом килов, а не порядком
+    // в personals (find брал первым id=0=игрок при одновременном добивании).
+    const { leader, tied } = leadingPersonal(personals);
+    if (leader && leader.kills >= config.winKills) {
       return {
         reason: 'score',
-        winnerName: hit.name,
+        winnerName: tied ? null : leader.name,
         winnerTeam: null,
-        playerWon: hit.isPlayer,
+        playerWon: !tied && leader.isPlayer,
       };
     }
     if (matchTimeSec >= config.timeLimitSec) {
-      const lead = leadingPersonal(personals);
-      if (!lead) {
+      if (!leader) {
         return { reason: 'time', winnerName: null, winnerTeam: null, playerWon: false };
       }
       return {
         reason: 'time',
-        winnerName: lead.name,
+        winnerName: tied ? null : leader.name,
         winnerTeam: null,
-        playerWon: lead.isPlayer,
+        playerWon: !tied && leader.isPlayer,
       };
     }
     return null;
   }
 
   if (mode === 'team_deathmatch') {
-    if (teamKills.alpha >= config.winTeamKills) {
+    // C7: двойное пересечение порога на одном тике больше не отдаёт победу
+    // Alpha автоматически — считаем как time-limit (teamLead, tie→draw).
+    if (teamKills.alpha >= config.winTeamKills || teamKills.bravo >= config.winTeamKills) {
+      const { team, tied: draw } = teamLead(teamKills.alpha, teamKills.bravo);
       return {
         reason: 'score',
         winnerName: null,
-        winnerTeam: 'alpha',
-        playerWon: true,
-      };
-    }
-    if (teamKills.bravo >= config.winTeamKills) {
-      return {
-        reason: 'score',
-        winnerName: null,
-        winnerTeam: 'bravo',
-        playerWon: false,
+        winnerTeam: draw ? null : team,
+        playerWon: !draw && team === 'alpha',
       };
     }
     if (matchTimeSec >= config.timeLimitSec) {
@@ -100,20 +107,14 @@ export function evaluateMatchEnd(input: WinEvalInput): WinEvalResult | null {
   }
 
   // capture_point — score from points (P4); for now only time / future score
-  if (teamScore.alpha >= config.winTeamScore) {
+  // C7: та же анти-смещение, что и TDM: обе команды на пороге → draw.
+  if (teamScore.alpha >= config.winTeamScore || teamScore.bravo >= config.winTeamScore) {
+    const { team, tied: draw } = teamLead(teamScore.alpha, teamScore.bravo);
     return {
       reason: 'score',
       winnerName: null,
-      winnerTeam: 'alpha',
-      playerWon: true,
-    };
-  }
-  if (teamScore.bravo >= config.winTeamScore) {
-    return {
-      reason: 'score',
-      winnerName: null,
-      winnerTeam: 'bravo',
-      playerWon: false,
+      winnerTeam: draw ? null : team,
+      playerWon: !draw && team === 'alpha',
     };
   }
   if (matchTimeSec >= config.timeLimitSec) {

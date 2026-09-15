@@ -73,6 +73,8 @@ export function useGameHud(game: GameApi | null, active: boolean) {
   const ghostRef = useRef<HTMLDivElement>(null);
   /** Захваченная цель для оружия с lock-on (Гаусс) — приклеенный прицел с масштабированием по дистанции. */
   const lockTargetRef = useRef<HTMLDivElement>(null);
+  /** Предупреждение о входящем снайперском захвате цели. */
+  const incomingLockRef = useRef<HTMLDivElement>(null);
   const mmBuf = useRef<MinimapDynamic[]>([]);
   const feedId = useRef(0);
   const lastLiveKey = useRef('');
@@ -230,6 +232,11 @@ export function useGameHud(game: GameApi | null, active: boolean) {
         }
       }
 
+      if (incomingLockRef.current) {
+        const active = !!s.incomingLock && s.alive && !s.paused && s.mode === 'playing';
+        incomingLockRef.current.classList.toggle('active', active);
+      }
+
       if (game) drawMinimap(game, mapRef.current, mmBuf.current);
 
       // Threshold live region (M15) — announce only on discrete state crosses.
@@ -273,7 +280,7 @@ export function useGameHud(game: GameApi | null, active: boolean) {
     feed, vignette, dmgArc, hitmark, showHint, frag, streak,
     setFeed, setVignette, setDmgArc, setHitmark, setShowHint, setFrag, setStreak,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
-    flameFillRef, ghostRef, lockTargetRef,
+    flameFillRef, ghostRef, lockTargetRef, incomingLockRef,
     mmBuf, feedId,
   };
 }

@@ -40,7 +40,7 @@ describe('HudModel getHud (shipped)', () => {
     expect(a.kills).toBe(1);
     expect(a.enemiesAlive).toBe(0);
     expect(a.matchMode).toBe('deathmatch');
-    expect(a.winTarget).toBe(30);
+    expect(a.winTarget).toBe(25);
   });
 
   it('scoreboard path builds rows when Tab held', () => {
@@ -109,7 +109,7 @@ describe('HudModel getHud (shipped)', () => {
     });
     const s = model.getHud(null, []);
     expect(s.matchMode).toBe('team_deathmatch');
-    expect(s.winTarget).toBe(75);
+    expect(s.winTarget).toBe(50);
     expect(s.teamKillsAlpha).toBe(12);
     expect(s.teamKillsBravo).toBe(9);
   });

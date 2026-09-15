@@ -7,6 +7,7 @@ import type { TankLike } from '../../core/types';
 import type { WeaponOwner, WeaponAmmoState } from './types';
 import type { Weapon, WeaponContext, WeaponDeps } from './types';
 import { applyHit } from '../engine/applyHit';
+import { losClear, type Collider } from '../engine/physics';
 import { fillAmmoState } from './types';
 import { FlameParticlePool } from './FlameParticlePool';
 import { inFlameConeXZ } from './flameCone';
@@ -88,15 +89,15 @@ export class FlamethrowerWeapon implements Weapon {
       this.tickTimer += dt;
       if (this.tickTimer >= WEAPON_TUNING.flamethrower.tickRate) {
         this.tickTimer -= WEAPON_TUNING.flamethrower.tickRate;
-        this.processOverlapDamage(ctx.tanks);
+        this.processOverlapDamage(ctx.tanks, ctx.colliders);
       }
     } else {
       this.tickTimer = 0;
     }
   }
 
-  /** Геометрический Overlap-check поражения целей в конусе пламени */
-  private processOverlapDamage(tanks: TankLike[]) {
+  /** Геометрический Overlap-check поражения целей в конусе пламени с проверкой прямой видимости */
+  private processOverlapDamage(tanks: TankLike[], colliders?: readonly Collider[]) {
     const halfCone = WEAPON_TUNING.flamethrower.coneAngle * 0.5;
     // M6: wave-scaled damage from tank params (player = catalog; bots = damageScale).
     const dmg = resolveWeaponDamage(
@@ -105,15 +106,23 @@ export class FlamethrowerWeapon implements Weapon {
     );
     const dirX = tmpDir.x;
     const dirZ = tmpDir.z;
+    // C6: team-фильтр у источника, конвенцией RailgunWeapon (:352-355) —
+    // DamageSystem режет только HP, а knockback/дым в applyHit безусловны.
+    const ownerTeam = this.owner.teamId ?? null;
 
     for (const t of tanks) {
       if (t.id === this.owner.id || !t.alive) continue;
+      const targetTeam = t.teamId ?? null;
+      if (ownerTeam !== null && targetTeam !== null && ownerTeam === targetTeam) continue;
 
       if (!inFlameConeXZ(
         tmpMuzzle.x, tmpMuzzle.z, dirX, dirZ,
         t.position.x, t.position.z,
         WEAPON_TUNING.flamethrower.range, halfCone,
       )) continue;
+
+      // Огонь блокируется твердотельными стенами и укрытиями
+      if (colliders && !losClear(tmpMuzzle.x, tmpMuzzle.z, t.position.x, t.position.z, colliders)) continue;
 
       const dx = t.position.x - tmpMuzzle.x;
       const dz = t.position.z - tmpMuzzle.z;

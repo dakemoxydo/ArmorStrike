@@ -43,9 +43,9 @@ describe('resultsText / balance P6', () => {
     })).toMatch(/BRAVO|ВРЕМЯ/);
   });
 
-  it('balance: TDM winTeamKills is 75', () => {
-    expect(configForMode('team_deathmatch').winTeamKills).toBe(75);
-    expect(configForMode('deathmatch').winKills).toBe(30);
+  it('balance: TDM winTeamKills is 50, DM winKills is 25', () => {
+    expect(configForMode('team_deathmatch').winTeamKills).toBe(50);
+    expect(configForMode('deathmatch').winKills).toBe(25);
     expect(configForMode('capture_point').winTeamScore).toBe(1000);
   });
 });

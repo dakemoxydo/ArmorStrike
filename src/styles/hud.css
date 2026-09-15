@@ -883,6 +883,45 @@
   100% { opacity: 0; }
 }
 
+/* --- баннер предупреждения о снайперском захвате (Гаусс) --- */
+.incoming-lock-banner {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  z-index: 28;
+  pointer-events: none;
+}
+.incoming-lock-banner.active {
+  display: block;
+  animation: lock-banner-pulse 0.35s ease-in-out infinite alternate;
+}
+@keyframes lock-banner-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.85; }
+  100% { transform: translate(-50%, -50%) scale(1.04); opacity: 1; }
+}
+.incoming-lock-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(220, 38, 38, 0.88);
+  border: 2px solid #ff4d4d;
+  box-shadow: 0 0 var(--glow-r-lg) rgba(239, 68, 68, 0.85);
+  padding: 0.45rem 1rem;
+  clip-path: polygon(var(--control-cut) 0, 100% 0, 100% calc(100% - var(--control-cut)), calc(100% - var(--control-cut)) 100%, 0 100%, 0 var(--control-cut));
+  font-family: 'Russo One', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: var(--track-wide);
+  color: #fff;
+  text-transform: uppercase;
+}
+.incoming-lock-icon {
+  font-size: 1.1rem;
+  filter: drop-shadow(0 0 4px #ffdd00);
+}
+
 .damage-arc {
   position: absolute;
   left: 50%; top: 50%;

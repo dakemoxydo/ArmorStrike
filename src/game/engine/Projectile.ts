@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PROJECTILE } from '../constants';
 import type { Collider } from './physics';
-import { pointInCollider, segmentHitsCircle } from './physics';
+import { pointInCollider, segmentHitsCircleT, segmentHitsCollider } from './physics';
 import type { EffectsPort } from '../ports/EffectsPort';
 import type { DamageSystem, TankLike } from '../../core/types';
 import type { WeaponType } from '../../core/catalog';
@@ -177,8 +177,15 @@ export class ProjectileManager {
 
         for (const c of ctx.colliders) {
           if (!c.active || !c.blocksShots) continue;
-          if (!pointInCollider(pos.x, pos.z, c, PROJECTILE.radius)) continue;
           if (pos.y > c.height + PROJECTILE.radius) continue;
+          // F5: свип сегментом пред-шаг→шаг, а не только точка после шага.
+          // Ловит и «привидельное» прохождение тонкой опоры (0.7 м city), и
+          // снаряд, рождённый дулом внутри коллайдера (первый сэмпл i=0 стартует
+          // из spawn-точки). Точка+радиус — как раньше (не сужаем до 0).
+          if (
+            !pointInCollider(pos.x, pos.z, c, PROJECTILE.radius)
+            && !segmentHitsCollider(px, pz, pos.x, pos.z, c)
+          ) continue;
 
           hitPosA.set(px, pos.y, pz);
           beh.onCollideWall(s, hitPosA, ctx);
@@ -194,18 +201,28 @@ export class ProjectileManager {
         }
         if (dead) break;
 
+        let bestTank: (typeof ctx.tanks)[number] | null = null;
+        let bestT = Infinity;
         for (const t of ctx.tanks) {
           if (!t.alive || t === s.owner) continue;
-          if (!segmentHitsCircle(px, pz, pos.x, pos.z, t.position.x, t.position.z, t.radius + PROJECTILE.radius)) continue;
+          // C5: ближайшая по траектории цель, а не первая в ростере (в DM
+          // игрок — нулевой элемент, и снаряд «из-за спины» бота попадал в него).
+          const tHit = segmentHitsCircleT(px, pz, pos.x, pos.z, t.position.x, t.position.z, t.radius + PROJECTILE.radius);
+          if (tHit >= 0 && tHit < bestT) {
+            bestT = tHit;
+            bestTank = t;
+          }
+        }
+        if (bestTank) {
+          const sx = px + (pos.x - px) * bestT;
+          const sz = pz + (pos.z - pz) * bestT;
+          hitPosB.set(sx, 1.6, sz);
+          beh.onHitTank(s, bestTank, hitPosB, s.dir, ctx, s.owner);
+          if (s.splashRadius > 0) doSplash(hitPosB, ctx, s, bestTank);
 
-          hitPosB.set(pos.x, 1.6, pos.z);
-          beh.onHitTank(s, t, hitPosB, s.dir, ctx, s.owner);
-          if (s.splashRadius > 0) doSplash(hitPosB, ctx, s, t);
-
-          ctx.onTankHit(t, s.damage, s.owner!);
+          ctx.onTankHit(bestTank, s.damage, s.owner!);
           despawn(s);
           dead = true;
-          break;
         }
         if (dead) break;
 

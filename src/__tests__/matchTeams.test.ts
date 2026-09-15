@@ -28,11 +28,11 @@ describe('isEnemy / isAlly', () => {
     expect(isTeamMode('capture_point')).toBe(true);
   });
 
-  it('configForMode TDM has 5v5 and winTeamKills 75 (P6 balance)', () => {
+  it('configForMode TDM has 5v5 and winTeamKills 50 (P6 balance pass)', () => {
     const cfg = configForMode('team_deathmatch');
     expect(cfg.mode).toBe('team_deathmatch');
     expect(cfg.teamSize).toBe(5);
-    expect(cfg.winTeamKills).toBe(75);
+    expect(cfg.winTeamKills).toBe(50);
     expect(cfg.timeLimitSec).toBe(12 * 60);
   });
 });

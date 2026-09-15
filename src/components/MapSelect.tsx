@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Building2, Factory, Play, Trees } from 'lucide-react';
 import { MAP_IDS, MAPS, type MapId, DEFAULT_MAP_ID } from '../game/maps/mapCatalog';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { isInteractiveKeyboardTarget } from '../ui/keyboardTarget';
 
 interface MapSelectProps {
   initialMapId?: MapId;
@@ -31,6 +32,8 @@ export default function MapSelect({
         onCancel();
       }
       if (e.code === 'Enter') {
+        // H7: Enter на сфокусированной кнопке — активация кнопки, не глобальный confirm.
+        if (isInteractiveKeyboardTarget(e.target)) return;
         e.preventDefault();
         onConfirm(selected);
       }
@@ -127,8 +130,9 @@ export default function MapSelect({
             onClick={() => onConfirm(selected)}
             className="btn-game btn-primary px-10 py-3.5 text-base"
             aria-label={`Начать бой на карте ${def.name}`}
+            data-autofocus
           >
-            <Play size={20} className="bicon" />
+            <Play size={20} className="bicon" aria-hidden />
             <span>В БОЙ · {def.name.toUpperCase()}</span>
           </button>
         </div>

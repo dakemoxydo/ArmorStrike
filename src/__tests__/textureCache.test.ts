@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import * as THREE from 'three';
 import {
   cachedTexture,
@@ -64,5 +66,23 @@ describe('cachedTexture registry (R-1/R-2)', () => {
     expect(isShared(geo)).toBe(true);
     unmarkShared(geo);
     expect(isShared(geo)).toBe(false);
+  });
+});
+
+// B6-регрессия: LRU-1 слот ground раньше evictил несуществующий ключ
+// 'ground:last' (реальные ключи `ground:<map>:<size>`) — silent no-op, и все
+// три канваса 3072² оставались в VRAM. Пин на уровне исходника: выгрузка
+// обязана идти по реальному последнему ключу.
+describe('ground LRU-1 slot source pin (B6)', () => {
+  const groundSrc = readFileSync(
+    resolve(__dirname, '../../src/game/textures/ground.ts'),
+    'utf8',
+  );
+
+  it('evicts by tracked last real key, not a never-written literal', () => {
+    expect(groundSrc).toContain('let lastGroundKey');
+    expect(groundSrc).toMatch(/cachedTextureEvict\(lastGroundKey\)/);
+    // Литерал-призрак больше не должен нигде передаваться в evict.
+    expect(groundSrc).not.toMatch(/cachedTextureEvict\(\s*['"`]ground/);
   });
 });

@@ -21,16 +21,28 @@ if errorlevel 1 (
     exit /b 1
 )
 for /f "delims=" %%v in ('node -v 2^>nul') do echo   Node.js %%v found.
-for /f "tokens=1 delims=.v" %%M in ('node -p "process.versions.node.split('.')[0]" 2^>nul') do set "NODE_MAJOR=%%M"
-if defined NODE_MAJOR (
-    if %NODE_MAJOR% LSS 20 (
-        echo.
-        echo [ERROR] Node.js 20.19+ or 22.12+ required ^(vite 7^). Found major %NODE_MAJOR%.
-        echo Please upgrade from https://nodejs.org/ and run this script again.
-        echo.
-        pause
-        exit /b 1
-    )
+rem J13: engines требует 20.19+ для 20.x и 22.12+ для 22.x/23.x+ — gate по major И minor.
+for /f "tokens=1,2 delims=." %%M in ('node -p "process.versions.node" 2^>nul') do (
+    set "NODE_MAJOR=%%M"
+    set "NODE_MINOR=%%N"
+)
+set "NODE_OK="
+rem Пустые значения обнуляем ДО сравнений: cmd раскрывает %VAR% на парсинге, поэтому
+rem сравнения — отдельными top-level командами. Внутри скобочных блоков cmd крашится
+rem на парсинге, даже если ветка не выполняется, — неэкранированные скобки в echo/rem
+rem внутри блоков запрещены.
+if not defined NODE_MAJOR set "NODE_MAJOR=0"
+if not defined NODE_MINOR set "NODE_MINOR=0"
+if %NODE_MAJOR% GTR 22 set "NODE_OK=1"
+if %NODE_MAJOR% EQU 22 if %NODE_MINOR% GEQ 12 set "NODE_OK=1"
+if %NODE_MAJOR% EQU 20 if %NODE_MINOR% GEQ 19 set "NODE_OK=1"
+if not defined NODE_OK (
+    echo.
+    echo [ERROR] Node.js 20.19+ or 22.12+ required ^(vite 7^). Found %NODE_MAJOR%.%NODE_MINOR%.
+    echo Please upgrade from https://nodejs.org/ and run this script again.
+    echo.
+    pause
+    exit /b 1
 )
 
 echo [2/5] Checking npm...
@@ -77,8 +89,13 @@ echo [4/5] Checking for a running dev server on port %PORT%...
 netstat -ano | findstr /c:":%PORT% " | findstr /c:"LISTENING" >nul 2>nul
 if not errorlevel 1 (
     echo   Dev server already running.
-    echo   Opening the game: %GAME_URL%
-    start "" "%GAME_URL%"
+    rem J13: --no-open must be honored here too; previously the browser opened unconditionally.
+    if "%~1"=="--no-open" (
+        echo   Skipped browser auto-open: --no-open flag. Game: %GAME_URL%
+    ) else (
+        echo   Opening the game: %GAME_URL%
+        start "" "%GAME_URL%"
+    )
     goto :end
 )
 echo   No running server found. A new one will be started.

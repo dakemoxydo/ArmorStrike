@@ -69,6 +69,12 @@ export class PlayerController {
     this.scoreHeld = false;
   };
   private onContext = (e: Event) => e.preventDefault();
+  private onLockError = () => {
+    // H8: отказ браузера (Esc-cooldown, запрос вне user gesture) больше не
+    // проглатывается: тот же путь, что у потери локa — shouldAutoPauseOnInterrupt
+    // сам решит, возвращать ли в паузу (смерть/меню не паузятся).
+    this.onLockLost?.();
+  };
   private onLockChange = () => {
     this.locked = document.pointerLockElement === this.dom;
     if (!this.locked && this.enabled) this.onLockLost?.();
@@ -89,6 +95,7 @@ export class PlayerController {
     window.addEventListener('mouseup', this.onMouseUp);
     window.addEventListener('blur', this.onBlur);
     document.addEventListener('pointerlockchange', this.onLockChange);
+    document.addEventListener('pointerlockerror', this.onLockError);
     dom.addEventListener('contextmenu', this.onContext);
   }
 
@@ -99,6 +106,7 @@ export class PlayerController {
     window.removeEventListener('mouseup', this.onMouseUp);
     window.removeEventListener('blur', this.onBlur);
     document.removeEventListener('pointerlockchange', this.onLockChange);
+    document.removeEventListener('pointerlockerror', this.onLockError);
     if (this.dom) {
       this.dom.removeEventListener('mousedown', this.onMouseDown);
       this.dom.removeEventListener('contextmenu', this.onContext);

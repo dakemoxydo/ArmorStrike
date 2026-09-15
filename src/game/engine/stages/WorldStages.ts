@@ -49,7 +49,8 @@ export class PhysicsSystemStage implements SimSystem {
   constructor(private arena: Arena) {}
 
   update(ctx: FrameContext): void {
-    PhysicsSystem.resolveCollisions(ctx.tanks, this.arena.colliders);
+    // F4: dt прокидывается в стеновое трение — FPS-независимый эксп. затух.
+    PhysicsSystem.resolveCollisions(ctx.tanks, this.arena.colliders, ctx.dt);
   }
 }
 

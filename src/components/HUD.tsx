@@ -17,6 +17,11 @@ interface HudProps {
   active: boolean;
   /** Пресет прицела из настроек (значение по умолчанию задан в HudCrosshair). */
   crosshair?: CrosshairStyle;
+  /**
+   * Единый обработчик мьюта (H6): кнопка kill-feed обязана идти через
+   * владелец App.muted, иначе «ЗВУК ВКЛ/ВЫКЛ» в PauseMenu инвертируется.
+   */
+  onToggleMute?: () => void;
 }
 
 const MemoRadar = memo(HudRadar);
@@ -37,16 +42,21 @@ function winPct(value: number, target: number): number {
   return Math.max(0, Math.min(100, (value / Math.max(1, target)) * 100));
 }
 
-export default function HUD({ game, active, crosshair }: HudProps) {
+export default function HUD({ game, active, crosshair, onToggleMute }: HudProps) {
   const {
     snap, feed, vignette, dmgArc, hitmark, showHint, frag, streak,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
-    flameFillRef, ghostRef, lockTargetRef,
+    flameFillRef, ghostRef, lockTargetRef, incomingLockRef,
   } = useGameHud(game, active);
 
   // Стабильная ссылка: инлайн-стрелка обнуляла бы memo(HudFeed) на каждом кадре.
   // Хук обязан идти до раннего return — порядок хуков не должен меняться.
-  const toggleMute = useCallback(() => { game?.toggleMute(); }, [game]);
+  // H6: идем через onToggleMute (владелец App.muted), direct game.toggleMute
+  // оставляем как fallback для тестов/isolated-рендеров.
+  const toggleMute = useCallback(() => {
+    if (onToggleMute) onToggleMute();
+    else game?.toggleMute();
+  }, [game, onToggleMute]);
 
   if (!game) return null;
   const st = snap.current;
@@ -101,6 +111,14 @@ export default function HUD({ game, active, crosshair }: HudProps) {
       )}
 
       {vignette > 0 && <div key={vignette} className="damage-vignette" aria-hidden />}
+
+      {/* Баннер предупреждения о снайперском автозахвате Гауссом */}
+      <div ref={incomingLockRef} className="incoming-lock-banner pointer-events-none select-none" aria-hidden>
+        <div className="incoming-lock-box">
+          <span className="incoming-lock-icon">⚠️</span>
+          <span className="incoming-lock-text">ТРЕВОГА: ЗАХВАТ ЦЕЛИ</span>
+        </div>
+      </div>
 
       {inGame && !st.paused && dmgArc && (
         <div

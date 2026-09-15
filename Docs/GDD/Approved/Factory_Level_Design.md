@@ -53,12 +53,12 @@ Accent: аварийный амбер `#ffb02e` (плюс holo-бирюза `#2e
 
 | Zone | Contents |
 |------|----------|
-| Foundry (NW) | `blastFurnace(-62, 62)` с анимированными искрами и 2 PointLight; вторая печь `(-44, 66)`; `ladleHouse(-62, 44)`; литейный цех `hall(-96, 40, 30×18, h 9.5)` gable; рудный `conveyor(-94, −68, len 52, h 6.4)` с инстанс-постами и анимированной рудой; slag heap |
+| Foundry (NW) | `blastFurnace(-62, 62)` с анимированными искрами и additive glow-сферами «жара» (B7: контента без источников света — Standard Frame Stability §1.6); вторая печь `(-44, 66)`; `ladleHouse(-62, 44)`; литейный цех `hall(-96, 40, 30×18, h 9.5)` gable; рудный `conveyor(-94, −68, len 52, h 6.4)` с инстанс-постами и анимированной рудой; slag heap |
 | Container terminal (NE) | `containerRow(52, 36, ×3, step 14)` + разрушаемый `containerRow(68, 43, ×3)`; `containerStack(86, 40)`, `(86, 68)`; `siloCluster(106, 44)`; crate stacks + barrel clusters |
 | Assembly (SW) | `hall(-96, −52, 34×18, h 9)` gable; `hall(-52, −70, 26×16, h 8.5)` flat; `pipeRack(−120, −40 → −38)`; 2 трансформатора; crate/barrel/scrap |
 | Power (SE) | 4× `storageTank` в сетке `(92…108, −52…−68)`; `coolingTower(56, −58)`, `(74, −70)`; 2 трансформатора; scrap + crate + barrel |
 | Centre | Портальный кран: 4 ноги `(±36, ±16)` `legH = 13` (hard), cap-beams, троллей (анимированный `craneTrolley`), holo beacon y = 15.8; рельсы z = ±16 проходят мимо CP-A (z 8) и CP-C (z −6) |
-| Outer ring | Диагональные пады `(−108,108)` containers, `(108,108)` pipes, `(−108,−108)` scrap, `(108,−108)` tanks; угловые `smokestack(±144, ±144)`; 8 edge `lampMast`; `railSiding(84, 142, −112)` (flush, без коллайдера) |
+| Outer ring | Диагональные пады `(−108,108)` containers, `(108,108)` pipes, `(−108,−108)` scrap, `(108,−108)` tanks; угловые `smokestack(±144, ±144)`; 8 edge `lampMast`; `railSiding(84, 142, −112)` (flush; коллайдер — проходимый `ramp` с `blocksShots/blocksSight:false`, не solid для корпуса; пин `factoryMap.test.ts`) |
 | Mid-ring | Плаза-углы `(±52, ±52)` 8×8×3.6 medium `block`; crate stacks `(±50, ±24)`/`(±24, ±50)` — peek-линии вне магистралей и ring road |
 | Ramps | 8 декоративных wedges (`kind: ramp`, `blocksShots/Sight: false`) на подходах к district'ам, вне креста/ring road/spawn aprons |
 | Skyline | 34 неоновых башни r ∈ [172, 244] (визуал, вне playable box); 7 дымовых труб; газ-сфера `(−232, 12, −196)` |

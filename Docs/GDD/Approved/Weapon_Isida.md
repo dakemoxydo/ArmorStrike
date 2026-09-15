@@ -16,11 +16,11 @@
 
 | Параметр | Значение | Описание |
 |----------|----------|----------|
-| `damagePerSec` | 45 | DPS по врагу (канон M1–M2) |
-| `healPerSec` | 22 | лечение союзника в секунду |
-| `vampirism` | 0.40 | доля **фактического** тикового урона, возвращаемая стрелку |
+| `damagePerSec` | 42 | DPS по врагу (канон M1–M2) |
+| `healPerSec` | 32 | лечение союзника в секунду |
+| `vampirism` | 0.35 | доля **фактического** тикового урона, возвращаемая стрелку |
 | `tickRate` | 0.25 с | период тика (аккумулятор, как у flamethrower) |
-| `range` | 17 м | дальность захвата/луча, без спада |
+| `range` | 20 м | дальность захвата/луча, без спада |
 | `coneHalfAngle` | 10° (π/18) | полуугол конуса автозахвата (канон: полный 20°) |
 | `acquireTime` | 0.3 с | пауза перестроения луча при захвате/смене цели (тиков нет) |
 | `healHpFrac` | 0.99 | союзник с HP ≥ 99% max не захватывается и отпускается |
@@ -35,10 +35,10 @@
 | `colorHeal` | `0x39e6a8` | mint в ремонте |
 | `colorIdle` | `0x2ee6c0` | бирюзовый холостой дуги |
 
-`turretSpeed: 10`. `TURRETS.isida`: `damage = round(damagePerSec × tickRate) = 11`
+`turretSpeed: 7.5`. `TURRETS.isida`: `damage = round(damagePerSec × tickRate) = 11`
 (т.е. тиковый урон — source of truth в каталоге, инвариант в `catalog.test.ts`),
 `magazine = energyMax = 100`, `shotCooldown = 0`, `fullReload = 0`, `recoil = 0`,
-`range = 17`, badge `НАНОЛУЧ`. Мета: `WeaponCatalog.isida` — «ИЗИДА · НАНО-ДУГА ПОДДЕРЖКИ»,
+`range = 20`, badge `НАНОЛУЧ`. Мета: `WeaponCatalog.isida` — «ИЗИДА · НАНО-ДУГА ПОДДЕРЖКИ»,
 accent `#39e6a8`.
 
 ## FSM (`IsidaWeapon`)
@@ -57,7 +57,8 @@ mode = beamOn ? (target ? (acquireT > 0 ? 'acquire' : targetMode) : 'idle') : 'n
   до потолка. Полный бой ≈ 3.3 с, ремонт ≈ 5.5 с → цикл «burst → откат → репозиционирование».
 - **Тики:** аккумулятор `tickT ≥ tickRate`, только при `beamOn && target && acquireT ≤ 0`.
 - **Ammo-мост в HUD:** `getAmmoState()` → `ammo = round(energy)`, `reloading = energy < 10`
-  (это «низкий баллон», а не магазин), `reloadProgress = energy/energyMax`. `updateReload` /
+  (это «низкий баллон», а не магазин — и текст, и щелчок `audio.reload` гейтятся
+  общим предикатом `isBeamTurretId`, G3), `reloadProgress = energy/energyMax`. `updateReload` /
   `requestReload` — no-op (непрерывное оружие, как flamethrower).
 
 ## Захват цели (`isidaTargeting.ts`, чистые функции)

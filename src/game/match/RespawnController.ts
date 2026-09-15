@@ -41,9 +41,9 @@ export class RespawnController {
     spawnInvulnSec: number,
     claimed: Set<number>,
   ) {
-    const pool = respawnPoolFor(tank.teamId as TeamId);
-    // Prefer rosterSpawn helper (same pools)
-    const points = pool.length ? pool : FFA_FALLBACK;
+    // J9: FFA_FALLBACK удалён — pool статически непустой (spawnPoints.ts),
+    // а его заводские ±128 к тому же устарели после перестройки карт.
+    const points = respawnPoolFor(tank.teamId as TeamId);
     // Threats for point scoring: enemies only (same threat model as before).
     const threats: { x: number; z: number }[] = [];
     for (const t of tanks) {
@@ -73,10 +73,6 @@ export class RespawnController {
     }
   }
 }
-
-const FFA_FALLBACK: [number, number][] = [
-  [0, -120], [128, 128], [-128, 128], [128, -128], [-128, -128],
-];
 
 /** Undo death animation greying / hide ring. */
 function restoreDeathVisuals(tank: TankEntity) {

@@ -17,7 +17,7 @@
 //                  · non-LOS (tree canopy, water, lights)
 import * as THREE from 'three';
 import { ARENA } from '../constants';
-import { colliderFromCenter } from '../engine/physics';
+import { aabbForYaw, colliderFromCenter } from '../engine/physics';
 import {
   duskGlowTexture,
   fieldstoneTexture,
@@ -170,7 +170,9 @@ function house(
   const body = plasterMat(PLASTER_TONES[Math.floor(Math.random() * PLASTER_TONES.length)]);
   const roof = shingleMat(ROOF_TONES[Math.floor(Math.random() * ROOF_TONES.length)]);
   const beamMat = woodMat(0x5a4526);
-  ctx.addColliderBlock(x, z, w, d, h + 1.6, false, () => {
+  // I7: меш повёрнут на yaw, коллайдер — охватывающий axis-aligned box.
+  const foot = aabbForYaw(w, d, yaw);
+  ctx.addColliderBlock(x, z, foot.w, foot.d, h + 1.6, false, () => {
     const g = new THREE.Group();
     const base = ctx.box(w, h, d, body);
     base.rotation.y = yaw;
@@ -635,7 +637,9 @@ function buildVillageBarns(ctx: ArenaBuildContext) {
   const barn = (x: number, z: number, w: number, d: number, h: number, yaw = 0) => {
     const body = plankMat(PLANK_TONES[Math.floor(Math.random() * PLANK_TONES.length)]);
     const roof = thatchMat('#a8873c');
-    ctx.addColliderBlock(x, z, w, d, h + 1.8, false, () => {
+    // I7: yaw-aware AABB (см. house()).
+    const foot = aabbForYaw(w, d, yaw);
+    ctx.addColliderBlock(x, z, foot.w, foot.d, h + 1.8, false, () => {
       const g = new THREE.Group();
       const base = ctx.box(w, h, d, body);
       base.rotation.y = yaw;

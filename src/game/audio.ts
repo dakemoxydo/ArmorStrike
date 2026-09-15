@@ -403,6 +403,14 @@ export class AudioFX implements AudioPort {
     this.osc('triangle', this.ctx.currentTime, 0.05, 900, 620, 0.14);
   }
 
+  lockWarning() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    // Двухтональный тревожный зуммер захвата цели
+    this.osc('square', t, 0.065, 880, 880, 0.22);
+    this.osc('square', t + 0.08, 0.065, 1175, 1175, 0.25);
+  }
+
   death() {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;

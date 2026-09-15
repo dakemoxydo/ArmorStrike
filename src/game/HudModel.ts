@@ -138,8 +138,8 @@ export class HudModel {
     const wmeta = getWeaponMeta(run.currentTurret);
     const cfg = match?.config;
     const mode = cfg?.mode ?? 'deathmatch';
-    let winTarget = cfg?.winKills ?? 30;
-    if (mode === 'team_deathmatch') winTarget = cfg?.winTeamKills ?? 75;
+    let winTarget = cfg?.winKills ?? 25;
+    if (mode === 'team_deathmatch') winTarget = cfg?.winTeamKills ?? 50;
     if (mode === 'capture_point') winTarget = cfg?.winTeamScore ?? 1000;
 
     const target = out ?? ({} as HudSnapshot);
@@ -187,6 +187,7 @@ export class HudModel {
     target.lockTargetX = 50;
     target.lockTargetY = 50;
     target.lockTargetDist = 0;
+    target.incomingLock = false;
     return target;
   }
 

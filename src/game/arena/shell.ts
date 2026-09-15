@@ -69,19 +69,22 @@ export function buildArenaShell(ctx: ArenaBuildContext, theme: ArenaShellTheme) 
     roughness: 0.6,
     metalness: 0.5,
   });
+  // B8 (часть): пилоны статичны (ни per-instance flash, ни fade) — общий материал
+  // вместо clone() на каждый из 20: меньше аллокаций, батчинг draw-вызовов не ломается.
   const lampMat = new THREE.MeshBasicMaterial({ color: theme.lampColor ?? 0xffb84d });
   for (let i = -2; i <= 2; i++) {
     const p = i * 26;
     for (const side of [-1, 1]) {
       ctx.addColliderBlock(p, side * (H - 0.6), 1.6, 1.6, ARENA.wallH + 1, false,
-        () => ctx.box(1.6, ARENA.wallH + 1, 1.6, pilMat.clone()), 0, 'wall');
+        () => ctx.box(1.6, ARENA.wallH + 1, 1.6, pilMat), 0, 'wall');
       ctx.addColliderBlock(side * (H - 0.6), p, 1.6, 1.6, ARENA.wallH + 1, false,
-        () => ctx.box(1.6, ARENA.wallH + 1, 1.6, pilMat.clone()), 0, 'wall');
+        () => ctx.box(1.6, ARENA.wallH + 1, 1.6, pilMat), 0, 'wall');
     }
   }
+  const lampGeo = new THREE.BoxGeometry(0.8, 0.3, 1.6); // B8: одна геометрия на 14 фонарей
   for (let i = -3; i <= 3; i++) {
     const p = i * 18;
-    const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 1.6), lampMat);
+    const lamp = new THREE.Mesh(lampGeo, lampMat);
     lamp.position.set(p, ARENA.wallH - 1.2, -(H - 1.2));
     ctx.group.add(lamp);
     const lamp2 = lamp.clone();

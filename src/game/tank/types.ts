@@ -42,5 +42,4 @@ export interface TankFxState {
   barrelKick: number;
   smokeAcc: number;
   dustAcc: number;
-  timeSinceHit: number;
 }

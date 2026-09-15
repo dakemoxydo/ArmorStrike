@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Crosshair, Flag, Play, Users } from 'lucide-react';
 import type { MatchModeId } from '../game/types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { isInteractiveKeyboardTarget } from '../ui/keyboardTarget';
 
 interface ModeOption {
   id: MatchModeId;
@@ -17,22 +18,22 @@ const MODES: ModeOption[] = [
   {
     id: 'deathmatch',
     title: 'БОЙ НАСМЕРТЬ',
-    blurb: 'Free-for-all: 8 бойцов, первый до 30 убийств.',
-    meta: '1+7 · 30 kills · 12 мин',
+    blurb: 'Каждый сам за себя: 8 бойцов, победа — 25 убийств.',
+    meta: '1+7 · 25 фрагов · 12 мин',
     enabled: true,
   },
   {
     id: 'team_deathmatch',
     title: 'КОМАНДНЫЙ БОЙ',
-    blurb: '5 vs 5, без friendly fire. Победа — 75 командных фрагов.',
-    meta: '5v5 · 75 team · 12 мин',
+    blurb: '5 на 5, без огня по своим. Победа — 50 командных фрагов.',
+    meta: '5×5 · 50 фрагов · 12 мин',
     enabled: true,
   },
   {
     id: 'capture_point',
     title: 'ЗАХВАТ ТОЧКИ',
-    blurb: '5 vs 5, точки A/B/C. Своя точка: +1/s. Победа — 1000 очков.',
-    meta: '5v5 · 1000 score · 12 мин',
+    blurb: '5 на 5, точки A/B/C. Своя точка: +1 очко/с. Победа — 1000 очков.',
+    meta: '5×5 · 1000 очков · 12 мин',
     enabled: true,
   },
 ];
@@ -63,6 +64,9 @@ export default function ModeSelect({
         onCancel();
       }
       if (e.code === 'Enter') {
+        // H7: фокус на кнопке — Enter принадлежит кнопке (её activation),
+        // глобальный обработчик молчит (тот же гейт, что в App).
+        if (isInteractiveKeyboardTarget(e.target)) return;
         e.preventDefault();
         const opt = MODES.find((m) => m.id === selected);
         if (opt?.enabled) onConfirm(selected);
@@ -162,6 +166,7 @@ export default function ModeSelect({
             disabled={!MODES.find((m) => m.id === selected)?.enabled}
             onClick={() => onConfirm(selected)}
             aria-label="Продолжить к выбору карты"
+            data-autofocus
           >
             <Play size={18} className="bicon" aria-hidden />
             <span>ДАЛЕЕ — КАРТА</span>

@@ -28,7 +28,9 @@ const t = cachedTexture(`key:${parts}`, () => buildCanvasTexture());
 4. **Выгрузка — только политикой кэша.** `cachedTextureEvict(key)` снимает
    markShared и диспозит GPU-текстуру; единственный легитимный потребитель —
    LRU-1 политика ground-текстур в `textures/ground.ts`
-   (`ground:last` ↔ `ground:<map>:<size>`, чтобы не держать три 1024²+ канваса).
+   (модуль хранит последний **реальный** ключ `ground:<map>:<size>` и выгружает
+   его перед сборкой следующего — B6; раньше evict шёл по фиктивному
+   `ground:last` и был no-op), чтобы не держать три канваса 3072².
 5. **Прямой `new THREE.CanvasTexture`** допустим только для пер-instance
    ресурсов с собственным lifecycle и явным `dispose()`:
    nameplate (`nameplate.ts`) и capture markers (`match/CaptureMarkers.ts`).

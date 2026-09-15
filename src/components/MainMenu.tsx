@@ -42,7 +42,7 @@ export default function MainMenu({ hull, turret, onStart, onQuickGame, onGarage 
         <div className="anim-left mt-8" style={{ '--d': '0.4s' } as React.CSSProperties}>
           <div className="flex flex-wrap items-center gap-3">
             <button type="button" onClick={onStart} className="btn-game btn-primary px-12 py-4 text-lg" aria-label="Начать игру — выбор режима и карты">
-              <Play size={22} className="bicon" />
+              <Play size={22} className="bicon" aria-hidden />
               <span>ИГРАТЬ</span>
             </button>
             <button
@@ -51,7 +51,7 @@ export default function MainMenu({ hull, turret, onStart, onQuickGame, onGarage 
               className="btn-game btn-ghost px-6 py-4 text-base"
               aria-label="Быстрая игра: случайный режим и случайная карта"
             >
-              <Shuffle size={18} className="bicon" />
+              <Shuffle size={18} className="bicon" aria-hidden />
               <span>БЫСТРАЯ ИГРА</span>
             </button>
           </div>

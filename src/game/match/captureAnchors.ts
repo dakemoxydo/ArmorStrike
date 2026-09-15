@@ -14,7 +14,8 @@ interface CaptureAnchor {
  * factory: west / center / east · village: plaza + flank meadows · city: plaza + N/S avenue.
  *
  * Every anchor must sit in a ~20 m clearing (CAPTURE.radius) with soft cover
- * only — `villageMap.test.ts` / `factoryMap.test.ts` pin this.
+ * only — `villageMap.test.ts` / `factoryMap.test.ts` / `cityMap.test.ts` pin
+ * this (plus spawn∉disk and team-base symmetry for CP maps).
  */
 const CAPTURE_ANCHORS: Record<MapId, readonly CaptureAnchor[]> = {
   factory: [
@@ -30,7 +31,9 @@ const CAPTURE_ANCHORS: Record<MapId, readonly CaptureAnchor[]> = {
   city: [
     { id: 'A', x: 0, z: 0 },
     { id: 'B', x: 0, z: 78 },
-    { id: 'C', x: 12, z: -86 },
+    // I5: был (12,−86) — 3 hard-объекта внутри диска, спавн Alpha (20,−95)
+    // внутри зоны, x-офсек ломал зеркальность B/C. Теперь зеркало B.
+    { id: 'C', x: 0, z: -78 },
   ],
 };
 

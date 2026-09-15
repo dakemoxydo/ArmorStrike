@@ -36,13 +36,14 @@ export interface AimBody {
   turretYaw: number;
 }
 
-/** Таймеры боя: heal, fireTimer, reload. */
+/** Таймеры боя и обслуживание здоровья: fireTimer, reload, ремонт вне боя. */
 export interface CombatTimerBody {
-  fx: Pick<TankFxState, 'timeSinceHit'>;
-  health: number;
-  maxHealth: number;
   fireTimer: number;
   weapon?: Weapon;
+  alive?: boolean;
+  health?: number;
+  maxHealth?: number;
+  timeSinceDamaged?: number;
 }
 
 /** Синхронизация yaw/turretYaw → mesh. */

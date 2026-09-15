@@ -12,7 +12,7 @@
 
 | Параметр | Значение | Описание |
 |----------|----------|----------|
-| `damagePerTick` | 12 | урон за тик |
+| `damagePerTick` | 5.2 | урон за тик (52 HP/с) |
 | `tickRate` | 0.1 с | период overlap-check |
 | `range` | 22 | дальность конуса |
 | `coneAngle` | π/4 (~45°) | полный угол; half = π/8 |
@@ -23,7 +23,7 @@
 | `particleCount` | 160 | пул частиц |
 | `spawnRate` | 40 /с | спавн пламени |
 
-`turretSpeed`: 11.5 (самая быстрая башня).
+`turretSpeed`: 8.5.
 
 ## Состояния
 
@@ -55,8 +55,10 @@ else:
 dist = hypot(target - muzzle)
 if dist > range: miss
 angle = acos(dot(dir, toTarget))
-hit if angle ≤ halfCone
+hit if angle ≤ halfCone && losClear(muzzle, target, colliders)
 ```
+
+Струя пламени блокируется твердотельными препятствиями (`losClear` по `colliders` с флагом `blocksSight`). Урон сквозь стены и здания исключён.
 
 Каждый `tickRate` по всем живым чужим танкам в конусе:
 
@@ -65,7 +67,7 @@ dmg = resolveWeaponDamage(params.damage, damagePerTick)
 applyHit(target, dmg, knockDir, knockback, ...)
 ```
 
-DPS номинал: `12 / 0.1 = 120 HP/s` (без учёта движения/промахов).
+DPS номинал: `5.2 / 0.1 = 52 HP/s` (без учёта движения/промахов).
 
 ## Визуал
 

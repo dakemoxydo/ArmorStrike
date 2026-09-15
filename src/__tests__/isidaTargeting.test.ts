@@ -67,8 +67,8 @@ describe('isidaTargeting — geometry захвата', () => {
     expect(acquireIsidaTarget([enemy], { id: 1 }, cone(), [])).toBeNull();
   });
 
-  it('дальше range (17 м) — мимо', () => {
-    const enemy = peer({ id: 2, position: { x: 0, z: 18 } });
+  it('дальше range (20 м) — мимо', () => {
+    const enemy = peer({ id: 2, position: { x: 0, z: 21 } });
     expect(acquireIsidaTarget([enemy], { id: 1 }, cone(), [])).toBeNull();
   });
 

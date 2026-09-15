@@ -9,8 +9,10 @@ import type { CaptureZoneState } from '../../match/captureLogic';
  *
  * Rebuilds when the zone SET changes — map switch / match reset produces new
  * anchors — otherwise refreshes mutable owner/contested in place (no per-frame
- * allocation). Anchor scalars are compared because CaptureController hands out
- * a fresh array of fresh objects every tick, so reference identity never works.
+ * allocation). Anchor скаляры сравниваются, а не ссылки: CaptureController
+ * пулит массив в steady-state (J15: старый premise «fresh array every tick»
+ * устарел), но пересборка по identity всё равно не ловила бы map-switch со
+ * свежими объектами дешевле, чем 4 скалярных сравнения на зону.
  */
 export function syncZoneViews(
   cache: ObjectiveZoneView[] | null,

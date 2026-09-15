@@ -114,6 +114,9 @@ export class TankEntity implements TankLike, WeaponOwner {
   get invulnT() { return this.combat.invulnT; }
   set invulnT(v: number) { this.combat.invulnT = v; }
 
+  get timeSinceDamaged() { return this.combat.timeSinceDamaged; }
+  set timeSinceDamaged(v: number) { this.combat.timeSinceDamaged = v; }
+
   get position() { return this.visual.group.position; }
   get maxHealth() { return this.params.maxHealth; }
 
@@ -148,9 +151,9 @@ export class TankEntity implements TankLike, WeaponOwner {
   takeDamage(dmg: number, attackerId: number) {
     if (!this.alive || dmg <= 0) return;
     this.health -= dmg;
+    this.combat.timeSinceDamaged = 0;
     this.fx.hitFlash = 1;
     this.lastAttackerId = attackerId;
-    this.fx.timeSinceHit = 0;
     if (this.health <= 0) {
       this.health = 0;
       this.alive = false;

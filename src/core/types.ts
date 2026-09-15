@@ -23,6 +23,8 @@ export interface TankLike {
   knockback: THREE.Vector3;
   position: THREE.Vector3;
   yaw: number;
+  /** Ракурс прицела/камеры (для точного направления индикатора урона на экране). */
+  aimYaw?: number;
   /** Match team: null = FFA. Optional for tests/stubs. */
   teamId?: string | null;
   /** Spawn invulnerability seconds remaining. Optional for tests/stubs. */

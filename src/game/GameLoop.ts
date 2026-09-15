@@ -33,6 +33,8 @@ export class GameLoop {
   private lastTs = 0;
   private elapsed = 0;
   private running = false;
+  /** A7: прошлый кадр был «живым боем» — ловим момент выхода из 'playing'. */
+  private wasCombatLive = false;
   /** TimeScale для hit-stop и slow-mo. */
   readonly timeScale = new TimeScale();
 
@@ -41,6 +43,7 @@ export class GameLoop {
   private readonly _aimDir = new THREE.Vector3();
   private readonly _impactP = new THREE.Vector3();
   private readonly _lockTargetP = new THREE.Vector3();
+  private _lastLockWarningTime = 0;
 
   constructor(private deps: GameLoopDeps) {}
 
@@ -69,6 +72,14 @@ export class GameLoop {
     const { sim, cameraRig, renderWorld, hudModel, hud, emit, getPreviewVisual, onHud } = this.deps;
 
     const combatLive = sim.run.mode === 'playing' && !sim.run.paused;
+    // A7: выход из 'playing' (конец матча) останавливает sim.step, а вместе с
+    // ним WeaponFireStage — зажатый спуск оставался «вжат» до конца экрана
+    // итогов (зацикленный flame-whoosh, замороженные луч/muzzle-свет).
+    // Отпускаем спуск у всех танков на фазовом переходе.
+    if (this.wasCombatLive && !combatLive && sim.run.mode !== 'playing') {
+      for (const t of sim.tanks) t.weapon?.setFire(false);
+    }
+    this.wasCombatLive = combatLive;
     if (combatLive) {
       sim.step(dt, emit);
     } else if (!sim.run.paused && sim.tanks.length > 0) {
@@ -78,6 +89,11 @@ export class GameLoop {
       // not accumulate death timers behind the scrim (instant respawns after
       // a long pause were the visible symptom).
       TankAnimationSystem.updateDead(sim.tanks, dt);
+      // A7: оружие гасит фейды лучей/заряда внутри weapon.update, которого в
+      // 'over' больше нет — пропускаем им dt, иначе FX замерзают под экраном
+      // итогов (спуск уже отпущен выше, новых выстрелов не будет).
+      const wctx = { tanks: sim.tanks, colliders: sim.arena.colliders };
+      for (const t of sim.tanks) t.weapon?.update(dt, wctx);
     }
 
     if (!sim.run.paused) {
@@ -116,7 +132,26 @@ export class GameLoop {
     const pl = sim.player;
     if (sim.run.mode !== 'playing' || !pl || !pl.alive) {
       hud.hasLockTarget = false;
+      hud.incomingLock = false;
       return;
+    }
+
+    // Детекция входящего захвата: если вражеский Гаусс нацелен на игрока,
+    // выводим тревогу на HUD и воспроизводим зуммер предупреждения.
+    let incomingLock = false;
+    for (let i = 0; i < sim.tanks.length; i++) {
+      const t = sim.tanks[i];
+      if (t !== pl && t.alive && t.weapon?.getLockTarget?.() === pl) {
+        incomingLock = true;
+        break;
+      }
+    }
+    hud.incomingLock = incomingLock;
+    if (incomingLock) {
+      if (this.elapsed - this._lastLockWarningTime >= 0.32) {
+        this._lastLockWarningTime = this.elapsed;
+        sim.audio.lockWarning();
+      }
     }
 
     pl.muzzleWorld(this._muzzleW);

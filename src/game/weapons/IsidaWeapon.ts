@@ -218,13 +218,16 @@ export class IsidaWeapon implements Weapon {
     const dz = t.position.z - tmpMuzzle.z;
     const dist = Math.hypot(dx, dz) || 1;
     tmpKnock.set(dx / dist, 0, dz / dist);
+    // C8: возврат — от ФАКТИЧЕСкого урона (Weapon_Isida.md §«Вампиризм»): на
+    // добивающем тике избыток (dmg − остаток HP цели) не применяется и не лечит.
+    // Прочие «обнуляющие» условия DamageSystem исключены выше (alive/self/invuln/FF).
+    const dealt = Math.min(dmg, Math.max(0, t.health));
     applyHit(
-      this.deps.damageSystem, t, dmg, this.owner, tmpKnock, tune.knockback,
+      this.deps.damageSystem, t, dealt, this.owner, tmpKnock, tune.knockback,
       (p) => this.deps.effects.trailPuff(p, ATK_COLOR),
       impactPoint(t, tmpImpact),
     );
-    // Возврат: доля тикового урона (условия применения проверены выше).
-    const healed = dmg * tune.vampirism;
+    const healed = dealt * tune.vampirism;
     const cap = this.owner.params.maxHealth ?? Number.POSITIVE_INFINITY;
     if (healed > 0 && this.owner.health < cap) {
       this.owner.health = Math.min(cap, this.owner.health + healed);

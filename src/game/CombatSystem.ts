@@ -74,8 +74,11 @@ export class CombatSystem {
       this.deps.effects.addShake(0.3);
       const dx = owner.position.x - target.position.x;
       const dz = owner.position.z - target.position.z;
-      const fs = Math.sin(target.yaw);
-      const fc = Math.cos(target.yaw);
+      // Индикатор урона на экране должен быть согласован с ракурсом камеры (aimYaw),
+      // а не с поворотом корпуса (yaw), чтобы стрелка точно указывала на стрелка.
+      const lookYaw = target.aimYaw ?? target.yaw;
+      const fs = Math.sin(lookYaw);
+      const fc = Math.cos(lookYaw);
       const dir = (dx * dx + dz * dz) > 0.01
         ? Math.atan2(dx * fc - dz * fs, dx * fs + dz * fc)
         : 0;

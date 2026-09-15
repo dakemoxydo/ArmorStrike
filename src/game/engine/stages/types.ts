@@ -21,8 +21,6 @@ export interface FrameContext {
   deathT: ScalarCell<number>;
   /** Shared cell with GameSimulation.prevReloading. */
   prevReloading: ScalarCell<boolean>;
-  /** Единый переход в game over (mode + events). */
-  requestGameOver(): void;
 }
 
 export interface SimSystem {

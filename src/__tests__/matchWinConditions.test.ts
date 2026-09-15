@@ -70,7 +70,7 @@ describe('evaluateMatchEnd', () => {
       config: cfg,
       matchTimeSec: cfg.timeLimitSec,
       personals: [],
-      teamKills: { alpha: 44, bravo: 51 },
+      teamKills: { alpha: 24, bravo: 31 },
       teamScore: { alpha: 0, bravo: 0 },
     });
     expect(r?.reason).toBe('time');
@@ -127,5 +127,66 @@ describe('evaluateMatchEnd', () => {
       teamScore: { alpha: 0, bravo: 0 },
     });
     expect(r).toBeNull();
+  });
+
+  // ===== C7: нет смещения порядка при добивании порога на одном тике =====
+  it('C7 DM: simultaneous threshold → draw (not roster[0])', () => {
+    const cfg = configForMode('deathmatch');
+    const r = evaluateMatchEnd({
+      config: cfg,
+      matchTimeSec: 60,
+      personals: [
+        { id: 1, name: 'ВЫ', kills: cfg.winKills, isPlayer: true },
+        { id: 2, name: 'BOT', kills: cfg.winKills, isPlayer: false },
+      ],
+      teamKills: { alpha: 0, bravo: 0 },
+      teamScore: { alpha: 0, bravo: 0 },
+    });
+    expect(r?.reason).toBe('score');
+    expect(r?.winnerName).toBeNull();
+    expect(r?.playerWon).toBe(false);
+  });
+
+  it('C7 DM: time-limit tie → draw (was silently personals[0])', () => {
+    const cfg = configForMode('deathmatch');
+    const r = evaluateMatchEnd({
+      config: cfg,
+      matchTimeSec: cfg.timeLimitSec,
+      personals: [
+        { id: 1, name: 'ВЫ', kills: 12, isPlayer: true },
+        { id: 2, name: 'BOT', kills: 12, isPlayer: false },
+      ],
+      teamKills: { alpha: 0, bravo: 0 },
+      teamScore: { alpha: 0, bravo: 0 },
+    });
+    expect(r?.reason).toBe('time');
+    expect(r?.winnerName).toBeNull();
+  });
+
+  it('C7 TDM: both teams cross winTeamKills same tick → draw', () => {
+    const cfg = configForMode('team_deathmatch');
+    const r = evaluateMatchEnd({
+      config: cfg,
+      matchTimeSec: 100,
+      personals: [],
+      teamKills: { alpha: cfg.winTeamKills, bravo: cfg.winTeamKills },
+      teamScore: { alpha: 0, bravo: 0 },
+    });
+    expect(r?.reason).toBe('score');
+    expect(r?.winnerTeam).toBeNull();
+    expect(r?.playerWon).toBe(false);
+  });
+
+  it('C7 CP: both teams cross winTeamScore same tick → draw', () => {
+    const cfg = configForMode('capture_point');
+    const r = evaluateMatchEnd({
+      config: cfg,
+      matchTimeSec: 200,
+      personals: [],
+      teamKills: { alpha: 3, bravo: 5 },
+      teamScore: { alpha: cfg.winTeamScore, bravo: cfg.winTeamScore },
+    });
+    expect(r?.reason).toBe('score');
+    expect(r?.winnerTeam).toBeNull();
   });
 });

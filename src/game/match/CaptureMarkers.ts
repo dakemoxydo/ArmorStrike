@@ -57,6 +57,8 @@ interface MarkerEntry {
   fill: THREE.Mesh;
   letter: THREE.Sprite;
   lastKey: string;
+  /** B10: letter-canvas перерисовывается только при смене цвета, не прогресса. */
+  lastLetterCol: number;
 }
 
 /**
@@ -106,7 +108,7 @@ export class CaptureMarkers {
       const letter = makeLetterSprite(z.id, COL_NEUTRAL);
       group.add(ring, fill, letter);
       this.root.add(group);
-      this.entries.push({ group, ring, fill, letter, lastKey: '' });
+      this.entries.push({ group, ring, fill, letter, lastKey: '', lastLetterCol: -1 });
     }
     this.sync(zones);
   }
@@ -129,29 +131,33 @@ export class CaptureMarkers {
         ? 0.22
         : 0.1 + z.progress * 0.2;
 
-      // Rebuild letter only when ownership color family changes.
+      // B10: перерисовка 128px-canvas буквы — только при смене цвета (прогресс
+      // тикает каждый кадр захвата, но он влияет лишь на ring/fill выше).
       const letterCol = z.contested ? 0xffd24a : col;
-      const mat = e.letter.material as THREE.SpriteMaterial;
-      const map = mat.map as THREE.CanvasTexture;
-      const cv = map.image as HTMLCanvasElement;
-      const c = cv.getContext('2d')!;
-      c.clearRect(0, 0, 128, 128);
-      c.fillStyle = 'rgba(6,12,18,0.55)';
-      c.beginPath();
-      c.arc(64, 64, 52, 0, Math.PI * 2);
-      c.fill();
-      const r = (letterCol >> 16) & 255;
-      const g = (letterCol >> 8) & 255;
-      const b = letterCol & 255;
-      c.strokeStyle = `rgba(${r},${g},${b},0.9)`;
-      c.lineWidth = 6;
-      c.stroke();
-      c.fillStyle = '#eaf6ff';
-      c.font = 'bold 72px sans-serif';
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.fillText(z.id, 64, 68);
-      map.needsUpdate = true;
+      if (letterCol !== e.lastLetterCol) {
+        e.lastLetterCol = letterCol;
+        const mat = e.letter.material as THREE.SpriteMaterial;
+        const map = mat.map as THREE.CanvasTexture;
+        const cv = map.image as HTMLCanvasElement;
+        const c = cv.getContext('2d')!;
+        c.clearRect(0, 0, 128, 128);
+        c.fillStyle = 'rgba(6,12,18,0.55)';
+        c.beginPath();
+        c.arc(64, 64, 52, 0, Math.PI * 2);
+        c.fill();
+        const r = (letterCol >> 16) & 255;
+        const g = (letterCol >> 8) & 255;
+        const b = letterCol & 255;
+        c.strokeStyle = `rgba(${r},${g},${b},0.9)`;
+        c.lineWidth = 6;
+        c.stroke();
+        c.fillStyle = '#eaf6ff';
+        c.font = 'bold 72px sans-serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(z.id, 64, 68);
+        map.needsUpdate = true;
+      }
     }
   }
 

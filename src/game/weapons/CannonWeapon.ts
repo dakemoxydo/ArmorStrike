@@ -40,7 +40,7 @@ export class CannonWeapon implements Weapon {
     fillMuzzleAndAim(t, tmpMuzzle, tmpDir);
     const muzzle = tmpMuzzle;
     const dir = tmpDir;
-    const recoil = t.isPlayer ? WEAPON_TUNING.cannon.knockback : 4;
+    const recoil = t.isPlayer ? WEAPON_TUNING.cannon.knockback : WEAPON_TUNING.cannon.botKnockback;
     const range = t.params.range ?? WEAPON_TUNING.cannon.range;
 
     // Pool exhausted → no shot: keep the round, skip recoil/FX/sfx so the

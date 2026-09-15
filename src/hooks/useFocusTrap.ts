@@ -23,7 +23,11 @@ export function useFocusTrap(active = true) {
         (el) => !el.hasAttribute('disabled') && el.offsetParent !== null,
       );
 
-    const initial = focusables()[0];
+    // H7: «primary CTA» из док-комментария теперь реально: контейнер может
+    // пометить главный элемент data-autofocus; иначе — первый focusable.
+    const initial =
+      root.querySelector<HTMLElement>('[data-autofocus]:not([disabled])')
+      ?? focusables()[0];
     initial?.focus();
 
     const onKeyDown = (e: KeyboardEvent) => {

@@ -195,6 +195,22 @@ describe('IsidaWeapon — атака: захват, тики, вампиризм
     weapon.dispose();
   });
 
+  it('C8: вампиризм от фактического урона — добивающий тик не «пере-лечит»', () => {
+    const { deps } = makeDeps();
+    const owner = makeOwner();
+    owner.health = 50;
+    const weapon = new IsidaWeapon(owner, deps);
+    // 1 HP цели против тикового TICK_DMG: возмётся ровно 1 HP → возврат 1×vampirism,
+    // сколько бы тиков ни прошло (после смерти dealt=0, mock живичен намеренно).
+    const enemy = makeTarget(2, 0, 10, { health: 1, maxHealth: 1 });
+    const c = ctx([enemy]);
+    weapon.setFire(true);
+    run(weapon, c, 8);
+    expect(enemy.health).toBe(0);
+    expect(owner.health).toBeCloseTo(50 + 1 * tune.vampirism, 6);
+    weapon.dispose();
+  });
+
   it('неуязвимая цель: ни урона, ни вампиризма, но луч цель держит', () => {
     const { deps, hooks } = makeDeps();
     const owner = makeOwner();

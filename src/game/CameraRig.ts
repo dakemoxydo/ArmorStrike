@@ -191,7 +191,10 @@ export class CameraRig {
     const rayLen = Math.sqrt(rayLen2);
     let minT = 1;
     for (const c of colliders) {
-      if (c.height < 2.5) continue;
+      // F3:避让 только живой видимой геометрии — конвенция остальных
+      // потребителей (физика/LOS/снаряды/ИИ): мусор (active=false),
+      // non-LOS фонари/билборды и drivable-'ramp' камера не отъезжают.
+      if (!c.active || !c.blocksSight || c.kind === 'ramp' || c.height < 2.5) continue;
       // Broad-phase: skip colliders too far from ray origin (squared compare).
       const halfDiag = ((c.maxX - c.minX) + (c.maxZ - c.minZ)) * 0.5 + 0.7;
       const cx = (c.minX + c.maxX) * 0.5 - headX;

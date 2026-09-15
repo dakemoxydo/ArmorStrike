@@ -7,10 +7,11 @@
 //   Plaza core      : |x|,|z| < 24           (monument + soft planter ring)
 //   Districts       : NE parking/mall · NW construction · SW neon-market · SE residential
 //   Overpass        : EW deck z≈−80, solid pillars only, approach ramps
-// Cover hierarchy: hard (offices/shops/pillars) · medium (jersey/kiosk) · soft (cars/planters/hay) · non-LOS (billboards/lamps/ramps)
+// Cover hierarchy: hard (offices/shops/pillars) · medium (jersey/kiosk) · soft (cars/planters) ·
+// non-LOS: billboards (blocksSight:false, но снаряды держат — blocksShots по дефолту), lamps (без коллайдера), ramps
 import * as THREE from 'three';
 import { ARENA } from '../constants';
-import { colliderFromCenter } from '../engine/physics';
+import { aabbForYaw, colliderFromCenter } from '../engine/physics';
 import { containerTexture, crateTexture, hexTexture } from '../textures';
 import type { ArenaBuildContext } from './context';
 import { buildTowerRing } from './skyline';
@@ -168,10 +169,9 @@ function car(
   const w = isVan ? 5.2 : 4.0;
   const d = isVan ? 2.4 : 1.9;
   const h = isVan ? 2.2 : 1.55;
-  // AABB padded for yaw; mesh rotates, collider stays axis-aligned (same as factory cars).
-  const colW = Math.abs(Math.cos(yaw)) * w + Math.abs(Math.sin(yaw)) * d + 0.3;
-  const colD = Math.abs(Math.sin(yaw)) * w + Math.abs(Math.cos(yaw)) * d + 0.3;
-  ctx.addColliderBlock(x, z, colW, colD, h, true, () => {
+  // I7: AABB padded for yaw; mesh rotates, collider stays axis-aligned (same as factory cars).
+  const foot = aabbForYaw(w, d, yaw, 0.3);
+  ctx.addColliderBlock(x, z, foot.w, foot.d, h, true, () => {
     const g = new THREE.Group();
     const hull = ctx.box(w, isVan ? 1.3 : 0.95, d, body);
     hull.rotation.y = yaw;
@@ -256,7 +256,9 @@ function kiosk(ctx: ArenaBuildContext, x: number, z: number, neonColor: number =
 
 function dumpster(ctx: ArenaBuildContext, x: number, z: number, yaw = 0) {
   const mat = new THREE.MeshStandardMaterial({ color: 0x3a6a40, roughness: 0.55, metalness: 0.45 });
-  ctx.addColliderBlock(x, z, 3.4, 2.0, 1.7, true, () => {
+  // I7: меш (3.2×1.8) повёрнут на yaw — collider тоже в yaw-aware обёртке.
+  const foot = aabbForYaw(3.4, 2.0, yaw);
+  ctx.addColliderBlock(x, z, foot.w, foot.d, 1.7, true, () => {
     const g = new THREE.Group();
     const body = ctx.box(3.2, 1.5, 1.8, mat);
     body.rotation.y = yaw;
@@ -293,7 +295,11 @@ function billboard(
   yaw: number,
   color: number,
 ) {
-  ctx.addColliderBlock(x, z, 0.7, 5.5, 5, false, () => {
+  // I4/I7: коллайдер доски (5.5×0.25) + опор (⌀0.5) — yaw-aware AABB
+  // (общий хелпер aabbForYaw, эталон — car() выше). Раньше 0.7×5.5 не зависел
+  // от yaw: N/S-доски стояли «глубиной» к спавну (0,∓120) — танк выталкивался.
+  const foot = aabbForYaw(5.5, 0.5, yaw, 0.4);
+  ctx.addColliderBlock(x, z, foot.w, foot.d, 5, false, () => {
     const g = new THREE.Group();
     const pole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.2, 0.25, 4.5, 8),
@@ -367,59 +373,89 @@ function buildCitySkyline(ctx: ArenaBuildContext) {
 // ── plaza ──────────────────────────────────────────────────────────────────
 
 function buildCityPlaza(ctx: ArenaBuildContext) {
-  // civic monument / fountain base (scaled ~1.7× for the bigger arena)
-  ctx.addColliderBlock(0, 0, 15, 15, 9.5, false, () => {
-    const g = new THREE.Group();
-    const base = concrete(0x6a7588);
-    g.add(ctx.box(15, 1.4, 15, base));
-    // fountain ring (visual, low)
-    const basin = new THREE.Mesh(
-      new THREE.TorusGeometry(5.6, 0.5, 8, 30),
-      concrete(0x708090),
-    );
-    basin.rotation.x = Math.PI / 2;
-    basin.position.y = 1.45;
-    g.add(basin);
-    const pillar = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.9, 2.4, 7.2, 12),
-      concrete(0x90a0b4),
-    );
-    pillar.position.y = 5.2;
-    pillar.castShadow = true;
-    g.add(pillar);
-    const cap = new THREE.Mesh(
-      new THREE.BoxGeometry(4.6, 0.7, 4.6),
-      new THREE.MeshStandardMaterial({
-        color: NEON.cyan, roughness: 0.3, metalness: 0.8,
-        emissive: 0x1a4060, emissiveIntensity: 0.65,
-      }),
-    );
-    cap.position.y = 9.1;
-    g.add(cap);
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(3.0, 0.16, 8, 26),
-      new THREE.MeshBasicMaterial({ color: NEON.cyan }),
-    );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 8.1;
-    g.add(ring);
-    ctx.setObelisk(cap, ring);
-    return g;
-  }, 0, 'wall');
+  // I5-фикс: монумент был solid 'wall' 15×15×9.5 ровно в (0,0) — центральный
+  // CP-A был погребён под ним (маркер в бетоне, duty-боты упёрлись в центр).
+  // Плаза = captur-подиум: низкое основание (1.4 м) — проходимый 'ramp'
+  // (конвенция M12, как внешние рампы), колонна/чаша — голографический
+  // фонтан без коллайдера (аддитивный неон в духе карты). Капитель и кольцо
+  // — якорь обелиск-анимации (A5), тоже без solids.
+  const g = new THREE.Group();
+  const base = concrete(0x6a7588);
+  g.add(ctx.box(15, 1.4, 15, base));
+  // fountain ring (visual, low)
+  const basin = new THREE.Mesh(
+    new THREE.TorusGeometry(5.6, 0.5, 8, 30),
+    concrete(0x708090),
+  );
+  basin.rotation.x = Math.PI / 2;
+  basin.position.y = 1.45;
+  g.add(basin);
+  const pillar = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.9, 2.4, 7.2, 12),
+    new THREE.MeshBasicMaterial({
+      color: NEON.cyan, transparent: true, opacity: 0.32,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    }),
+  );
+  pillar.position.y = 5.2;
+  g.add(pillar);
+  const cap = new THREE.Mesh(
+    new THREE.BoxGeometry(4.6, 0.7, 4.6),
+    new THREE.MeshStandardMaterial({
+      color: NEON.cyan, roughness: 0.3, metalness: 0.8,
+      emissive: 0x1a4060, emissiveIntensity: 0.65,
+    }),
+  );
+  cap.position.y = 9.1;
+  g.add(cap);
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(3.0, 0.16, 8, 26),
+    new THREE.MeshBasicMaterial({ color: NEON.cyan }),
+  );
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = 8.1;
+  g.add(ring);
+  // E7: у city animNodes/smokeEmitters были нулевыми (ArenaEffects крутил пустые
+  // массивы). Голо-фонтан получает вращающийся ореол (два аддитивных маркера —
+  // сам торус симметричен, его вращение не читалось) и пар у чаши.
+  const halo = new THREE.Group();
+  const haloMat = new THREE.MeshBasicMaterial({
+    color: NEON.magenta, transparent: true, opacity: 0.85,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  for (const s of [-1, 1]) {
+    const bead = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), haloMat);
+    bead.position.x = s * 3.4;
+    halo.add(bead);
+  }
+  halo.position.y = 6.6;
+  g.add(halo);
+  ctx.animNodes.push((dt) => { halo.rotation.y += dt * 0.6; });
+  ctx.smokeEmitters.push(new THREE.Vector3(4.2, 1.8, 4.2));
+  ctx.smokeEmitters.push(new THREE.Vector3(-4.2, 1.8, -4.2));
+  ctx.setObelisk(cap, ring);
+  ctx.group.add(g);
+  ctx.colliders.push(colliderFromCenter(0, 0, 15, 15, 1.4, 'ramp', {
+    blocksShots: false, blocksSight: false,
+  }));
 
-  // soft ring — planters around the plaza (peek cover, not sealed)
-  const ring: [number, number][] = [
+  // soft ring — planters around the plaza (peek cover, not sealed).
+  // I4/I5: парные (0,±26)/(±26,0) стояли ровно на осях авеню и резали LOS
+  // (planter blocksSight:true) — смещены с осей, 180°-симметрично.
+  const ringPos: [number, number][] = [
     [20, 20], [-20, 20], [20, -20], [-20, -20],
-    [26, 0], [-26, 0], [0, 26], [0, -26],
+    [30, 8], [-30, -8], [8, 30], [-8, -30],
     [18, 9], [-18, 9], [18, -9], [-18, -9],
   ];
-  for (const [x, z] of ring) planter(ctx, x, z);
+  for (const [x, z] of ringPos) planter(ctx, x, z);
 
-  // low hard cover on plaza approaches (peek points, avenues stay clear)
-  jersey(ctx, 0, 32, 10, 1.6, false);
-  jersey(ctx, 0, -32, 10, 1.6, false);
-  jersey(ctx, 32, 0, 1.6, 10, false);
-  jersey(ctx, -32, 0, 1.6, 10, false);
+  // low hard cover on plaza approaches (peek points, avenues stay clear).
+  // I4: стояли по осям (0,±32)/(±32,0) и резали LOS обеих авеню — сдвинуты
+  // с осей в 180°-симметричную пару перпендикулярно авеню.
+  jersey(ctx, 12, 32, 1.6, 10, false);
+  jersey(ctx, -12, -32, 1.6, 10, false);
+  jersey(ctx, 32, 12, 10, 1.6, false);
+  jersey(ctx, -32, -12, 10, 1.6, false);
 }
 
 // ── grid blocks (per quadrant, avenues clear) ──────────────────────────────
@@ -428,7 +464,7 @@ function buildCityPlaza(ctx: ArenaBuildContext) {
 function buildCityBlocks(ctx: ArenaBuildContext) {
   // ── NE (+x, +z): Parking-facing mall towers ──
   office(ctx, 34, 34, 18, 18, 15, NEON.cyan, 'ac', 'bands');
-  office(ctx, 34, 92, 22, 18, 20, NEON.lime, 'neon', 'grid');
+  office(ctx, 42, 89, 22, 18, 20, NEON.lime, 'neon', 'grid');
   office(ctx, 92, 34, 18, 22, 17, NEON.cyan, 'ac', 'fins');
   office(ctx, 92, 92, 22, 22, 24, NEON.magenta, 'neon', 'bands');
   shop(ctx, 34, 20, 18, 8, NEON.cyan, -1);
@@ -436,7 +472,7 @@ function buildCityBlocks(ctx: ArenaBuildContext) {
 
   // ── NW (−x, +z): Construction / mid-rise ──
   office(ctx, -34, 34, 18, 18, 14, NEON.magenta, 'tank', 'fins');
-  office(ctx, -34, 92, 22, 18, 19, NEON.cyan, 'ac', 'bands');
+  office(ctx, -42, 89, 22, 18, 19, NEON.cyan, 'ac', 'bands');
   office(ctx, -92, 34, 18, 22, 17, NEON.lime, 'neon', 'grid');
   office(ctx, -92, 92, 22, 22, 23, NEON.magenta, 'tank', 'bands');
   shop(ctx, -34, 20, 18, 8, NEON.magenta, -1);
@@ -444,7 +480,7 @@ function buildCityBlocks(ctx: ArenaBuildContext) {
 
   // ── SE (+x, −z): Residential lower ──
   office(ctx, 34, -34, 18, 18, 12, NEON.lime, 'ac', 'grid');
-  office(ctx, 34, -92, 22, 18, 15, NEON.cyan, 'tank', 'bands');
+  office(ctx, 42, -89, 22, 18, 15, NEON.cyan, 'tank', 'bands');
   office(ctx, 92, -34, 18, 22, 13, NEON.lime, 'ac', 'fins');
   office(ctx, 92, -92, 22, 22, 18, NEON.cyan, 'neon', 'bands');
   shop(ctx, 34, -20, 18, 8, NEON.lime, 1);
@@ -452,7 +488,7 @@ function buildCityBlocks(ctx: ArenaBuildContext) {
 
   // ── SW (−x, −z): Neon market mid-rises ──
   office(ctx, -34, -34, 18, 18, 15, NEON.magenta, 'neon', 'bands');
-  office(ctx, -34, -92, 22, 18, 20, NEON.magenta, 'neon', 'grid');
+  office(ctx, -42, -89, 22, 18, 20, NEON.magenta, 'neon', 'grid');
   office(ctx, -92, -34, 18, 22, 17, NEON.cyan, 'ac', 'fins');
   office(ctx, -92, -92, 22, 22, 24, NEON.lime, 'neon', 'bands');
   shop(ctx, -34, -20, 18, 8, NEON.magenta, 1);
@@ -473,7 +509,7 @@ function buildCityDistricts(ctx: ArenaBuildContext) {
 
   // NE — Parking lot (dense soft car rows + lot walls)
   const lotCars: [number, number, number, 'sedan' | 'van' | 'taxi'][] = [
-    [72, 62, 0, 'sedan'], [72, 68, 0, 'taxi'], [72, 74, 0, 'sedan'], [72, 80, 0, 'van'],
+    [72, 62, 0, 'sedan'], [72, 68, 0, 'taxi'], [72, 74, 0, 'sedan'], [72, 77, 0, 'van'],
     [104, 54, Math.PI, 'van'], [104, 62, Math.PI, 'sedan'], [104, 70, Math.PI, 'taxi'], [104, 78, Math.PI, 'sedan'],
     [82, 104, Math.PI / 2, 'sedan'], [90, 104, Math.PI / 2, 'van'], [98, 104, Math.PI / 2, 'taxi'],
   ];
@@ -483,11 +519,14 @@ function buildCityDistricts(ctx: ArenaBuildContext) {
   kiosk(ctx, 62, 54, NEON.cyan); // ticket booth
 
   // NW — Construction (jersey grids + crate stacks + scaffold)
+  // I4: ряд x=−72 стоял в 1.3 м от спавна (−70,90) — сдвинут к −96
+  // (между рядом и scaffold-рамой остаётся коридор 3 м).
   jerseyLine(ctx, -72, 72, 4, 10, true);
-  jerseyLine(ctx, -72, 82, 4, 10, false);
+  jerseyLine(ctx, -96, 82, 4, 10, false);
   deliveryCrate(ctx, -80, 104, 9, 7, 4.4);
   deliveryCrate(ctx, -104, 80, 7, 9, 4.8);
-  deliveryCrate(ctx, -64, 84, 7, 7, 4.0);
+  // I4: третий crate был (−64,84) — 3.5 м до спавна (−70,90); увезён на юг ряда.
+  deliveryCrate(ctx, -66, 64, 7, 7, 4.0);
   ctx.addColliderBlock(-108, 108, 16, 5, 10.5, false, () => {
     const g = new THREE.Group();
     const steel = concrete(0x8899aa);
@@ -523,21 +562,26 @@ function buildCityDistricts(ctx: ArenaBuildContext) {
   planter(ctx, 48, -64, 0x355a32);
   planter(ctx, 72, -72, 0x2a5a30);
   planter(ctx, 104, -48, 0x3a6a38);
-  planter(ctx, 48, -104, 0x2a5a30);
+  // I4: был (48,−104) — 7.9 м до спавна (40,−110).
+  planter(ctx, 60, -104, 0x2a5a30);
   busStop(ctx, 72, -20, true);
-  busStop(ctx, 20, -72, false);
+  // I5: был (20,−72) — попадал в диск CP-C (20.8 м) и близко к спавну; уведён на (24,−66).
+  busStop(ctx, 24, -66, false);
   car(ctx, 104, -72, Math.PI, 0x404050, 'sedan');
   car(ctx, 104, -84, Math.PI, 0x2a5030, 'van');
 
-  // mid-ring soft along secondary corridors (linear, not only corners)
+  // mid-ring soft along secondary corridors (linear, not only corners).
   car(ctx, 56, -16, 0.1, 0x2a4060, 'sedan');
   car(ctx, -56, 16, Math.PI + 0.1, 0x602a2a, 'taxi');
   car(ctx, 16, 56, Math.PI / 2, 0x404050, 'sedan');
   car(ctx, -16, -56, -Math.PI / 2, 0x503020, 'van');
-  jerseyLine(ctx, 56, -6, 3, 6, false);
-  jerseyLine(ctx, -56, -6, 3, 6, false);
-  jerseyLine(ctx, -6, 56, 3, 6, true);
-  jerseyLine(ctx, -6, -56, 3, 6, true);
+  // I4/I5-фикс: раньше ряды центрировались на пересечении вторички с
+  // главной авеню ((0,±56)/(±56,0)) и резали LOS/полосы; сдвинуты за
+  // спайк блок-рядов, 180°-симметрично.
+  jerseyLine(ctx, 34, 56, 3, 6, true);
+  jerseyLine(ctx, 56, 34, 3, 6, false);
+  jerseyLine(ctx, -48, -56, 3, 6, true);
+  jerseyLine(ctx, -56, -46, 3, 6, false);
 
   // outer loading-dock container stacks (city-not-factory, hard flank anchors)
   const ctex = containerTexture('#2a6a9a', 'CITY', '#1a3a5a');
@@ -561,11 +605,12 @@ function buildCityDistricts(ctx: ArenaBuildContext) {
   dock(116, -104, 0);
   dock(-116, 104, Math.PI / 2);
 
-  // edge billboards (each cardinal wall)
-  billboard(ctx, 0, 116, 0, NEON.cyan);
-  billboard(ctx, 0, -116, Math.PI, NEON.magenta);
-  billboard(ctx, 116, 0, Math.PI / 2, NEON.lime);
-  billboard(ctx, -116, 0, -Math.PI / 2, NEON.cyan);
+  // edge billboards — I4: раньше стояли на осях (0,±116)/(±116,0) вплотную
+  // к базовым спавнам (±1.25 м до solid). Смещены с авеню, 180°-симметрично.
+  billboard(ctx, -80, 116, 0, NEON.cyan);
+  billboard(ctx, 80, -116, Math.PI, NEON.magenta);
+  billboard(ctx, 116, -20, Math.PI / 2, NEON.lime);
+  billboard(ctx, -116, 20, -Math.PI / 2, NEON.cyan);
 }
 
 // ── short overpass (EW spine south of center) ──────────────────────────────
@@ -581,8 +626,9 @@ function buildCityOverpass(ctx: ArenaBuildContext) {
   });
   const railMat = new THREE.MeshBasicMaterial({ color: NEON.cyan });
 
-  // pillars — solid hard cover under the span
-  for (const px of [-64, -24, 24, 64]) {
+  // pillars — solid hard cover under the span. I4: внешняя пара была ±64
+  // (8.7 м до спавнов (±70,−90)) — сдвинута к ±56, настил остаётся с выносом.
+  for (const px of [-56, -24, 24, 56]) {
     ctx.addColliderBlock(px, z, 4.4, 4.4, pillarH, false, () => {
       const g = new THREE.Group();
       g.add(ctx.box(4.2, pillarH, 4.2, pillarMat));
@@ -614,11 +660,12 @@ function buildCityOverpass(ctx: ArenaBuildContext) {
   glow.position.set(0, deckY - 0.65, z);
   ctx.group.add(glow);
 
-  // approach ramps at ends (blocksShots false)
+  // approach ramps at ends (blocksShots false). I4: южная пара была на
+  // z=−96 (7.6 м до спавна (70,−90)) — уведена за офисный ряд на −108.
   addCityRamp(ctx, -80, z + 16, Math.PI * 0.15);
   addCityRamp(ctx, 80, z + 16, -Math.PI * 0.15);
-  addCityRamp(ctx, -80, z - 16, Math.PI * 0.85);
-  addCityRamp(ctx, 80, z - 16, -Math.PI * 0.85);
+  addCityRamp(ctx, -84, z - 28, Math.PI * 0.85);
+  addCityRamp(ctx, 84, z - 28, -Math.PI * 0.85);
 }
 
 // ── street lamps ───────────────────────────────────────────────────────────
@@ -669,7 +716,13 @@ function buildCityStreetProps(ctx: ArenaBuildContext) {
       );
       box.position.y = 4.0;
       g.add(box);
-      for (const [cy, col] of [[0.35, 0xff3344], [0, 0xffcc22], [-0.35, 0x33ff66]] as const) {
+      // E7: у живого светофора горит одна секция. Фазу переключения дал бы
+      // animNodes, но декор статичен по билд-контракту — значит «зелёный»:
+      // красная/жёлтая — тёмные «стеклянные» остатки, зелёная — активная.
+      const lenses: [number, number][] = [
+        [0.35, 0x4a2026], [0, 0x4a3c20], [-0.35, 0x33ff66],
+      ];
+      for (const [cy, col] of lenses) {
         const lens = new THREE.Mesh(
           new THREE.CircleGeometry(0.12, 8),
           new THREE.MeshBasicMaterial({ color: col }),
@@ -725,9 +778,10 @@ function buildCityRamps(ctx: ArenaBuildContext) {
   addCityRamp(ctx, -68, 68, -Math.PI * 0.75);
   addCityRamp(ctx, 68, -68, Math.PI * 0.25);
   addCityRamp(ctx, -68, -68, -Math.PI * 0.25);
-  // outer approach
+  // outer approach — I4: южная рампа (0,−108) стояла в 9.5 м от спавна
+  // (0,−120); зеркало северной (0,100).
   addCityRamp(ctx, 0, 100, Math.PI);
-  addCityRamp(ctx, 0, -108, 0);
+  addCityRamp(ctx, 0, -100, 0);
   addCityRamp(ctx, 104, 0, Math.PI / 2);
   addCityRamp(ctx, -104, 0, -Math.PI / 2);
 }

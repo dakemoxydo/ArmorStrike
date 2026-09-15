@@ -50,6 +50,16 @@ onKillPunch?.(byPlayer)
 рестарт и реванш начинаются без остаточного slow-mo. См. [[Game_Lifecycle]]
 («Старт матча: режим → карта») и [[Match_Framework]].
 
+## Серии убийств (streak labels)
+
+Тосты `DOUBLE/TRIPLE/MULTI/RAMPAGE/…` выдаёт `KillStreakTracker`: убийства внутри
+скользящего окна `4.0` с, метка — при **новом рекорде окна** (`count > lastStreakCount`).
+C9: когда старые килы отваливаются из окна и его размер падает, рекорд **понижается до
+фактического размера** — иначе устойчивая серия (кил каждые <4 с) получила бы DOUBLE один
+раз и замолчала. Лучшая серия за матч (`playerBest`) считается отдельно — по максимуму
+`windowCount`, понижатель C9 на неё не влияет. Смерть/рестарт — `reset()` (обнуляет и
+окно, и рекорд).
+
 ## Значения
 
 | Константа | Значение | Где |
@@ -66,3 +76,4 @@ onKillPunch?.(byPlayer)
 |--------|------|
 | `TimeScale` (`hitStop` / `killSlowMo` / `update` / `reset`) | `src/game/effects/TimeScale.ts` |
 | `setOnKillPunch` + гейт `byPlayer` | `src/game/CombatSystem.ts`, `src/game/GameBootstrap.ts` |
+| `KillStreakTracker` (окно 4 с, метки, `windowCount`) | `src/game/KillStreakTracker.ts` |

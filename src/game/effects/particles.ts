@@ -25,6 +25,8 @@ export class ParticleEffects {
   private tmpCol = new THREE.Color();
   /** Reusable color for burst calls (avoids per-call new THREE.Color()). */
   private burstCol = new THREE.Color();
+  /** B9: общие геометрии систем — владеет facade, фасад и диспозит. */
+  private readonly sharedGeos: THREE.BufferGeometry[];
 
   constructor(scene: THREE.Scene, rig: LightRig) {
     const sparkPool = new SparkPool(scene);
@@ -33,6 +35,7 @@ export class ParticleEffects {
     const sphereGeo = new THREE.SphereGeometry(1, 20, 14);
     const ringGeo = new THREE.RingGeometry(0.55, 1, 40);
     const circleGeo = new THREE.CircleGeometry(1, 28);
+    this.sharedGeos = [sphereGeo, ringGeo, circleGeo];
 
     this.smoke = new SmokeSystem(scene);
     this.flash = new FlashSystem(rig);
@@ -153,5 +156,7 @@ export class ParticleEffects {
 
   dispose() {
     for (const sys of this.systems) sys.dispose();
+    // B9: системы снимают свои материалы, геометрии принадлежат фасаду.
+    for (const g of this.sharedGeos) g.dispose();
   }
 }

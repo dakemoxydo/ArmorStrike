@@ -68,7 +68,7 @@ describe('CannonWeapon — инкапсулированная перезаряд
     const w = new CannonWeapon(t, makeDeps());
     emptyMag(w, t);
     expect(w.getAmmoState().reloading).toBe(true);
-    w.updateReload(2.0);
+    w.updateReload(WEAPON_TUNING.cannon.reloadTime + 0.05);
     expect(w.getAmmoState().reloading).toBe(false);
     expect(w.getAmmoState().ammo).toBe(WEAPON_TUNING.cannon.magazine);
   });

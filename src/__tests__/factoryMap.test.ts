@@ -257,9 +257,38 @@ describe('factory layout — ramps and life', () => {
     }
   });
 
+  it('I6: railSiding проходима — полоса путей не tank-solid', () => {
+    // Был 'block' 58×5.4×0.2 с blocksShots:false: resolveCircle флаги не
+    // читает → невидимая стена. Теперь 'ramp' (единственный не-solid kind).
+    const { colliders } = build();
+    const solid = colliders.filter((c) => c.kind !== 'ramp' && c.active);
+    // Ни одного tank-solid коллайдера высотой ≤ 0.3 м внутри footprint путей.
+    const railStrip = solid.filter(
+      (c) => overlapsRect(c, 84, -114.7, 142, -109.3) && c.height <= 0.3,
+    );
+    expect(railStrip.map((c) => [centerX(c), centerZ(c)])).toEqual([]);
+    // Поперечник z=−112 в проходах между флеткэрами (14×3.4 @101.4/@125.8)
+    // и стеной танкопада (12×12 @x94..106) — танк (r=1.8) проезжает.
+    for (const x of [88, 92, 113, 116, 137, 140]) {
+      const touching = solid.filter((c) => distTo(c, x, -112) < 1.8);
+      expect(touching, `rail crossing blocked at (${x}, -112)`).toEqual([]);
+    }
+  });
+
   it('registers living nodes and smoke emitters', () => {
     const { animNodes, smokeEmitters } = build();
     expect(animNodes.length).toBeGreaterThan(0);
     expect(smokeEmitters.length).toBeGreaterThan(0);
+  });
+
+  it('B7: content не добавляет источников света (постоянный бюджет)', () => {
+    // Инвариант LightRig: numPointLights не должен меняться при смене карты
+    // (9↔7 = recompile ~300 lit-материалов). Печи светят glow-мешами.
+    const { group } = build();
+    let lights = 0;
+    group.traverse((o) => {
+      if ((o as THREE.Light).isLight) lights += 1;
+    });
+    expect(lights).toBe(0);
   });
 });

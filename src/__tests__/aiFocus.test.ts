@@ -89,7 +89,7 @@ describe('pickAiFocus (multi-target)', () => {
     expect(r.canSee).toBe(true);
   });
 
-  it('sticky canSee is false when its own LoS is blocked', () => {
+  it('visible candidate wins over invisible sticky (D4)', () => {
     const self = { id: 1, teamId: null as null, position: { x: 0, z: 0 } };
     const wall: Collider = {
       id: 1, minX: 8, maxX: 12, minZ: -50, maxZ: 50,
@@ -107,7 +107,32 @@ describe('pickAiFocus (multi-target)', () => {
       stickyId: 2,
       stickySlack: 14,
     });
-    // 20 <= 15 + 14 → sticky kept, but its own LoS is walled.
+    // D4: sticky-slack не действует, пока sticky невидим — иначе aiAimFire
+    // (стреляет только по LOS к фокусу) глушит ответный огонь: farm-эксплойт
+    // «уведи ботоцель за угол». Видимый враг становится фокусом.
+    expect(r.target?.id).toBe(3);
+    expect(r.canSee).toBe(true);
+  });
+
+  it('blind hunt: invisible sticky still kept when nothing visible', () => {
+    const self = { id: 1, teamId: null as null, position: { x: 0, z: 0 } };
+    const wall: Collider = {
+      id: 1, minX: 8, maxX: 12, minZ: -50, maxZ: 50,
+      height: 3, blocksShots: true, blocksSight: true,
+      destructible: false, active: true, kind: 'wall',
+    };
+    const r = pickAiFocus({
+      self,
+      candidates: [
+        cand(2, null, 20, 0),  // sticky, behind wall
+        cand(3, null, 30, 0),  // also behind the same wall
+      ],
+      colliders: [wall],
+      sightRange: 46,
+      stickyId: 2,
+      stickySlack: 14,
+    });
+    // Все скрыты — анти-треш охоты сохраняется: держим прежнюю цель.
     expect(r.target?.id).toBe(2);
     expect(r.canSee).toBe(false);
   });

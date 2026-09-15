@@ -14,31 +14,21 @@
 | `standard` | cannon | random-ish | 1.0 | 0.35 |
 
 Match combat scales: `BOT_NORMAL` in `matchConfig.ts` (fixed Normal difficulty).  
-Cooldown pad — `firePadForRole` (`aiRoles.ts`): standard **1.2** / assault **1.15** / sniper **1.35**, применяется в `rosterSpawn.makeBot`. У пушки — на межвыстрел (0.28 → 0.336 с; полная перезарядка магазина не пада). У railgun/flamer `TURRET.shotCooldown = 0` (каденция weapon-internal) — их пад идёт через `reloadSpeedMul = 1/firePad`: рельса-бот заряд 1.0 → **1.35 с**, перезарядка 3.8 → **5.13 с**; огнемёт-бот батарея 22 → **~19.1/с** (расход не меняется). Все классы ботов стреляют медленнее игрока.  
+Cooldown pad — `firePadForRole` (`aiRoles.ts`): standard **1.2** / assault **1.15** / sniper **1.35**, применяется в `rosterSpawn.makeBot`. У пушки — на межвыстрел (0.38 → 0.456 с; полная перезарядка магазина не пада). У railgun/flamer/gauss/isida `TURRET.shotCooldown = 0` (каденция weapon-internal) — их пад идёт через `reloadSpeedMul = 1/firePad`: рельса-бот заряд 1.0 → **1.35 с**, перезарядка 3.2 → **4.32 с**; огнемёт-бот батарея 22 → **~19.1/с** (расход не меняется). Все классы ботов стреляют медленнее игрока.  
 `roleForBot` / `personaForRole` / `aimErrorMulForRole` / `coverHpFracForRole` / `firePadForRole` — `aiRoles.ts`.
 
 ## Roster: корпус и башня бота
 
 `spawnMatchRoster` → `makeBot` (`match/rosterSpawn.ts`) выдаёт корпус и башню
-**независимыми** циклами каталога: `hull = HULL_IDS[i % 5]`
-(`hunter, viking, mammoth, speedy, titan`), `turret = TURRET_IDS[i % 3]`
-(`railgun, flamethrower, cannon`). Роль выводится из башни, поэтому пара
-«роль × корпус» повторяется с периодом **15** (НОК 3 и 5).
+циклами каталога 5×5: `hull = HULL_IDS[i % 5]`
+(`hunter, viking, mammoth, speedy, titan`), `turret = BOT_TURRETS[i % 5]`
+(`railgun, flamethrower, cannon, gauss, isida`).
 
-Два свапа-предохранителя удерживают корпус когерентным роли:
-
-| Условие | Свап | Почему |
-|---------|------|--------|
-| `assault` + `mammoth` / `titan` | → `viking` | штурмовик живёт скоростью; сверхтяжёлый корпус убивает роль |
-| `sniper` + `viking` | → `hunter` | снайперу не нужен самый хрупкий корпус |
-
-**Флагман `titan` ботам не достаётся.** Он стоит на индексах 9 и 14, а самый
-длинный ростер — 9 ботов (TDM/CP: 4 союзника + 5 врагов; DM: 7). Сверхтяжёлый
-корпус сейчас строго игроцкий; состояние запинено контрактом в
-`botDutyTable.test.ts` (`флагман titan не достаётся ботам ни в одном режиме`),
-чтобы рост `teamSize` / `dmBotCount` требовал осознанного решения, а не молча
-раздавал флагман ботам. Золотая таблица «индекс → роль → корпус» на 15 позиций —
-там же.
+Все 5 башен (включая `gauss` со снайперским автолоком и `isida` с вампиризмом)
+и все 5 корпусов (включая сверхтяжёлый флагман `titan`) полноценно участвуют в боях
+ботов во всех режимах без искусственных ограничений. Роли выводятся из башни:
+`railgun` / `gauss` → `sniper`, `flamethrower` / `isida` → `assault`, `cannon` → `standard`.
+Контракт составов запинен в `botDutyTable.test.ts`.
 
 ## Target selection (P2 multi-target)
 
@@ -50,7 +40,10 @@ Cooldown pad — `firePadForRole` (`aiRoles.ts`): standard **1.2** / assault **1
 | TDM / CP | nearest / sticky enemy team                                 |
 
 - Prefer **visible** (LoS + sightRange) hostiles, else hunt nearest.
-- **Sticky** target with slack (~14 u) to reduce thrash.
+- **Sticky** target with slack (~14 u) to reduce thrash. D4: slack работает
+  только пока sticky видим; невидимый sticky уступает видимому врагу
+  (иначе `aiAimFire` глушит ответный огонь), при полном отсутствии видимых
+  охота на прежнего sticky продолжается.
 - Shot line block: **allies only** (`allyLineBlockers`) — in FFA peers do not block fire.
 
 ## CP objective duty (P5)
@@ -102,8 +95,8 @@ engage ──(lose sight timeout)──► patrol
 `wantsFire` → `BotAiStage` (решает) → `WeaponFireStage` → `tank.weapon.setFire(wantsFire)`
 (применение после синка башни — см. [[Game_Lifecycle]] «Порядок тика»).
 
-Lead пушки — по реальной скорости снаряда `WEAPON_TUNING.cannon.speed` (48),
-как и полёт самого снаряда: один источник истины в каталоге.
+Lead пушки — по реальной скорости снаряда `WEAPON_TUNING.cannon.speed` (54),
+как и полёт самого снаряда: один источник истины в каталоге. Базовое зрение ботов — `BOT_NORMAL.sightRange = 65` м (увеличено для работы на широких проспектах арены 300×300).
 
 Оружие бота то же, что у игрока (`createWeapon`).
 

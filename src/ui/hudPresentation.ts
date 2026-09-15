@@ -24,6 +24,15 @@ export function scoreboardHpClass(hpFrac: number): 'hp-high' | 'hp-mid' | 'hp-lo
 
 export type WeaponStatusKind = 'charging' | 'reloading' | 'empty' | null;
 
+/**
+ * «Лучевые» башни (огнемёт/изида): их «reloading» — низкий баллон энергии,
+ * а не магазин. Единый предикат для HUD-текста (weaponStatusKind), звука
+ * перезарядки (PlayerInputStage, G3) и live-region.
+ */
+export function isBeamTurretId(t: string): boolean {
+  return t === 'flamethrower' || t === 'isida';
+}
+
 export function weaponStatusKind(input: {
   isCharging?: boolean;
   reloading?: boolean;
@@ -34,8 +43,7 @@ export function weaponStatusKind(input: {
   if (input.isCharging) return 'charging';
   if (input.reloading) return 'reloading';
   const emptyMag =
-    input.turretId !== 'flamethrower' &&
-    input.turretId !== 'isida' &&
+    !isBeamTurretId(input.turretId) &&
     input.magazine > 0 &&
     input.ammo <= 0;
   if (emptyMag) return 'empty';

@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
 import type { Collider } from '../engine/physics';
-import { losClear } from '../engine/physics';
+import { losClear, segmentHitsCircleT } from '../engine/physics';
 import type { RailgunChargeHandle } from '../ports/AudioPort';
 import type { CombatPeer, Weapon, WeaponAmmoState, WeaponContext, WeaponDeps, WeaponOwner } from './types';
 import { fillAmmoState } from './types';
@@ -12,6 +12,7 @@ import { fillMuzzleAndAim } from './muzzle';
 import { ownerReloadMul } from './reloadMul';
 import { resolveWeaponDamage } from './weaponDamage';
 import { applyHit } from '../engine/applyHit';
+import { nearestShotBlockerDist } from './railgunBlockers';
 import { GaussBeamFx } from './GaussBeamFx';
 
 export type GaussState = 'IDLE' | 'LOCKING' | 'COOLDOWN';
@@ -71,6 +72,9 @@ export class GaussWeapon implements Weapon {
   private isTriggerActive = false;
   private lockTimer = 0;
   private reloadTimer = 0;
+  private lastCooldownDuration = 0;
+  private needsTriggerRelease = false;
+  private wantsArcadeRelease = false;
   private lockedTarget: CombatPeer | null = null;
   private beamFx: GaussBeamFx;
   private chargeHandle: RailgunChargeHandle | null = null;
@@ -79,17 +83,22 @@ export class GaussWeapon implements Weapon {
     this.owner = owner;
     this.deps = deps;
     this.beamFx = new GaussBeamFx(deps.scene);
+    this.lastCooldownDuration = this.cooldownDuration();
   }
 
   setFire(active: boolean): void {
+    const wasActive = this.isTriggerActive;
     this.isTriggerActive = active;
-    if (!active && this.state === 'LOCKING') {
-      this.cancelLock();
+    if (!active) {
+      this.needsTriggerRelease = false;
+      if (wasActive && this.state === 'LOCKING') {
+        this.wantsArcadeRelease = true;
+      }
     }
   }
 
   get isCharging(): boolean {
-    return this.state === 'LOCKING';
+    return this.state === 'LOCKING' && this.isTriggerActive && !this.wantsArcadeRelease;
   }
 
   get isReloading(): boolean {
@@ -97,10 +106,12 @@ export class GaussWeapon implements Weapon {
   }
 
   get currentTarget(): CombatPeer | null {
+    if (!this.isTriggerActive || this.wantsArcadeRelease) return null;
     return this.lockedTarget;
   }
 
   getLockTarget(): { position: THREE.Vector3 } | null {
+    if (!this.isTriggerActive || this.wantsArcadeRelease) return null;
     return this.state === 'LOCKING' && this.lockedTarget ? this.lockedTarget : null;
   }
 
@@ -110,6 +121,10 @@ export class GaussWeapon implements Weapon {
 
   private cooldownDuration(): number {
     return WEAPON_TUNING.gauss.reloadTime / ownerReloadMul(this.owner);
+  }
+
+  private arcadeCooldownDuration(): number {
+    return WEAPON_TUNING.gauss.arcadeReloadTime / ownerReloadMul(this.owner);
   }
 
   private startLockAudio(): void {
@@ -129,6 +144,7 @@ export class GaussWeapon implements Weapon {
     this.state = 'IDLE';
     this.lockTimer = 0;
     this.lockedTarget = null;
+    this.wantsArcadeRelease = false;
     this.stopLockAudio(false);
     this.owner.setBarrelKick?.(0);
     if (this.owner.visual.railGlowMat) {
@@ -147,7 +163,7 @@ export class GaussWeapon implements Weapon {
     switch (this.state) {
       case 'COOLDOWN': {
         this.reloadTimer -= dt;
-        const cd = this.cooldownDuration();
+        const cd = this.lastCooldownDuration > 0 ? this.lastCooldownDuration : this.cooldownDuration();
         if (this.owner.visual.railGlowMat) {
           const ratio = cd > 0 ? Math.max(0, this.reloadTimer / cd) : 0;
           this.owner.visual.railGlowMat.emissiveIntensity = 0.15 + ratio * 1.2;
@@ -163,7 +179,7 @@ export class GaussWeapon implements Weapon {
       }
 
       case 'IDLE': {
-        if (this.isTriggerActive && this.owner.fireTimer <= 0) {
+        if (this.isTriggerActive && !this.needsTriggerRelease && this.owner.fireTimer <= 0) {
           fillMuzzleAndAim(this.owner, tmpMuzzle, tmpDir);
           const range = this.owner.params.range ?? WEAPON_TUNING.gauss.range;
           const cone: GaussCone = {
@@ -180,18 +196,35 @@ export class GaussWeapon implements Weapon {
             this.lockedTarget = target;
             this.lockTimer = 0;
             this.startLockAudio();
+          } else {
+            this.executeArcadeFiring(ctx);
+            this.state = 'COOLDOWN';
+            this.lastCooldownDuration = this.arcadeCooldownDuration();
+            this.reloadTimer = this.lastCooldownDuration;
           }
         }
         break;
       }
 
       case 'LOCKING': {
-        if (!this.isTriggerActive) {
-          this.cancelLock();
+        if (this.wantsArcadeRelease || !this.isTriggerActive) {
+          this.wantsArcadeRelease = false;
+          this.stopLockAudio(true);
+          this.owner.setBarrelKick?.(0);
+          if (this.owner.visual.railGlowMat) {
+            this.owner.visual.railGlowMat.emissiveIntensity = 0.15;
+          }
+          this.executeArcadeFiring(ctx);
+          this.state = 'COOLDOWN';
+          this.lastCooldownDuration = this.arcadeCooldownDuration();
+          this.reloadTimer = this.lastCooldownDuration;
+          this.lockTimer = 0;
+          this.lockedTarget = null;
           break;
         }
         const target = this.lockedTarget;
         if (!target || !target.alive) {
+          this.needsTriggerRelease = true;
           this.cancelLock();
           break;
         }
@@ -231,12 +264,13 @@ export class GaussWeapon implements Weapon {
         }
 
         if (dist > range || dot < hysteresisCos || !losOk || switchedTarget) {
+          this.needsTriggerRelease = true;
           this.cancelLock();
           break;
         }
 
         const lockDur = this.lockDuration();
-        this.lockTimer += dt * (this.owner.reloadSpeedMul ?? 1);
+        this.lockTimer += dt;
         const progress = lockDur > 0 ? Math.min(1, this.lockTimer / lockDur) : 1;
 
         if (this.chargeHandle) {
@@ -249,10 +283,11 @@ export class GaussWeapon implements Weapon {
 
         // 100% заполнение круга — автоматический выстрел!
         if (this.lockTimer >= lockDur) {
-          this.executeFiring(target);
+          this.executeSniperFiring(target, ctx.tanks);
           this.stopLockAudio(true);
           this.state = 'COOLDOWN';
-          this.reloadTimer = this.cooldownDuration();
+          this.lastCooldownDuration = this.cooldownDuration();
+          this.reloadTimer = this.lastCooldownDuration;
           this.lockTimer = 0;
           this.lockedTarget = null;
           this.owner.setBarrelKick?.(0);
@@ -262,7 +297,20 @@ export class GaussWeapon implements Weapon {
     }
   }
 
-  private executeFiring(target: CombatPeer): void {
+  private playerNear(tanks: CombatPeer[] | undefined, range: number): boolean {
+    if (!tanks) return false;
+    const range2 = range * range;
+    const pos = this.owner.position;
+    for (const t of tanks) {
+      if (!t.isPlayer || !t.alive) continue;
+      const dx = t.position.x - pos.x;
+      const dz = t.position.z - pos.z;
+      if (dx * dx + dz * dz <= range2) return true;
+    }
+    return false;
+  }
+
+  private executeSniperFiring(target: CombatPeer, tanks?: CombatPeer[]): void {
     fillMuzzleAndAim(this.owner, tmpMuzzle, tmpDir);
     tmpTargetPos.set(target.position.x, target.position.y + 0.8, target.position.z);
 
@@ -292,8 +340,98 @@ export class GaussWeapon implements Weapon {
       this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakePlayer);
       this.deps.effects.addFovPunch(6.5);
       this.deps.onShotFired?.();
-    } else {
+    } else if (this.playerNear(tanks, 45)) {
       this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakeBot);
+    }
+  }
+
+  private executeArcadeFiring(ctx: WeaponContext): void {
+    fillMuzzleAndAim(this.owner, tmpMuzzle, tmpDir);
+    const range = WEAPON_TUNING.gauss.arcadeRange;
+    const endX = tmpMuzzle.x + tmpDir.x * range;
+    const endZ = tmpMuzzle.z + tmpDir.z * range;
+
+    let hitT = 1.0;
+    let hitTank: CombatPeer | null = null;
+    let isWall = false;
+
+    // 1. Проверка столкновения со стеной/препятствием
+    const blocker = nearestShotBlockerDist(
+      tmpMuzzle.x,
+      tmpMuzzle.z,
+      tmpDir.x,
+      tmpDir.z,
+      range,
+      ctx.colliders as Collider[],
+      tmpMuzzle.y,
+    );
+    if (blocker) {
+      hitT = blocker.dist / range;
+      isWall = true;
+    }
+
+    // 2. Проверка попадания в танки до препятствия
+    for (const t of ctx.tanks) {
+      if (!t.alive || !isOpponent(this.owner, t)) continue;
+      const tHit = segmentHitsCircleT(
+        tmpMuzzle.x,
+        tmpMuzzle.z,
+        endX,
+        endZ,
+        t.position.x,
+        t.position.z,
+        t.radius ?? 1.8,
+      );
+      if (tHit >= 0 && tHit < hitT) {
+        hitT = tHit;
+        hitTank = t;
+        isWall = false;
+      }
+    }
+
+    tmpTargetPos.set(
+      tmpMuzzle.x + tmpDir.x * range * hitT,
+      tmpMuzzle.y + 0.1,
+      tmpMuzzle.z + tmpDir.z * range * hitT,
+    );
+
+    if (hitTank) {
+      const baseArcade = resolveWeaponDamage(
+        this.owner.params.damage != null
+          ? Math.round(this.owner.params.damage * (WEAPON_TUNING.gauss.arcadeDamage / WEAPON_TUNING.gauss.damage))
+          : undefined,
+        WEAPON_TUNING.gauss.arcadeDamage,
+      );
+      const knockDir = tmpDir.clone();
+      applyHit(
+        this.deps.damageSystem,
+        hitTank,
+        baseArcade,
+        this.owner,
+        knockDir,
+        WEAPON_TUNING.gauss.arcadeKnockback,
+        (p) => {
+          this.deps.effects.impact(p, 0xc084fc);
+          this.deps.effects.explosion(p, 0xc084fc, 0.7);
+        },
+        tmpTargetPos,
+      );
+    } else if (isWall) {
+      this.deps.effects.impact(tmpTargetPos, 0xc084fc);
+      this.deps.effects.explosion(tmpTargetPos, 0xc084fc, 0.7);
+    }
+
+    this.beamFx.fire(tmpMuzzle, tmpTargetPos, WEAPON_TUNING.gauss.arcadeBeamDuration);
+    this.deps.effects.muzzle(tmpMuzzle, 0xc084fc);
+    this.owner.onFired(WEAPON_TUNING.gauss.arcadeKnockback);
+    this.deps.audio.shoot('gauss');
+
+    if (this.owner.isPlayer) {
+      this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakePlayer * 0.4);
+      this.deps.effects.addFovPunch(2.0);
+      this.deps.onShotFired?.();
+    } else if (this.playerNear(ctx.tanks, 35)) {
+      this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakeBot * 0.4);
     }
   }
 
@@ -309,12 +447,17 @@ export class GaussWeapon implements Weapon {
     this.cancelLock();
     this.state = 'IDLE';
     this.reloadTimer = 0;
+    this.wantsArcadeRelease = false;
+    this.needsTriggerRelease = false;
+    this.beamFx.hide();
   }
 
   onRespawn(): void {
     this.cancelLock();
     this.state = 'IDLE';
     this.reloadTimer = 0;
+    this.wantsArcadeRelease = false;
+    this.needsTriggerRelease = false;
   }
 
   dispose(): void {
@@ -335,7 +478,7 @@ export class GaussWeapon implements Weapon {
       });
     }
     if (this.state === 'COOLDOWN') {
-      const cd = this.cooldownDuration();
+      const cd = this.lastCooldownDuration > 0 ? this.lastCooldownDuration : this.cooldownDuration();
       const prog = cd > 0 ? Math.min(1, 1 - this.reloadTimer / cd) : 1;
       return fillAmmoState(out, {
         ammo: 0,

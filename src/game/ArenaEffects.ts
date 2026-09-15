@@ -129,7 +129,11 @@ export class ArenaEffects {
       this.craneTrolley.rotation.z = Math.sin(elapsed * 0.6) * 0.008;
     }
 
-    for (const fn of this.animNodes) fn(dt, elapsed);
+    // E7: вращение декора (мельницы/вентиляторы/радары из animNodes) — тоже
+    // декоративная анимация: на low замирает, как beacon/furnace выше.
+    if (quality !== 'low') {
+      for (const fn of this.animNodes) fn(dt, elapsed);
+    }
 
     this.smokeT -= dt;
     if (this.smokeT <= 0 && this.smokeEmitters.length > 0) {

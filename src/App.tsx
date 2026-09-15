@@ -152,16 +152,25 @@ export default function App() {
   }, []);
 
   /** Единая точка старта: держит индикатор загрузки и глотает гонку stale-старта. */
+  // H5: startRound вытесняется новым (дабл-клик «В БОЙ»/«БЫСТРАЯ ИГРА») и
+  // резолвится досрочно — без токена stale-вызов гасил «ЗАГРУЗКА» посреди
+  // перестройки нового раунда и показывал тост ошибки при успешном старте.
+  const startToken = useRef(0);
   const runStartRound = useCallback(async (game: GameApi, mapId: MapId) => {
+    const token = ++startToken.current;
     setRoundLoading(true);
     setRoundError(null);
     try {
       await game.startRound(mapId);
     } catch (err) {
       console.error('[ArmorStrike] startRound failed', err);
-      setRoundError('Не удалось начать раунд. Попробуйте ещё раз.');
+      if (token === startToken.current) {
+        setRoundError('Не удалось начать раунд. Попробуйте ещё раз.');
+      }
     } finally {
-      setRoundLoading(false);
+      if (token === startToken.current) {
+        setRoundLoading(false);
+      }
     }
   }, []);
 
@@ -247,6 +256,16 @@ export default function App() {
     setMuted(nowMuted);
   }, [game]);
 
+  // H6: кросс-вкладочная синхронизация флага mute: App.muted (PauseMenu)
+  // обязан следовать за внешними записями 'as2_muted' (другая вкладка).
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'as2_muted') setMuted(e.newValue === '1');
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   const changeCrosshair = useCallback((style: CrosshairStyle) => {
     saveCrosshairStyle(style);
     setCrosshair(style);
@@ -283,7 +302,7 @@ export default function App() {
       <div className="fx-scanlines pointer-events-none absolute inset-0 z-30" />
       <div className="fx-vignette pointer-events-none absolute inset-0 z-10" />
 
-      <HUD game={game} active={uiMode === 'playing' && !hideChrome} crosshair={crosshair} />
+      <HUD game={game} active={uiMode === 'playing' && !hideChrome} crosshair={crosshair} onToggleMute={toggleMute} />
 
       {uiMode === 'playing' && paused && game && snap && !hideChrome && (
         <PauseMenu

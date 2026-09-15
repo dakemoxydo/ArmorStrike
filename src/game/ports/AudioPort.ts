@@ -44,6 +44,8 @@ export interface AudioPort {
   reload(): void;
   click(): void;
   death(): void;
+  /** Звуковой сигнал тревоги при захвате игрока снайперским прицелом (Гаусс). */
+  lockWarning(): void;
 
   startEngine(): void;
   setEngine(ratio: number, boost?: boolean): void;

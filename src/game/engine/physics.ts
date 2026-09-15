@@ -45,6 +45,21 @@ export function colliderFromCenter(
 export const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 export const wrapAngle = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
+/**
+ * I7: AABB-обёртка повёрнутого прямоугольника w×d вокруг yaw. Коллайдеры
+ * всегда axis-aligned, а меш поворачивается (`rotation.y = yaw`); без этой
+ * обёртки повёрнутый объект либо имеет невидимую стену снаружи меша, либо
+ * простреливается насквозь. Возвращает размеры (w, d) охватывающего AABB
+ * (опциональный внешний `pad`, как у машин — +0.3 на запас).
+ */
+export function aabbForYaw(
+  w: number, d: number, yaw: number, pad = 0,
+): { w: number; d: number } {
+  const c = Math.abs(Math.cos(yaw));
+  const s = Math.abs(Math.sin(yaw));
+  return { w: w * c + d * s + pad, d: w * s + d * c + pad };
+}
+
 /** Плавное затухание значения к цели (обёртка THREE.MathUtils.damp). */
 export const dampTo = (current: number, target: number, lambda: number, dt: number): number =>
   THREE.MathUtils.damp(current, target, lambda, dt);
@@ -193,4 +208,28 @@ export function segmentHitsCircle(
   const ddx = cx - px;
   const ddz = cz - pz;
   return ddx * ddx + ddz * ddz <= r * r;
+}
+
+/**
+ * Параметр t∈[0,1] ПЕРВОГО входа сегмента в круг или -1 (C5: выбор ближайшей
+ * цели снаряда, а не «первой в ростере»). Начало внутри круга → t=0.
+ */
+export function segmentHitsCircleT(
+  ax: number, az: number, bx: number, bz: number,
+  cx: number, cz: number, r: number,
+): number {
+  const dx = bx - ax;
+  const dz = bz - az;
+  const fx = ax - cx;
+  const fz = az - cz;
+  const a = dx * dx + dz * dz;
+  if (a < 1e-12) return fx * fx + fz * fz <= r * r ? 0 : -1;
+  const rr = r * r;
+  const c0 = fx * fx + fz * fz - rr;
+  if (c0 <= 0) return 0;
+  const b = 2 * (fx * dx + fz * dz);
+  const disc = b * b - 4 * a * c0;
+  if (disc < 0) return -1;
+  const t = (-b - Math.sqrt(disc)) / (2 * a);
+  return t >= 0 && t <= 1 ? t : -1;
 }

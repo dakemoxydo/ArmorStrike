@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   clamp, wrapAngle, colliderFromCenter, resolveCircle,
-  pointInCollider, segmentHitsCollider, losClear, segmentHitsCircle,
+  pointInCollider, segmentHitsCollider, losClear, segmentHitsCircle, segmentHitsCircleT,
+  aabbForYaw,
 } from '../game/engine/physics';
 
 describe('physics helpers', () => {
@@ -49,5 +50,38 @@ describe('physics helpers', () => {
   it('segmentHitsCircle', () => {
     expect(segmentHitsCircle(0, 0, 10, 0, 5, 0, 1)).toBe(true);
     expect(segmentHitsCircle(0, 0, 10, 0, 5, 5, 1)).toBe(false);
+  });
+
+  // C5: выбор ближайшей цели снаряда по параметру t ∈ [0,1].
+  it('segmentHitsCircleT returns first-entry t, -1 when no hit', () => {
+    // Сегмент (0,0)→(10,0), круг r=1 в (5,0) → вход в x=4 → t=0.4.
+    expect(segmentHitsCircleT(0, 0, 10, 0, 5, 0, 1)).toBeCloseTo(0.4, 5);
+    // Промах.
+    expect(segmentHitsCircleT(0, 0, 10, 0, 5, 5, 1)).toBe(-1);
+    // Старт внутри круга → t=0.
+    expect(segmentHitsCircleT(5, 0, 10, 0, 5, 0, 1)).toBe(0);
+    // Круг дальше конца сегмента.
+    expect(segmentHitsCircleT(0, 0, 3, 0, 5, 0, 1)).toBe(-1);
+    // Нулевой сегмент.
+    expect(segmentHitsCircleT(0, 0, 0, 0, 0.5, 0, 1)).toBe(0);
+    expect(segmentHitsCircleT(0, 0, 0, 0, 5, 0, 1)).toBe(-1);
+  });
+
+  // I7: yaw-aware AABB-обёртка повёрнутого прямоугольника.
+  it('aabbForYaw охватывает повёрнутый w×d', () => {
+    // yaw=0 → без изменений.
+    expect(aabbForYaw(10, 4, 0)).toEqual({ w: 10, d: 4 });
+    // yaw=π/2 → оси меняются местами (бывшая длина становится глубиной).
+    const q = aabbForYaw(10, 4, Math.PI / 2);
+    expect(q.w).toBeCloseTo(4, 5);
+    expect(q.d).toBeCloseTo(10, 5);
+    // yaw=π/4 → симметричный охват, обе стороны ≥ max(w,d)/√2·… = (w+d)/√2.
+    const d45 = aabbForYaw(10, 4, Math.PI / 4);
+    expect(d45.w).toBeCloseTo((10 + 4) / Math.SQRT2, 4);
+    expect(d45.d).toBeCloseTo((10 + 4) / Math.SQRT2, 4);
+    // pad добавляется к обеим сторонам.
+    expect(aabbForYaw(10, 4, 0, 0.3)).toEqual({ w: 10.3, d: 4.3 });
+    // Отрицательный/ >π yaw (blinds) — берётся |cos|/|sin|, тот же охват.
+    expect(aabbForYaw(10, 4, -Math.PI / 2).w).toBeCloseTo(4, 5);
   });
 });

@@ -8,7 +8,10 @@ export interface TankXZ {
 /**
  * Separates two overlapping tank circles in-place.
  * Returns true if positions were modified.
- * Clamps separation so near-coincident tanks do not explode across the arena.
+ * J9: clamp «не разлетелись» — защитный: с текущими радиусами (1.8) максимум
+ * half = 1.8 < 2.5, т.е. ветка недостижима; она страхует корпуса с суммарным
+ * радиусом > 2×maxPush (появятся — clamp заработает). Тест в tankSeparation
+ * проверяет property инвариант, а не достижимость ветки.
  */
 export function separateTankPair(
   a: TankXZ,

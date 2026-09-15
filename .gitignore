@@ -5,7 +5,7 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Local dev evidence (npm run map-plan / preview:models write here; numbers live in PROGRESS.md)
+# Local dev evidence (npm run map-plan / preview:models write here; census numbers live in Docs/Architecture/Standard_Resources.md)
 screenshots/
 
 # Env / secrets

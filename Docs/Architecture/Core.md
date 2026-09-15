@@ -117,7 +117,7 @@ interface Weapon {
 }
 ```
 
-Implementations: `RailgunWeapon`, `FlamethrowerWeapon`, `CannonWeapon`.  
+Implementations: `RailgunWeapon`, `FlamethrowerWeapon`, `CannonWeapon`, `GaussWeapon`, `IsidaWeapon` (J14: все пять).  
 Factory: `createWeapon` in `PlayerFactory.ts` (single path for player & bots).
 
 Стандарт: [Standard Weapon](Standard_Weapon.md).

@@ -37,7 +37,9 @@ target.takeDamage(dmg, source.id)
 hooks.onTankDamaged(target, dmg, source)
 ```
 
-Гейты self/invuln/FF живут **только** здесь — оружие и projectiles их не дублируют.
+Гейты self/invuln/FF — **канон здесь**. Beam-оружия (огнемёт, «Изида»)
+проверяют их заранее локально — это защитная дубликация ради пропущенного
+applyHit-вызова на тик, а не второй источник истины (J14).
 
 ### applyKnockback
 
@@ -51,8 +53,10 @@ target.knockback += dir * force
 
 ```
 res = arena.damageBlock(blockId, dmg)
-if res === 'destroyed': hooks.onBlockDestroyed(hitPos, size)
+if res === 'destroyed': hooks.onBlockDestroyed(hitPos, 1.4)
 ```
+
+Масштав взрыва — фиксированные `1.4` (FX-тюнинг, J14), не габарит блока.
 
 ## applyHit / applySplashHit
 
@@ -78,7 +82,7 @@ dmg     = round(splashDmg * falloff)
 
 | Событие | Действия |
 |---------|----------|
-| Игрок получил урон | `hitPlayer`, shake 0.3, `playerHit` (dir) |
+| Игрок получил урон | `hitPlayer`, shake 0.3, `playerHit` (`dir` относительно ракурса камеры `aimYaw` для точного позиционирования дуги на экране) |
 | Бот получил урон | `hitEnemy`, `enemyHit` |
 | Танк уничтожен | explosion, debris; kill score / player death |
 | Блок уничтожен | explosion + debris + audio |

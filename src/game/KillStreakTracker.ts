@@ -33,6 +33,15 @@ export class KillStreakTracker {
     this.killTimes = this.killTimes.filter(
       (t) => currentTime >= t && currentTime - t < STREAK_WINDOW,
     );
+
+    // C9: при сужении окна (старые килы отвалились) серию надо «перевыставить»
+    // при следующем подъёме. Без этого устойчивая серия (килы ровно в окне)
+    // получает DOUBLE/TRIPLE лишь раз за жизнь окна — gate below сравнивает с
+    // уже выданным рекордом. Опускаем рекорд до фактического размера окна.
+    if (this.killTimes.length < this.lastStreakCount) {
+      this.lastStreakCount = this.killTimes.length;
+    }
+
     this.killTimes.push(currentTime);
 
     const count = this.killTimes.length;

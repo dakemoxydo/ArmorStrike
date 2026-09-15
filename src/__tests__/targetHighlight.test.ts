@@ -185,7 +185,6 @@ function runStage(
     tanks,
     deathT: { value: 0 },
     prevReloading: { value: false },
-    requestGameOver: () => {},
   } as unknown as FrameContext;
   stage.update(ctx);
 }

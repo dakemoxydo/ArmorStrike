@@ -79,7 +79,8 @@ export function buildTowerRing(ctx: ArenaBuildContext, spec: TowerRingSpec): voi
     const h = heightMin + Math.random() * (heightMax - heightMin);
     const tower = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * depthRatio), material);
     tower.position.set(x, h / 2 + baseY, z);
-    tower.rotation.y = Math.random() * rotMax;
+    const rotY = Math.random() * rotMax;
+    tower.rotation.y = rotY;
     ctx.group.add(tower);
     onTower?.(tower, i, w, h);
     if (win && Math.random() > win.skip) {
@@ -90,8 +91,21 @@ export function buildTowerRing(ctx: ArenaBuildContext, spec: TowerRingSpec): voi
         new THREE.PlaneGeometry(w * win.widthRatio, h * win.heightRatio),
         mat,
       );
-      pane.position.set(x, h * (win.yMin + Math.random() * (win.yMax - win.yMin)), z);
-      pane.lookAt(0, pane.position.y, 0);
+      // E5: панель смотрит на центр, но лежала ВНУТРИ закрытого бокса
+      // (никакого translateZ не было) — светящиеся окна не рисовались.
+      // Ставим её на точку пересечения луча «центр башни → арена» с гранью
+      // AABB повёрнутого бокса (slab-дистанция) + 5 см запаса.
+      const paneY = h * (win.yMin + Math.random() * (win.yMax - win.yMin));
+      const ulen = Math.hypot(x, z);
+      const ux = -x / ulen;
+      const uz = -z / ulen;
+      const hx = w / 2;
+      const hz = (w * depthRatio) / 2;
+      const tX = hx / Math.abs(ux * Math.cos(rotY) - uz * Math.sin(rotY));
+      const tZ = hz / Math.abs(ux * Math.sin(rotY) + uz * Math.cos(rotY));
+      const tFace = Math.min(tX, tZ);
+      pane.position.set(x + ux * (tFace + 0.05), paneY, z + uz * (tFace + 0.05));
+      pane.lookAt(0, paneY, 0);
       ctx.group.add(pane);
     }
   }

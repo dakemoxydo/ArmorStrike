@@ -672,16 +672,26 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
 
 /**
  * LRU-1 слот для больших ground-канвасов: перед сборкой новой текстуры
- * выгружает предыдущую 'ground:last' (dispose GPU-текстуры), чтобы три
- * карты не держали одновременно десятки МБ VRAM. Сама запись помечена
- * markShared — поштучный teardown её не тронет до выгрузки здесь.
+ * выгружает предыдущую (dispose GPU-текстуры), чтобы три карты не держали
+ * одновременно десятки МБ VRAM. Сама запись помечена markShared — поштучный
+ * teardown её не тронет до выгрузки здесь.
+ *
+ * A/B-фикс (B6): раньше evict шёл по константному ключу 'ground:last', который
+ * никогда не записывался (реальные ключи `ground:<map>:<size>`) — no-op, и все
+ * три канваса 3072² оставались в кэше. Теперь модуль хранит последний
+ * реальный ключ и выгружает именно его.
  */
+let lastGroundKey: string | null = null;
+
 function cachedGround(
   key: 'ground:factory' | 'ground:village' | 'ground:city',
   arenaSize: number,
   build: () => THREE.CanvasTexture,
 ): THREE.CanvasTexture {
   const fullKey = `${key}:${arenaSize}`;
-  if (!cachedTextureHas(fullKey)) cachedTextureEvict('ground:last');
+  if (!cachedTextureHas(fullKey)) {
+    if (lastGroundKey !== null && lastGroundKey !== fullKey) cachedTextureEvict(lastGroundKey);
+    lastGroundKey = fullKey;
+  }
   return cachedTexture(fullKey, build);
 }

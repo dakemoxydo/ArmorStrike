@@ -122,7 +122,7 @@ describe('GaussWeapon — снайперский захват цели и авт
     expect(deps.audio.chargeRailgun).toHaveBeenCalled();
   });
 
-  it('отпускание ЛКМ до 100% сбрасывает захват в IDLE', () => {
+  it('отпускание ЛКМ до 100% производит аркадный выстрел навскидку и переходит в COOLDOWN', () => {
     const owner = makeTank(1);
     const target = makeTarget(2, 0, 30);
     const deps = makeDeps();
@@ -134,9 +134,59 @@ describe('GaussWeapon — снайперский захват цели и авт
     expect(weapon.state).toBe('LOCKING');
 
     weapon.setFire(false);
-    expect(weapon.state).toBe('IDLE');
     expect(weapon.currentTarget).toBeNull();
+    weapon.update(0.016, ctx);
+
+    expect(weapon.state).toBe('COOLDOWN');
+    expect(deps.damageSystem.applyDamage).toHaveBeenCalledWith(
+      target,
+      WEAPON_TUNING.gauss.arcadeDamage,
+      owner,
+    );
     expect(deps.audio.stopChargeRailgun).toHaveBeenCalled();
+  });
+
+  it('клик в IDLE при отсутствии цели производит мгновенный аркадный выстрел навскидку', () => {
+    const owner = makeTank(1);
+    const deps = makeDeps();
+    const weapon = new GaussWeapon(owner, deps);
+    const ctx: WeaponContext = { tanks: [], colliders: [] };
+
+    weapon.setFire(true);
+    weapon.update(0.016, ctx);
+
+    expect(weapon.state).toBe('COOLDOWN');
+    expect(deps.audio.shoot).toHaveBeenCalledWith('gauss');
+    expect(deps.onShotFired).toHaveBeenCalled();
+  });
+
+  it('аркадный выстрел останавливается стеной, не доставая танк за ней', () => {
+    const owner = makeTank(1);
+    const target = makeTarget(2, 0, 30);
+    const wall: Collider = {
+      id: 10,
+      minX: -5,
+      maxX: 5,
+      minZ: 10,
+      maxZ: 15,
+      height: 4,
+      blocksShots: true,
+      blocksSight: true,
+      destructible: false,
+      active: true,
+      kind: 'wall',
+    };
+    const deps = makeDeps();
+    const weapon = new GaussWeapon(owner, deps);
+    const ctx: WeaponContext = { tanks: [target], colliders: [wall] };
+
+    weapon.setFire(true);
+    weapon.update(0.016, ctx);
+
+    expect(weapon.state).toBe('COOLDOWN');
+    // Урон танку НЕ нанесён, так как стена блокирует выстрел
+    expect(deps.damageSystem.applyDamage).not.toHaveBeenCalled();
+    expect(deps.effects.explosion).toHaveBeenCalled();
   });
 
   it('разрыв прямой видимости (LOS) стеной срывает захват', () => {
@@ -221,6 +271,36 @@ describe('GaussWeapon — снайперский захват цели и авт
     expect(weapon.state).toBe('IDLE');
     expect(weapon.getAmmoState().ammo).toBe(1);
     expect(weapon.getAmmoState().reloading).toBe(false);
+  });
+
+  it('C4: снайпер-пад применяется ровно один раз — лок = lockTime/mul, не /mul²', () => {
+    const owner = makeTank(1, true);
+    owner.reloadSpeedMul = 1.5;
+    const target = makeTarget(2, 0, 30);
+    const deps = makeDeps();
+    const weapon = new GaussWeapon(owner, deps);
+    const ctx: WeaponContext = { tanks: [target], colliders: [] };
+
+    weapon.setFire(true);
+    weapon.update(0.016, ctx);
+    expect(weapon.state).toBe('LOCKING');
+
+    const lockDur = WEAPON_TUNING.gauss.lockTime / 1.5; // = 0.767 с
+    const doubleApplied = WEAPON_TUNING.gauss.lockTime / (1.5 * 1.5); // баг: 0.511 с
+    // Прогон чуть дальше «багованного» момента — при двойном применении
+    // выстрел уже случился бы здесь.
+    weapon.update(doubleApplied + 0.05 - 0.016, ctx);
+    expect(deps.damageSystem.applyDamage).not.toHaveBeenCalled();
+    expect(weapon.state).toBe('LOCKING');
+
+    // И только на корректной длине лока происходит автовыстрел.
+    weapon.update(lockDur - doubleApplied - 0.05 + 0.05, ctx);
+    expect(deps.damageSystem.applyDamage).toHaveBeenCalledWith(
+      target,
+      WEAPON_TUNING.gauss.damage,
+      owner,
+    );
+    expect(weapon.state).toBe('COOLDOWN');
   });
 
   it('getLockTarget возвращает цель только в состоянии LOCKING', () => {

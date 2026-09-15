@@ -16,7 +16,9 @@ export const TankFxSystem = {
       if (t.health < t.maxHealth * SMOKE_HEALTH_FRAC) {
         t.fx.smokeAcc += dt;
         if (t.fx.smokeAcc > 0.11) {
-          t.fx.smokeAcc = 0;
+          // E6: вычитаем порог, а не обнуляем — иначе при dt > порога эмиттер
+          // «теряет» остаток и частота дыма плавает от FPS (как у flame `-=`).
+          t.fx.smokeAcc -= 0.11;
           tmpV.set(t.position.x, 1.6, t.position.z);
           effects.tankSmoke(tmpV);
         }
@@ -25,7 +27,7 @@ export const TankFxSystem = {
       if (Math.abs(t.speed) > 8) {
         t.fx.dustAcc += dt * (Math.abs(t.speed) / Math.max(1, t.params.speed));
         if (t.fx.dustAcc > 0.1) {
-          t.fx.dustAcc = 0;
+          t.fx.dustAcc -= 0.1;
           rearPoint(tmpV, t.position.x, t.position.z, t.yaw, BOOST_JET_OFFSET, DUST_HEIGHT);
           tmpV.x += (Math.random() - 0.5) * DUST_SPREAD;
           tmpV.z += (Math.random() - 0.5) * DUST_SPREAD;

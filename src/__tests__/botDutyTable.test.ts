@@ -29,13 +29,9 @@ function roleAt(index: number): 'sniper' | 'assault' | 'standard' {
   return roleForBot(BOT_NORMAL.roleWave, index, turret) as 'sniper' | 'assault' | 'standard';
 }
 
-/** Корпус бота по индексу (цикл + свапы как в rosterSpawn.makeBot). */
+/** Корпус бота по индексу (прямой цикл каталога без блокировок). */
 function hullAt(index: number): string {
-  let h = HULL_IDS[index % HULL_IDS.length];
-  const role = roleAt(index);
-  if (role === 'assault' && (h === 'mammoth' || h === 'titan')) h = 'viking';
-  if (role === 'sniper' && h === 'viking') h = 'hunter';
-  return h;
+  return HULL_IDS[index % HULL_IDS.length];
 }
 
 function countRoles(from: number, to: number): RoleCount {
@@ -59,10 +55,10 @@ describe('D1: objective duty по режимам (AI_Bots.md ~50%)', () => {
     }
   });
 
-  it('DM: 7 ботов — {снайпер 3, штурм 2, стандарт 2}, duty 4/7', () => {
+  it('DM: 7 ботов — {снайпер 3, штурм 3, стандарт 1}, duty 4/7', () => {
     const cfg = configForMode('deathmatch');
     expect(cfg.dmBotCount).toBe(7);
-    expect(countRoles(0, cfg.dmBotCount - 1)).toEqual({ sniper: 3, assault: 2, standard: 2 });
+    expect(countRoles(0, cfg.dmBotCount - 1)).toEqual({ sniper: 3, assault: 3, standard: 1 });
     // duty-флаг ставится всем режимам, но в DM он инертен (см. тест BotAiStage ниже).
     expect(countDuty(0, cfg.dmBotCount - 1)).toBe(4);
   });
@@ -90,50 +86,26 @@ describe('D1: objective duty по режимам (AI_Bots.md ~50%)', () => {
       const allyCount = cfg.teamSize - 1;
       // Alpha (0..3): снайпер×2, штурм×1, стандарт×1.
       expect(countRoles(0, allyCount - 1)).toEqual({ sniper: 2, assault: 1, standard: 1 });
-      // Bravo (4..8): снайпер×1, штурм×2, стандарт×2.
-      expect(countRoles(allyCount, 2 * allyCount)).toEqual({ sniper: 1, assault: 2, standard: 2 });
+      // Bravo (4..8): снайпер×2, штурм×2, стандарт×1.
+      expect(countRoles(allyCount, 2 * allyCount)).toEqual({ sniper: 2, assault: 2, standard: 1 });
     }
   });
 
-  it('корпус когерентен роли под текущим порядком каталога', () => {
-    // Роль задаёт турель (цикл 3), корпус — независимый цикл каталога (5),
-    // поэтому пара повторяется с периодом 15. Золотая таблица ниже — это
-    // HULL_IDS[i % 5] со свапами-предохранителями из makeBot (штурм не берёт
-    // «Мамонта»/«Титана», снайпер — «Викинга»); она ловит любую смену порядка
-    // каталога и заставляет принять её осознанно.
-    const GOLDEN = [
-      'hunter', 'viking', 'mammoth', 'speedy', 'viking', // 0..4
-      'hunter', 'hunter', 'viking', 'speedy', 'titan', // 5..9
-      'hunter', 'viking', 'mammoth', 'speedy', 'titan', // 10..14
-    ];
+  it('корпуса и башни циклически распределяются по каталогу 5×5', () => {
     expect(HULL_IDS).toEqual(['hunter', 'viking', 'mammoth', 'speedy', 'titan']);
-    for (let i = 0; i < GOLDEN.length; i++) {
-      expect(hullAt(i), `index ${i}`).toBe(GOLDEN[i]);
+    expect(BOT_TURRETS).toEqual(['railgun', 'flamethrower', 'cannon', 'gauss', 'isida']);
+    for (let i = 0; i < 15; i++) {
+      expect(hullAt(i)).toBe(HULL_IDS[i % 5]);
     }
-    // Свапы действительно срабатывают: штурм не берёт сверхтяжёлые корпуса,
-    // снайпер — «Викинга».
-    expect(roleAt(4)).toBe('assault');
-    expect(hullAt(4)).toBe('viking'); // titan → viking
-    expect(roleAt(7)).toBe('assault');
-    expect(hullAt(7)).toBe('viking'); // mammoth → viking
-    expect(roleAt(6)).toBe('sniper');
-    expect(hullAt(6)).toBe('hunter'); // viking → hunter
+    expect(roleAt(0)).toBe('sniper'); // railgun
+    expect(roleAt(1)).toBe('assault'); // flamethrower
+    expect(roleAt(2)).toBe('standard'); // cannon
+    expect(roleAt(3)).toBe('sniper'); // gauss
+    expect(roleAt(4)).toBe('assault'); // isida
   });
 
-  it('флагман titan не достаётся ботам ни в одном режиме', () => {
-    // Порядок каталога ставит titan на индексы 9 и 14 (период 15), а самый
-    // длинный ростер — 9 ботов (TDM/CP: 4 союзника + 5 врагов), в DM — 7.
-    // Значит сверхтяжёлый флагман сейчас доступен только игроку. Это
-    // состояние осознанное, а не случайное: сверхтяжёлый бот — лёгкая цель,
-    // и роль штурмовика его всё равно отвергает. Если teamSize или dmBotCount
-    // вырастут, тест упадёт и заставит решить, нужен ли titan в ростере.
-    const dm = configForMode('deathmatch').dmBotCount;
-    const team = configForMode('team_deathmatch').teamSize;
-    const lastBotIndex = Math.max(dm, team * 2 - 1) - 1;
-    expect(lastBotIndex).toBe(8); // 9 ботов в TDM/CP — текущий потолок
-    for (let i = 0; i <= lastBotIndex; i++) {
-      expect(hullAt(i), `index ${i}`).not.toBe('titan');
-    }
+  it('флагман titan доступен ботам в ростерах', () => {
+    expect(hullAt(4)).toBe('titan');
   });
 });
 
@@ -172,7 +144,6 @@ function makeCtx(player: TankEntity, tanks: TankEntity[]): FrameContext {
     tanks,
     deathT: { value: -1 },
     prevReloading: { value: false },
-    requestGameOver: vi.fn(),
   };
 }
 

@@ -42,6 +42,7 @@ const NANO_ARC = {
 } as const;
 
 const tmpLook = new THREE.Vector3();
+const tmpMid = new THREE.Vector3();
 
 interface NanoArcLayer {
   mesh: THREE.Mesh;
@@ -128,7 +129,11 @@ export class NanoBeamFx {
       const from = origins[i];
       const len = from.distanceTo(to);
       mesh.visible = true;
-      mesh.position.copy(from);
+      // E4: общая beam-геометрия центрирована (z∈[−0.5,0.5]), mesh ставится
+      // в середину отрезка — как в RailgunBeamFx.layoutBeam. Раньше копия
+      // `from` сдвигала дугу на половину длины: хвост за танком, голова в середине.
+      tmpMid.copy(from).add(to).multiplyScalar(0.5);
+      mesh.position.copy(tmpMid);
       tmpLook.copy(to);
       mesh.lookAt(tmpLook);
       // scale.x/y — радиальный множитель (в шейдере `rs`: пиксельный пол и

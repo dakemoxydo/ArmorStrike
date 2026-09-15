@@ -36,6 +36,8 @@ const tmpSpark = new THREE.Vector3();
 const BEAM_SPARK_COLOR = new THREE.Color(0x8fffe8);
 /** Wall/block terminus impact color (orange = "stopped", distinct from pierce cyan). */
 const WALL_IMPACT_COLOR = 0xffa040;
+/** J12: единый фолбэк длины луча на случай не-конечного range (было 1000/10000 врозь). */
+const RAY_RANGE_FALLBACK = 1000;
 
 /**
  * Beam-side visuals captured at fire time, replayed `tracerDelay` later
@@ -262,7 +264,7 @@ export class RailgunWeapon implements Weapon {
     // Hitscan resolves instantly (damage/knockback/pierce pings); beam + impact
     // visuals are collected into a payload and replayed tracerDelay later (M19 #4).
     const rawRange = this.owner.params.range ?? rt.range;
-    const range = Number.isFinite(rawRange) ? rawRange : 1000;
+    const range = Number.isFinite(rawRange) ? rawRange : RAY_RANGE_FALLBACK;
     const shot: PendingShotVisual = {
       muzzle: tmpMuzzle.clone(),
       dir: tmpDir.clone(),
@@ -341,7 +343,7 @@ export class RailgunWeapon implements Weapon {
   private castHitscan(tanks: CombatPeer[]): THREE.Intersection[] {
     this.raycaster.set(tmpMuzzle, tmpDir);
     const rawRange = this.owner.params.range ?? WEAPON_TUNING.railgun.range;
-    this.raycaster.far = Number.isFinite(rawRange) ? rawRange : 10000;
+    this.raycaster.far = Number.isFinite(rawRange) ? rawRange : RAY_RANGE_FALLBACK;
 
     this._tankMap.clear();
     this._targetArr.length = 0;
@@ -401,7 +403,7 @@ export class RailgunWeapon implements Weapon {
     const tankMap = this._tankMap;
     const rt = WEAPON_TUNING.railgun;
     const rawRange = this.owner.params.range ?? rt.range;
-    const range = Number.isFinite(rawRange) ? rawRange : 1000;
+    const range = Number.isFinite(rawRange) ? rawRange : RAY_RANGE_FALLBACK;
     let maxHitDist = range;
     const baseDamage = resolveWeaponDamage(this.owner.params.damage, rt.damage);
     let currentDamage = baseDamage;

@@ -12,7 +12,7 @@
 | [[Tank_Movement]] | Движение корпуса + нитро | `TankMotionSystem`, `BOOST` |
 | [[Tank_Aim]] | Наведение башни | `TankAimSystem` |
 | [[Target_Highlight_Aim]] | Подсветка врага в конусе прицела (P7) | `TargetHighlightStage`, `AimHighlighter`, `modelOutline.ts` |
-| [[Health_And_Regen]] | HP, реген, смерть | `TankEntity` (`combat`/`fx`), `TankCombatTimersSystem` |
+| [[Health_And_Regen]] | HP, смерть, респаун (без пассивного регена) | `TankEntity` (`combat`/`fx`), `TankCombatTimersSystem` |
 | [[Damage_System]] | Урон / knockback / блоки | `DamageSystem`, `CombatSystem`, `applyHit` |
 | [[Kill_Feedback]] | Hit-stop / slow-mo за убийство игроком | `TimeScale`, `CombatSystem.setOnKillPunch` |
 | [[Weapon_Cannon]] | Пушка «Смоки» | `CannonWeapon`, `ProjectileManager` |
@@ -61,7 +61,7 @@
 **Core loop (P6 complete):**
 1. Гараж → корпус + башня.
 2. **ModeSelect** (DM / TDM / CP) → **MapSelect** → старт.
-3. Respawn 4 с; DM 30 kills / TDM **75** team / CP 1000 score / time 12 мин.
+3. Respawn 4 с; DM 25 kills / TDM **50** team / CP 1000 score / time 12 мин.
 4. CP: ~50% bots push A/B/C; rest hunt.
 5. Results: реванш / смена режима / гараж / меню.
 
@@ -74,7 +74,7 @@
 | Корпуса / башни / тюнинг оружия | `src/core/catalogData.ts` |
 | Арена, boost, score | `src/game/constants.ts` |
 | Match win/roster/time | `src/game/match/matchConfig.ts` |
-| Heal, knockback decay, damp, target highlight (P7) | `src/game/tuning.ts` |
+| Knockback decay, damp, smoke, target highlight (P7) | `src/game/tuning.ts` |
 | Порядок тика симуляции | `src/game/engine/stages/` (`index.ts`) |
 | Bootstrap | `src/game/GameBootstrap.ts` |
 | Модель vs код для корпуса/башни | `src/game/tank/TankConfig.ts` |

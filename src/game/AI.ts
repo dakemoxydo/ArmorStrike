@@ -188,7 +188,7 @@ export class AIController {
   private computeTargetPoint(
     state: AIState, dist: number, dx: number, dz: number,
     player: AITarget, pref: number, dt: number, t: AIBody,
-    colliders: Collider[],
+    colliders: Collider[], bounds: number,
   ) {
     let tx = this.waypoint.x;
     let tz = this.waypoint.y;
@@ -206,6 +206,7 @@ export class AIController {
             t.position.x, t.position.z,
             player.position.x, player.position.z,
             colliders,
+            { arenaHalf: bounds },
           );
           if (pt) {
             this.coverX = pt.x;
@@ -366,7 +367,7 @@ export class AIController {
     // Шаг 3-4: целевая точка + предпочтительная дистанция (+ low-HP cover)
     const pref = this.prefRange();
     let { tx, tz, throttleBase } = this.computeTargetPoint(
-      this.state, dist, dx, dz, ctx.player, pref, dt, t, ctx.colliders,
+      this.state, dist, dx, dz, ctx.player, pref, dt, t, ctx.colliders, ctx.bounds,
     );
 
     // CP objective path: drive to moveHint unless in close combat / cover flee.

@@ -3,7 +3,7 @@ import type { MatchConfig, MatchModeId } from './matchTypes';
 
 /**
  * Balance (P6 / design fallback):
- * - DM 30 kills · TDM 75 team kills (was 100 — long) · CP 1000 @ +1/s
+ * - DM 25 kills · TDM 50 team kills (was 75 — long) · CP 1000 @ +1/s
  * - Soft end 12 min all modes
  */
 const BASE = {
@@ -12,8 +12,8 @@ const BASE = {
   spawnInvulnSec: 2,
   dmBotCount: 7,
   teamSize: 5,
-  winKills: 30,
-  winTeamKills: 75,
+  winKills: 25,
+  winTeamKills: 50,
   winTeamScore: 1000,
 } as const;
 
@@ -43,7 +43,7 @@ export const MATCH_MODE_IDS: readonly MatchModeId[] = [
 /** Normal bot combat scales (no wave ramp). */
 export const BOT_NORMAL = {
   /** AI sight / aim — mid of legacy wave curve. */
-  sightRange: 46,
+  sightRange: 65,
   aimError: 0.1,
   healthScale: 1,
   damageScale: 1,

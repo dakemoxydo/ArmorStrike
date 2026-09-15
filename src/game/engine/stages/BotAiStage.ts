@@ -34,6 +34,8 @@ export class BotAiStage implements SimSystem {
   private readonly _blockerBufs = new Map<number, TankEntity[]>();
   /** Last seen roster size — swap detector for the per-bot maps above. */
   private _rosterSize = 0;
+  /** D6: id of the first bot — same-size rematch changes this, not size. */
+  private _firstBotId = -1;
   /**
    * Cached zone views for CP mode. Rebuilt by syncZoneViews when the zone set
    * changes (map switch / match reset); owner/contested are refreshed in place
@@ -59,15 +61,19 @@ export class BotAiStage implements SimSystem {
     this._blockerBufs.clear();
     this._tankById.clear();
     this._rosterSize = 0;
+    this._firstBotId = -1;
   }
 
   update(ctx: FrameContext): void {
     // Roster swap guard: tank ids grow monotonically across rounds, so stale
     // per-bot entries (sticky focus, objective sticky, blocker buffers) would
-    // otherwise accumulate forever. Cheap O(bots) check per frame.
+    // otherwise accumulate forever. D6: a same-size rematch keeps the count but
+    // changes the first bot's id, so compare both (cheap O(1)).
     const rosterSize = this.bots.bots.length;
-    if (this._rosterSize !== rosterSize) {
+    const firstBotId = rosterSize ? this.bots.bots[0].tank.id : -1;
+    if (this._rosterSize !== rosterSize || this._firstBotId !== firstBotId) {
       this._rosterSize = rosterSize;
+      this._firstBotId = firstBotId;
       this._aiSticky.clear();
       this._objSticky.clear();
       this._blockerBufs.clear();

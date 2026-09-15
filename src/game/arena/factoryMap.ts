@@ -312,13 +312,23 @@ function blastFurnace(ctx: ArenaBuildContext, x: number, z: number) {
   // molten runners away from the furnace
   moltenPlane(ctx, 1.5, 9, x, z - 11);
   moltenPlane(ctx, 8.5, 1.3, x - 3.6, z - 15);
-  // warm light
-  const l1 = new THREE.PointLight(0xff6a15, 340, 40, 1.9);
-  l1.position.set(x, 6, z + 3);
-  ctx.group.add(l1);
-  const l2 = new THREE.PointLight(0xff8a30, 170, 26, 1.9);
-  l2.position.set(x - 4, 3.5, z - 13);
-  ctx.group.add(l2);
+  // B7: «warm light» — glow-сферы, НЕ PointLight: инвариант постоянного
+  // светового бюджета (7 слотов LightRig); статичные источники в контенте
+  // меняли numPointLights 9↔7 при смене карты = recompile ~300 lit-материалов.
+  // Аддитивные меши не влияют на lighting-ключ программы, а opacity-мерцание
+  // даёт общий пул moltenMats (ArenaEffects :124, конвенция moltenPlane).
+  const warmGlow = (r: number, color: number, opacity: number, gx: number, gy: number, gz: number) => {
+    const m = new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    ctx.moltenMats.push(m);
+    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), m);
+    s.position.set(gx, gy, gz);
+    ctx.group.add(s);
+  };
+  warmGlow(2.6, 0xff6a15, 0.34, x, 6, z + 3);
+  warmGlow(1.5, 0xff8a30, 0.3, x - 4, 3.5, z - 13);
 
   // sparks rising from the tap hole
   const N = 44;
@@ -924,7 +934,10 @@ function railSiding(ctx: ArenaBuildContext, x0: number, x1: number, z: number) {
   }
   sleepers.instanceMatrix.needsUpdate = true;
   ctx.group.add(sleepers);
-  ctx.colliders.push(colliderFromCenter(cx, z, len, 5.4, 0.2, 'block', {
+  // I6-фикс: kind 'ramp' — единственный kind, который физика корпуса считает
+  // неSolid (solidColliderCache); 'block' + blocksShots:false давал невидимую
+  // стену 58×5.4 м: resolveCircle флаги blocksShots/blocksSight игнорирует.
+  ctx.colliders.push(colliderFromCenter(cx, z, len, 5.4, 0.2, 'ramp', {
     blocksShots: false, blocksSight: false,
   }));
   // two flatcars — low destructible cover

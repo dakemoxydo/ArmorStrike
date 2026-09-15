@@ -4,7 +4,7 @@ import {
   ArrowLeft, HardDrive, MoveUp,
   Play, Shield, Target,
 } from 'lucide-react';
-import { HULLS, TURRETS } from '../core/catalog';
+import { HULLS, TURRETS, WEAPON_TUNING } from '../core/catalog';
 import type { HullId, TurretId } from '../core/catalog';
 import type { GameApi } from '../game/GameApi';
 import type { GameEvent } from '../game/types';
@@ -189,8 +189,9 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
 
           <div
             className={
-              // 5 hulls vs 3 turrets: the hull row only goes to five across on
-              // very wide screens, where a single row still fits the dock.
+              // 5 hulls vs 5 turrets (J15): ряд корпусов растягивается в 5
+              // колонок только на очень широких экранах, где ряд всё ещё
+              // влезает в док; башни — 3+2.
               activeTab === 'hulls'
                 ? 'grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-3'
                 : 'grid grid-cols-2 lg:grid-cols-3 gap-3'
@@ -276,6 +277,11 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
                 {currTurret.weaponType === 'railgun' && (
                   <div className="garage-weapon-tip text-[10px] text-cyan-200/70 bg-cyan-500/10 border border-cyan-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
                     ТОЧНЫЙ ЭНЕРГЕТИЧЕСКИЙ ЛУЧ · {currTurret.damage} ЕД.
+                  </div>
+                )}
+                {currTurret.weaponType === 'gauss' && (
+                  <div className="garage-weapon-tip text-[10px] text-violet-200/70 bg-violet-500/10 border border-violet-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
+                    LOCK-ON · УДЕРЖИВАЙ ПРИЦЕЛ {WEAPON_TUNING.gauss.lockTime.toFixed(2).replace('.', ',')} С · СРЫВ — СБРОС ЗАРЯДА
                   </div>
                 )}
                 {currTurret.weaponType === 'isida' && (

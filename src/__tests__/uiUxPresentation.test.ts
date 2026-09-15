@@ -284,6 +284,60 @@ describe('UI/UX structural contracts (critical/medium fixes)', () => {
     const inner = canvas.replace(/^<canvas[^>]*>/, '').replace(/<\/canvas>$/, '').trim();
     expect(inner.length).toBeGreaterThan(0);
   });
+
+  it('K5: every decorative bicon in a labelled control is aria-hidden', () => {
+    // Аудит 2026-09-15 (контракт §7 расширен): иконки внутри aria-label-кнопок
+    // обязаны быть aria-hidden, иначе AT дублирует глиф текстом кнопки.
+    for (const rel of componentFiles()) {
+      const src = readSrc(rel);
+      for (const m of src.matchAll(/<[A-Z][A-Za-z]+\b[^>]*className="bicon[^>]*?\/>/g)) {
+        expect(m[0], `${rel}: ${m[0].slice(0, 48)}`).toMatch(/aria-hidden/);
+      }
+    }
+  });
+
+  it('K5: no decorative lucide glyph in GameOver/MainMenu/MapSelect/HudFeed lacks aria-hidden', () => {
+    // Прямые пины точечных мест из аудита.
+    expect(readSrc('src/components/hud/HudFeed.tsx')).toMatch(/<VolumeX size=\{16\} className="bicon" aria-hidden/);
+    expect(readSrc('src/components/hud/HudFeed.tsx')).toMatch(/<Volume2 size=\{16\} className="bicon" aria-hidden/);
+    expect(readSrc('src/components/MainMenu.tsx')).toMatch(/<Play size=\{22\} className="bicon" aria-hidden/);
+    expect(readSrc('src/components/MainMenu.tsx')).toMatch(/<Shuffle size=\{18\} className="bicon" aria-hidden/);
+    expect(readSrc('src/components/MapSelect.tsx')).toMatch(/<Play size=\{20\} className="bicon" aria-hidden/);
+    expect(readSrc('src/components/GameOverScreen.tsx')).toMatch(/<Wrench size=\{17\} className="bicon" aria-hidden/);
+    // aria-label на div без роли игнорируется AT — скорборд-линия получила роль.
+    expect(readSrc('src/components/GameOverScreen.tsx')).toMatch(/team-score-line[\s\S]*?role="img"/);
+  });
+
+  it('K6: CountUp respects prefers-reduced-motion', () => {
+    const go = readSrc('src/components/GameOverScreen.tsx');
+    expect(go).toMatch(/matchMedia\?\.\('\(prefers-reduced-motion: reduce\)'\)/);
+  });
+
+  it('H10: no inline letterSpacing in markup (only tracking-* classes)', () => {
+    // Контракт §8: letter-spacing в styles — только var(--track-*); в разметке —
+    // только tracking-* классы. Инлайновый style={{ letterSpacing }} запрещён.
+    for (const rel of componentFiles()) {
+      expect(readSrc(rel), rel).not.toMatch(/style=\{\{[^}]*letterSpacing/);
+    }
+  });
+
+  it('H7: dialog Enter defers to focused button; trap focuses primary CTA', () => {
+    for (const rel of ['src/components/ModeSelect.tsx', 'src/components/MapSelect.tsx']) {
+      const src = readSrc(rel);
+      expect(src, rel).toMatch(/isInteractiveKeyboardTarget\(e\.target\)/);
+      expect(src, rel).toMatch(/data-autofocus/);
+    }
+    expect(readSrc('src/hooks/useFocusTrap.ts')).toMatch(/\[data-autofocus\]/);
+  });
+
+  it('H9: mode/map user-facing copy is Russian (AGENTS §6)', () => {
+    const mode = readSrc('src/components/ModeSelect.tsx');
+    expect(mode).not.toMatch(/Free-for-all|friendly fire|\bFree\b|· \d+ (kills|team|score) ·|vs 5/);
+    expect(readSrc('src/game/maps/mapCatalog.ts')).not.toMatch(/downtown|district/);
+    // nameEn на карточках — осознанный двуязычный стиль (решение по H9):
+    // кириллическое имя первично, латинская подпись — декор.
+    expect(readSrc('src/components/MapSelect.tsx')).toMatch(/nameEn/);
+  });
 });
 
 describe('UI polish invariants (tokens replace ad-hoc values)', () => {

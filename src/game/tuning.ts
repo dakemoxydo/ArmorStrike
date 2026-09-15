@@ -11,16 +11,25 @@ export const DUST_HEIGHT = 0.35;
 /** Случайный разброс позиции пыли вокруг точки. */
 export const DUST_SPREAD = 1.2;
 
-/** Коэффициенты демпфирования скорости (обычный / с нитро). */
-export const SPEED_DAMP = { normal: 4.5, boost: 6 };
+/** Коэффициенты демпфирования скорости (обычный / с нитро) — плавный разгон и осязаемый вес танка. */
+export const SPEED_DAMP = { normal: 2.8, boost: 4.2 };
 /** Затухание отбрасывания (knockback) за секунду. */
 export const KNOCKBACK_DECAY = 5.5;
-/** Регенерация здоровья в секунду при отсутствии урона (was 7 → half). */
-export const HEAL_PER_SEC = 3.5;
 /** Порог здоровья для появления дыма повреждений (доля от max). */
 export const SMOKE_HEALTH_FRAC = 0.32;
-/** Время до начала регенерации после получения урона (сек; was 5). */
-export const HEAL_DELAY = 10;
+
+/**
+ * Настройки ремонта вне боя (Out-of-Combat Repair).
+ * Если танк не получал урон в течение `outOfCombatDelaySec`, запускается плавное
+ * восстановление здоровья: `baseRatePerSec + maxHealth * maxHealthFracPerSec` до maxHealth.
+ */
+export const REPAIR_TUNING = {
+  outOfCombatDelaySec: 5.0,
+  baseRatePerSec: 8.0,
+  maxHealthFracPerSec: 0.04,
+  /** Базовая скорость для легких танков / легаси-ссылок. */
+  repairRatePerSec: 8.0,
+};
 
 /**
  * Базовый rest Z ствола для recoil-анимации и сброса джиттера рельсы.

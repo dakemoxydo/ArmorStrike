@@ -26,6 +26,8 @@ export class TankCombatState {
   lastAttackerId = -1;
   /** Seconds of damage immunity after respawn. */
   invulnT = 0;
+  /** Время с момента последнего получения урона (для ремонта вне боя). */
+  timeSinceDamaged = 999;
 
   constructor(maxHealth: number) {
     this.health = maxHealth;
@@ -39,5 +41,5 @@ export class TankBuffState {
 }
 
 export function createTankFxState(): TankFxState {
-  return { hitFlash: 0, healFlash: 0, barrelKick: 0, smokeAcc: 0, dustAcc: 0, timeSinceHit: 0 };
+  return { hitFlash: 0, healFlash: 0, barrelKick: 0, smokeAcc: 0, dustAcc: 0 };
 }

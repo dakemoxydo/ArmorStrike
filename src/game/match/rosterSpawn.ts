@@ -56,7 +56,13 @@ function applyTeamRing(tank: TankEntity, teamId: TeamId) {
   mat.color.setHex(teamId === 'alpha' ? COLORS.teamAlpha : COLORS.teamBravo);
 }
 
-export const BOT_TURRETS: readonly TurretId[] = ['railgun', 'flamethrower', 'cannon'];
+export const BOT_TURRETS: readonly TurretId[] = [
+  'railgun',
+  'flamethrower',
+  'cannon',
+  'gauss',
+  'isida',
+];
 
 export async function makeBot(
   index: number,
@@ -67,13 +73,9 @@ export async function makeBot(
 ): Promise<BotEntry> {
   const botHulls: HullId[] = HULL_IDS;
 
-  let bHull = botHulls[index % botHulls.length];
+  const bHull = botHulls[index % botHulls.length];
   const bTurret = BOT_TURRETS[index % BOT_TURRETS.length];
   const role = roleForBot(BOT_NORMAL.roleWave, index, bTurret);
-
-  // Штурмовики не берут сверхтяжёлые корпуса: их скорость — это вся роль.
-  if (role === 'assault' && (bHull === 'mammoth' || bHull === 'titan')) bHull = 'viking';
-  if (role === 'sniper' && bHull === 'viking') bHull = 'hunter';
 
   const c = botStyleColor(index, teamId);
   const teamTag = teamId === 'alpha' ? 'А' : teamId === 'bravo' ? 'Б' : '';

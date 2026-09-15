@@ -71,6 +71,11 @@ export class GaussBeamFx {
     }
   }
 
+  hide() {
+    this.life = 0;
+    this.group.visible = false;
+  }
+
   dispose() {
     this.scene.remove(this.group);
     this.coreMesh.geometry.dispose();

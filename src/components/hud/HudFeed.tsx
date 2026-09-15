@@ -19,7 +19,7 @@ export default function HudFeed({ feed, muted, onToggleMute }: HudFeedProps) {
           title="Звук [M]"
           aria-label={muted ? 'Включить звук' : 'Выключить звук'}
         >
-          {muted ? <VolumeX size={16} className="bicon" /> : <Volume2 size={16} className="bicon" />}
+          {muted ? <VolumeX size={16} className="bicon" aria-hidden /> : <Volume2 size={16} className="bicon" aria-hidden />}
         </button>
       </div>
       <div className="flex flex-col items-end gap-1.5" aria-live="polite" aria-atomic="false">

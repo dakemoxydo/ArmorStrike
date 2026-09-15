@@ -12,17 +12,18 @@
 
 | Параметр | Значение | Описание |
 |----------|----------|----------|
-| `damage` | 32 | прямой урон снаряда |
-| `speed` | 48 | скорость полёта снаряда (единый источник: behavior + lead ИИ) |
-| `shotCooldown` | 0.28 с | КД между выстрелами (`fireTimer`) |
-| `magazine` | 10 | ёмкость |
-| `reloadTime` | 1.8 с | полная перезарядка |
+| `damage` | 25 | прямой урон снаряда |
+| `speed` | 54 | скорость полёта снаряда (единый источник: behavior + lead ИИ) |
+| `shotCooldown` | 0.38 с | КД между выстрелами (`fireTimer`) |
+| `magazine` | 6 | ёмкость |
+| `reloadTime` | 2.2 с | полная перезарядка |
 | `range` | 75 | max range снаряда |
-| `knockback` | 5.5 | recoil владельца (игрок) |
+| `knockback` | 2.8 | recoil владельца (игрок) |
+| `botKnockback` | 2.0 | self-recoil у ботов (слабее, чтобы не «стоять на куске»; J12) |
 | `splashRadius` | 5.0 | радиус splash |
-| `splashDmg` | 16 | базовый splash @ центр (½ damage) |
+| `splashDmg` | 12 | базовый splash @ центр |
 
-`turretSpeed`: 10.5 (`TURRETS.cannon`).
+`turretSpeed`: 8.0 (`TURRETS.cannon`).
 
 ## Состояния магазина
 
@@ -56,9 +57,9 @@ setFire(true) ──canFire──► fire() ──ammo--
 
 ## Скорость снаряда
 
-`WEAPON_TUNING.cannon.speed = 48` — единственный источник истины: behavior
-ставит её в `init()`, упреждение ИИ (`aiAimFire`) читает то же значение.
-Глобальный `PROJECTILE.speed` удалён (расходился: 58 против реальных 48).
+`WEAPON_TUNING.cannon.speed = 54` — единственный источник истины: behavior
+стаставит её в `init()`, упреждение ИИ (`aiAimFire`) читает то же значение.
+Глобальный `PROJECTILE.speed` удалён (расходился: 58 против реальных 48/54).
 
 ## Классы
 

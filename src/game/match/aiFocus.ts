@@ -100,9 +100,14 @@ export function pickAiFocus(opts: PickAiFocusOpts): PickAiFocusResult {
 
   if (sticky) {
     const preferredD = visible ? visibleD : nearestD;
-    // Keep sticky if still competitive with preferred.
-    if (stickyD <= preferredD + stickySlack) {
-      return { target: sticky, canSee: stickySee };
+    // Keep sticky if still competitive with preferred. D4: slack действует
+    // только когда sticky видим (или видимых нет вовсе — охота вслепую
+    // равноценна). Иначе aiAimFire молчит по LOS-гейту, пока видимый враг
+    // добивает бота за стеной (farm-эксплойт: увести цель за угол).
+    if (stickySee || !visible) {
+      if (stickyD <= preferredD + stickySlack) {
+        return { target: sticky, canSee: stickySee };
+      }
     }
   }
 

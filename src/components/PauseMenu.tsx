@@ -111,9 +111,8 @@ export default function PauseMenu({
               <button
                 type="button"
                 onClick={onToggleMute}
-                className="btn-game btn-ghost px-4 py-2.5 text-[11px]"
                 aria-label={muted ? 'Включить звук' : 'Выключить звук'}
-                style={{ letterSpacing: '0.12em' }}
+                className="btn-game btn-ghost px-4 py-2.5 text-[11px] tracking-wider"
               >
                 {muted ? <VolumeX size={14} className="bicon" aria-hidden /> : <Volume2 size={14} className="bicon" aria-hidden />}
                 <span>{muted ? 'ЗВУК ВЫКЛ' : 'ЗВУК ВКЛ'}</span>
@@ -121,10 +120,9 @@ export default function PauseMenu({
               <button
                 type="button"
                 onClick={cycleQuality}
-                className="btn-game btn-ghost px-4 py-2.5 text-[11px]"
                 aria-label={`Качество графики: ${QUALITY_PRESETS[quality].label}. Нажмите для смены`}
-                title="Графика: low / medium / high"
-                style={{ letterSpacing: '0.12em' }}
+                title="Графика: низкое / среднее / высокое"
+                className="btn-game btn-ghost px-4 py-2.5 text-[11px] tracking-wider"
               >
                 <Monitor size={14} className="bicon" aria-hidden />
                 <span>ГРАФ. {QUALITY_PRESETS[quality].label}</span>

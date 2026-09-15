@@ -46,4 +46,18 @@ describe('RunState', () => {
     r.load();
     expect(r.currentHull).toBe('hunter');
   });
+
+  it('конструктор восстанавливает сохранённый loadout без явного load() (A6)', () => {
+    localStorage.setItem('as2_loadout', JSON.stringify({ hullId: 'mammoth', turretId: 'gauss' }));
+    const r = new RunState();
+    expect(r.currentHull).toBe('mammoth');
+    expect(r.currentTurret).toBe('gauss');
+  });
+
+  it('load отвергает prototype-chain ключи вроде toString (A8)', () => {
+    localStorage.setItem('as2_loadout', JSON.stringify({ hullId: 'toString', turretId: 'constructor' }));
+    const r = new RunState();
+    expect(r.currentHull).toBe('hunter');
+    expect(r.currentTurret).toBe('railgun');
+  });
 });

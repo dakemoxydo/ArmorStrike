@@ -36,6 +36,12 @@ function CountUp({ value, duration = 1300 }: { value: number; duration?: number 
   // never re-renders per animation frame.
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
+    // K6: prefers-reduced-motion — без счётчика, сразу финальное число
+    // (тот же контракт, что у миникарты `minimapDraw` и CSS-анимаций).
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
+      if (ref.current) ref.current.textContent = `${value}`;
+      return;
+    }
     let raf = 0;
     const start = performance.now();
     const loop = (t: number) => {
@@ -107,6 +113,7 @@ export default function GameOverScreen({
           <div
             className="anim-up team-score-line mt-6"
             style={{ '--d': '0.32s' } as React.CSSProperties}
+            role="img"
             aria-label={`Alpha ${teamLeft}, Bravo ${teamRight}`}
           >
             <span className="team-alpha">ALPHA {teamLeft}</span>
@@ -140,7 +147,7 @@ export default function GameOverScreen({
             <span>РЕЖИМ / КАРТА</span>
           </button>
           <button type="button" onClick={onGarage} className="btn-game btn-ghost px-7 py-3.5 text-sm">
-            <Wrench size={17} className="bicon" />
+            <Wrench size={17} className="bicon" aria-hidden />
             <span>ГАРАЖ</span>
           </button>
           {/* Выход из матча — одно действие в обоих экранах: `btn-danger` +
