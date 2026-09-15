@@ -104,7 +104,7 @@ describe('procedural turret geometry', () => {
     const ctxG = stubContext();
     buildTurret(ctxG, 'gauss');
     expect(ctxG.railGlowMat).toBeDefined();
-    // «Изида»: шкала баллона, борт-нити и катушки рожков — rail-слот (оружие
+    // «Изида»: боковые светощели и кристаллы эмитёров — rail-слот (оружие
     // анимирует emissiveIntensity по режиму луча).
     const ctxI = stubContext();
     buildTurret(ctxI, 'isida');
