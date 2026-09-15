@@ -2,32 +2,33 @@
 
 Self-contained workflow. Works in any IDE/CLI that reads AGENTS.md.
 
-## Session Start
+## Session Start (Task / Implementation)
 
+When starting a task or feature implementation session:
 1. Check `Docs/GDD/Drafts/README.md` → mention active drafts.
 2. Read `Docs/GDD/Approved/00_Index.md` → map of implemented mechanics + code sources of truth.
 3. Check `BACKLOG.md` → mention open (unchecked) tasks.
+*(For quick questions, explanations, or isolated lookups, this checklist can be skipped).*
 
 ## 1. Commands & Verification (npm)
 
-- `npm run dev` — Vite dev server.
-- `npm run typecheck` — `tsc --noEmit` over **two** projects: `tsconfig.json` (browser `src/`, `types: ["vite/client"]` only) and `tsconfig.node.json` (`vite.config.ts` + `src/__tests__/` + `scripts/`, adds `@types/node`). Node types are scoped on purpose: browser code must not compile `process`/`Buffer`/`require`.
+### Verification Pipeline
+- `npm run typecheck` — `tsc --noEmit` over **two** projects: `tsconfig.json` (browser `src/`, `types: ["vite/client"]` only) and `tsconfig.node.json` (`vite.config.ts` + `src/__tests__/` + `scripts/`, adds `@types/node`). Browser code must not import `process`/`Buffer`/`require`.
 - `npm test` — `vitest run` (tests live in `src/__tests__/*.test.ts(x)`).
 - `npm run lint` — `eslint src`. `no-explicit-any` is an **error** in shipped code, off under `src/__tests__/` (partial test doubles).
-- `npm run census` — draw-call census (`scripts/draw-call-census.ts`).
-- `npm run map-plan [mapId]` — map plan report: collider density, zones, spawn points from real colliders (`scripts/map-plan.ts` → `screenshots/<mapId>-plan.html`).
-- `npm run docs:check` — docs consistency gate (`scripts/docs-check.ts`): .md links, `[[wiki-links]]`, code paths cited in backticks, `npm run` names vs package.json; runs in CI. Archive docs (`Docs/GDD/Archive/**`) may cite deleted files on purpose.
-- `npm run preview` — `vite preview` (serve `dist/`).
-- `npm run preview:models` — procedural hull/turret previews via headless CPU render (`scripts/hull-preview.ts` → `screenshots/hull-preview/*.png`).
-- `npm run build` — typecheck + Vite production build.
+- `npm run docs:check` — docs consistency gate (`scripts/docs-check.ts`): links, `[[wiki-links]]`, cited paths, npm scripts.
 
 **Verified** = `npm run typecheck` + `npm test` + `npm run lint` green. CI additionally gates `docs:check` and `build` (bundle-size + subfolder-deploy).
 
-> **Install gotcha:** bundled npm 10.9.7 (managed Node 22) can crash in arborist's `#loadPeerSet` (`edgesOut` null) on some peer sets (hit when adding vitest 4). Install with system Node 24 / npm 11 — the `lockfileVersion: 3` lock still installs via `npm ci` under npm 10. Do not reach for `--legacy-peer-deps`/`.npmrc` — switch npm.
+### Project Tooling
+- `npm run census` — draw-call census (`scripts/draw-call-census.ts`).
+- `npm run map-plan [mapId]` — map plan report: collider density, zones, spawn points (`scripts/map-plan.ts` → `screenshots/<mapId>-plan.html`).
+- `npm run preview:models` — procedural hull/turret previews via headless CPU render (`scripts/hull-preview.ts` → `screenshots/hull-preview/*.png`).
 
-> **Dev-server gotcha:** `vite.config.ts` pins `server.host = '127.0.0.1'`. Vite's default is `localhost`, which on Windows resolves to `::1`, so the server binds IPv6-loopback **only** and `http://127.0.0.1:5178` is refused (browser shows "page not found"). Open `http://127.0.0.1:5178`, not `localhost:5178`. To expose the dev server on the LAN: `npm run dev -- --host`.
-
-> **Dev-server crash gotcha:** chokidar cannot open a file/dir another process holds, and the resulting unhandled `EBUSY: resource busy or locked, watch '...'` **kills the whole dev server**. Two real sources in this repo: editors saving atomically (`.<file>.<pid>.<uuid>.tmpdir/` next to the file) and scratch tooling under `screenshots/` (chrome `--user-data-dir`, captured PNGs). `server.watch.ignored` in `vite.config.ts` covers both — keep those patterns when touching `server.watch`, and prefer a browser profile outside the project (`$env:TEMP`). Symptom if it regresses: the page keeps running a half-patched bundle and reloads hit a dead server, so FX "disappear" with no error in the game itself.
+### Environment & Server Guards
+- **Dev-server host:** `vite.config.ts` pins `server.host = '127.0.0.1'`. Windows resolves `localhost` to IPv6 `::1` only (breaking browser loopback). Do not remove `127.0.0.1`.
+- **Chokidar crash guard:** Never remove or narrow `server.watch.ignored` patterns in `vite.config.ts` (prevents fatal `EBUSY` crashes from atomic editor saves and scratch files in `screenshots/`).
+- **npm install:** If installing packages, use system Node 24 / npm 11 (avoids npm 10.9.7 peer-set crash). Do not use `--legacy-peer-deps`.
 
 ## 2. Project Map
 
@@ -63,7 +64,7 @@ Implementation **only** on explicit approval:
 
 ## 4. Architecture (Auto-Extraction)
 
-After feature/refactor is **Verified**: extract patterns → write `Docs/Architecture/` → notify.
+After a significant feature or cross-cutting subsystem is **Verified**: extract reusable patterns → document in `Docs/Architecture/` → notify. Do not create architecture docs for minor fixes, balance tweaks, or local refactors.
 Naming: `Standard_*.md` for reusable patterns, `Core*.md` for foundations; reference
 matrices may use a descriptive name (e.g. `Graphics_Presets_Matrix.md`).
 NEVER invent content not in code.
