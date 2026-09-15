@@ -18,6 +18,14 @@ export interface AudioPort {
   muted: boolean;
   ensure(): void;
   setMuted(m: boolean): void;
+  /**
+   * Freeze/unfreeze the WHOLE audio timeline with the game (pause scrim).
+   * WebAudio suspend parks scheduled voices (the railgun charge hum stops
+   * mid-ramp, not at its end); the implementation must also drop charge ticks
+   * while paused — a charge started before the pause used to audibly
+   * "complete" behind the scrim.
+   */
+  setPaused(paused: boolean): void;
 
   chargeRailgun(duration?: number): RailgunChargeHandle;
   /** Live pitch boost for that charge voice (0..1 charge progress). */

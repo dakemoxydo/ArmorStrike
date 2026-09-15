@@ -25,9 +25,9 @@ describe('ownerReloadMul', () => {
   it('бот-снайпер: mul = 1/1.35 — рельса медленнее в firePad раз', () => {
     const mul = ownerReloadMul(owner(1 / firePadForRole('sniper')));
     expect(mul).toBeCloseTo(0.7407);
-    // Перезарядка рельсы: 4.8 / mul ≈ 6.48 с; заряд: 1.1 / mul ≈ 1.485 с.
-    expect(4.8 / mul).toBeCloseTo(6.48);
-    expect(1.1 / mul).toBeCloseTo(1.485);
+    // Перезарядка рельсы: 3.8 / mul ≈ 5.13 с; заряд: 1.0 / mul ≈ 1.35 с.
+    expect(3.8 / mul).toBeCloseTo(5.13);
+    expect(1.0 / mul).toBeCloseTo(1.35);
   });
 
   it('бот-штурм: mul = 1/1.15 — батарея огнемёта восстанавливается медленнее', () => {

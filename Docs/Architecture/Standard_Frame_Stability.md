@@ -39,7 +39,7 @@ rig.off('flash', 0);                      // выключение = intensity = 
 | Канал | Ёмкость | Кто пишет |
 |-------|---------|-----------|
 | `flash` | 4 | `FlashSystem` (выстрелы, попадания, взрывы) |
-| `beam` | 2 | `RailgunBeamFx` (muzzle + impact, общий на все рейлганы) |
+| `beam` | 2 | `RailgunBeamFx` (muzzle + impact, общий на все рейлганы; пишет только владелец claim'а слота — см. GDD [[Weapon_Railgun]] §«Beam-огни») |
 | `flame` | 1 | `FlameParticlePool` (muzzle огнемёта, общий на все огнемёты) |
 
 Всего **7** источников на всю сессию. Все — `castShadow = false` (иначе добавился бы

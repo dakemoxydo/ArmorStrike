@@ -51,6 +51,19 @@ describe('reticleImpactDistance — куда реально летит выст�
     expect(d).toBeCloseTo(15 - (1.8 + PROJECTILE.radius), 5);
   });
 
+  it('pierceTanks (рельса): танк на линии не режет трассу — термин на стене', () => {
+    const wall = colliderFromCenter(0, 30, 8, 4, 3, 'wall');
+    const enemy = tank(2, 0, 15);
+    const d = reticleImpactDistance(0, 0, MZ_Y, aim.dx, aim.dz, 120, [wall], [enemy], 1, true);
+    expect(d).toBeCloseTo(28, 5); // только стена: луч пробивает танк насквозь
+  });
+
+  it('pierceTanks: без стены прицел на полной дальности, сколько бы танков ни стояло', () => {
+    const line = [tank(2, 0, 15), tank(3, 0, 40), tank(4, 0, 90)];
+    const d = reticleImpactDistance(0, 0, MZ_Y, aim.dx, aim.dz, 120, noColliders, line, 1, true);
+    expect(d).toBe(120);
+  });
+
   it('вне линии — не считается; рядом по перпендикуляру больше r+pad — мимо', () => {
     const side = tank(2, 3, 15); // 3 > 1.8 + 0.18 — снаряд проходит левее корпуса
     const d = reticleImpactDistance(0, 0, MZ_Y, aim.dx, aim.dz, 120, noColliders, [side], 1);

@@ -39,6 +39,13 @@ export const WEAPONS: Record<WeaponId, WeaponMeta> = {
     color: '#ffd24a',
     accentClass: 'text-amber-300/80',
   },
+  gauss: {
+    id: 'gauss',
+    name: 'ГАУСС',
+    kind: 'СОЛЕНОИДНЫЙ ЗАЛП',
+    color: '#c084fc',
+    accentClass: 'text-purple-300/80',
+  },
 };
 
 export function getWeaponMeta(id: WeaponId): WeaponMeta {

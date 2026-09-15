@@ -35,9 +35,9 @@ export interface AimCone {
  * врала бы: «в прицеле» один, горит другой), пушка/рельса — узкий конус прицела.
  */
 export function aimConeRadFor(weaponType?: WeaponType): number {
-  return weaponType === 'flamethrower'
-    ? WEAPON_TUNING.flamethrower.coneAngle * 0.5
-    : TARGET_HIGHLIGHT.coneRad;
+  if (weaponType === 'flamethrower') return WEAPON_TUNING.flamethrower.coneAngle * 0.5;
+  if (weaponType === 'gauss') return WEAPON_TUNING.gauss.lockConeAngle;
+  return TARGET_HIGHLIGHT.coneRad;
 }
 
 /**

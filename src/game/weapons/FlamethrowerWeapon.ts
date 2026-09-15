@@ -140,6 +140,19 @@ export class FlamethrowerWeapon implements Weapon {
     });
   }
 
+  onOwnerDeath(): void {
+    if (this.isFiring) {
+      this.isFiring = false;
+      this.deps.audio.stopFlameLoop();
+    }
+    this.flamePool.onOwnerDeath();
+  }
+
+  onRespawn(): void {
+    this.isFiring = false;
+    this.energy = WEAPON_TUNING.flamethrower.energyMax;
+  }
+
   dispose() {
     // Keep the start/stopFlameLoop ref-count balanced: only a weapon that was
     // firing releases its voice claim (an unconditional stop muted siblings).

@@ -54,8 +54,14 @@ export function updateTurretAndFire(
       const turretAbs = tank.yaw + tank.turretYaw;
       const aimed = Math.abs(wrapAngle(tank.aimYaw - turretAbs)) < aimTol;
       let friendlyInLine = false;
+      const fireDx = player.position.x - tank.position.x;
+      const fireDz = player.position.z - tank.position.z;
+      const fireLen2 = fireDx * fireDx + fireDz * fireDz || 1e-9;
       for (const b of bots) {
         if (b === tank || !b.alive) continue;
+        // Союзник позади стрелка (проекция t < 0.05) не должен блокировать выстрел вперёд.
+        const tProj = ((b.position.x - tank.position.x) * fireDx + (b.position.z - tank.position.z) * fireDz) / fireLen2;
+        if (tProj < 0.05) continue;
         if (segmentHitsCircle(
           tank.position.x, tank.position.z, player.position.x, player.position.z,
           b.position.x, b.position.z, b.radius + 0.6,

@@ -71,6 +71,11 @@ const FIELD_DIFFERS: Partial<Record<keyof HudSnapshot, FieldDiffers>> = {
   // Позиция прицела на линии выстрела — непрерывный ref-painted канал.
   crossX: () => false,
   crossY: () => false,
+  // Захваченная цель для оружия с lock-on (Гаусс) — непрерывный ref-painted канал.
+  hasLockTarget: () => false,
+  lockTargetX: () => false,
+  lockTargetY: () => false,
+  lockTargetDist: () => false,
 
   // Дискретные патроны (рельса/пушка) требуют рендера; энергия огнемёта — нет.
   ammo: (a, b) => ammoForcesHudRender(a.turretId, b.turretId, a.ammo, b.ammo),

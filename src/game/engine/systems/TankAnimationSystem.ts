@@ -42,7 +42,7 @@ export const TankAnimationSystem = {
         continue;
       }
 
-      t.fx.barrelKick = dampTo(t.fx.barrelKick, 0, 9, dt);
+      t.fx.barrelKick = dampTo(t.fx.barrelKick, 0, 11, dt);
       t.visual.barrelGroup.position.z = BARREL_REST_Z - t.fx.barrelKick * 0.4;
 
       t.visual.trackTex.offset.y -= t.speed * dt * 0.22;

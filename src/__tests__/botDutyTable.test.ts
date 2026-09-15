@@ -10,6 +10,7 @@ import { configForMode, BOT_NORMAL } from '../game/match/matchConfig';
 import { isObjectiveDuty } from '../game/match/aiObjective';
 import { roleForBot } from '../game/aiRoles';
 import { TURRET_IDS, HULL_IDS, TURRETS } from '../core/catalog';
+import { BOT_TURRETS } from '../game/match/rosterSpawn';
 import { AIController } from '../game/AI';
 import { BotRoster } from '../game/BotRoster';
 import { BotAiStage } from '../game/engine/stages/BotAiStage';
@@ -24,7 +25,7 @@ type RoleCount = { sniper: number; assault: number; standard: number };
 /** Роль бота по индексу ростера (цикл турелей как в rosterSpawn.makeBot).
  * Сужение безопасно: elite закрыт gate'ом roleWave=1 (пинится тестом ниже). */
 function roleAt(index: number): 'sniper' | 'assault' | 'standard' {
-  const turret = TURRET_IDS[index % TURRET_IDS.length];
+  const turret = BOT_TURRETS[index % BOT_TURRETS.length];
   return roleForBot(BOT_NORMAL.roleWave, index, turret) as 'sniper' | 'assault' | 'standard';
 }
 

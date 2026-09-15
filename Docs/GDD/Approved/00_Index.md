@@ -18,6 +18,7 @@
 | [[Weapon_Cannon]] | Пушка «Смоки» | `CannonWeapon`, `ProjectileManager` |
 | [[Weapon_Railgun]] | Рельсотрон | `RailgunWeapon`, `BeamSweep`, `RailgunChargeBalls` |
 | [[Weapon_Flamethrower]] | Огнемёт Firebird | `FlamethrowerWeapon`, `inFlameConeXZ` |
+| [[Weapon_Gauss]] | Пушка «Гаусс» | `GaussWeapon`, `GaussBeamFx` |
 | [[Projectile_System]] | Снаряды (пул) | `ProjectileManager`, `ProjectileBehavior` |
 | [[Match_Framework]] | Режимы DM/TDM/CP, roster, respawn, win | `MatchRuntime`, `spawnMatchRoster` |
 | [[Team_Deathmatch]] | TDM 5v5, FF off, team HUD (P3) | `ModeSelect`, `teams`, `HudScoreboard` |

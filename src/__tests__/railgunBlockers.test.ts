@@ -48,4 +48,31 @@ describe('nearestShotBlockerDist (M9)', () => {
     expect(hit!.id).toBe(wall.id);
     expect(SHOT_BLOCKER_HEIGHT_EPS).toBeGreaterThan(0);
   });
+
+  it('muzzle buried in a collider footprint does not block (no zero-distance shot loss)', () => {
+    // Вход в slab остался ЗА началом луча: segmentHitT для origin внутри AABB
+    // всегда отвечает 0, и без скипа выстрел умирал в нулевой дистанции.
+    const wall = colliderFromCenter(0, 0, 10, 4, 7.5, 'wall');
+    expect(nearestShotBlockerDist(0, 0, 0, 1, 120, [wall])).toBeNull();
+    expect(nearestShotBlockerDist(0, 0, 0, -1, 120, [wall])).toBeNull();
+    expect(nearestShotBlockerDist(0, 0, 1, 0, 120, [wall])).toBeNull();
+  });
+
+  it('a far wall still blocks when the muzzle sits inside a different collider', () => {
+    const shed = colliderFromCenter(0, 0, 4, 4, 7.5, 'block', { destructible: true });
+    const wall = colliderFromCenter(0, 30, 10, 2, 7.5, 'wall');
+    const hit = nearestShotBlockerDist(0, 0, 0, 1, 120, [shed, wall]);
+    expect(hit).not.toBeNull();
+    expect(hit!.id).toBe(wall.id);
+    expect(hit!.dist).toBeGreaterThan(25);
+    expect(hit!.dist).toBeLessThan(35);
+  });
+
+  it('handles infinite range (Infinity) cleanly without NaN and finds distant blockers', () => {
+    const farWall = colliderFromCenter(0, 240, 10, 2, 7.5, 'wall');
+    const hit = nearestShotBlockerDist(0, 0, 0, 1, Infinity, [farWall]);
+    expect(hit).not.toBeNull();
+    expect(hit!.id).toBe(farWall.id);
+    expect(hit!.dist).toBeCloseTo(239, 1);
+  });
 });

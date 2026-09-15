@@ -157,6 +157,9 @@ function registerWindowHandlers(
       shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT)
     ) {
       sim.run.paused = true;
+      // rAF в скрытой вкладке стоит — GameLoop не успеет заморозить аудио сам
+      // в этом кадре, вешаем таймлайн прямо здесь (идемпотентно с его вызовом).
+      sim.audio.setPaused(true);
       // Pause owns the keyboard: menu buttons must keep Space/Tab (see
       // PlayerController.onKeyDown enabled gate).
       sim.input.enabled = false;

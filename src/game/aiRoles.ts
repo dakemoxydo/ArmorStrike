@@ -21,7 +21,7 @@ export function roleLabel(role: AIRole): string {
  */
 export function roleForBot(wave: number, index: number, turretId: TurretId): AIRole {
   if (wave >= 3 && index === 0) return 'elite';
-  if (turretId === 'railgun') return 'sniper';
+  if (turretId === 'railgun' || turretId === 'gauss') return 'sniper';
   if (turretId === 'flamethrower') return 'assault';
   return 'standard';
 }
@@ -67,7 +67,7 @@ export function coverHpFracForRole(role: AIRole): number {
  *   0.28 → 0.336 с; полная перезарядка магазина не падаётся);
  * - sniper / assault — их `TURRET.shotCooldown = 0` (каденция weapon-internal),
  *   поэтому пад идёт через `reloadSpeedMul = 1/firePad`: заряд+перезарядка
- *   рельсы (1.1→~1.49 с / 4.8→~6.48 с) и восстановление батареи огнемёта
+ *   рельсы (1.0→1.35 с / 3.8→5.13 с) и восстановление батареи огнемёта
  *   (22→~19.1/с; расход батареи не меняется).
  */
 export function firePadForRole(role: AIRole): number {

@@ -52,7 +52,7 @@ export class CannonWeapon implements Weapon {
     t.onFired(recoil);
     this.ammo = Math.max(0, this.ammo - 1);
     this.deps.effects.muzzle(muzzle, 0xffcc44);
-    this.deps.effects.addShake(0.08);
+    if (t.isPlayer) this.deps.effects.addShake(0.08);
     this.deps.audio.shoot('cannon');
     // HUD hit-pulse — только для игрока; автоперезарядка — для всех (боты иначе «глухнут» после магазина)
     if (t.isPlayer) this.deps.onShotFired?.();
@@ -105,6 +105,12 @@ export class CannonWeapon implements Weapon {
       reloading,
       reloadProgress,
     });
+  }
+
+  onRespawn(): void {
+    this.ammo = this.magazine;
+    this.fullReloading = false;
+    this.reloadTimer = 0;
   }
 
   dispose(): void {

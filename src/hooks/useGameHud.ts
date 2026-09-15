@@ -4,7 +4,7 @@ import type { GameEvent, HudSnapshot, MinimapDynamic } from '../game/types';
 import { drawMinimap } from '../components/hud/minimapDraw';
 import type { FeedEntry } from '../components/hud/HudFeed';
 import { WEAPONS } from '../core/WeaponCatalog';
-import { isLowHealth } from '../ui/hudPresentation';
+import { isLowHealth, liveRegionKey, liveRegionText } from '../ui/hudPresentation';
 import { hudNeedsRender } from '../ui/hudRenderGate';
 
 const _defaultWeapon = WEAPONS.railgun;
@@ -70,6 +70,8 @@ export function useGameHud(game: GameApi | null, active: boolean) {
   const flameFillRef = useRef<HTMLDivElement>(null);
   /** Ghost HP bar — показывает недавний урон. */
   const ghostRef = useRef<HTMLDivElement>(null);
+  /** Захваченная цель для оружия с lock-on (Гаусс) — приклеенный прицел с масштабированием по дистанции. */
+  const lockTargetRef = useRef<HTMLDivElement>(null);
   const mmBuf = useRef<MinimapDynamic[]>([]);
   const feedId = useRef(0);
   const lastLiveKey = useRef('');
@@ -187,13 +189,48 @@ export function useGameHud(game: GameApi | null, active: boolean) {
       }
       // Прицел едет на точку реальной остановки выстрела (линия дула),
       // а не висит в центре экрана над танком. Непрерывный ref-paint.
-      if (crossRef.current && Number.isFinite(s.crossX) && Number.isFinite(s.crossY)) {
-        crossRef.current.style.left = `${s.crossX}%`;
-        crossRef.current.style.top = `${s.crossY}%`;
+      if (crossRef.current) {
+        if (Number.isFinite(s.crossX) && Number.isFinite(s.crossY)) {
+          crossRef.current.style.left = `${s.crossX}%`;
+          crossRef.current.style.top = `${s.crossY}%`;
+        }
+        if (crossRef.current.getAttribute('data-turret') !== s.turretId) {
+          crossRef.current.setAttribute('data-turret', s.turretId);
+        }
+        const isCharging = !!s.isCharging;
+        const prog = isCharging ? Math.max(0, Math.min(1, s.reloadProgress)) : 0;
+        crossRef.current.style.setProperty('--charge-prog', prog.toFixed(3));
+        crossRef.current.classList.toggle('is-charging', isCharging);
+        crossRef.current.classList.toggle('is-charged', isCharging && prog >= 0.96);
       }
+
+      // Прицел lock-on (Гаусс), привязанный прямо к захваченному врагу
+      if (lockTargetRef.current) {
+        const active =
+          !!s.hasLockTarget &&
+          s.turretId === 'gauss' &&
+          !!s.isCharging &&
+          s.alive &&
+          !s.paused &&
+          s.mode === 'playing';
+        lockTargetRef.current.classList.toggle('active', active);
+        if (active && Number.isFinite(s.lockTargetX) && Number.isFinite(s.lockTargetY)) {
+          lockTargetRef.current.style.left = `${s.lockTargetX}%`;
+          lockTargetRef.current.style.top = `${s.lockTargetY}%`;
+          const d = Math.max(5, s.lockTargetDist ?? 30);
+          // Масштаб под дальность: на эталонных 30 м диаметр 72px, зажато в [24px, 140px]
+          const px = Math.min(140, Math.max(24, Math.round((30 / d) * 72)));
+          lockTargetRef.current.style.width = `${px}px`;
+          lockTargetRef.current.style.height = `${px}px`;
+          const prog = Math.max(0, Math.min(1, s.reloadProgress));
+          lockTargetRef.current.style.setProperty('--charge-prog', prog.toFixed(3));
+          lockTargetRef.current.classList.toggle('is-charged', prog >= 0.96);
+        }
+      }
+
       if (game) drawMinimap(game, mapRef.current, mmBuf.current);
 
-      // Threshold live region (M15) — announce only on discrete state crosses
+      // Threshold live region (M15) — announce only on discrete state crosses.
       if (liveRef.current) {
         const emptyMag =
           !s.reloading &&
@@ -203,20 +240,14 @@ export function useGameHud(game: GameApi | null, active: boolean) {
           s.ammo <= 0;
         // Меню/гараж держат alive=false — «смерть» объявляем только в бою.
         const dead = s.mode === 'playing' && !s.alive;
-        const key = [
-          lowHp ? 'low' : 'ok',
-          s.reloading ? 'reload' : '',
-          emptyMag ? 'empty' : '',
-          dead ? 'dead' : '',
-        ].join('|');
+        const live = {
+          lowHp, health: s.health, reloading: s.reloading,
+          isCharging: !!s.isCharging, emptyMag, dead,
+        };
+        const key = liveRegionKey(live);
         if (key !== lastLiveKey.current) {
           lastLiveKey.current = key;
-          const parts: string[] = [];
-          if (lowHp && !dead) parts.push(`Броня критична: ${Math.ceil(s.health)}`);
-          if (s.reloading) parts.push('Перезарядка');
-          if (emptyMag) parts.push('Магазин пуст');
-          if (dead) parts.push('Уничтожен. Возрождение');
-          liveRef.current.textContent = parts.join('. ');
+          liveRef.current.textContent = liveRegionText(live);
         }
       }
 
@@ -225,6 +256,11 @@ export function useGameHud(game: GameApi | null, active: boolean) {
       // Новое поле в HudSnapshot подхватывается автоматически.
       if (hudNeedsRender(c, s)) force();
       Object.assign(c, s);
+      // HudModel переиспользует scratch-массивы для scoreboard и capturePoints;
+      // неглубокое клонирование строк/точек сохраняет снимок кадра в c,
+      // позволяя hudNeedsRender честно сравнивать кадры по содержимому.
+      c.scoreboard = s.scoreboard.map((r) => ({ ...r }));
+      c.capturePoints = s.capturePoints.map((p) => ({ ...p }));
     };
     game.setHudCallback(onHud);
     return () => game.setHudCallback(null);
@@ -235,7 +271,7 @@ export function useGameHud(game: GameApi | null, active: boolean) {
     feed, vignette, dmgArc, hitmark, showHint, frag, streak,
     setFeed, setVignette, setDmgArc, setHitmark, setShowHint, setFrag, setStreak,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
-    flameFillRef, ghostRef,
+    flameFillRef, ghostRef, lockTargetRef,
     mmBuf, feedId,
   };
 }

@@ -9,7 +9,8 @@
 
 ## Active / trail
 
-_Нет активных черновиков._
+- [[New_Turret_Proposals]] — концепты новых башен (Рикошет, Твинс, Изида, Молот, Гром) по мотивам Tanki Online.
+
 
 ## Ideas backlog
 

@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ammoForcesHudRender,
   isLowHealth,
+  liveRegionKey,
+  liveRegionText,
   scoreboardHpClass,
   weaponStatusKind,
 } from '../ui/hudPresentation';
@@ -212,7 +214,31 @@ describe('UI/UX structural contracts (critical/medium fixes)', () => {
     expect(hud).toMatch(/liveRef/);
     expect(hud).toMatch(/aria-live="polite"/);
     expect(hook).toMatch(/liveRef/);
-    expect(hook).toMatch(/Броня критична/);
+    // Announcement strings now live in the pure helper (testable without DOM);
+    // the hook just feeds it the threshold snapshot.
+    expect(hook).toMatch(/liveRegionText/);
+    expect(hook).toMatch(/liveRegionKey/);
+    expect(liveRegionText({
+      lowHp: true, health: 12.4, reloading: false, isCharging: false,
+      emptyMag: false, dead: false,
+    })).toMatch(/Броня критична: 13/);
+  });
+
+  it('live region: railgun charge ≠ magazine reload (M15 hotfix)', () => {
+    const base = {
+      lowHp: false, health: 100, reloading: false, isCharging: false,
+      emptyMag: false, dead: false,
+    };
+    // Railgun reports isCharging together with reloading (shared progress);
+    // charge must announce «Зарядка», never «Перезарядка».
+    const charging = liveRegionText({ ...base, reloading: true, isCharging: true });
+    expect(charging).toBe('Зарядка');
+    expect(charging).not.toMatch(/Перезарядка/);
+    // A genuine cooldown/reload (not charging) still says «Перезарядка».
+    expect(liveRegionText({ ...base, reloading: true })).toBe('Перезарядка');
+    // charge and reload are distinct keys, so crossing between them re-announces.
+    expect(liveRegionKey({ ...base, reloading: true, isCharging: true }))
+      .not.toBe(liveRegionKey({ ...base, reloading: true }));
   });
 
   it('M16: boot/error surfaces are announced and the play canvas is labelled', () => {
@@ -522,7 +548,7 @@ describe('UI polish invariants (data language, U27/U28)', () => {
   });
 
   it('U27: `Speedy` stays latin — it is the name the player asked for', () => {
-    // PROGRESS.md, iteration 18: «Назови его Speedy» — явный запрос игрока, и та
+    // Git-история, iteration 18: «Назови его Speedy» — явный запрос игрока, и та
     // же строка записана в утверждённом `Tank_Movement.md`. Латиница намеренна:
     // это не опечатка, которую нужно «починить» транслитерацией.
     expect(readSrc('src/core/catalogData.ts')).toMatch(/name: 'Speedy'/);

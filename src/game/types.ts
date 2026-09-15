@@ -51,6 +51,11 @@ export interface HudSnapshot {
    */
   crossX: number;
   crossY: number;
+  /** Захваченная цель для оружия с lock-on (Гаусс): экранные % и дистанция. */
+  hasLockTarget?: boolean;
+  lockTargetX?: number;
+  lockTargetY?: number;
+  lockTargetDist?: number;
 }
 
 /** Lightweight CP zone for HUD / minimap. */

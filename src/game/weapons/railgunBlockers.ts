@@ -1,5 +1,5 @@
 // ===== M9: pure shot-blocker pick for railgun (collider parity with projectiles) =====
-import { segmentHitT, type Collider } from '../engine/physics';
+import { pointInCollider, segmentHitT, type Collider } from '../engine/physics';
 
 export interface ShotBlockerHit {
   dist: number;
@@ -26,13 +26,18 @@ export function nearestShotBlockerDist(
   colliders: Collider[],
   originY = 1.6,
 ): ShotBlockerHit | null {
-  const endX = originX + dirX * range;
-  const endZ = originZ + dirZ * range;
+  const safeRange = Number.isFinite(range) ? range : 10000;
+  const endX = originX + dirX * safeRange;
+  const endZ = originZ + dirZ * safeRange;
   let bestT = Infinity;
   let bestId = -1;
   for (const c of colliders) {
     if (!c.active || !c.blocksShots) continue;
     if (originY > c.height + SHOT_BLOCKER_HEIGHT_EPS) continue;
+    // Дуло внутри footprint коллайдера (танк вжался в стену/угол): вход в slab
+    // остался ЗА началом луча, а segmentHitT для такого случая всегда даёт 0 —
+    // выстрел умирал на нулевой дистанции и пилил собственный блок. Не блокер.
+    if (pointInCollider(originX, originZ, c)) continue;
     const t = segmentHitT(originX, originZ, endX, endZ, c);
     if (t >= 0 && t < bestT) {
       bestT = t;
@@ -40,5 +45,5 @@ export function nearestShotBlockerDist(
     }
   }
   if (bestId < 0 || !Number.isFinite(bestT)) return null;
-  return { dist: bestT * range, id: bestId };
+  return { dist: bestT * safeRange, id: bestId };
 }

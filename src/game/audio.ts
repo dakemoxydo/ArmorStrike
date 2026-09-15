@@ -54,6 +54,12 @@ export class AudioFX implements AudioPort {
   private engineOn = false;
   /** Persisted across sessions via localStorage (BACKLOG G2). */
   muted = loadMuted();
+  /**
+   * Game-pause mirror. When true the WebAudio clock is suspended (charge hum
+   * freezes instead of running out behind the scrim) and railgun charge ticks
+   * are skipped. Set via setPaused() — AudioFX never reads RunState.
+   */
+  private paused = false;
 
   ensure() {
     if (!this.ctx) {
@@ -76,7 +82,24 @@ export class AudioFX implements AudioPort {
       const d = this.noiseBuf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (this.ctx.state === 'suspended') void this.ctx.resume();
+    if (this.ctx.state === 'suspended' && !this.paused) void this.ctx.resume();
+  }
+
+  /**
+   * Mirror the game pause: suspend the WebAudio clock so scheduled voices
+   * (the railgun charge hum) freeze mid-envelope rather than running to their
+   * scheduled end behind the pause scrim, and stop charge ticks from playing.
+   * No-op before a context exists; idempotent.
+   */
+  setPaused(p: boolean) {
+    if (this.paused === p) return;
+    this.paused = p;
+    if (!this.ctx) return;
+    if (p) {
+      void this.ctx.suspend().catch(() => undefined);
+    } else {
+      void this.ctx.resume().catch(() => undefined);
+    }
   }
 
   setMuted(m: boolean) {
@@ -146,7 +169,7 @@ export class AudioFX implements AudioPort {
   }
 
   /** Rising charge hum + accelerating ticks. Cancel with stopChargeRailgun(handle). */
-  chargeRailgun(duration = 1.1): RailgunChargeHandle {
+  chargeRailgun(duration = 1.0): RailgunChargeHandle {
     const handle: RailgunChargeHandle = { id: this.nextChargeId++ };
     if (!this.ctx || !this.master) return handle;
     const session: ChargeSession = { oscs: [], gains: [], baseFreqs: [], tickTimers: [] };
@@ -154,14 +177,14 @@ export class AudioFX implements AudioPort {
     const dur = Math.max(0.2, duration);
 
     // Controllable layers so we can cut them on fire
-    this.spawnChargeOsc(session, 'sine', t0, dur, 140, 980, 0.28);
-    this.spawnChargeOsc(session, 'sawtooth', t0, dur, 68, 380, 0.16);
-    this.spawnChargeOsc(session, 'triangle', t0, dur * 0.95, 220, 1400, 0.1);
+    this.spawnChargeOsc(session, 'sine', t0, dur, 110, 980, 0.3);
+    this.spawnChargeOsc(session, 'sawtooth', t0, dur, 55, 380, 0.18);
+    this.spawnChargeOsc(session, 'triangle', t0, dur * 0.95, 220, 1400, 0.12);
 
     // Overcharge whine in final stretch
-    const whineStart = t0 + dur * 0.78;
-    this.spawnChargeOsc(session, 'sine', whineStart, dur * 0.28, 700, 1600, 0.22);
-    this.spawnChargeOsc(session, 'square', whineStart, dur * 0.22, 180, 90, 0.08);
+    const whineStart = t0 + dur * 0.72;
+    this.spawnChargeOsc(session, 'sine', whineStart, dur * 0.28, 700, 1600, 0.24);
+    this.spawnChargeOsc(session, 'square', whineStart, dur * 0.22, 180, 90, 0.09);
 
     // Accelerating capacitor ticks (scheduled; cleared if fire early)
     const tickCount = 14;
@@ -173,6 +196,10 @@ export class AudioFX implements AudioPort {
       const id = window.setTimeout(() => {
         const s = this.chargeSessions.get(handle.id);
         if (!s || !this.ctx || !this.master) return;
+        // Paused: the hum is frozen via ctx.suspend and the accelerating tick
+        // cadence is meaningless against a stopped clock — skip (don't stack a
+        // burst of deferred blips on resume).
+        if (this.paused) return;
         // Only play while this session is still charging.
         const tt = this.ctx.currentTime;
         this.osc('square', tt, 0.028, 880 + i * 40, 640, 0.07 + u * 0.06);
@@ -234,19 +261,19 @@ export class AudioFX implements AudioPort {
     }
   }
 
-  /** Per-pierce ping: descending tone per hit index (0-based). First pierce brightest. */
+  /** Per-pierce ping: crunchy armor penetration crunch + electric sizzle. */
   railgunPierce(index: number): void {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    // Descending pitch: 1800 → 900 → 500 Hz; softer volume each step.
-    const f0 = Math.max(400, 1800 - index * 450);
-    const f1 = Math.max(200, f0 * 0.55);
-    const peak = Math.max(0.06, 0.22 - index * 0.06);
-    this.osc('triangle', t, 0.09, f0, f1, peak);
-    // Subtle noise layer on first two pierces for "crack".
-    if (index < 2) {
-      this.noise(t, 0.04, 'highpass', 2400 - index * 400, 1200, 0.08 - index * 0.03);
-    }
+    // Metallic punch: descending low-end strike + upper bite
+    const f0 = Math.max(280, 950 - index * 200);
+    const f1 = Math.max(90, f0 * 0.32);
+    const peak = Math.max(0.09, 0.32 - index * 0.06);
+    this.osc('square', t, 0.07, f0, f1, peak * 0.85);
+    this.osc('triangle', t, 0.11, f0 * 1.6, f1, peak);
+    // Heavy armor crunch noise layer
+    this.noise(t, 0.065, 'bandpass', 1800 - index * 300, 450, peak * 1.05);
+    this.noise(t, 0.035, 'highpass', 3200 - index * 400, 1400, peak * 0.85);
   }
 
   private spawnChargeOsc(
@@ -261,9 +288,10 @@ export class AudioFX implements AudioPort {
     const g = this.ctx.createGain();
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t0 + 0.04);
-    // Hold then slight swell into end
-    g.gain.linearRampToValueAtTime(peak * 1.15, t0 + dur * 0.92);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur + 0.05);
+    // Pre-fire anticipation gap: swell up to ~0.07s before end, then plunge into vacuum
+    const gapStart = t0 + Math.max(0.05, dur - 0.07);
+    g.gain.linearRampToValueAtTime(peak * 1.25, gapStart);
+    g.gain.exponentialRampToValueAtTime(0.0001, Math.min(gapStart + 0.05, t0 + dur));
     o.connect(g).connect(this.master);
     o.start(t0);
     o.stop(t0 + dur + 0.12);
@@ -320,15 +348,25 @@ export class AudioFX implements AudioPort {
     } else if (weaponType === 'cannon') {
       this.osc('square', t, 0.14, 220, 35, 0.45);
       this.noise(t, 0.18, 'lowpass', 1400, 120, 0.5);
+    } else if (weaponType === 'gauss') {
+      // Gauss discharge: heavy electromagnetic crack, supersonic slug sonic-boom
+      this.osc('sine', t, 0.35, 72, 16, 1.0); // Sub-bass pressure
+      this.osc('sawtooth', t, 0.18, 380, 42, 0.75); // Magnetic acceleration thump
+      this.osc('triangle', t, 0.09, 1800, 160, 0.65); // High metallic rip
+      this.noise(t, 0.055, 'highpass', 5800, 1400, 0.95); // Ionized air crack
+      this.noise(t + 0.02, 0.28, 'bandpass', 1100, 320, 0.35); // Shockwave dissipation
     } else {
-      // Railgun snap: compact layered crack (fewer nodes = less main-thread spike).
-      // The charge voice itself is NOT cut here — the firing weapon stops its
-      // own charge handle right before this call (see RailgunWeapon).
-      this.osc('sine', t, 0.16, 78, 26, 0.85);
-      this.osc('square', t, 0.18, 240, 32, 0.5);
-      this.noise(t, 0.06, 'highpass', 3800, 800, 0.65);
-      this.osc('sine', t, 0.1, 2000, 320, 0.28);
-      this.osc('sine', t + 0.03, 0.22, 900, 500, 0.12);
+      // Railgun snap: cinematic layered crack & sub-bass thump.
+      // Layer 1: Sub-bass boom (56 -> 20 Hz, solid chest impact)
+      this.osc('sine', t, 0.28, 56, 20, 0.95);
+      // Layer 2: Mechanical slug punch / magnetic kick
+      this.osc('square', t, 0.14, 180, 28, 0.6);
+      // Layer 3: High supersonic transient crack (air rip)
+      this.noise(t, 0.045, 'highpass', 4500, 1100, 0.85);
+      this.osc('sawtooth', t, 0.06, 2600, 380, 0.45);
+      // Layer 4: Plasma sizzle & acoustic dissipation tail
+      this.noise(t + 0.015, 0.32, 'bandpass', 1600, 420, 0.28);
+      this.osc('sine', t + 0.02, 0.22, 680, 180, 0.16);
     }
   }
 

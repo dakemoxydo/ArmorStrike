@@ -2,8 +2,9 @@
 // Выстрел всегда летит горизонтально от дула по aimDir (см. Tank.aimDir,
 // CannonWeapon/RailgunWeapon). HUD-прицел крепится на точку, где этот луч
 // реально прекращает полёт: блокирующий коллайдер, чужой танк (тот же тест
-// радиуса, что у полёта снаряда) или дальность оружия. Чистая логика
-// (без Three.js / без сущностей), как targetHighlight.ts.
+// радиуса, что у полёта снаряда) или дальность оружия. Для рельсы —
+// pierceTanks: танки луч не останавливают, термин = стена/дальность.
+// Чистая логика (без Three.js / без сущностей), как targetHighlight.ts.
 import type { Collider } from './engine/physics';
 import { nearestShotBlockerDist } from './weapons/railgunBlockers';
 import { PROJECTILE } from './constants';
@@ -46,6 +47,10 @@ function rayCircleEntry(
  * чужого танка). Стены — те же blocksShots-коллайдеры и прощение по высоте,
  * что у рельсы (nearestShotBlockerDist); танки — радиус + радиус снаряда,
  * как в полёте Projectile.
+ *
+ * `pierceTanks` (рельса): луч не останавливается на танках — он их пробивает,
+ * поэтому точкой остановки считается только стена/дальность. Без флага
+ * прицел «обрезался» по первой цели и показывал не конец трассы.
  */
 export function reticleImpactDistance(
   muzzleX: number,
@@ -57,12 +62,15 @@ export function reticleImpactDistance(
   colliders: readonly Collider[],
   tanks: readonly ReticleTank[],
   selfId: number,
+  pierceTanks = false,
 ): number {
-  let d = range;
+  const safeRange = Number.isFinite(range) ? range : 1000;
+  let d = safeRange;
   const wall = nearestShotBlockerDist(
     muzzleX, muzzleZ, dirX, dirZ, d, colliders as Collider[], muzzleY,
   );
   if (wall && wall.dist < d) d = wall.dist;
+  if (pierceTanks) return d;
   const pad = PROJECTILE.radius;
   for (const t of tanks) {
     if (!t.alive || t.id === selfId) continue;

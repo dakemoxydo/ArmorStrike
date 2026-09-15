@@ -54,6 +54,25 @@ function cssPxToNdc(target: THREE.Vector2): THREE.Vector2 {
 }
 
 const PUNCH_DUR = 0.055;
+/** Длительность вспышки impact-light на каждом импакт-событии фронта (сек).
+ *  `impactPulse` — envelope-пол, который update() пишет ПОВЕРХ fade-кривой
+ *  (max): прежний «bump» в setImpactPosition перезаписывался фейдом в том же
+ *  кадре, и вспышек пробитий фактически не было. */
+const IMPACT_PULSE_DUR = 0.12;
+
+/**
+ * Слоты `beam[0]/beam[1]` — постоянный бюджет LightRig на все рельсотроны,
+ * но пишут в них только владельцы: show() забирает claim обоих слотов,
+ * setLength/setImpactPosition/update пропускают чужие, hide()/dispose()
+ * гасят и отпускают только собственные. Без арбитража второй одновременный
+ * выстрел переставлял огни первого, а hide() доигравшего луча тушил свет
+ * ещё живого (тот же подход, что арбитраж `flame` в FlameParticlePool).
+ */
+interface BeamLightClaim {
+  muzzle: RailgunBeamFx | null;
+  impact: RailgunBeamFx | null;
+}
+const BEAM_CLAIMS = new WeakMap<LightRig, BeamLightClaim>();
 
 // Modest intensities/ranges — high values + many lights stall the GPU hard.
 const MUZZLE_LIGHT_PEAK = 28;
@@ -96,8 +115,8 @@ export const BEAM_ARC = {
   cellLength: 1.8,
   /** Амплитуда излома в покое (мировые единицы). */
   amplitude: 0.3,
-  /** Полных перестроек формы в секунду («повторный пробой» молнии). */
-  snapRate: 42,
+  /** Полных перестроек формы в секунду (0 = статичный след разряда в пространстве, как у спирали). */
+  snapRate: 0,
   /** Первые N мировых единиц от дула дуга прямая — иначе линия липнет к стволу. */
   muzzleStraight: 1.2,
   /** Кадр выстрела: дуга толще и «расслабленнее», затем стягивается в провод. */
@@ -133,6 +152,19 @@ export const BEAM_ARC = {
   /** Цвет ядра / цвет кромки линии. */
   coreColor: 0xffffff,
   edgeColor: 0x8fffe8,
+  // --- Спираль вокруг луча (Variant A — винтовая линия, статичный след) ---
+  /** Радиус витка спирали в мировых единицах (широкий соленоид вокруг луча). */
+  spiralRadius: 0.85,
+  /** Длина одного полного витка спирали вдоль луча (метры, угол витка ~45°). */
+  spiralPitch: 5.2,
+  /** Дистанция от дула, на которой радиус спирали плавно нарастает от 0 (защита прицела). */
+  spiralMuzzleSafe: 3.0,
+  /** Экранная толщина линии спирали в CSS-пикселях. */
+  spiralPixelWidth: 4.5,
+  /** Цвет плазменной спирали. */
+  spiralColor: 0x8fffe8,
+  /** Множитель светимости спирали. */
+  spiralGain: 1.4,
 } as const;
 
 /**
@@ -149,6 +181,7 @@ export const BEAM_ARC = {
  */
 const VERTEX_SHADER = /* glsl */ `
 uniform float uTime;
+uniform float uSeed;
 uniform float uAmp;
 uniform float uCells;
 uniform float uLen;
@@ -160,11 +193,17 @@ uniform float uPxScale;
 uniform float uThick;
 uniform vec2 uPxToNdc;
 
+uniform float uSpiralRadius;
+uniform float uSpiralPitch;
+uniform float uSpiralSafe;
+uniform float uSpiralPxWidth;
+
 varying float vT;
 varying float vWide;
 varying float vPhase;
 varying float vSpark;
 varying float vFlicker;
+varying float vIsSpiral;
 
 float hash11(float p) {
   p = fract(p * 0.1031);
@@ -180,69 +219,69 @@ float vnoise1(float x) {
   return mix(hash11(i), hash11(i + 1.0), u) * 2.0 - 1.0;
 }
 
-// Профиль дуги: форма берётся из «ступенки» времени (скачкообразные перестройки
-// разряда) плюс малая непрерывно плывущая доля, чтобы между скачками жила.
+// Профиль дуги: статичный след разряда в пространстве (подобно спирали, форма
+// не ползёт во времени, а фиксируется вдоль мировой дистанции).
 float arcProfile(float x, float seed) {
-  float stepped = vnoise1(x + seed) * 0.72 + vnoise1(x * 2.3 + seed * 1.7) * 0.28;
-  float drift = vnoise1(x * 1.7 - uTime * 2.6 + seed) * 0.72
-              + vnoise1(x * 3.9 + uTime * 3.3) * 0.28;
-  return stepped * 0.76 + drift * 0.24;
+  return vnoise1(x + seed) * 0.72 + vnoise1(x * 2.3 + seed * 1.7) * 0.28;
 }
 
 void main() {
   float t = position.z + 0.5;            // геометрия: ось вдоль +Z, длина 1
   vT = t;
   vWide = position.x;                    // −1..1 поперёк линии (экранный профиль)
+  float isSpiral = position.y;           // 0 = центральный луч, 1 = спираль
+  vIsSpiral = isSpiral;
 
-  float snapSeed = floor(uTime * uSnap) * 11.31;
-  float x = t * uCells;
-
-  // Перпендикуляры оси луча в мире (для излома дуги) и сама ось (для экрана).
   vec3 ax = normalize(modelMatrix[0].xyz);
   vec3 ay = normalize(modelMatrix[1].xyz);
   vec3 axis = normalize(modelMatrix[2].xyz);
-  float grow = smoothstep(0.0, uStraight, t * uLen);
-  vec2 j = vec2(arcProfile(x, snapSeed), arcProfile(x + 57.13, snapSeed + 7.31));
-  // Центр сечения — строго на оси: position.x здесь намеренно не участвует,
-  // поперечный координат добавляется ниже, уже в экранных пикселях.
-  vec3 world = (modelMatrix * vec4(0.0, 0.0, position.z, 1.0)).xyz
-             + (ax * j.x + ay * j.y) * (uAmp * grow);
-
   float rs = max(length(modelMatrix[0].xyz), 1e-4);   // радиальный масштаб = punch
 
+  vec3 world;
+  float rPx;
+
+  if (isSpiral > 0.5) {
+    // Спираль: винтовая линия вокруг луча (статичный след в пространстве)
+    float worldDist = t * uLen;
+    float spiralGrow = smoothstep(0.0, uSpiralSafe, worldDist);
+    float angle = worldDist * (6.2831853 / uSpiralPitch);
+    vec2 helixOffset = vec2(cos(angle), sin(angle)) * (uSpiralRadius * spiralGrow * rs);
+    world = (modelMatrix * vec4(0.0, 0.0, position.z, 1.0)).xyz
+          + ax * helixOffset.x + ay * helixOffset.y;
+    rPx = uSpiralPxWidth * 0.5 * rs;
+    vPhase = 0.0;
+    vSpark = 1.0;
+    vFlicker = 1.0;
+  } else {
+    // Центральный луч: электрическая дуга (статичный след в пространстве, как спираль)
+    float snapSeed = floor(uSeed) * 11.31 + floor(uTime * uSnap) * 11.31;
+    float x = t * uCells;
+    float grow = smoothstep(0.0, uStraight, t * uLen);
+    vec2 j = vec2(arcProfile(x, snapSeed), arcProfile(x + 57.13, snapSeed + 7.31));
+    world = (modelMatrix * vec4(0.0, 0.0, position.z, 1.0)).xyz
+          + (ax * j.x + ay * j.y) * (uAmp * grow);
+
+    vec4 mvPos = viewMatrix * vec4(world, 1.0);
+    float depth = max(-mvPos.z, 1e-4);
+    float lump = 1.0 + uThick * arcProfile(x * 1.7 + 41.3, snapSeed + 3.17);
+    float basePx = (uRadius * rs * lump) / (depth * uPxScale);
+    rPx = max(uPxWidth * 0.5 * rs, basePx) * lump;
+
+    vPhase = x * 2.1;
+    vSpark = 0.68 + 0.32 * hash11(floor(x * 2.0) + snapSeed);
+    vFlicker = 1.0;
+  }
+
   vec4 mvPosition = viewMatrix * vec4(world, 1.0);
-  float depth = max(-mvPosition.z, 1e-4);
   vec4 clip = projectionMatrix * mvPosition;
 
-  // Ширина линии считается В ПИКСЕЛЯХ: basePx — мировая база uRadius в пикселях
-  // на этой глубине, uPxWidth/2 — пиксельный пол. max() даёт «у дула луч жирнеет
-  // перспективой по-настоящему, вдали держит заданное число пикселей»; lump —
-  // неровность толщины по звеньям; rs доходит и до пола, иначе кадр выстрела
-  // раздувал бы только ближнюю часть луча.
-  float lump = 1.0 + uThick * arcProfile(x * 1.7 + 41.3, snapSeed + 3.17);
-  float basePx = (uRadius * rs * lump) / (depth * uPxScale);
-  float rPx = max(uPxWidth * 0.5 * rs, basePx) * lump;
-
-  // d(NDC) на единицу мирового шага вдоль оси — производная перспективы (частное
-  // правило для clip.xy / clip.w), перевод в пиксели — делением на uPxToNdc.
   vec4 axClip = projectionMatrix * vec4((viewMatrix * vec4(axis, 0.0)).xyz, 0.0);
   float w = max(clip.w, 1e-4);
   vec2 dNdc = (axClip.xy * w - clip.xy * axClip.w) / (w * w);
   vec2 dPx = vec2(dNdc.x / uPxToNdc.x, dNdc.y / uPxToNdc.y);
   float dl = length(dPx);
-  // Луч смотрит ровно «в камеру»: экранное направление оси вырождено, сечение и
-  // так пятно — перпендикуляр берём любой.
   vec2 perp = dl > 1e-4 ? vec2(-dPx.y, dPx.x) / dl : vec2(1.0, 0.0);
   clip.xy += perp * (vWide * rPx) * uPxToNdc * w;
-
-  // Нити жгута ползут вдоль луча: фаза зависит от дистанции и времени.
-  vPhase = x * 2.1 + uTime * 2.4;
-
-  // Неравномерность «горения» по звеньям + общее мерцание разряда.
-  // Разброс намеренно узкий (0.68..1): линия должна пульсировать, а не моргать
-  // в прозрачность — при 0.5 тонкая дуга местами пропадала целиком.
-  vSpark = 0.68 + 0.32 * hash11(floor(x * 2.0) + snapSeed);
-  vFlicker = 0.78 + 0.22 * hash11(floor(uTime * uSnap * 1.7) + 5.0);
 
   gl_Position = clip;
 }
@@ -250,9 +289,7 @@ void main() {
 
 /**
  * Фрагменты: ядро линии там, где поверхность трубки смотрит в камеру, к кромкам
- * мягко гаснет. Это единственная ширина луча — второго (ореольного) слоя нет,
- * вся «масса» набрана структурой внутри неё: неровной толщиной (вершины) и
- * переплетением нитей (здесь).
+ * мягко гаснет.
  */
 const FRAGMENT_SHADER = /* glsl */ `
 uniform float uOpacity;
@@ -263,32 +300,37 @@ uniform float uStrandAmt;
 uniform vec3 uCoreColor;
 uniform vec3 uEdgeColor;
 
+uniform vec3 uSpiralColor;
+uniform float uSpiralGain;
+
 varying float vT;
 varying float vWide;
 varying float vPhase;
 varying float vSpark;
 varying float vFlicker;
+varying float vIsSpiral;
 
 void main() {
-  // профиль поперёк линии: горячая нить в середине, к кромкам — в ноль.
-  // vWide — экранный поперечный координат, поэтому профиль одинаковый и когда луч
-  // идёт через экран, и когда он уходит от камеры (с vFacing-проксимой трубки в
-  // последнем случае ядро уезжало к краю линии).
-  float core = pow(max(0.0, 1.0 - abs(vWide)), uCoreExp);
-  if (core <= 0.002) discard;
-  // Переплетение uFilaments нитей поперёк линии: толщина читается жгутом, а не
-  // залитой полосой — второго слоя ради «массы» не добавляется.
-  float s = 0.5 + 0.5 * cos(vWide * 3.14159265 * uFilaments + vPhase);
-  float strands = 1.0 - uStrandAmt + 2.0 * uStrandAmt * pow(s, 1.5);
-  // Голова луча чуть горячее: туда приходит бегущий фронт (BeamSweep).
-  float head = 1.0 + 0.5 * smoothstep(0.86, 1.0, vT);
-  float a = uOpacity * core * strands * vSpark * vFlicker * head * uGain;
-  vec3 col = mix(uEdgeColor, uCoreColor, pow(core, 2.4));
-  gl_FragColor = vec4(col * a, a);
-  // Те же выходные чанки, что у MeshBasicMaterial (tonemapping_pars_fragment и
-  // linearToOutputTexel three кладёт в префикс сам): ACES + конвертация в
-  // выходное пространство, иначе линия была бы ярче на bloom-пресете, чем на
-  // прямом рендере.
+  if (vIsSpiral > 0.5) {
+    // Спираль: мягкая светящаяся линия плазмы
+    float core = pow(max(0.0, 1.0 - abs(vWide)), 1.4);
+    if (core <= 0.005) discard;
+    float head = 1.0 + 0.3 * smoothstep(0.86, 1.0, vT);
+    float a = uOpacity * core * head * uSpiralGain;
+    vec3 col = uSpiralColor;
+    gl_FragColor = vec4(col * a, a);
+  } else {
+    // Центральный луч: горячая нить со жгутом и мерцанием
+    float core = pow(max(0.0, 1.0 - abs(vWide)), uCoreExp);
+    if (core <= 0.002) discard;
+    float s = 0.5 + 0.5 * cos(vWide * 3.14159265 * uFilaments + vPhase);
+    float strands = 1.0 - uStrandAmt + 2.0 * uStrandAmt * pow(s, 1.5);
+    float head = 1.0 + 0.5 * smoothstep(0.86, 1.0, vT);
+    float a = uOpacity * core * strands * vSpark * vFlicker * head * uGain;
+    vec3 col = mix(uEdgeColor, uCoreColor, pow(core, 2.4));
+    gl_FragColor = vec4(col * a, a);
+  }
+
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }
@@ -305,12 +347,19 @@ const SHARED_GEO_REFS = new Map<number, { geo: THREE.BufferGeometry; refs: numbe
 function acquireSharedBeamGeo(radius: number): THREE.BufferGeometry {
   let entry = SHARED_GEO_REFS.get(radius);
   if (!entry) {
-    // Лента из `lengthSegments + 1` строк по `widthSegments` колонок: ось вдоль
-    // +Z (длина 1 — масштабируется mesh.scale.z), position.x = vWide ∈ [−1, 1]
+    // Две ленты в одной BufferGeometry (один draw call, без дополнительных мешей):
+    // 1. Центральный луч: position.y = 0
+    // 2. Спираль вокруг луча: position.y = 1
+    // Ось вдоль +Z (длина 1 — масштабируется mesh.scale.z), position.x = vWide ∈ [−1, 1]
     // поперёк линии. Нормалей нет: профиль считается из vWide во фрагменте.
     const rows = BEAM_ARC.lengthSegments + 1;
     const cols = Math.max(2, BEAM_ARC.widthSegments);
-    const pos = new Float32Array(rows * cols * 3);
+    const stripVerts = rows * cols;
+    const totalVerts = stripVerts * 2;
+    const pos = new Float32Array(totalVerts * 3);
+    const idx: number[] = [];
+
+    // Полоса 1: центральный разряд (isSpiral = 0)
     let p = 0;
     for (let r = 0; r < rows; r += 1) {
       const z = r / (rows - 1) - 0.5;
@@ -321,12 +370,33 @@ function acquireSharedBeamGeo(radius: number): THREE.BufferGeometry {
         p += 3;
       }
     }
-    const idx: number[] = [];
     for (let r = 0; r < rows - 1; r += 1) {
-      const a = r * cols;
-      const b = a + cols;
-      idx.push(a, b, a + 1, a + 1, b, b + 1);
+      for (let c = 0; c < cols - 1; c += 1) {
+        const a = r * cols + c;
+        const b = a + cols;
+        idx.push(a, b, a + 1, a + 1, b, b + 1);
+      }
     }
+
+    // Полоса 2: спираль вокруг луча (isSpiral = 1)
+    const spiralOffset = stripVerts;
+    for (let r = 0; r < rows; r += 1) {
+      const z = r / (rows - 1) - 0.5;
+      for (let c = 0; c < cols; c += 1) {
+        pos[p] = (c / (cols - 1)) * 2 - 1;
+        pos[p + 1] = 1;
+        pos[p + 2] = z;
+        p += 3;
+      }
+    }
+    for (let r = 0; r < rows - 1; r += 1) {
+      for (let c = 0; c < cols - 1; c += 1) {
+        const a = spiralOffset + r * cols + c;
+        const b = a + cols;
+        idx.push(a, b, a + 1, a + 1, b, b + 1);
+      }
+    }
+
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setIndex(idx);
@@ -352,6 +422,7 @@ export class RailgunBeamFx {
   private mat: THREE.ShaderMaterial;
   private uni: {
     uTime: { value: number };
+    uSeed: { value: number };
     uOpacity: { value: number };
     uAmp: { value: number };
     uCells: { value: number };
@@ -369,11 +440,19 @@ export class RailgunBeamFx {
     uStrandAmt: { value: number };
     uCoreColor: { value: THREE.Color };
     uEdgeColor: { value: THREE.Color };
+    uSpiralRadius: { value: number };
+    uSpiralPitch: { value: number };
+    uSpiralSafe: { value: number };
+    uSpiralPxWidth: { value: number };
+    uSpiralColor: { value: THREE.Color };
+    uSpiralGain: { value: number };
   };
   private muzzleLight: THREE.PointLight;
   private impactLight: THREE.PointLight;
   private beamFadeTimer = 0;
   private punchTimer = 0;
+  /** Envelope вспышки impact-light (0..1, затухает за IMPACT_PULSE_DUR). */
+  private impactPulse = 0;
   /** Локальные часы шейдера: идут, только пока луч жив. */
   private time = 0;
   private rayLength = 1;
@@ -384,6 +463,7 @@ export class RailgunBeamFx {
   constructor(private scene: THREE.Scene, private rig: LightRig) {
     this.uni = {
       uTime: { value: 0 },
+      uSeed: { value: 1.0 },
       uOpacity: { value: 0 },
       uAmp: { value: BEAM_ARC.amplitude },
       uCells: { value: 1 },
@@ -401,6 +481,12 @@ export class RailgunBeamFx {
       uStrandAmt: { value: BEAM_ARC.strandAmount },
       uCoreColor: { value: new THREE.Color(BEAM_ARC.coreColor) },
       uEdgeColor: { value: new THREE.Color(BEAM_ARC.edgeColor) },
+      uSpiralRadius: { value: BEAM_ARC.spiralRadius },
+      uSpiralPitch: { value: BEAM_ARC.spiralPitch },
+      uSpiralSafe: { value: BEAM_ARC.spiralMuzzleSafe },
+      uSpiralPxWidth: { value: BEAM_ARC.spiralPixelWidth },
+      uSpiralColor: { value: new THREE.Color(BEAM_ARC.spiralColor) },
+      uSpiralGain: { value: BEAM_ARC.spiralGain },
     };
 
     this.mat = new THREE.ShaderMaterial({
@@ -433,10 +519,30 @@ export class RailgunBeamFx {
     this.impactLight = rig.light('beam', IMPACT_SLOT);
   }
 
-  /** Extinguish the beam lights in place (they stay attached to the scene). */
-  private offLights() {
-    this.muzzleLight.intensity = 0;
-    this.impactLight.intensity = 0;
+  /** Claim-запись рига для этого луча (создаётся при первом show). */
+  private beamClaim(): BeamLightClaim {
+    let claim = BEAM_CLAIMS.get(this.rig);
+    if (!claim) {
+      claim = { muzzle: null, impact: null };
+      BEAM_CLAIMS.set(this.rig, claim);
+    }
+    return claim;
+  }
+
+  /**
+   * Гасит и отпускает только те общие слоты, которыми владеет ЭТОТ луч.
+   * Свет остаётся прикреплённым к сцене (бюджет LightRig не меняется).
+   */
+  private releaseLights() {
+    const claim = this.beamClaim();
+    if (claim.muzzle === this) {
+      claim.muzzle = null;
+      this.muzzleLight.intensity = 0;
+    }
+    if (claim.impact === this) {
+      claim.impact = null;
+      this.impactLight.intensity = 0;
+    }
   }
 
   /** Place/scale the arc tube and re-seed the along-beam noise for this length. */
@@ -472,8 +578,15 @@ export class RailgunBeamFx {
     // Окно могли ресайзнуть между выстрелами — пиксельный пол пересчитывается.
     this.uni.uPxScale.value = cssPxScale();
     cssPxToNdc(this.uni.uPxToNdc.value);
+    this.uni.uSeed.value = Math.random() * 1000 + 1.0;
 
     this.punchTimer = PUNCH_DUR;
+    this.impactPulse = 0;
+    // Забираем claim общих слотов: с этого кадра чужие инстансы не пишут в
+    // наши огни, а их hide() их не тушит.
+    const claim = this.beamClaim();
+    claim.muzzle = this;
+    claim.impact = this;
     this.layoutBeam();
     this.uni.uAmp.value = BEAM_ARC.amplitude * BEAM_ARC.punchScale;
     this.mesh.visible = true;
@@ -498,14 +611,23 @@ export class RailgunBeamFx {
     if (!this.mesh.visible) return; // no active beam to shorten
     this.rayLength = Math.max(0.5, dist);
     this.layoutBeam();
-    tmpEnd.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength);
-    this.impactLight.position.copy(tmpEnd);
+    if (this.beamClaim().impact === this) {
+      tmpEnd.copy(this.beamOrigin).addScaledVector(this.beamDir, this.rayLength);
+      this.impactLight.position.copy(tmpEnd);
+    }
   }
 
-  /** Позиция impact-light (последнее попадание по танку / стене). */
+  /**
+   * Позиция impact-light (последнее попадание по танку / стене) + вспышка.
+   * Пишет только владелец слота: чужой вызов — no-op, иначе два луча
+   * перетягивают один общий огонь.
+   */
   setImpactPosition(p: THREE.Vector3) {
+    if (this.beamClaim().impact !== this) return;
     this.impactLight.position.copy(p);
-    this.impactLight.intensity = Math.max(this.impactLight.intensity, IMPACT_LIGHT_PEAK * 0.75);
+    // Полная перезарядка envelope: update() пишет max(fade, pulse), поэтому
+    // импакт виден и на середине кривой гашения.
+    this.impactPulse = 1;
   }
 
   /** Мгновенно скрыть луч и погасить свет (смерть владельца mid-fade). */
@@ -514,7 +636,8 @@ export class RailgunBeamFx {
     this.uni.uOpacity.value = 0;
     this.beamFadeTimer = 0;
     this.punchTimer = 0;
-    this.offLights();
+    this.impactPulse = 0;
+    this.releaseLights();
   }
 
   /**
@@ -548,9 +671,18 @@ export class RailgunBeamFx {
     // их пики подобрались под быстрый спад, а не под площадную читаемость.
     const op = Math.pow(t, BEAM_ARC.fadeExp);
 
+    if (this.impactPulse > 0) {
+      this.impactPulse = Math.max(0, this.impactPulse - dt / IMPACT_PULSE_DUR);
+    }
     this.uni.uOpacity.value = op;
-    this.muzzleLight.intensity = t * t * MUZZLE_LIGHT_PEAK;
-    this.impactLight.intensity = t * IMPACT_LIGHT_PEAK;
+    // Общие слоты `beam`: пишет только владелец claim (show() последнего луча).
+    const claim = this.beamClaim();
+    if (claim.muzzle === this) this.muzzleLight.intensity = t * t * MUZZLE_LIGHT_PEAK;
+    if (claim.impact === this) {
+      // Вспышка импактов — envelope-пол поверх линейного спада (fix: прежний
+      // bump из setImpactPosition перезаписывался этой строкой в том же кадре).
+      this.impactLight.intensity = Math.max(t, this.impactPulse) * IMPACT_LIGHT_PEAK;
+    }
 
     if (this.beamFadeTimer <= 0) {
       this.hide();
@@ -558,7 +690,7 @@ export class RailgunBeamFx {
   }
 
   dispose() {
-    this.offLights();
+    this.releaseLights();
     this.scene.remove(this.mesh);
     this.mat.dispose();
     // Rig lights are shared and scene-owned — never disposed here.

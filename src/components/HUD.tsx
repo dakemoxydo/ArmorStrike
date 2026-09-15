@@ -41,7 +41,7 @@ export default function HUD({ game, active, crosshair }: HudProps) {
   const {
     snap, feed, vignette, dmgArc, hitmark, showHint, frag, streak,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
-    flameFillRef, ghostRef,
+    flameFillRef, ghostRef, lockTargetRef,
   } = useGameHud(game, active);
 
   // Стабильная ссылка: инлайн-стрелка обнуляла бы memo(HudFeed) на каждом кадре.
@@ -85,7 +85,19 @@ export default function HUD({ game, active, crosshair }: HudProps) {
       {/* Прицел прячется под открытым табло (оверлей с backdrop-blur иначе
           размывает его) и в состоянии смерти. */}
       {inGame && !st.paused && st.alive && !st.showScore && (
-        <MemoCrosshair crossRef={crossRef} hitmark={hitmark} crosshair={crosshair} />
+        <>
+          <MemoCrosshair crossRef={crossRef} hitmark={hitmark} crosshair={crosshair} />
+          <div ref={lockTargetRef} className="gauss-target-reticle" aria-hidden>
+            <svg viewBox="0 0 72 72" className="gauss-svg">
+              <circle cx="36" cy="36" r="30" className="gauss-circle-track" />
+              <circle cx="36" cy="36" r="30" className="gauss-circle-fill" />
+            </svg>
+            <span className="gauss-bracket tl" />
+            <span className="gauss-bracket tr" />
+            <span className="gauss-bracket bl" />
+            <span className="gauss-bracket br" />
+          </div>
+        </>
       )}
 
       {vignette > 0 && <div key={vignette} className="damage-vignette" aria-hidden />}

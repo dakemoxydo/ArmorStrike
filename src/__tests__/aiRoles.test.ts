@@ -134,9 +134,9 @@ describe('aiRoles — точная таблица ролей (D2 vs AI_Bots.md)'
   it('эффективная каденция ботов (shipped-числа, iter 15)', () => {
     // Пушка (standard, ×1.2): межвыстрел 0.28 → 0.336 с.
     expect(TURRETS.cannon.shotCooldown * firePadForRole('standard')).toBeCloseTo(0.336);
-    // Рельса-бот (sniper, ×1.35): перезарядка 4.8 → 6.48 с, заряд 1.1 → 1.485 с.
-    expect(WEAPON_TUNING.railgun.reloadTime * firePadForRole('sniper')).toBeCloseTo(6.48);
-    expect(WEAPON_TUNING.railgun.chargeTime * firePadForRole('sniper')).toBeCloseTo(1.485);
+    // Рельса-бот (sniper, ×1.35): перезарядка 3.8 → 5.13 с, заряд 1.0 → 1.35 с.
+    expect(WEAPON_TUNING.railgun.reloadTime * firePadForRole('sniper')).toBeCloseTo(5.13);
+    expect(WEAPON_TUNING.railgun.chargeTime * firePadForRole('sniper')).toBeCloseTo(1.35);
     // Огнемёт-бот (assault, ×1.15): восстановление 22 → ~19.13/с (расход не пада).
     expect(WEAPON_TUNING.flamethrower.rechargeRate / firePadForRole('assault')).toBeCloseTo(19.13);
     // Стандарт-боты НЕ получают reloadSpeedMul — их полная перезарядка как у игрока.

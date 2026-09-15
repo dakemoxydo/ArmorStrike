@@ -87,14 +87,15 @@ export function applyRailgunChargingFx(
   return acc;
 }
 
-/** Cooldown glow damp + FOV clear. */
+/** Cooldown glow damp + FOV clear + steam venting. Returns updated chargeFxAcc. */
 export function applyRailgunCooldownChargeFx(
   owner: WeaponOwner,
   effects: EffectsPort,
   reloadTimer: number,
   cooldownDuration: number,
+  chargeFxAcc: number,
   dt: number,
-): void {
+): number {
   const visual = owner.visual;
   if (visual.railGlowMat) {
     const target =
@@ -109,4 +110,16 @@ export function applyRailgunCooldownChargeFx(
     );
   }
   if (owner.isPlayer) effects.setFovTighten(0);
+
+  // Steam venting: in the first 1.2s of cooldown, the superheated rails vent wisps of steam
+  let acc = chargeFxAcc;
+  if (reloadTimer > cooldownDuration - 1.2) {
+    acc += dt;
+    if (acc >= 0.16) {
+      acc -= 0.16;
+      fillMuzzleAndAim(owner, tmpMuzzle, tmpDir);
+      effects.spawnSmoke?.(tmpMuzzle, 1, 0.45, false);
+    }
+  }
+  return acc;
 }

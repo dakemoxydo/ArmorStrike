@@ -1,6 +1,6 @@
 // ===== Match roster spawn (DM / TDM / CP) =====
 import * as THREE from 'three';
-import { HULL_IDS, TURRET_IDS, TURRETS } from '../../core/catalog';
+import { HULL_IDS, TURRETS } from '../../core/catalog';
 import type { HullId, TurretId } from '../../core/catalog';
 import { COLORS } from '../../core/constants';
 import { buildBotStyle, buildPlayerStyle } from '../../core/TankCatalog';
@@ -56,7 +56,9 @@ function applyTeamRing(tank: TankEntity, teamId: TeamId) {
   mat.color.setHex(teamId === 'alpha' ? COLORS.teamAlpha : COLORS.teamBravo);
 }
 
-async function makeBot(
+export const BOT_TURRETS: readonly TurretId[] = ['railgun', 'flamethrower', 'cannon'];
+
+export async function makeBot(
   index: number,
   teamId: TeamId,
   x: number,
@@ -64,10 +66,9 @@ async function makeBot(
   ctx: RosterSpawnCtx,
 ): Promise<BotEntry> {
   const botHulls: HullId[] = HULL_IDS;
-  const botTurrets: TurretId[] = TURRET_IDS;
 
   let bHull = botHulls[index % botHulls.length];
-  const bTurret = botTurrets[index % botTurrets.length];
+  const bTurret = BOT_TURRETS[index % BOT_TURRETS.length];
   const role = roleForBot(BOT_NORMAL.roleWave, index, bTurret);
 
   // Штурмовики не берут сверхтяжёлые корпуса: их скорость — это вся роль.

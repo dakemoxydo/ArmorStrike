@@ -81,6 +81,11 @@ describe('hud.css — contract пресетов', () => {
     expect(hudCss).toContain(".crosshair[data-ch='dot'] .ch-tick");
     expect(hudCss).toContain(".crosshair[data-ch='cross'] .ch-ring");
   });
+
+  it('динамический прицел: стили зарядки объявлены в hud.css', () => {
+    expect(hudCss).toContain('.crosshair.is-charging');
+    expect(hudCss).toContain('.crosshair.is-charged');
+  });
 });
 
 describe('PauseMenu — пикер в секции настроек', () => {

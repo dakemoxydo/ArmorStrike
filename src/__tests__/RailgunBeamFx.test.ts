@@ -99,6 +99,11 @@ describe('RailgunBeamFx', () => {
       filaments: 'uFilaments',
       strandAmount: 'uStrandAmt',
       gain: 'uGain',
+      spiralRadius: 'uSpiralRadius',
+      spiralPitch: 'uSpiralPitch',
+      spiralMuzzleSafe: 'uSpiralSafe',
+      spiralPixelWidth: 'uSpiralPxWidth',
+      spiralGain: 'uSpiralGain',
     } as const;
     for (const [key, uniform] of Object.entries(map)) {
       expect(uni()[uniform].value).toBe(BEAM_ARC[key as keyof typeof BEAM_ARC]);
@@ -115,6 +120,35 @@ describe('RailgunBeamFx', () => {
     // Гаснуть — не линейно: иначе трассер «еле виден» уже на середине жизни.
     expect(BEAM_ARC.fadeExp).toBeGreaterThan(0);
     expect(BEAM_ARC.fadeExp).toBeLessThan(0.8);
+    // Параметры спирали вокруг луча (Variant A)
+    expect(BEAM_ARC.spiralRadius).toBeGreaterThan(0.2);
+    expect(BEAM_ARC.spiralPitch).toBeGreaterThan(2);
+    expect(BEAM_ARC.spiralMuzzleSafe).toBeGreaterThan(1.5);
+
+    fx.dispose();
+  });
+
+  it('геометрия объединяет центральный луч и спираль в один BufferGeometry (один draw call)', () => {
+    const { fx, meshes } = makeFx();
+    const geo = meshes()[0].geometry;
+    const pos = geo.getAttribute('position');
+    const rows = BEAM_ARC.lengthSegments + 1;
+    const cols = BEAM_ARC.widthSegments;
+    const expectedVerts = rows * cols * 2; // 2 полосы: луч и спираль
+    expect(pos.count).toBe(expectedVerts);
+
+    // Первые vertices — луч (y = 0), вторые — спираль (y = 1)
+    const stripVerts = rows * cols;
+    expect(pos.getY(0)).toBe(0);
+    expect(pos.getY(stripVerts - 1)).toBe(0);
+    expect(pos.getY(stripVerts)).toBe(1);
+    expect(pos.getY(expectedVerts - 1)).toBe(1);
+
+    // Индексы покрывают обе полосы
+    const index = geo.getIndex();
+    expect(index).not.toBeNull();
+    const expectedIndices = (rows - 1) * (cols - 1) * 6 * 2;
+    expect(index!.count).toBe(expectedIndices);
 
     fx.dispose();
   });
@@ -175,19 +209,72 @@ describe('RailgunBeamFx', () => {
     expect(scene.children.length).toBe(RIG_LIGHTS);
   });
 
-  it('setImpactPosition moves impact light', () => {
+  it('setImpactPosition moves impact light and re-arms the flash (owner writes only)', () => {
     const { fx, uni, impactLight } = makeFx();
+    // Claim общего слота `beam` происходит в show(); без него запись — no-op.
+    fx.show(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1), 30);
+    const afterShow = impactLight.intensity;
     const p = new THREE.Vector3(10, 2, -5);
     fx.setImpactPosition(p);
 
     expect(impactLight.position.x).toBe(10);
     expect(impactLight.position.y).toBe(2);
     expect(impactLight.position.z).toBe(-5);
-    expect(impactLight.intensity).toBeGreaterThan(0);
+    // Интенсивность — прерогатива update(): max(fade, pulse), не прямая запись.
+    expect(impactLight.intensity).toBe(afterShow);
     // Позиция луча не зависит от импакта: сам он не двинулся.
-    expect(uni().uLen.value).toBe(1);
+    expect(uni().uLen.value).toBe(30);
 
     fx.dispose();
+  });
+
+  it('impact events flash above the fade curve, then settle back to it', () => {
+    const { fx, impactLight } = makeFx();
+    const dur = WEAPON_TUNING.railgun.beamDuration;
+    fx.show(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1), 100);
+    // Полжизни позади: fade уже увёл свет вдвое от пика.
+    fx.update(dur * 0.5);
+    const faded = impactLight.intensity;
+    expect(faded).toBeGreaterThan(0);
+    // Bump больше не съедается fade-строкой того же кадра: вспышка — envelope-пол.
+    fx.setImpactPosition(new THREE.Vector3(0, 1, 50));
+    fx.update(0.001);
+    expect(impactLight.intensity).toBeGreaterThan(faded);
+    // После окна envelope остаётся только линейный спад.
+    fx.update(0.15);
+    expect(impactLight.intensity).toBeLessThan(faded);
+
+    fx.dispose();
+  });
+
+  it('two beams, shared slot pair: last show claims; non-owner hide does not extinguish', () => {
+    const scene = new THREE.Scene();
+    const rig = new LightRig(scene);
+    const a = new RailgunBeamFx(scene, rig);
+    const b = new RailgunBeamFx(scene, rig);
+    const muzzle = new THREE.Vector3(0, 1, 0);
+    const dir = new THREE.Vector3(0, 0, 1);
+    a.show(muzzle, dir, 20);
+    b.show(muzzle, dir, 60); // второй выстрел забрал общие слоты
+
+    const impact = rig.light('beam', 1);
+    expect(impact.position.z).toBeCloseTo(60, 5);
+
+    a.setImpactPosition(new THREE.Vector3(9, 9, 9)); // не владелец — no-op
+    expect(impact.position.z).toBeCloseTo(60, 5);
+
+    a.update(0.2);
+    a.hide(); // гасит только СВОИ слоты — чужой свет обязан выжить
+    expect(impact.intensity).toBeGreaterThan(0);
+    expect(rig.light('beam', 0).intensity).toBeGreaterThan(0);
+
+    b.setLength(30); // владелец — свет едет за терminusом
+    expect(impact.position.z).toBeCloseTo(30, 5);
+
+    b.hide();
+    expect(impact.intensity).toBe(0);
+    a.dispose();
+    b.dispose();
   });
 
   it('punch widens the arc and settles width + wiggle amplitude back to rest', () => {

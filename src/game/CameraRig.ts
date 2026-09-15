@@ -189,6 +189,7 @@ export class CameraRig {
     // Squared ray length for broad-phase distance cull.
     const rayLen2 = dx * dx + dz * dz;
     const rayLen = Math.sqrt(rayLen2);
+    let minT = 1;
     for (const c of colliders) {
       if (c.height < 2.5) continue;
       // Broad-phase: skip colliders too far from ray origin (squared compare).
@@ -198,11 +199,13 @@ export class CameraRig {
       const reach = rayLen + halfDiag;
       if (cx * cx + cz * cz > reach * reach) continue;
       const t = segmentHitT(headX, headZ, headX + dx, headZ + dz, c, 0.7);
-      if (t >= 0 && t < 1) {
-        const tt = Math.max(t * 0.92, 0.18);
-        dx *= tt; dz *= tt; dy *= Math.max(tt, 0.5);
-        break;
+      if (t >= 0 && t < minT) {
+        minT = t;
       }
+    }
+    if (minT < 1) {
+      const tt = Math.max(minT * 0.92, 0.18);
+      dx *= tt; dz *= tt; dy *= Math.max(tt, 0.5);
     }
     return { dx, dz, dy };
   }

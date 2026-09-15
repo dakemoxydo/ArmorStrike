@@ -61,6 +61,13 @@ describe('hudNeedsRender — ref-painted channels never force', () => {
   it('crossX/crossY (линия выстрела) are painted imperatively every frame', () => {
     expect(hudNeedsRender(snap({ crossX: 50, crossY: 50 }), snap({ crossX: 63.7, crossY: 22.1 }))).toBe(false);
   });
+
+  it('Gauss lock-on channels (hasLockTarget, lockTargetX/Y/Dist) are painted imperatively', () => {
+    expect(hudNeedsRender(
+      snap({ hasLockTarget: false, lockTargetX: 50, lockTargetY: 50, lockTargetDist: 0 }),
+      snap({ hasLockTarget: true, lockTargetX: 62.5, lockTargetY: 41.2, lockTargetDist: 28.5 }),
+    )).toBe(false);
+  });
 });
 
 describe('hudNeedsRender — ammo semantics per weapon class', () => {

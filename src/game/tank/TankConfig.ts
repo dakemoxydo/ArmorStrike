@@ -44,6 +44,7 @@ export const TURRET_CONFIG: Record<TurretId, RenderConfig> = {
   railgun: { type: 'code' },
   flamethrower: { type: 'code' },
   cannon: { type: 'code' },
+  gauss: { type: 'code' },
 };
 
 /** Default deck height for turret mount (Y on hull local space). */

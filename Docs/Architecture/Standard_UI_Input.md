@@ -161,7 +161,7 @@ Follow target: порт `CameraFollowable` (position, yaw, speed, boost…), н�
 | `BootError`, `ErrorBoundary` | `role="alert"` | экран заменяет всё приложение — иначе AT-пользователь не узнает, почему игра исчезла |
 | `roundError` (App) | `role="alert"` | видимая ошибка старта раунда |
 | `roundLoading` (App) | `role="status"` + `aria-live="polite"` | не срочно, не перебивает |
-| vitals-порог (HUD) | `aria-live="polite"` через `liveRef` | «Броня критична», «Перезарядка», «Магазин пуст», «Уничтожен» |
+| vitals-порог (HUD) | `aria-live="polite"` через `liveRef` | «Броня критична», «Зарядка» / «Перезарядка» (разные состояния: рельса отдаёт `isCharging` вместе с `reloading`), «Магазин пуст», «Уничтожен»; ключ/текст — pure-хелперы `liveRegionKey`/`liveRegionText` (`ui/hudPresentation.ts`) |
 | радар (HUD) | `<canvas role="img">` + `aria-label` | подписи «РАДАР»/«ЦЕЛИ» остаются читаемыми |
 | оверлей смерти (HUD) | `aria-hidden` | текст дублируется в `liveRef`; иначе отсчёт респауна читался бы каждую секунду |
 | игровой `<canvas>` | `role="img"` + `aria-label` + fallback-текст | у `<canvas>` нет неявной ARIA-роли — без неё AT пропускает графику |

@@ -44,3 +44,39 @@ export function isLowHealth(health: number, maxHealth: number, thresholdPct = 32
   if (maxHealth <= 0) return false;
   return (health / maxHealth) * 100 < thresholdPct;
 }
+
+/** Threshold-only state for the polite live region (M15). */
+export interface LiveRegionInput {
+  lowHp: boolean;
+  health: number;
+  reloading: boolean;
+  isCharging: boolean;
+  emptyMag: boolean;
+  dead: boolean;
+}
+
+/**
+ * Coarse state key — re-announce only when it changes. Charging and magazine
+ * reload must be distinct tokens: the railgun reports `isCharging` together
+ * with `reloading` (shared progress), so a combined key kept the live region
+ * silent while the charge ring was visibly running.
+ */
+export function liveRegionKey(i: LiveRegionInput): string {
+  return [
+    i.lowHp ? 'low' : 'ok',
+    i.isCharging ? 'charge' : i.reloading ? 'reload' : '',
+    i.emptyMag ? 'empty' : '',
+    i.dead ? 'dead' : '',
+  ].join('|');
+}
+
+/** Announcement text for a live-region state ('' — nothing to announce). */
+export function liveRegionText(i: LiveRegionInput): string {
+  const parts: string[] = [];
+  if (i.lowHp && !i.dead) parts.push(`Броня критична: ${Math.ceil(i.health)}`);
+  if (i.isCharging) parts.push('Зарядка');
+  else if (i.reloading) parts.push('Перезарядка');
+  if (i.emptyMag) parts.push('Магазин пуст');
+  if (i.dead) parts.push('Уничтожен. Возрождение');
+  return parts.join('. ');
+}

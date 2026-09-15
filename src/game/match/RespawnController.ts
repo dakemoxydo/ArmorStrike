@@ -56,6 +56,7 @@ export class RespawnController {
     const yaw = Math.atan2(-x, -z);
 
     applyRespawnCombat(tank, spawnInvulnSec);
+    tank.weapon?.onRespawn?.();
     tank.visual.group.position.set(x, 0, z);
     tank.yaw = yaw;
     tank.aimYaw = yaw;

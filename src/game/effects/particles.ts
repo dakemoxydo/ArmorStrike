@@ -69,10 +69,11 @@ export class ParticleEffects {
   railgunMuzzle(p: THREE.Vector3) {
     this.muzzle_.flash(p, 0x8fffe8);
     this.flash.flash(p, 0xffffff, 48, 0.08);
-    this.sparks.poolRef.burst(p, ParticleEffects._cWhite, 8, {
+    this.ring.spawn(p, 0x8fffe8, 2.8);
+    this.sparks.poolRef.burst(p, ParticleEffects._cWhite, 10, {
       speed: 18, up: 2, life: 0.14, gravity: 1,
     });
-    this.sparks.poolRef.burst(p, ParticleEffects._cCyan, 12, {
+    this.sparks.poolRef.burst(p, ParticleEffects._cCyan, 14, {
       speed: 14, up: 3, life: 0.22, gravity: 4,
     });
   }
@@ -88,14 +89,15 @@ export class ParticleEffects {
    */
   railgunImpact(p: THREE.Vector3, color: number, heavy = false) {
     const col = ParticleEffects._cTmp.setHex(color);
-    const n = heavy ? 14 : 8;
+    const n = heavy ? 16 : 9;
     this.sparks.poolRef.burst(p, col, n, {
-      speed: heavy ? 14 : 11, up: heavy ? 6 : 4, life: 0.4, gravity: 10,
+      speed: heavy ? 14 : 11, up: heavy ? 6 : 4, life: 0.45, gravity: 10,
     });
     if (heavy) {
-      this.sparks.poolRef.burst(p, ParticleEffects._cWhite, 5, {
-        speed: 16, up: 3, life: 0.14, gravity: 2,
+      this.sparks.poolRef.burst(p, ParticleEffects._cWhite, 6, {
+        speed: 16, up: 3, life: 0.15, gravity: 2,
       });
+      this.ring.spawn(p, color, 1.8);
       // One flash light only on heavy hits — lights are the main lag source.
       this.flash.flash(p, color, 28, 0.1);
     }
@@ -117,7 +119,8 @@ export class ParticleEffects {
   }
 
   trailPuff(p: THREE.Vector3, color: THREE.Color) {
-    this.sparks.poolRef.burst(p, color, 1, { speed: 0.3, up: 0.1, life: 0.16, gravity: 0 });
+    this.sparks.poolRef.burst(p, color, 3, { speed: 0.8, up: 0.4, life: 0.65, gravity: -0.5 });
+    this.smoke.spawn(p, 1, 0.75, false);
   }
 
   boostJet(p: THREE.Vector3, dir: THREE.Vector3, color: number) {

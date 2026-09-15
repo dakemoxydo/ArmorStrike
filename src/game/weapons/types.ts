@@ -118,6 +118,13 @@ export interface Weapon {
    * Опционально: Cannon/Flame могут не реализовывать (setFire(false) достаточно).
    */
   onOwnerDeath?(): void;
+  /**
+   * Вызывается при возрождении владельца (respawn).
+   * Восстанавливает боезапас/энергию и сбрасывает таймеры перезарядки.
+   */
+  onRespawn?(): void;
   dispose(): void;
   getAmmoState(out?: WeaponAmmoState): WeaponAmmoState;
+  /** Опциональный захваченный противник (для lock-on оружия вроде Гаусса). */
+  getLockTarget?(): { position: THREE.Vector3 } | null;
 }

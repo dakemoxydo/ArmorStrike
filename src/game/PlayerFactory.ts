@@ -7,6 +7,7 @@ import type { TankStyle } from '../core/types';
 import { RailgunWeapon } from './weapons/RailgunWeapon';
 import { FlamethrowerWeapon } from './weapons/FlamethrowerWeapon';
 import { CannonWeapon } from './weapons/CannonWeapon';
+import { GaussWeapon } from './weapons/GaussWeapon';
 import type { Weapon, WeaponDeps, WeaponOwner, DamageSystem } from './weapons/types';
 import type { EffectsPort } from './ports/EffectsPort';
 import type { AudioPort } from './ports/AudioPort';
@@ -19,9 +20,8 @@ export interface WeaponFactoryDeps {
   audio: AudioPort;
   damageSystem: DamageSystem;
   projectiles: ProjectileManager;
-  /** Shared constant light budget — same instance as `Effects.lights`. */
   lights: LightRig;
-  onShotFired: () => void;
+  onShotFired?: () => void;
 }
 
 export function createWeapon(owner: WeaponOwner, type: WeaponType, deps: WeaponFactoryDeps): Weapon {
@@ -36,6 +36,7 @@ export function createWeapon(owner: WeaponOwner, type: WeaponType, deps: WeaponF
   };
   if (type === 'railgun') return new RailgunWeapon(owner, wdeps);
   if (type === 'flamethrower') return new FlamethrowerWeapon(owner, wdeps);
+  if (type === 'gauss') return new GaussWeapon(owner, wdeps);
   return new CannonWeapon(owner, wdeps);
 }
 

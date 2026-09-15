@@ -97,10 +97,13 @@ describe('procedural turret geometry', () => {
   });
 
   it('creates railGlowMat only when the rail slot is actually populated', () => {
-    // Railguns have glowing rails; cannons and flamethrowers do not.
+    // Railguns and gauss turrets have glowing rails; cannons and flamethrowers do not.
     const ctxR = stubContext();
     buildTurret(ctxR, 'railgun');
     expect(ctxR.railGlowMat).toBeDefined();
+    const ctxG = stubContext();
+    buildTurret(ctxG, 'gauss');
+    expect(ctxG.railGlowMat).toBeDefined();
     const ctxC = stubContext();
     buildTurret(ctxC, 'cannon');
     expect(ctxC.railGlowMat).toBeUndefined();
@@ -144,7 +147,7 @@ describe('procedural turret geometry', () => {
     }
   });
 
-  it('produces three visibly different silhouettes', () => {
+  it('produces visibly different silhouettes across all turrets', () => {
     // Approximate each turret by the bounding box of its (shell + barrel).
     // Different silhouettes mean the parts don't accidentally collapse to the
     // same box.
@@ -169,5 +172,9 @@ describe('procedural turret geometry', () => {
     // Flamethrower is the shortest and tallest (dome).
     expect(boxes.flamethrower.z).toBeLessThan(boxes.cannon.z);
     expect(boxes.flamethrower.y).toBeGreaterThan(boxes.railgun.y);
+    // Gauss has a wide faceted stealth chassis with twin barrels (widest turret).
+    expect(boxes.gauss.x).toBeGreaterThan(boxes.cannon.x);
+    expect(boxes.gauss.x).toBeGreaterThan(boxes.railgun.x);
+    expect(boxes.gauss.z).toBeGreaterThan(boxes.flamethrower.z);
   });
 });

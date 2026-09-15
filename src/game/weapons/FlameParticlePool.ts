@@ -226,6 +226,23 @@ export class FlameParticlePool {
     p.maxScale = 1.5 + Math.random() * 1.3;
   }
 
+  onOwnerDeath(): void {
+    this.muzzleIntensity = 0;
+    this.spawnAcc = 0;
+    if (flameSlot.owner === this) {
+      flameSlot.owner = null;
+      this.rig.off('flame', FLAME_SLOT);
+    }
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i];
+      if (!p.active) continue;
+      p.active = false;
+      tmpMatrix.makeScale(0, 0, 0);
+      this.instancedMesh.setMatrixAt(i, tmpMatrix);
+    }
+    this.instancedMesh.instanceMatrix.needsUpdate = true;
+  }
+
   dispose() {
     // Shared rig slot: only the current owner may extinguish it — a non-owner
     // dispose must not kill another firebird's active muzzle light.

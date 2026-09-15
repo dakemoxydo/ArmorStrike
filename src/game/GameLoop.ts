@@ -40,6 +40,7 @@ export class GameLoop {
   private readonly _muzzleW = new THREE.Vector3();
   private readonly _aimDir = new THREE.Vector3();
   private readonly _impactP = new THREE.Vector3();
+  private readonly _lockTargetP = new THREE.Vector3();
 
   constructor(private deps: GameLoopDeps) {}
 
@@ -89,7 +90,10 @@ export class GameLoop {
       colliders: sim.arena.colliders, effects: sim.effects,
     });
 
-    if (sim.run.paused) sim.audio.setEngine(0);
+    if (sim.run.paused || sim.run.mode === 'over') sim.audio.setEngine(0);
+    // Пауза замораживает и аудио-таймлайн: гул/тики заряда рельсы иначе
+    // доигрывали под затемнением (rAF идёт, шаг симуляции — нет). Идемпотентно.
+    sim.audio.setPaused(sim.run.paused);
     const showScoreboard =
       sim.run.mode === 'playing' && sim.input.scoreHeld && !sim.run.paused;
     hudModel.getHud(sim.player, sim.tanks, showScoreboard, hud);
@@ -110,7 +114,10 @@ export class GameLoop {
   private updateCrosshair(hud: HudSnapshot): void {
     const { sim, cameraRig } = this.deps;
     const pl = sim.player;
-    if (sim.run.mode !== 'playing' || !pl || !pl.alive) return;
+    if (sim.run.mode !== 'playing' || !pl || !pl.alive) {
+      hud.hasLockTarget = false;
+      return;
+    }
 
     pl.muzzleWorld(this._muzzleW);
     pl.aimDir(this._aimDir);
@@ -120,6 +127,8 @@ export class GameLoop {
       this._muzzleW.x, this._muzzleW.z, this._muzzleW.y,
       this._aimDir.x, this._aimDir.z,
       range, sim.arena.colliders, sim.tanks, pl.id,
+      // Рельса и Гаусс сканируют/пробивают препятствия для прицела
+      wt === 'railgun' || wt === 'gauss',
     );
     this._impactP.copy(this._muzzleW).addScaledVector(this._aimDir, dist);
 
@@ -130,5 +139,24 @@ export class GameLoop {
     // линия выстрела всегда в секторе обзора (камера и башня делят один yaw).
     hud.crossX = clamp((this._impactP.x * 0.5 + 0.5) * 100, 1, 99);
     hud.crossY = clamp((-this._impactP.y * 0.5 + 0.5) * 100, 1, 99);
+
+    // Проекция захваченной цели lock-on (Гаусс) на экран
+    const lockTarget = pl.weapon?.getLockTarget?.();
+    if (lockTarget && 'position' in lockTarget && lockTarget.position) {
+      this._lockTargetP.copy(lockTarget.position);
+      this._lockTargetP.y += 0.8;
+      const targetDist = cam.position.distanceTo(this._lockTargetP);
+      this._lockTargetP.project(cam);
+      if (this._lockTargetP.z <= 1) {
+        hud.hasLockTarget = true;
+        hud.lockTargetX = clamp((this._lockTargetP.x * 0.5 + 0.5) * 100, 0, 100);
+        hud.lockTargetY = clamp((-this._lockTargetP.y * 0.5 + 0.5) * 100, 0, 100);
+        hud.lockTargetDist = targetDist;
+      } else {
+        hud.hasLockTarget = false;
+      }
+    } else {
+      hud.hasLockTarget = false;
+    }
   }
 }

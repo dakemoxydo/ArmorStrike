@@ -4,11 +4,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import { RailgunWeapon } from '../game/weapons/RailgunWeapon';
-import type { WeaponContext, WeaponDeps, WeaponOwner } from '../game/weapons/types';
+import type { CombatPeer, WeaponContext, WeaponDeps, WeaponOwner } from '../game/weapons/types';
 import { LightRig } from '../game/effects/LightRig';
 import { WEAPON_TUNING } from '../core/catalog';
 
-function makeWeapon() {
+function makeWeapon(opts: { isPlayer?: boolean } = {}) {
   const scene = new THREE.Scene();
   const rig = new LightRig(scene);
   let nextHandle = 1;
@@ -28,21 +28,25 @@ function makeWeapon() {
     addShake: vi.fn(),
     setFovTighten: vi.fn(),
     addFovPunch: vi.fn(),
+    spawnSmoke: vi.fn(),
   };
   const barrelGroup = new THREE.Group();
   const muzzle = new THREE.Object3D();
+  // Реальный материал, не мок: его пишут railgunChargeFx / onOwnerDeath.
+  const railGlowMat = new THREE.MeshStandardMaterial({ emissive: new THREE.Color(0x2ee6c0) });
+  railGlowMat.emissiveIntensity = WEAPON_TUNING.railgun.emissiveIdle;
   const group = new THREE.Group();
   group.add(barrelGroup);
   barrelGroup.add(muzzle);
   const owner = {
     id: 1,
     teamId: 0,
-    isPlayer: true,
+    isPlayer: opts.isPlayer ?? true,
     alive: true,
     fireTimer: 0,
     position: new THREE.Vector3(),
     params: { damage: WEAPON_TUNING.railgun.damage, range: WEAPON_TUNING.railgun.range },
-    visual: { group, barrelGroup, muzzle },
+    visual: { group, barrelGroup, muzzle, railGlowMat },
     muzzleWorld: (out: THREE.Vector3) => out.set(0, 1.6, 0),
     aimDir: (out: THREE.Vector3) => out.set(0, 0, 1),
     onFired: vi.fn(),
@@ -58,7 +62,7 @@ function makeWeapon() {
   } as unknown as WeaponDeps;
   const w = new RailgunWeapon(owner, deps);
   const ctx: WeaponContext = { tanks: [], colliders: [] };
-  return { w, ctx, audio, effects, scene };
+  return { w, ctx, audio, effects, scene, railGlowMat };
 }
 
 describe('RailgunWeapon trigger (M20 click-to-fire, no cancel)', () => {
@@ -152,5 +156,39 @@ describe('RailgunWeapon trigger (M20 click-to-fire, no cancel)', () => {
     w.onOwnerDeath!();
     w.update(0.016, ctx); // ни одного кадра show после смерти
     for (const m of ballMeshes()) expect(m.visible).toBe(false);
+  });
+
+  it('death mid-charge zeroes the rail glow (no glowing wreck)', () => {
+    const { w, ctx, railGlowMat } = makeWeapon();
+    w.setFire(true);
+    w.update(0.4, ctx); // glow рос вместе с зарядом
+    expect(railGlowMat.emissiveIntensity).toBeGreaterThan(WEAPON_TUNING.railgun.emissiveIdle);
+    // WeaponSystem мёртвых не обновляет — сбрасывать обязан onOwnerDeath.
+    w.onOwnerDeath!();
+    expect(railGlowMat.emissiveIntensity).toBe(0);
+  });
+
+  it('bot fire shakes the camera only within fireShakeBotRange of the player', () => {
+    const rt = WEAPON_TUNING.railgun;
+    const peer = (z: number) => ({
+      id: 2, teamId: null, alive: true, isPlayer: true,
+      position: new THREE.Vector3(0, 0, z),
+      visual: { group: new THREE.Group() },
+    }) as unknown as CombatPeer;
+
+    const near = makeWeapon({ isPlayer: false });
+    near.ctx.tanks = [peer(rt.fireShakeBotRange - 10)];
+    near.w.setFire(true);
+    let guard = 0;
+    while (near.w.state === 'CHARGING' && guard++ < 30) near.w.update(0.1, near.ctx);
+    expect(near.w.state).toBe('COOLDOWN');
+    expect(near.effects.addShake).toHaveBeenCalledWith(rt.fireShakeBot);
+
+    const far = makeWeapon({ isPlayer: false });
+    far.ctx.tanks = [peer(rt.fireShakeBotRange + 50)];
+    far.w.setFire(true);
+    guard = 0;
+    while (far.w.state === 'CHARGING' && guard++ < 30) far.w.update(0.1, far.ctx);
+    expect(far.effects.addShake).not.toHaveBeenCalled();
   });
 });

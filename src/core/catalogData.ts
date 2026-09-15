@@ -2,20 +2,22 @@ import type { HullId, HullDef, TurretId, TurretDef } from './catalogTypes';
 
 export const WEAPON_TUNING = {
   railgun: {
-    chargeTime: 1.1,
-    reloadTime: 4.8,
-    damage: 85,
+    chargeTime: 1.0,
+    reloadTime: 3.8,
+    damage: 80,
     penetrationFactor: 0.65,
-    range: 120.0,
+    range: Infinity,
     knockback: 18.0,
     emissiveIdle: 0.15,
     emissiveCharged: 4.5,
     /** Life of the visual beam — one arc layer, fade curve in RailgunBeamFx. */
-    beamDuration: 0.42,
+    beamDuration: 0.84,
     magazine: 1,
     /** Camera trauma on fire (player / bot). */
     fireShakePlayer: 0.48,
     fireShakeBot: 0.14,
+    /** Bot trauma applies only while a live player is within this XZ range (units). */
+    fireShakeBotRange: 45,
     /** Peak micro-shake while charging (player only). */
     chargeShakePeak: 0.055,
     /** FOV tighten at full charge (degrees, player). */
@@ -65,6 +67,18 @@ export const WEAPON_TUNING = {
     knockback: 5.5,
     splashRadius: 5.0,
     splashDmg: 16,
+  },
+  gauss: {
+    damage: 115,
+    lockTime: 1.15,
+    reloadTime: 2.8,
+    range: 110.0,
+    lockConeAngle: 0.075,
+    knockback: 16.0,
+    magazine: 1,
+    fireShakePlayer: 0.52,
+    fireShakeBot: 0.16,
+    beamDuration: 0.7,
   },
 };
 
@@ -163,6 +177,20 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     range: WEAPON_TUNING.cannon.range,
     desc: 'Скорострельная крупнокалиберная автопушка с фугасным поражением площади.',
     badge: 'АВТОМАТ',
+  },
+  gauss: {
+    id: 'gauss',
+    name: 'Пушка «Гаусс»',
+    weaponType: 'gauss',
+    damage: WEAPON_TUNING.gauss.damage,
+    shotCooldown: 0,
+    magazine: WEAPON_TUNING.gauss.magazine,
+    fullReload: WEAPON_TUNING.gauss.reloadTime,
+    turretSpeed: 8.5,
+    recoil: WEAPON_TUNING.gauss.knockback,
+    range: WEAPON_TUNING.gauss.range,
+    desc: 'Электромагнитная пушка с автозахватом цели при удержании прицела и сокрушительным залпом.',
+    badge: 'СНАЙПЕР',
   },
 };
 

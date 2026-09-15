@@ -14,7 +14,7 @@
 | `standard` | cannon | random-ish | 1.0 | 0.35 |
 
 Match combat scales: `BOT_NORMAL` in `matchConfig.ts` (fixed Normal difficulty).  
-Cooldown pad — `firePadForRole` (`aiRoles.ts`): standard **1.2** / assault **1.15** / sniper **1.35**, применяется в `rosterSpawn.makeBot`. У пушки — на межвыстрел (0.28 → 0.336 с; полная перезарядка магазина не пада). У railgun/flamer `TURRET.shotCooldown = 0` (каденция weapon-internal) — их пад идёт через `reloadSpeedMul = 1/firePad`: рельса-бот заряд 1.1 → **~1.49 с**, перезарядка 4.8 → **~6.48 с**; огнемёт-бот батарея 22 → **~19.1/с** (расход не меняется). Все классы ботов стреляют медленнее игрока.  
+Cooldown pad — `firePadForRole` (`aiRoles.ts`): standard **1.2** / assault **1.15** / sniper **1.35**, применяется в `rosterSpawn.makeBot`. У пушки — на межвыстрел (0.28 → 0.336 с; полная перезарядка магазина не пада). У railgun/flamer `TURRET.shotCooldown = 0` (каденция weapon-internal) — их пад идёт через `reloadSpeedMul = 1/firePad`: рельса-бот заряд 1.0 → **1.35 с**, перезарядка 3.8 → **5.13 с**; огнемёт-бот батарея 22 → **~19.1/с** (расход не меняется). Все классы ботов стреляют медленнее игрока.  
 `roleForBot` / `personaForRole` / `aimErrorMulForRole` / `coverHpFracForRole` / `firePadForRole` — `aiRoles.ts`.
 
 ## Roster: корпус и башня бота

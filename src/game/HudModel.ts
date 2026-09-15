@@ -177,6 +177,10 @@ export class HudModel {
     // линии выстрела (GameLoop.updateCrosshair).
     target.crossX = 50;
     target.crossY = 50;
+    target.hasLockTarget = false;
+    target.lockTargetX = 50;
+    target.lockTargetY = 50;
+    target.lockTargetDist = 0;
     return target;
   }
 

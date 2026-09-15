@@ -215,13 +215,14 @@ export class RailgunWeapon implements Weapon {
 
       case 'COOLDOWN': {
         this.reloadTimer -= dt;
-        applyRailgunCooldownChargeFx(
-          this.owner, this.deps.effects, this.reloadTimer, this.cooldownDuration(), dt,
+        this.chargeFxAcc = applyRailgunCooldownChargeFx(
+          this.owner, this.deps.effects, this.reloadTimer, this.cooldownDuration(), this.chargeFxAcc, dt,
         );
 
         if (this.reloadTimer <= 0) {
           this.state = 'IDLE';
           this.reloadTimer = 0;
+          this.chargeFxAcc = 0;
         }
         break;
       }
@@ -245,7 +246,13 @@ export class RailgunWeapon implements Weapon {
 
     // Muzzle / camera / FOV punch (instant — the crack precedes the beam)
     this.deps.effects.railgunMuzzle(tmpMuzzle);
-    this.deps.effects.addShake(isPlayer ? rt.fireShakePlayer : rt.fireShakeBot);
+    if (isPlayer) {
+      this.deps.effects.addShake(rt.fireShakePlayer);
+    } else if (this.playerNear(tanks, rt.fireShakeBotRange)) {
+      // Тряска от bot-выстрела долетала к камере с другого конца карты (и из-за
+      // спины). Trauma бота — только когда живой игрок рядом.
+      this.deps.effects.addShake(rt.fireShakeBot);
+    }
     if (isPlayer) {
       this.deps.effects.setFovTighten(0);
       this.deps.effects.addFovPunch(rt.fireFovPunch);
@@ -254,7 +261,8 @@ export class RailgunWeapon implements Weapon {
 
     // Hitscan resolves instantly (damage/knockback/pierce pings); beam + impact
     // visuals are collected into a payload and replayed tracerDelay later (M19 #4).
-    const range = this.owner.params.range ?? rt.range;
+    const rawRange = this.owner.params.range ?? rt.range;
+    const range = Number.isFinite(rawRange) ? rawRange : 1000;
     const shot: PendingShotVisual = {
       muzzle: tmpMuzzle.clone(),
       dir: tmpDir.clone(),
@@ -292,9 +300,9 @@ export class RailgunWeapon implements Weapon {
       });
     }
 
-    // Along-beam ion trail (midpoints) — каждая puff'а срабатывает, когда
-    // фронт проходит её дистанцию.
-    const segs = Math.min(6, Math.max(2, Math.floor(shot.dist / 18)));
+    // Along-beam ion trail (midpoints) — плотный ионизационный след,
+    // плавно рассеивающийся по мере движения фронта.
+    const segs = Math.min(10, Math.max(3, Math.floor(shot.dist / 12)));
     const midIdx = Math.ceil(segs / 2);
     const midColor = shot.pierces[0]?.color ?? 0x8fffe8;
     for (let i = 1; i <= segs; i++) {
@@ -332,7 +340,8 @@ export class RailgunWeapon implements Weapon {
    */
   private castHitscan(tanks: CombatPeer[]): THREE.Intersection[] {
     this.raycaster.set(tmpMuzzle, tmpDir);
-    this.raycaster.far = this.owner.params.range ?? WEAPON_TUNING.railgun.range;
+    const rawRange = this.owner.params.range ?? WEAPON_TUNING.railgun.range;
+    this.raycaster.far = Number.isFinite(rawRange) ? rawRange : 10000;
 
     this._tankMap.clear();
     this._targetArr.length = 0;
@@ -344,6 +353,7 @@ export class RailgunWeapon implements Weapon {
       // Mirrors DamageSystem.applyDamage team filter; knockback/VFX aren't gated there.
       const targetTeam = t.teamId ?? null;
       if (ownerTeam !== null && targetTeam !== null && ownerTeam === targetTeam) continue;
+      t.visual.group.updateMatrixWorld(true);
       t.visual.group.traverse((o) => {
         this._targetArr.push(o);
         this._tankMap.set(o, t);
@@ -368,6 +378,19 @@ export class RailgunWeapon implements Weapon {
     return { dist: hit.dist, id: hit.id, point };
   }
 
+  /** Есть ли живой игрок в `range` по XZ от владельца (гейт bot-fire trauma). */
+  private playerNear(tanks: CombatPeer[], range: number): boolean {
+    const self = this.owner.position;
+    const r2 = range * range;
+    for (const t of tanks) {
+      if (!t.isPlayer) continue;
+      const dx = t.position.x - self.x;
+      const dz = t.position.z - self.z;
+      return t.alive && dx * dx + dz * dz <= r2;
+    }
+    return false;
+  }
+
   /** Проход по попаданиям: пенетрация, урон, толчок. Заполняет shot-визуалы.
    * Возвращает дистанцию луча. Урон/пинги мгновенны; FX — в shot (flush позже). */
   private resolveHits(
@@ -377,14 +400,15 @@ export class RailgunWeapon implements Weapon {
   ): number {
     const tankMap = this._tankMap;
     const rt = WEAPON_TUNING.railgun;
-    const range = this.owner.params.range ?? rt.range;
+    const rawRange = this.owner.params.range ?? rt.range;
+    const range = Number.isFinite(rawRange) ? rawRange : 1000;
     let maxHitDist = range;
     const baseDamage = resolveWeaponDamage(this.owner.params.damage, rt.damage);
     let currentDamage = baseDamage;
     const hitTanksSet = new Set<number>();
     let hitCount = 0;
 
-    const wall = this.nearestShotBlocker(colliders, range);
+    const wall = this.nearestShotBlocker(colliders, rawRange);
     const wallDist = wall?.dist ?? Infinity;
 
     for (const hit of hits) {
@@ -481,6 +505,23 @@ export class RailgunWeapon implements Weapon {
     const visual = this.owner.visual;
     visual.barrelGroup.position.set(0, BARREL_REST_Y, BARREL_REST_Z);
     this.owner.setBarrelKick?.(0);
+    // Свечение зарядки гаснем вместе с оружием: WeaponSystem мёртвых не
+    // обновляет, а railGlowMat не входит в bodyMats, которые обнуляет
+    // animateDeath — без сброса труп дотерпел бы до респауна со светящейся
+    // «заряженной» рельсой.
+    if (visual.railGlowMat) visual.railGlowMat.emissiveIntensity = 0;
+  }
+
+  onRespawn(): void {
+    this.state = 'IDLE';
+    this.chargeTimer = 0;
+    this.reloadTimer = 0;
+    this.chargeFxAcc = 0;
+    this.pendingShot = null;
+    this.shotDelayTimer = 0;
+    this.beamSweep = null;
+    this.beamFx.hide();
+    this.chargeBalls.hide();
   }
 
   dispose() {

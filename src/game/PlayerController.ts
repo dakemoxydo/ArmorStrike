@@ -47,9 +47,15 @@ export class PlayerController {
   };
   private onMouseDown = (e: MouseEvent) => {
     // Fire only in combat: a menu/garage/death-cam click is navigation,
-    // not a trigger (used to arm wantsFire for the next round / respawn).
-    if (e.button === 0 && this.enabled) this.wantsFire = true;
-    if (this.enabled && !this.locked) this.requestLock();
+    // not a trigger. If pointer lock was dropped, the click re-acquires lock
+    // without firing (avoids accidental dry-fire or irreversible railgun charge).
+    if (e.button === 0 && this.enabled) {
+      if (this.locked) {
+        this.wantsFire = true;
+      } else {
+        this.requestLock();
+      }
+    }
   };
   private onMouseUp = (e: MouseEvent) => {
     if (e.button === 0) this.wantsFire = false;
@@ -57,6 +63,7 @@ export class PlayerController {
   private onBlur = () => {
     this.keys.clear();
     this.wantsFire = false;
+    this.reloadRequested = false;
     // Tab never sees keyup when the window loses focus mid-hold — without
     // this the scoreboard overlay stayed stuck open after refocusing.
     this.scoreHeld = false;
