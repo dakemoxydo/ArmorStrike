@@ -1,4 +1,4 @@
-export type WeaponType = 'railgun' | 'flamethrower' | 'cannon' | 'gauss';
+export type WeaponType = 'railgun' | 'flamethrower' | 'cannon' | 'gauss' | 'isida';
 
 export type HullId = 'hunter' | 'viking' | 'mammoth' | 'speedy' | 'titan';
 
@@ -13,7 +13,7 @@ export interface HullDef {
   badge: string;
 }
 
-export type TurretId = 'railgun' | 'flamethrower' | 'cannon' | 'gauss';
+export type TurretId = 'railgun' | 'flamethrower' | 'cannon' | 'gauss' | 'isida';
 
 export interface TurretDef {
   id: TurretId;

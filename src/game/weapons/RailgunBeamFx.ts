@@ -44,11 +44,11 @@ function cssViewport(): { w: number; h: number } {
  * дефолт 720p. Диапазон — страховка: уронить пол в ноль или раздуть линию до
  * размера сцены хуже, чем ошибиться на пару пикселей. Покрывает окно от ~110 px.
  */
-function cssPxScale(): number {
+export function cssPxScale(): number {
   return Math.min(1e-2, Math.max(1e-4, 2 / (cssViewport().h * NOMINAL_PROJ_Y)));
 }
 /** NDC-шаг на один CSS-пиксель по X и Y: связывает пиксельную толщину с клипом. */
-function cssPxToNdc(target: THREE.Vector2): THREE.Vector2 {
+export function cssPxToNdc(target: THREE.Vector2): THREE.Vector2 {
   const { w, h } = cssViewport();
   return target.set(2 / w, 2 / h);
 }
@@ -179,7 +179,9 @@ export const BEAM_ARC = {
  * от камеры, — а в шутере это основной ракурс, поэтому «пол в пикселях» на
  * экране оставался 1–2 px и линия была еле заметной.
  */
-const VERTEX_SHADER = /* glsl */ `
+// Шейдер и геометрия дуги экспортированы для NanoBeamFx («Изида»): один источник
+// правды на форму разряда, различия — только в uniform'ах и палитре.
+export const VERTEX_SHADER = /* glsl */ `
 uniform float uTime;
 uniform float uSeed;
 uniform float uAmp;
@@ -291,7 +293,7 @@ void main() {
  * Фрагменты: ядро линии там, где поверхность трубки смотрит в камеру, к кромкам
  * мягко гаснет.
  */
-const FRAGMENT_SHADER = /* glsl */ `
+export const FRAGMENT_SHADER = /* glsl */ `
 uniform float uOpacity;
 uniform float uGain;
 uniform float uCoreExp;
@@ -344,7 +346,7 @@ void main() {
  */
 const SHARED_GEO_REFS = new Map<number, { geo: THREE.BufferGeometry; refs: number }>();
 
-function acquireSharedBeamGeo(radius: number): THREE.BufferGeometry {
+export function acquireSharedBeamGeo(radius: number): THREE.BufferGeometry {
   let entry = SHARED_GEO_REFS.get(radius);
   if (!entry) {
     // Две ленты в одной BufferGeometry (один draw call, без дополнительных мешей):
@@ -407,7 +409,7 @@ function acquireSharedBeamGeo(radius: number): THREE.BufferGeometry {
   return entry.geo;
 }
 
-function releaseSharedBeamGeo(radius: number): void {
+export function releaseSharedBeamGeo(radius: number): void {
   const entry = SHARED_GEO_REFS.get(radius);
   if (!entry) return;
   entry.refs -= 1;

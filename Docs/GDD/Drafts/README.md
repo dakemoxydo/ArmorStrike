@@ -9,7 +9,7 @@
 
 ## Active / trail
 
-- [[New_Turret_Proposals]] — концепты новых башен (Рикошет, Твинс, Изида, Молот, Гром) по мотивам Tanki Online.
+- [[New_Turret_Proposals]] — концепты новых башен (Рикошет, Твинс, Изида, Молот, Гром) по мотивам Tanki Online. «Изида» реализована → [[../Approved/Weapon_Isida|Weapon_Isida]].
 
 
 ## Ideas backlog

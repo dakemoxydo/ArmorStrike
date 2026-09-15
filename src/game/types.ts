@@ -1,6 +1,7 @@
 // ===== Общие типы игрового слоя (без зависимости от Game) =====
 import type { TurretId } from '../core/catalog';
 import type { MatchModeId, TeamId, MatchEndReason } from './match/matchTypes';
+import type { BeamMode } from './weapons/types';
 
 export type GameMode = 'menu' | 'garage' | 'playing' | 'over';
 export type { MatchModeId, TeamId, MatchEndReason };
@@ -56,6 +57,8 @@ export interface HudSnapshot {
   lockTargetX?: number;
   lockTargetY?: number;
   lockTargetDist?: number;
+  /** Нано-луч «Изиды»: режим для HUD-статуса и тейнта полосы энергии. */
+  beamMode?: BeamMode;
 }
 
 /** Lightweight CP zone for HUD / minimap. */

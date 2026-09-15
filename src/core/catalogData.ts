@@ -80,6 +80,37 @@ export const WEAPON_TUNING = {
     fireShakeBot: 0.16,
     beamDuration: 0.7,
   },
+  isida: {
+    /** Тиковый урон по врагу = damagePerSec × tickRate (канон ТО: 30–66 HP/с, здесь M1–M2). */
+    damagePerSec: 45,
+    /** Лечение союзника в секунду (канон: ~половина урона). */
+    healPerSec: 22,
+    /** Доля ФАКТИЧЕСКОГО урона, возвращающаяся стрелку как HP (вампирство). */
+    vampirism: 0.40,
+    tickRate: 0.25,
+    /** Дистанция луча/захвата (канон M0–M1: 15.9–18 м). */
+    range: 17.0,
+    /** Полуугол конуса автозахвата: канон — полный конус 20°. */
+    coneHalfAngle: (10 * Math.PI) / 180,
+    /** Пауза перестроения луча при захвате/смене цели (тиков нет). */
+    acquireTime: 0.3,
+    /** Союзник с HP ≥ (max × this) не захватывается — нет резона лечить. */
+    healHpFrac: 0.99,
+    energyMax: 100,
+    /** Расход баллона зависит от режима (канон: атака 142 против 83.3 у.е./с). */
+    drainAttack: 30,
+    drainHeal: 18,
+    /** Зажатый спуск без цели: луч «в холостую» жрёт вдвое меньше боевого. */
+    drainIdle: 12,
+    rechargeRate: 24,
+    knockback: 0,
+    /** Частицы потока нанороботов вдоль луча (InstancedMesh). */
+    flowCount: 48,
+    /** Края дуг по режимам (ядро всегда белое, как у рельсы). */
+    colorAttack: 0xff2d6b,
+    colorHeal: 0x39e6a8,
+    colorIdle: 0x2ee6c0,
+  },
 };
 
 export const HULLS: Record<HullId, HullDef> = {
@@ -191,6 +222,22 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     range: WEAPON_TUNING.gauss.range,
     desc: 'Электромагнитная пушка с автозахватом цели при удержании прицела и сокрушительным залпом.',
     badge: 'СНАЙПЕР',
+  },
+  isida: {
+    id: 'isida',
+    name: 'Башня «Изида»',
+    weaponType: 'isida',
+    // Тиковый урон (damagePerSec × tickRate): через TankParams.damage идёт
+    // волновой scale у ботов (resolveWeaponDamage), как у огнемёта.
+    damage: Math.round(WEAPON_TUNING.isida.damagePerSec * WEAPON_TUNING.isida.tickRate),
+    shotCooldown: 0,
+    magazine: WEAPON_TUNING.isida.energyMax,
+    fullReload: 0,
+    turretSpeed: 10,
+    recoil: WEAPON_TUNING.isida.knockback,
+    range: WEAPON_TUNING.isida.range,
+    desc: 'Нано-дуга непрерывного действия: точит броню врага и лечит стрелка (вампирство), в командных режимах ремонтирует союзников. Баллон энергии.',
+    badge: 'НАНОЛУЧ',
   },
 };
 

@@ -217,6 +217,7 @@ export default function HUD({ game, active, crosshair }: HudProps) {
             reloading={st.reloading}
             ammo={st.ammo}
             magazine={st.magazine}
+            beamMode={st.beamMode}
           />
 
           {/* Смерть/респаун: текст дублируется в live-region (M15), поэтому сам

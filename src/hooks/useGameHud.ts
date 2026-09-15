@@ -22,6 +22,7 @@ function createSnapInit(): HudSnapshot {
   return {
     mode: 'menu', paused: false, health: 100, maxHealth: 100, ammo: 0, magazine: 0,
     reloading: false, reloadProgress: 0, isCharging: false, boost: 1, score: 0, kills: 0, deaths: 0,
+    beamMode: 'none',
     enemiesAlive: 0, alive: false, respawnInSec: 0, timeSec: 0, muted: false, turretId: 'railgun',
     weaponName: _defaultWeapon.name, weaponLabel: _defaultWeapon.kind,
     weaponAccentClass: _defaultWeapon.accentClass,
@@ -183,7 +184,8 @@ export function useGameHud(game: GameApi | null, active: boolean) {
             ? `conic-gradient(var(--warn, #ffd24a) ${p}deg, rgba(255,255,255,0.07) ${p}deg)`
             : `conic-gradient(var(--accent, #2ee6c0) 360deg, rgba(0,0,0,0) 0deg)`;
       }
-      if (s.turretId === 'flamethrower' && flameFillRef.current) {
+      if ((s.turretId === 'flamethrower' || s.turretId === 'isida') && flameFillRef.current) {
+        // Оба — непрерывная «оболочка» энергии: ширина пишется в ref, без React-force.
         const pct = Math.max(0, Math.min(100, s.ammo));
         flameFillRef.current.style.width = `${pct}%`;
       }

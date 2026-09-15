@@ -22,7 +22,8 @@ export function roleLabel(role: AIRole): string {
 export function roleForBot(wave: number, index: number, turretId: TurretId): AIRole {
   if (wave >= 3 && index === 0) return 'elite';
   if (turretId === 'railgun' || turretId === 'gauss') return 'sniper';
-  if (turretId === 'flamethrower') return 'assault';
+  // «Изида» у ботов v1 — вампир-драчун: приоритет врага в конусе даёт роль assault.
+  if (turretId === 'flamethrower' || turretId === 'isida') return 'assault';
   return 'standard';
 }
 

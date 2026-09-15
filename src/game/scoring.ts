@@ -14,3 +14,26 @@ export function applyPlayerKillScore(state: KillScoreState, byPlayer: boolean): 
     score: state.score + SCORE.kill,
   };
 }
+
+/**
+ * «Изида»: очки поддержки за фактическое лечение союзников.
+ * Дробные HP копятся в `carry` (лечение тиками ~5.5 HP), очка списываются целыми —
+ * без переноса остатка игрок терял бы ~1 очко каждый тик.
+ * Возвращает НОВОЕ состояние; начислять `earned` вызывающему (run.score += earned).
+ */
+export interface SupportScoreState {
+  carry: number;
+  /** Очки, заработанные этим вызовом (0, если остатка не хватило на целое). */
+  earned: number;
+}
+
+export function addSupportHeal(
+  state: { carry: number },
+  healedHp: number,
+  rate: number = SCORE.supportPerHp,
+): SupportScoreState {
+  if (!(healedHp > 0) || !(rate > 0)) return { carry: state.carry, earned: 0 };
+  const total = state.carry + healedHp * rate;
+  const earned = Math.floor(total);
+  return { carry: total - earned, earned };
+}

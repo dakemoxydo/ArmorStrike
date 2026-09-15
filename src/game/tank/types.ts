@@ -37,6 +37,8 @@ export interface TankParams {
  *  симуляционный контракт TankLike. Читается/пишется системами анимации и FX. */
 export interface TankFxState {
   hitFlash: number;
+  /** Мятная вспышка «нано-ремонта» («Изида» лечит этот танк). Симметрична hitFlash. */
+  healFlash: number;
   barrelKick: number;
   smokeAcc: number;
   dustAcc: number;

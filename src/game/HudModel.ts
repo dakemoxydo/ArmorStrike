@@ -10,7 +10,7 @@ import { HULLS } from '../core/catalog';
 import type { HullId, TurretId } from '../core/catalog';
 
 import type { CaptureHudPoint, HudSnapshot, MinimapDynamic, MinimapStatic, ScoreRow } from './types';
-import type { WeaponAmmoState } from './weapons/types';
+import type { BeamMode, WeaponAmmoState } from './weapons/types';
 import { getWeaponMeta } from '../core/WeaponCatalog';
 import { isAlly, isEnemy } from './match/teams';
 import type { TeamId } from './match/matchTypes';
@@ -104,7 +104,10 @@ export class HudModel {
 
   getHud(
     player: (HudUnit & {
-      weapon?: { getAmmoState(out?: WeaponAmmoState): WeaponAmmoState };
+      weapon?: {
+        getAmmoState(out?: WeaponAmmoState): WeaponAmmoState;
+        getBeamMode?(): BeamMode;
+      };
       boostEnergy?: number;
       kills?: number;
       deaths?: number;
@@ -124,6 +127,8 @@ export class HudModel {
     const reloading = ammoState?.reloading ?? false;
     const reloadProgress = ammoState?.reloadProgress ?? 0;
     const isCharging = ammoState?.isCharging ?? false;
+    // Дискретный режим луча («Изида») — остальное оружие даёт undefined → 'none'.
+    const beamMode: BeamMode = player?.weapon?.getBeamMode?.() ?? 'none';
 
     const showScore = run.mode === 'playing' && input.scoreHeld && !run.paused;
     const board: ScoreRow[] = includeScoreboard
@@ -147,6 +152,7 @@ export class HudModel {
     target.reloading = reloading;
     target.reloadProgress = reloadProgress;
     target.isCharging = isCharging;
+    target.beamMode = beamMode;
     target.boost = player?.boostEnergy ?? 1;
     target.score = run.score;
     target.kills = player?.kills ?? run.kills;

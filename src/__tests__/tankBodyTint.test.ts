@@ -19,7 +19,7 @@ function makeBody(health: number, maxHealth = 100, alive = true): AnimBody {
     health,
     maxHealth,
     position: new THREE.Vector3(),
-    fx: { barrelKick: 0, hitFlash: 0, smokeAcc: 0 },
+    fx: { barrelKick: 0, hitFlash: 0, healFlash: 0, smokeAcc: 0 },
     visual: {
       barrelGroup: new THREE.Group(),
       turret: new THREE.Group(),

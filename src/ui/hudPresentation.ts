@@ -1,7 +1,7 @@
 /** Pure presentation helpers for HUD (no game logic). */
 
 /**
- * Discrete ammo (rail/cannon) forces React; flamethrower energy is continuous (ref paint).
+ * Discrete ammo (rail/cannon) forces React; flamethrower/isida energy is continuous (ref paint).
  */
 export function ammoForcesHudRender(
   prevTurretId: string,
@@ -10,7 +10,8 @@ export function ammoForcesHudRender(
   nextAmmo: number,
 ): boolean {
   if (prevAmmo === nextAmmo) return false;
-  if (prevTurretId === 'flamethrower' && nextTurretId === 'flamethrower') return false;
+  const continuous = (t: string) => t === 'flamethrower' || t === 'isida';
+  if (continuous(prevTurretId) && continuous(nextTurretId)) return false;
   return true;
 }
 
@@ -34,6 +35,7 @@ export function weaponStatusKind(input: {
   if (input.reloading) return 'reloading';
   const emptyMag =
     input.turretId !== 'flamethrower' &&
+    input.turretId !== 'isida' &&
     input.magazine > 0 &&
     input.ammo <= 0;
   if (emptyMag) return 'empty';

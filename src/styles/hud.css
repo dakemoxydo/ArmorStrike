@@ -389,6 +389,40 @@
 }
 .flame-shell .boost-segments { opacity: 0.5; }
 
+/* ===== «Изида»: нано-шкала — та же оболочка, режимный тейнт =====
+   Ширина заполнения — общий ref-paint с огнемётом; цвет несёт РЕЖИМ луча
+   (атака/вампирство — коралловый, ремонт — мятный, захват — пульс). */
+.beam-shell {
+  border-color: rgba(57, 230, 168, 0.45);
+}
+.beam-shell .flame-fill {
+  background: linear-gradient(90deg, #0e9f6e, #39e6a8 60%, #b7ffe0);
+  box-shadow: 0 0 var(--glow-r-sm) rgba(57, 230, 168, 0.6);
+}
+.beam-shell.beam-idle .flame-fill {
+  background: linear-gradient(90deg, #134e46, #2ee6c0);
+  box-shadow: none;
+}
+.beam-shell.beam-attack .flame-fill {
+  background: linear-gradient(90deg, #9f1239, #ff2d6b 60%, #ffd7e2);
+  box-shadow: 0 0 var(--glow-r-sm) rgba(255, 45, 107, 0.7);
+}
+.beam-shell.beam-heal .flame-fill {
+  background: linear-gradient(90deg, #059669, #39e6a8 55%, #d6fff0);
+  box-shadow: 0 0 var(--glow-r-md) rgba(57, 230, 168, 0.8);
+}
+.beam-shell.beam-acquire .flame-fill {
+  animation: beam-acquire-pulse 0.5s steps(2, jump-none) infinite;
+}
+@keyframes beam-acquire-pulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.55); }
+}
+.weapon-status.is-beam-dmg { color: #ff6b95; }
+.weapon-status.is-beam-heal { color: #39e6a8; }
+.weapon-status.is-beam-idle { color: rgba(46, 230, 192, 0.75); }
+.weapon-status.is-beam-acq { color: var(--warn, #ffd24a); }
+
 .weapon-title {
   display: inline-flex;
   align-items: baseline;
@@ -1261,6 +1295,10 @@
   .streak-banner,
   .death-overlay,
   .scoreboard-overlay {
+    animation: none;
+  }
+  /* «Изида»: пульс захвата — единственная анимация шкалы, гасится по конвенции. */
+  .beam-shell.beam-acquire .flame-fill {
     animation: none;
   }
   .frag-popup {

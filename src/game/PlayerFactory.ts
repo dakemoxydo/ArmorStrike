@@ -8,6 +8,7 @@ import { RailgunWeapon } from './weapons/RailgunWeapon';
 import { FlamethrowerWeapon } from './weapons/FlamethrowerWeapon';
 import { CannonWeapon } from './weapons/CannonWeapon';
 import { GaussWeapon } from './weapons/GaussWeapon';
+import { IsidaWeapon } from './weapons/IsidaWeapon';
 import type { Weapon, WeaponDeps, WeaponOwner, DamageSystem } from './weapons/types';
 import type { EffectsPort } from './ports/EffectsPort';
 import type { AudioPort } from './ports/AudioPort';
@@ -22,6 +23,7 @@ export interface WeaponFactoryDeps {
   projectiles: ProjectileManager;
   lights: LightRig;
   onShotFired?: () => void;
+  onSupportScore?: (points: number) => void;
 }
 
 export function createWeapon(owner: WeaponOwner, type: WeaponType, deps: WeaponFactoryDeps): Weapon {
@@ -33,10 +35,12 @@ export function createWeapon(owner: WeaponOwner, type: WeaponType, deps: WeaponF
     projectiles: deps.projectiles,
     lights: deps.lights,
     onShotFired: deps.onShotFired,
+    onSupportScore: deps.onSupportScore,
   };
   if (type === 'railgun') return new RailgunWeapon(owner, wdeps);
   if (type === 'flamethrower') return new FlamethrowerWeapon(owner, wdeps);
   if (type === 'gauss') return new GaussWeapon(owner, wdeps);
+  if (type === 'isida') return new IsidaWeapon(owner, wdeps);
   return new CannonWeapon(owner, wdeps);
 }
 

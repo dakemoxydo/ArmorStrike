@@ -19,5 +19,14 @@ describe('catalog balance single source of truth', () => {
     expect(TURRETS.cannon.fullReload).toBe(WEAPON_TUNING.cannon.reloadTime);
     expect(TURRETS.cannon.range).toBe(WEAPON_TUNING.cannon.range);
     expect(TURRETS.cannon.recoil).toBe(WEAPON_TUNING.cannon.knockback);
+
+    const is = WEAPON_TUNING.isida;
+    // «Изида»: damage в каталоге — тиковый (damagePerSec × tickRate), округлённый;
+    // магазин = баллон энергии; range = дальность луча; recoil = knockback (0).
+    expect(TURRETS.isida.damage).toBe(Math.round(is.damagePerSec * is.tickRate));
+    expect(TURRETS.isida.range).toBe(is.range);
+    expect(TURRETS.isida.magazine).toBe(is.energyMax);
+    expect(TURRETS.isida.recoil).toBe(is.knockback);
+    expect(TURRETS.isida.weaponType).toBe('isida');
   });
 });

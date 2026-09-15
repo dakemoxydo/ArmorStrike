@@ -95,6 +95,22 @@ describe('hudPresentation pure helpers (shipped)', () => {
         magazine: 100,
       }),
     ).toBe(null);
+    // «Изида» — тоже непрерывный баллон: пустой не кричит «ПУСТО · R».
+    expect(
+      weaponStatusKind({
+        turretId: 'isida',
+        ammo: 0,
+        magazine: 100,
+      }),
+    ).toBe(null);
+    expect(
+      weaponStatusKind({
+        turretId: 'isida',
+        reloading: true,
+        ammo: 5,
+        magazine: 100,
+      }),
+    ).toBe('reloading');
   });
 
   it('isLowHealth matches HUD danger threshold', () => {
@@ -109,6 +125,10 @@ describe('hudPresentation pure helpers (shipped)', () => {
     expect(ammoForcesHudRender('cannon', 'cannon', 3, 2)).toBe(true);
     expect(ammoForcesHudRender('flamethrower', 'flamethrower', 80, 79)).toBe(false);
     expect(ammoForcesHudRender('railgun', 'flamethrower', 1, 100)).toBe(true);
+    // «Изида»: непрерывная энергия — тот же ref-paint путь (в т.ч. cross-режим flame↔isida).
+    expect(ammoForcesHudRender('isida', 'isida', 80, 79)).toBe(false);
+    expect(ammoForcesHudRender('flamethrower', 'isida', 80, 79)).toBe(false);
+    expect(ammoForcesHudRender('railgun', 'isida', 1, 100)).toBe(true);
     // Wiring: the hook delegates the render decision to the gate, and the gate
     // is where the ammo-vs-flame distinction is applied (it lived inline in the
     // hook before the hand-maintained field list was replaced).

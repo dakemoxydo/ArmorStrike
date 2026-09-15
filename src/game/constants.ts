@@ -28,4 +28,6 @@ export const PROJECTILE = {
 
 export const SCORE = {
   kill: 100,
+  /** «Изида»: очки поддержки за 1 ФАКТИЧЕСКИ вылеченный HP союзника. */
+  supportPerHp: 1,
 };

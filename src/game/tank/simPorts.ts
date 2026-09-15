@@ -74,7 +74,7 @@ export interface AnimBody {
   health: number;
   maxHealth: number;
   position: THREE.Vector3;
-  fx: Pick<TankFxState, 'barrelKick' | 'hitFlash' | 'smokeAcc'>;
+  fx: Pick<TankFxState, 'barrelKick' | 'hitFlash' | 'healFlash' | 'smokeAcc'>;
   visual: Pick<
     TankVisual,
     'barrelGroup' | 'turret' | 'bodyMats' | 'bodyBaseColors' | 'ring' | 'trackTex'

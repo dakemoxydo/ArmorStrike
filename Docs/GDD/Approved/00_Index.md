@@ -19,13 +19,14 @@
 | [[Weapon_Railgun]] | Рельсотрон | `RailgunWeapon`, `BeamSweep`, `RailgunChargeBalls` |
 | [[Weapon_Flamethrower]] | Огнемёт Firebird | `FlamethrowerWeapon`, `inFlameConeXZ` |
 | [[Weapon_Gauss]] | Пушка «Гаусс» | `GaussWeapon`, `GaussBeamFx` |
+| [[Weapon_Isida]] | Нано-дуга «Изида» (ремонт союзников + вампиризм) | `IsidaWeapon`, `isidaTargeting`, `NanoBeamFx`, `NanoFlowPool`, `addSupportHeal` |
 | [[Projectile_System]] | Снаряды (пул) | `ProjectileManager`, `ProjectileBehavior` |
 | [[Match_Framework]] | Режимы DM/TDM/CP, roster, respawn, win | `MatchRuntime`, `spawnMatchRoster` |
 | [[Team_Deathmatch]] | TDM 5v5, FF off, team HUD (P3) | `ModeSelect`, `teams`, `HudScoreboard` |
 | [[Capture_Point]] | CP A/B/C, score tick, markers (P4) | `captureLogic`, `CaptureMarkers`, `MatchRuntime` |
 | [[AI_Bots]] | ИИ ботов | `AIController`, `aiRoles` |
 | [[Scoring]] | Очки и убийства | `scoring`, `SCORE` |
-| [[Garage_Loadout]] | Гараж 5×3 (корпуса + Titan) | `RunState`, `HULLS`/`TURRETS` |
+| [[Garage_Loadout]] | Гараж 5×5 (5 корпусов × 5 башен) | `RunState`, `HULLS`/`TURRETS` |
 | [[Garage_Viewport_Safe_Zone]] | Кадрирование предпросмотра в свободной от UI зоне + peek-осмотр | `CameraRig`, `GarageInput`, `Garage` |
 | [[Arena_Physics]] | Арена и коллизии | `Arena`, `physics`, `PhysicsSystem` |
 | [[Maps]] | Карты и выбор арены (300×300) | `mapCatalog`, `Arena.rebuild`, `MapSelect` |

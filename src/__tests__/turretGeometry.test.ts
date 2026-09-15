@@ -97,13 +97,18 @@ describe('procedural turret geometry', () => {
   });
 
   it('creates railGlowMat only when the rail slot is actually populated', () => {
-    // Railguns and gauss turrets have glowing rails; cannons and flamethrowers do not.
+    // Railguns, gauss and isida have glowing rails/coils; cannons and flamethrowers do not.
     const ctxR = stubContext();
     buildTurret(ctxR, 'railgun');
     expect(ctxR.railGlowMat).toBeDefined();
     const ctxG = stubContext();
     buildTurret(ctxG, 'gauss');
     expect(ctxG.railGlowMat).toBeDefined();
+    // «Изида»: шкала баллона, борт-нити и катушки рожков — rail-слот (оружие
+    // анимирует emissiveIntensity по режиму луча).
+    const ctxI = stubContext();
+    buildTurret(ctxI, 'isida');
+    expect(ctxI.railGlowMat).toBeDefined();
     const ctxC = stubContext();
     buildTurret(ctxC, 'cannon');
     expect(ctxC.railGlowMat).toBeUndefined();

@@ -41,9 +41,18 @@ interface WeaponOwnerVisual {
   railGlowMat?: THREE.MeshStandardMaterial;
 }
 
+/**
+ * Режим луча «Изида» для HUD/снапшота (дискретный канал — годится для гейта рендера):
+ * none — луч не активен; idle — спуск без цели (холостой расход); acquire —
+ * захват/смена цели (перестроение дуги, тиков нет); attack/heal — по врагу/союзнику.
+ */
+export type BeamMode = 'none' | 'idle' | 'acquire' | 'attack' | 'heal';
+
 interface WeaponOwnerParams {
   damage: number;
   range?: number;
+  /** Cap для самоолечения (вампирство «Изиды»). Есть у TankParams; optional для моков. */
+  maxHealth?: number;
 }
 
 /**
@@ -96,6 +105,12 @@ export interface WeaponDeps {
   lights: LightRig;
   /** Колбэк для события «игрок выстрелил» (используется HUD). */
   onShotFired?: () => void;
+  /**
+   * «Изида»: очки поддержки за фактическое лечение союзника (целые).
+   * Вызывается только для игрока-владельца; run-сторедж на принимающей стороне
+   * (паттерн onShotFired: оружие не знает про RunState).
+   */
+  onSupportScore?: (points: number) => void;
 }
 
 /**
@@ -127,4 +142,6 @@ export interface Weapon {
   getAmmoState(out?: WeaponAmmoState): WeaponAmmoState;
   /** Опциональный захваченный противник (для lock-on оружия вроде Гаусса). */
   getLockTarget?(): { position: THREE.Vector3 } | null;
+  /** Дискретный режим луча («Изида») для HUD-статусов. По умолчанию у оружия нет. */
+  getBeamMode?(): BeamMode;
 }

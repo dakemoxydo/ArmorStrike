@@ -278,6 +278,11 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
                     ТОЧНЫЙ ЭНЕРГЕТИЧЕСКИЙ ЛУЧ · {currTurret.damage} ЕД.
                   </div>
                 )}
+                {currTurret.weaponType === 'isida' && (
+                  <div className="garage-weapon-tip text-[10px] text-emerald-200/70 bg-emerald-500/10 border border-emerald-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
+                    Нано-дуга · РЕМОНТ СОЮЗНИКОВ · ВАМПИРИЗМ 40%
+                  </div>
+                )}
               </div>
             </div>
           </div>

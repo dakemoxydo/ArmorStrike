@@ -113,6 +113,11 @@ function buildDerivedSystems(
     damageSystem: combat.damageSystem,
     projectiles,
     onShotFired: () => emitEvent({ type: 'shotFired' }),
+    // «Изида»: очки поддержки (лечение союзников) — в личный счёт забега,
+    // симметрично очкам за фраги в MatchRuntime (run.score — косметика/XP, не teamScore).
+    onSupportScore: (points: number) => {
+      if (points > 0) run.score += points;
+    },
   };
   const bots = new BotRoster();
   // getMatch filled after GameSimulation construction (see bootstrapGame).

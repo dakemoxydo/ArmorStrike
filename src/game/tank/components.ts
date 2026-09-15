@@ -39,5 +39,5 @@ export class TankBuffState {
 }
 
 export function createTankFxState(): TankFxState {
-  return { hitFlash: 0, barrelKick: 0, smokeAcc: 0, dustAcc: 0, timeSinceHit: 0 };
+  return { hitFlash: 0, healFlash: 0, barrelKick: 0, smokeAcc: 0, dustAcc: 0, timeSinceHit: 0 };
 }

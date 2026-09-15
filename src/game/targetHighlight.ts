@@ -37,6 +37,7 @@ export interface AimCone {
 export function aimConeRadFor(weaponType?: WeaponType): number {
   if (weaponType === 'flamethrower') return WEAPON_TUNING.flamethrower.coneAngle * 0.5;
   if (weaponType === 'gauss') return WEAPON_TUNING.gauss.lockConeAngle;
+  if (weaponType === 'isida') return WEAPON_TUNING.isida.coneHalfAngle;
   return TARGET_HIGHLIGHT.coneRad;
 }
 

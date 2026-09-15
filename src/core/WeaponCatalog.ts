@@ -46,6 +46,13 @@ export const WEAPONS: Record<WeaponId, WeaponMeta> = {
     color: '#c084fc',
     accentClass: 'text-purple-300/80',
   },
+  isida: {
+    id: 'isida',
+    name: 'ИЗИДА',
+    kind: 'НАНО-ДУГА ПОДДЕРЖКИ',
+    color: '#39e6a8',
+    accentClass: 'text-emerald-300/80',
+  },
 };
 
 export function getWeaponMeta(id: WeaponId): WeaponMeta {

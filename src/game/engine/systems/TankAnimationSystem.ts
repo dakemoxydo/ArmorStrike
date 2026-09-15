@@ -50,6 +50,15 @@ export const TankAnimationSystem = {
       if (t.fx.hitFlash > 0) {
         t.fx.hitFlash = Math.max(0, t.fx.hitFlash - dt * 6);
         for (const m of t.visual.bodyMats) m.emissive.setScalar(t.fx.hitFlash * 0.85);
+      } else if (t.fx.healFlash > 0) {
+        // «Нано-ремонт» («Изида»): мятное свечение корпуса союзника. Spад чуть
+        // медленнее hitFlash — лечение — это positive-ток, его читаем дольше.
+        t.fx.healFlash = Math.max(0, t.fx.healFlash - dt * 4);
+        const e = t.fx.healFlash * 0.6;
+        for (const m of t.visual.bodyMats) m.emissive.setRGB(e * 0.18, e, e * 0.62);
+      } else {
+        // Обе вспышки погасли: снять emissive (иначе мятный/белный остаток висел бы).
+        for (const m of t.visual.bodyMats) m.emissive.setScalar(0);
       }
 
       // Damage state: затемнение корпуса при низком HP

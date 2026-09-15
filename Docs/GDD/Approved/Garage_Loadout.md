@@ -6,11 +6,11 @@
 
 ## Модель сборки
 
-**Корпус × Башня = 5 × 3 = 15** валидных loadout'ов.
+**Корпус × Башня = 5 × 5 = 25** валидных loadout'ов.
 
 | Корпус (`HullId`) | Башня (`TurretId`) → оружие |
 |-------------------|-----------------------------|
-| hunter / viking / mammoth / speedy / titan | railgun / flamethrower / cannon |
+| hunter / viking / mammoth / speedy / titan | railgun / flamethrower / cannon / gauss / isida |
 
 Данные: `HULLS`, `TURRETS` в `src/core/catalogData.ts`.  
 Типы: `src/core/catalogTypes.ts`.
