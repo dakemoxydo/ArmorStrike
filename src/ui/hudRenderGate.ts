@@ -76,6 +76,8 @@ const FIELD_DIFFERS: Partial<Record<keyof HudSnapshot, FieldDiffers>> = {
   lockTargetX: () => false,
   lockTargetY: () => false,
   lockTargetDist: () => false,
+  // Захват цели автонаводкой — императивный ref-painted канал (класс .is-locked).
+  isTargetLocked: () => false,
   // Входящий снайперский захват — императивный ref-painted канал.
   incomingLock: () => false,
 

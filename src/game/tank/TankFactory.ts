@@ -18,6 +18,8 @@ export interface TankBuildResult {
   bodyMats: THREE.MeshStandardMaterial[];
   /** Accent-материал (антенна и процедурные детали) — не искать по индексу. */
   metalMat: THREE.MeshStandardMaterial;
+  trackLeftTex: THREE.CanvasTexture;
+  trackRightTex: THREE.CanvasTexture;
   trackTex: THREE.CanvasTexture;
   railGlowMat?: THREE.MeshStandardMaterial;
   /** Local Y for turret on hull (model or procedural table). */
@@ -31,6 +33,10 @@ function createStyleMaterials(style: TankStyle): {
   metalMat: THREE.MeshStandardMaterial;
   darkMat: THREE.MeshStandardMaterial;
   lampMat: THREE.MeshBasicMaterial;
+  trackLeftTex: THREE.CanvasTexture;
+  trackRightTex: THREE.CanvasTexture;
+  trackLeftMat: THREE.MeshStandardMaterial;
+  trackRightMat: THREE.MeshStandardMaterial;
   trackTex: THREE.CanvasTexture;
   trackMat: THREE.MeshStandardMaterial;
 } {
@@ -64,14 +70,46 @@ function createStyleMaterials(style: TankStyle): {
   bodyMats.push(darkMat);
 
   const lampMat = new THREE.MeshBasicMaterial({ color: style.glow });
-  const trackTex = trackTexture();
-  const trackMat = new THREE.MeshStandardMaterial({
-    map: trackTex,
-    roughness: 0.9,
-    metalness: 0.15,
+
+  // Separate track textures and materials for left and right differential animation
+  const baseTrack = trackTexture();
+
+  const trackLeftTex = baseTrack.clone();
+  trackLeftTex.wrapS = THREE.RepeatWrapping;
+  trackLeftTex.wrapT = THREE.RepeatWrapping;
+  trackLeftTex.needsUpdate = true;
+
+  const trackRightTex = baseTrack.clone();
+  trackRightTex.wrapS = THREE.RepeatWrapping;
+  trackRightTex.wrapT = THREE.RepeatWrapping;
+  trackRightTex.needsUpdate = true;
+
+  const trackLeftMat = new THREE.MeshStandardMaterial({
+    map: trackLeftTex,
+    roughness: 0.85,
+    metalness: 0.35,
   });
 
-  return { bodyMats, bodyMat, turretMat, metalMat, darkMat, lampMat, trackTex, trackMat };
+  const trackRightMat = new THREE.MeshStandardMaterial({
+    map: trackRightTex,
+    roughness: 0.85,
+    metalness: 0.35,
+  });
+
+  return {
+    bodyMats,
+    bodyMat,
+    turretMat,
+    metalMat,
+    darkMat,
+    lampMat,
+    trackLeftTex,
+    trackRightTex,
+    trackLeftMat,
+    trackRightMat,
+    trackTex: trackLeftTex,
+    trackMat: trackLeftMat,
+  };
 }
 
 export class TankFactory {
@@ -89,6 +127,7 @@ export class TankFactory {
     const mats = createStyleMaterials(style);
 
     const hullGroup = new THREE.Group();
+    hullGroup.rotation.order = 'YXZ';
     const turretGroup = new THREE.Group();
     const barrelGroup = new THREE.Group();
     const muzzle = new THREE.Object3D();
@@ -101,6 +140,10 @@ export class TankFactory {
       metalMat: mats.metalMat,
       darkMat: mats.darkMat,
       lampMat: mats.lampMat,
+      trackLeftTex: mats.trackLeftTex,
+      trackRightTex: mats.trackRightTex,
+      trackLeftMat: mats.trackLeftMat,
+      trackRightMat: mats.trackRightMat,
       trackTex: mats.trackTex,
       trackMat: mats.trackMat,
       group: hullGroup,
@@ -169,6 +212,8 @@ export class TankFactory {
       muzzle: ctx.muzzle,
       bodyMats,
       metalMat: mats.metalMat,
+      trackLeftTex: mats.trackLeftTex,
+      trackRightTex: mats.trackRightTex,
       trackTex: mats.trackTex,
       railGlowMat: ctx.railGlowMat,
       turretY,

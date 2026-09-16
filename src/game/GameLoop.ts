@@ -132,9 +132,14 @@ export class GameLoop {
     const pl = sim.player;
     if (sim.run.mode !== 'playing' || !pl || !pl.alive) {
       hud.hasLockTarget = false;
+      hud.isTargetLocked = false;
       hud.incomingLock = false;
       return;
     }
+
+    // Захват цели вертикальной автонаводкой (AimHighlighter с гистерезисом
+    // holdSec) — тот же сигнал, что наклоняет ствол, ведёт и прицел в `.is-locked`.
+    hud.isTargetLocked = pl.pitchLocked;
 
     // Детекция входящего захвата: если вражеский Гаусс нацелен на игрока,
     // выводим тревогу на HUD и воспроизводим зуммер предупреждения.

@@ -25,7 +25,10 @@ dot(aimDir, normalize(t.pos - player.pos)) ≥ cos(halfCone)   // XZ
 losClear(player.pos, t.pos, arena.colliders)        // без «рентгена» сквозь стены
 ```
 
-- `aimDir = (sin(aimYaw), 0, cos(aimYaw))` — то же направление, что у `TankEntity.aimDir` (см. [[Tank_Aim]]).
+- `aimDir` в тесте — **горизонтальная (XZ) ось взгляда** `(sin(aimYaw), cos(aimYaw))`:
+  это XZ-проекция `Tank.aimDir`. Вертикальный тангаж ствола (`barrelPitch`,
+  [[Vertical_Auto_Aim]]) на выбор подсветки не влияет — цель отбирается строго по
+  азимуту, дальности и LOS (см. [[Tank_Aim]]).
 - Полуугол конуса (`aimConeRadFor`):
   - пушка / рельса: `TARGET_HIGHLIGHT.coneRad` ≈ **4°**;
   - огнемёт: `WEAPON_TUNING.flamethrower.coneAngle * 0.5` = **22.5°** (подсветка

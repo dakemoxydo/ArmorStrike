@@ -10,6 +10,8 @@ import { RingSystem } from './RingSystem';
 import { CoreSystem } from './CoreSystem';
 import { ScorchSystem } from './ScorchSystem';
 import { MuzzleSystem } from './MuzzleSystem';
+import { TrackMarkPool } from './TrackMarkPool';
+import { DriveDustPool } from './DriveDustPool';
 import type { LightRig } from './LightRig';
 
 export class ParticleEffects {
@@ -21,6 +23,8 @@ export class ParticleEffects {
   private core: CoreSystem;
   private scorch_: ScorchSystem;
   private muzzle_: MuzzleSystem;
+  private trackMarks: TrackMarkPool;
+  private driveDust: DriveDustPool;
 
   private tmpCol = new THREE.Color();
   /** Reusable color for burst calls (avoids per-call new THREE.Color()). */
@@ -43,6 +47,8 @@ export class ParticleEffects {
     this.core = new CoreSystem(scene, sphereGeo);
     this.scorch_ = new ScorchSystem(scene, circleGeo);
     this.muzzle_ = new MuzzleSystem(scene);
+    this.trackMarks = new TrackMarkPool(scene);
+    this.driveDust = new DriveDustPool(scene);
 
     this.systems = [
       this.sparks,
@@ -52,6 +58,8 @@ export class ParticleEffects {
       this.core,
       this.muzzle_,
       this.scorch_,
+      this.trackMarks,
+      this.driveDust,
     ];
   }
 
@@ -134,8 +142,14 @@ export class ParticleEffects {
     this.smoke.spawn(p, 1, 1.0, true);
   }
 
-  tankDust(p: THREE.Vector3) {
-    this.smoke.spawn(p, 1, 0.7, false);
+  private static readonly _defaultDustVel = new THREE.Vector3(0, 0.9, 0);
+
+  tankDust(p: THREE.Vector3, vel?: THREE.Vector3, scale?: number) {
+    this.driveDust.spawn(p, vel ?? ParticleEffects._defaultDustVel, scale ?? 0.5);
+  }
+
+  trackMark(p: THREE.Vector3, yaw: number, width?: number, length?: number, intensity?: number) {
+    this.trackMarks.spawn(p, yaw, width, length, intensity);
   }
 
   debris(p: THREE.Vector3, color: number, n = 14) {
@@ -147,11 +161,13 @@ export class ParticleEffects {
     for (const sys of this.systems) sys.update(dt);
   }
 
-  /** Hide smoke/scorch/flash without freeing pools (round start, L-1). */
+  /** Hide smoke/scorch/flash/marks without freeing pools (round start, L-1). */
   clearTransients() {
     this.smoke.clear();
     this.scorch_.clear();
     this.flash.clear();
+    this.trackMarks.clear();
+    this.driveDust.clear();
   }
 
   dispose() {

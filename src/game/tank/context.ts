@@ -10,6 +10,11 @@ export interface TankBuildContext {
   /** Recessed detail material: grilles, louvers, rubber, track shadows. */
   darkMat: THREE.MeshStandardMaterial;
   lampMat: THREE.MeshBasicMaterial;
+  trackLeftTex?: THREE.CanvasTexture;
+  trackRightTex?: THREE.CanvasTexture;
+  trackLeftMat?: THREE.MeshStandardMaterial;
+  trackRightMat?: THREE.MeshStandardMaterial;
+  /** Legacy alias for tests / single-texture references */
   trackTex: THREE.CanvasTexture;
   trackMat: THREE.MeshStandardMaterial;
   group: THREE.Group;

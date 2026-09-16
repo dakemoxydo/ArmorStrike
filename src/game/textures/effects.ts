@@ -51,6 +51,43 @@ export function scorchTexture(): THREE.CanvasTexture {
   });
 }
 
+/** Shared track mark map — one GPU texture for all tank ground imprint marks. */
+export function trackMarkTexture(): THREE.CanvasTexture {
+  return cachedTexture('trackMark', () => {
+    const S = 128;
+    const { c, ctx } = makeCanvas(S);
+    ctx.clearRect(0, 0, S, S);
+
+    // Tread bands (horizontal cleats / lugs across the track segment)
+    const lugs = 6;
+    const lugH = S / (lugs * 2);
+    for (let i = 0; i < lugs; i++) {
+      const y = (i * 2 + 0.5) * lugH;
+      // Left tread block with soft edge
+      const gLeft = ctx.createLinearGradient(8, y, S * 0.46, y);
+      gLeft.addColorStop(0, 'rgba(28,26,24,0.15)');
+      gLeft.addColorStop(0.25, 'rgba(28,26,24,0.85)');
+      gLeft.addColorStop(1, 'rgba(24,22,20,0.85)');
+      ctx.fillStyle = gLeft;
+      ctx.fillRect(8, y, S * 0.46 - 8, lugH * 0.75);
+
+      // Right tread block with soft edge
+      const gRight = ctx.createLinearGradient(S * 0.54, y, S - 8, y);
+      gRight.addColorStop(0, 'rgba(24,22,20,0.85)');
+      gRight.addColorStop(0.75, 'rgba(28,26,24,0.85)');
+      gRight.addColorStop(1, 'rgba(28,26,24,0.15)');
+      ctx.fillStyle = gRight;
+      ctx.fillRect(S * 0.54, y, S - 8 - S * 0.54, lugH * 0.75);
+
+      // Center guide horn indent / pin
+      ctx.fillStyle = 'rgba(18,16,14,0.5)';
+      ctx.fillRect(S * 0.47, y + lugH * 0.15, S * 0.06, lugH * 0.45);
+    }
+
+    return toTexture(c, 1);
+  });
+}
+
 /** Shared hex grid overlay — atmosphere + city/village rooftops. */
 export function hexTexture(): THREE.CanvasTexture {
   return cachedTexture('hex', () => {

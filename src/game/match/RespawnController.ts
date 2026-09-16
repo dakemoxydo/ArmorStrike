@@ -61,6 +61,8 @@ export class RespawnController {
     tank.yaw = yaw;
     tank.aimYaw = yaw;
     tank.turretYaw = 0;
+    tank.barrelPitch = 0;
+    tank.pitchLocked = false;
     tank.knockback.set(0, 0, 0);
     restoreDeathVisuals(tank);
 

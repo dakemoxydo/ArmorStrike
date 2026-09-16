@@ -15,7 +15,8 @@ export interface EffectsPort {
   trailPuff(p: THREE.Vector3, color: THREE.Color): void;
   boostJet(p: THREE.Vector3, dir: THREE.Vector3, color: number): void;
   tankSmoke(p: THREE.Vector3): void;
-  tankDust(p: THREE.Vector3): void;
+  tankDust(p: THREE.Vector3, vel?: THREE.Vector3, scale?: number): void;
+  trackMark(p: THREE.Vector3, yaw: number, width?: number, length?: number, intensity?: number): void;
   debris(p: THREE.Vector3, color: number, n?: number): void;
 
   addShake(amount: number): void;

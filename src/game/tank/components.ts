@@ -7,6 +7,18 @@ export class TankMotionState {
   yaw = 0;
   turretYaw = 0;
   aimYaw = 0;
+  /**
+   * Текущий угол наклона ствола (тангаж, рад): > 0 — ствол задран вверх,
+   * < 0 — опущен. Считается в TankAimSystem (плавно дотягивается к цели),
+   * пишется в `barrelGroup.rotation.x` (со знаком по оси модели) и в aimDir.
+   */
+  barrelPitch = 0;
+  /** Вход питч-аима: вертикальное смещение точки прицела цели относительно дула. */
+  pitchDy = 0;
+  /** Вход питч-аима: горизонтальная (XZ) дистанция от дула до точки прицела цели. */
+  pitchDistXZ = 0;
+  /** Есть ли в этом тике валидная цель для вертикальной автонаводки. */
+  pitchLocked = false;
   speed = 0;
   throttle = 0;
   steer = 0;
@@ -41,5 +53,17 @@ export class TankBuffState {
 }
 
 export function createTankFxState(): TankFxState {
-  return { hitFlash: 0, healFlash: 0, barrelKick: 0, smokeAcc: 0, dustAcc: 0 };
+  return {
+    hitFlash: 0,
+    healFlash: 0,
+    barrelKick: 0,
+    smokeAcc: 0,
+    dustAcc: 0,
+    trackDist: 0,
+    pitch: 0,
+    pitchVel: 0,
+    roll: 0,
+    rollVel: 0,
+    prevSpeed: 0,
+  };
 }

@@ -67,6 +67,9 @@ export async function createTankEntity(input: TankBuildInput): Promise<TankEntit
     damage: Math.round(turret.damage * (input.damageScale ?? 1)),
     shotCooldown: turret.shotCooldown * (input.shotCooldownScale ?? 1),
     weaponType: turret.weaponType, range: turret.range,
+    elevationAngle: turret.elevationAngle,
+    depressionAngle: turret.depressionAngle,
+    pitchSpeed: turret.pitchSpeed,
   };
   const visual = await buildTankMesh(input.style, input.hullId, input.turretId);
   const entity = new TankEntity(input.name, input.isPlayer, params, visual);

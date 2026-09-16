@@ -65,7 +65,7 @@ if (shell.rail || barrel.rail) {
 
 ## 4. Контракты анимации
 
-`barrelGroup` анимируется тремя системами, и геометрия ствола должна им
+`barrelGroup` анимируется несколькими системами, и геометрия ствола должна им
 не мешать:
 
 | Что | Кто | Ограничение |
@@ -73,6 +73,7 @@ if (shell.rail || barrel.rail) {
 | `position.z = BARREL_REST_Z - kick*0.4` | `TankAnimationSystem` (каждый кадр) | ствол садится на Z = 0.55 в покое; у всех башен одинаково |
 | `position.y` (damp к `BARREL_REST_Y` = 0.5) | `railgunChargeFx` (только рельсотрон) | для рельсотрона `barrelY` обязан быть 0.5 |
 | `position.x` jitter | `railgunChargeFx` (только рельсотрон) | x = 0 в покое |
+| `rotation.x = -barrelPitch` | `TankAnimationSystem` (живой, каждый кадр) | вертикальная автонаводка: наклон ствола к цели в пределах УВН. Знак «−» (ствол смотрит +Z, поворот вокруг +X роняет дуло); `barrelPitch = 0` ⇒ `rotation.x = 0` — см. [[Vertical_Auto_Aim]] |
 | `rotation.x = 0.3` | `TankAnimationSystem.animateDeath` | ствол «роняется» вниз при гибели — мантет и ствол как единое целое |
 
 Поэтому:

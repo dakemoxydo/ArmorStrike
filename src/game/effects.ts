@@ -44,7 +44,10 @@ export class Effects implements EffectsPort {
   trailPuff(p: THREE.Vector3, color: THREE.Color) { this.particles.trailPuff(p, color); }
   boostJet(p: THREE.Vector3, dir: THREE.Vector3, color: number) { this.particles.boostJet(p, dir, color); }
   tankSmoke(p: THREE.Vector3) { this.particles.tankSmoke(p); }
-  tankDust(p: THREE.Vector3) { this.particles.tankDust(p); }
+  tankDust(p: THREE.Vector3, vel?: THREE.Vector3, scale?: number) { this.particles.tankDust(p, vel, scale); }
+  trackMark(p: THREE.Vector3, yaw: number, width?: number, length?: number, intensity?: number) {
+    this.particles.trackMark(p, yaw, width, length, intensity);
+  }
   debris(p: THREE.Vector3, color: number, n = 14) { this.particles.debris(p, color, n); }
 
   addShake(amount: number) { this.shake.add(amount); }

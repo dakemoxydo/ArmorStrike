@@ -668,6 +668,12 @@
   box-shadow:
     0 0 0 1.5px rgba(0, 0, 0, 0.9),
     0 0 var(--glow-r-xs) rgba(var(--glow), 0.95);
+  /* Плавный вход/выход состояний (заряд + захват): transition покрывает и цвет,
+     и трансформацию; сам рамп заряда идёт медленно, так что задержка незаметна. */
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 .cross-core .ch-ring {
   position: absolute; inset: 8px;
@@ -706,6 +712,10 @@
   position: absolute;
   background: #2ee6c0;
   box-shadow: 0 0 var(--glow-r-xs) rgba(var(--glow), 0.8);
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 .ch-tick.t { left: 50%; top: 0; width: 2px; height: 8px; transform: translateX(-50%); }
 .ch-tick.b { left: 50%; bottom: 0; width: 2px; height: 8px; transform: translateX(-50%); }
@@ -748,6 +758,39 @@
 }
 .crosshair.is-charged .cross-core {
   filter: drop-shadow(0 0 6px #8fffe8) brightness(1.3);
+}
+
+/* --- боевой захват цели (вертикальная автонаводка): красный прицел + смыкание ---
+   Цель в секторе УВН + прямая LOS → `.is-locked` (useGameHud). Мятно-бирюзовый
+   прицел переключается на danger-красный #ff2d3c с неоновым свечением, засечки
+   плавно стягиваются к центру. Зарядка рельсы (:not(.is-charging)) остаётся
+   своей анимацией — два состояния не спорят за transform. */
+.crosshair.is-locked .cross-core .ch-dot {
+  background: #ff2d3c;
+  box-shadow:
+    0 0 0 1.5px rgba(0, 0, 0, 0.95),
+    0 0 var(--glow-r-xs) rgba(255, 45, 60, 0.95),
+    0 0 var(--glow-r-sm) rgba(255, 45, 60, 0.45);
+}
+.crosshair.is-locked .cross-core .ch-tick {
+  background: #ff2d3c;
+  box-shadow: 0 0 var(--glow-r-xs) rgba(255, 45, 60, 0.9);
+}
+.crosshair.is-locked .cross-core .ch-ring {
+  border-color: rgba(255, 45, 60, 0.85);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 0 var(--glow-r-xs) rgba(255, 45, 60, 0.5);
+}
+.crosshair.is-locked:not(.is-charging) .cross-core .ch-tick.t {
+  transform: translateX(-50%) translateY(6px);
+}
+.crosshair.is-locked:not(.is-charging) .cross-core .ch-tick.b {
+  transform: translateX(-50%) translateY(-6px);
+}
+.crosshair.is-locked:not(.is-charging) .cross-core .ch-tick.l {
+  transform: translateY(-50%) translateX(6px);
+}
+.crosshair.is-locked:not(.is-charging) .cross-core .ch-tick.r {
+  transform: translateY(-50%) translateX(-6px);
 }
 
 /* --- Gauss target-anchored lock-on reticle & filling circle --- */
@@ -1323,6 +1366,12 @@
   .score-progress i,
   .death-bar i,
   .sb-hp > div {
+    transition: none;
+  }
+  /* Захват цели прицела: под reduced motion засечки не «стягиваются» —
+     смена цвета и положения мгновенна. */
+  .crosshair .ch-dot,
+  .crosshair .ch-tick {
     transition: none;
   }
   /* Тосты (виньетка / дуга / хитмаркер / фраг / серия) статичны, но состояние

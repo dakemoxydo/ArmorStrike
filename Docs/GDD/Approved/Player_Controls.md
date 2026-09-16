@@ -2,7 +2,7 @@
 
 **Статус:** Approved  
 **Слой:** Presentation / Input  
-**Связано:** [[Tank_Movement]], [[Tank_Aim]], [[Game_Lifecycle]]
+**Связано:** [[Tank_Movement]], [[Tank_Aim]], [[Vertical_Auto_Aim]], [[Target_Highlight_Aim]], [[Game_Lifecycle]]
 
 ## Назначение
 
@@ -26,9 +26,12 @@
 
 - Камера следует за мышью (`CameraLookState.applyPointerDelta`).
 - Башня целится туда же, куда смотрит камера (`aimYaw` = look yaw).
-- Выстрел летит **горизонтально** от дула: `aimDir = (sin(aimYaw), 0, cos(aimYaw))`
-  (`Tank.aimDir`, общий для пушки/рельсы/огнемёта). Взгляд камеры с pitch —
-  это только yaw + ориентир, баллистику pitch не задаёт.
+- Направление выстрела — полный **3D-вектор** `aimDir = (sin(aimYaw)·cos p, sin p,
+  cos(aimYaw)·cos p)` (`Tank.aimDir`, общий для пушки/рельсы/огнемёта/гаусса/изиды),
+  где `p = barrelPitch` — наклон ствола **вертикальной автонаводкой** к захваченной
+  цели ([[Vertical_Auto_Aim]]). Вертикальное движение мыши (`pitch` взгляда) в
+  баллистику напрямую не входит: оно поднимает только камеру, а ствол наводится
+  автоматически по конусу+LOS. Без захвата (`barrelPitch = 0`) выстрел горизонтален.
 - Прицел HUD **не** фиксирован в центре экрана: каждый кадр он ставится на
   точку реальной остановки выстрела. `GameLoop.updateCrosshair` берёт дуло
   (`muzzleWorld`), считает дистанцию трассы `reticleImpactDistance`
@@ -45,6 +48,9 @@
   `hudRenderGate`, DOM (`style.left/top` у `.crosshair`) красит `useGameHud`
   каждый кадр без ре-рендера. Вне `playing` / при смерти / на паузе
   дефолт — 50/50 (сам прицел в эти состояния скрыт).
+- Захват цели автонаводкой показывается в том же прицеле: `HudSnapshot.isTargetLocked`
+  (тот же `AimHighlighter`-захват, что наклоняет ствол) → класс `.is-locked`
+  (красный + смыкание засечек) вешает `useGameHud` без ре-рендера ([[Vertical_Auto_Aim]]).
 
 ## Pointer Lock
 

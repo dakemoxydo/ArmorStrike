@@ -10,7 +10,9 @@ export async function buildTankMesh(
   turretId: TurretId = 'railgun',
 ): Promise<TankVisual> {
   const result = await TankFactory.build(hullId, turretId, style);
-  const { hull, turret, group, barrelGroup, muzzle, bodyMats, trackTex } = result;
+  const {
+    hull, turret, group, barrelGroup, muzzle, bodyMats, trackLeftTex, trackRightTex, trackTex,
+  } = result;
 
   // Явно из фабрики: индекс в bodyMats плавает (у model-корпуса впереди мат. модели).
   const metalMat = result.metalMat;
@@ -57,6 +59,8 @@ export async function buildTankMesh(
     bodyMats,
     // Снимок до первого кадра FX — материалы уже финальные.
     bodyBaseColors: bodyMats.map((m) => m.color.getHex()),
+    trackLeftTex,
+    trackRightTex,
     trackTex,
     railGlowMat: result.railGlowMat,
   };

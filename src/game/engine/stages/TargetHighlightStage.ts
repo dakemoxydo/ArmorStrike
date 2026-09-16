@@ -2,11 +2,13 @@
 // Порядок: после PhysicsSystemStage (позиции финальные после разгона коллизий),
 // перед ProjectileStage. Визуал — inverted-hull outline по силуэту модели
 // (modelOutline.ts): не кольцо под танком и не прицел игрока (фидбек P7/P8/P9).
+import * as THREE from 'three';
 import type { Arena } from '../../Arena';
 import type { FrameContext, SimSystem } from './types';
 import { AimHighlighter, aimConeRadFor } from '../../targetHighlight';
 import type { AimCone } from '../../targetHighlight';
 import { TARGET_HIGHLIGHT } from '../../tuning';
+import { TANK } from '../../constants';
 import type { TankEntity } from '../../Tank';
 import { setOutlineIntensity, setTankOutline } from '../../tank/modelOutline';
 
@@ -16,6 +18,8 @@ export class TargetHighlightStage implements SimSystem {
   private readonly hl = new AimHighlighter<TankEntity>();
   private shown: TankEntity | null = null;
   private elapsed = 0;
+  /** Точка прицела залоченной цели (центр корпуса) — переиспользуется, ноль аллокаций. */
+  private readonly _aimPoint = new THREE.Vector3();
 
   constructor(private arena: Arena) {}
 
@@ -29,6 +33,18 @@ export class TargetHighlightStage implements SimSystem {
     } else {
       // Сбрасываем удержание: иначе после респауна «оживает» старая цель.
       this.hl.reset();
+    }
+    // Вертикальная автонаводка игрока: та же залоченная цель (AimHighlighter с
+    // гистерезисом holdSec) задаёт вход тангажа. Без цели — ствол к горизонту.
+    if (target) {
+      this._aimPoint.set(
+        target.position.x,
+        target.position.y + TANK.aimCenterY,
+        target.position.z,
+      );
+      player.setPitchAim(this._aimPoint);
+    } else {
+      player.clearPitchAim();
     }
     this.apply(target);
   }

@@ -1,4 +1,5 @@
 // ===== Стадия: ИИ ботов + CP objective path =====
+import * as THREE from 'three';
 import type { FrameContext, SimSystem } from './types';
 import type { TankEntity } from '../../Tank';
 import type { Arena } from '../../Arena';
@@ -8,6 +9,7 @@ import type { AITarget } from '../../AI';
 import type { Collider } from '../physics';
 import type { TeamId } from '../../match/matchTypes';
 import { allyLineBlockers, pickAiFocus } from '../../match/aiFocus';
+import { TANK } from '../../constants';
 import {
   moveHintForZone,
   pickObjectiveZone,
@@ -44,6 +46,8 @@ export class BotAiStage implements SimSystem {
   private _zoneViews: ObjectiveZoneView[] | null = null;
   /** Shared empty zone list for non-CP modes (no per-frame literal). */
   private readonly _emptyZones: ObjectiveZoneView[] = [];
+  /** Точка прицела цели (центр корпуса) для вертикальной автонаводки бота. */
+  private readonly _aimPoint = new THREE.Vector3();
 
   constructor(
     private bots: BotRoster,
@@ -95,7 +99,7 @@ export class BotAiStage implements SimSystem {
         continue;
       }
 
-      const focus = this.aiFocusForBot(b.tank, p, ctx.tanks, this.arena.colliders);
+      const { focus, canSee } = this.aiFocusForBot(b.tank, p, ctx.tanks, this.arena.colliders);
       let moveHint: { x: number; z: number } | null = null;
 
       // P5: ~50% bots path to capture zones. AIController still aims at focus;
@@ -142,6 +146,19 @@ export class BotAiStage implements SimSystem {
         bounds,
         moveHint,
       });
+      // Вертикальная автонаводка бота: тот же фокус, в который ИИ наводит
+      // башню. Тангаж считается только когда цель видима (canSee) и жива —
+      // иначе ствол возвращается в горизонт (сканирование/погоня вслепую).
+      if (canSee && focus.alive) {
+        this._aimPoint.set(
+          focus.position.x,
+          focus.position.y + TANK.aimCenterY,
+          focus.position.z,
+        );
+        b.tank.setPitchAim(this._aimPoint);
+      } else {
+        b.tank.clearPitchAim();
+      }
       // setFire deferred to WeaponFireStage (fires after the turret sync).
     }
   }
@@ -155,9 +172,9 @@ export class BotAiStage implements SimSystem {
     player: TankEntity,
     tanks: TankEntity[],
     colliders: Collider[],
-  ): AITarget {
+  ): { focus: AITarget; canSee: boolean } {
     const stickyId = this._aiSticky.get(bot.id) ?? -1;
-    const { target } = pickAiFocus({
+    const { target, canSee } = pickAiFocus({
       self: bot,
       candidates: tanks,
       colliders,
@@ -166,12 +183,13 @@ export class BotAiStage implements SimSystem {
     });
     if (!target) {
       this._aiSticky.delete(bot.id);
-      return deadStub(player);
+      return { focus: deadStub(player), canSee: false };
     }
     this._aiSticky.set(bot.id, target.id);
     // Resolve live entity via pre-built map (O(1) instead of tanks.find).
     const ent = this._tankById.get(target.id);
-    return ent ?? deadStub(player);
+    if (!ent) return { focus: deadStub(player), canSee: false };
+    return { focus: ent, canSee };
   }
 
   private zonesAsView(): ObjectiveZoneView[] {

@@ -9,8 +9,11 @@
 | Документ | Механика | Ключевые классы |
 |----------|----------|-----------------|
 | [[Player_Controls]] | Ввод игрока | `PlayerController`, `CameraLookState` |
-| [[Tank_Movement]] | Движение корпуса + нитро | `TankMotionSystem`, `BOOST` |
+| [[Tank_Movement]] | Движение корпуса + нитро + анимация гусениц | `TankMotionSystem`, `TankAnimationSystem`, `BOOST` |
+| [[Tank_Suspension_Dynamics]] | Пружинно-демпферная подвеска, крен/тангаж корпуса, отдача шасси при выстреле, сотрясение | `TankAnimationSystem`, `SUSPENSION_TUNING`, `Tank.onFired` |
+| [[Tank_Tracks_And_Dust]] | Следы гусениц на грунте (500 InstancedMesh) и динамическая пыль шасси (120 InstancedMesh) | `TrackMarkPool`, `DriveDustPool`, `TankFxSystem`, `trackMarkTexture` |
 | [[Tank_Aim]] | Наведение башни | `TankAimSystem` |
+| [[Vertical_Auto_Aim]] | Вертикальная автонаводка (наклон ствола к цели) + захват в прицеле | `TankAimSystem` (`barrelPitch`), `TargetHighlightStage`, `Tank.setPitchAim`/`aimDir` |
 | [[Target_Highlight_Aim]] | Подсветка врага в конусе прицела (P7) | `TargetHighlightStage`, `AimHighlighter`, `modelOutline.ts` |
 | [[Health_And_Regen]] | HP, смерть, респаун (без пассивного регена) | `TankEntity` (`combat`/`fx`), `TankCombatTimersSystem` |
 | [[Damage_System]] | Урон / knockback / блоки | `DamageSystem`, `CombatSystem`, `applyHit` |
@@ -80,3 +83,5 @@
 | Модель vs код для корпуса/башни | `src/game/tank/TankConfig.ts` |
 | Визуал корпуса (процедурный) | `src/game/tank/hull.ts`, `src/game/tank/hullKit.ts` |
 | Визуал башни (процедурный) | `src/game/tank/turret.ts` |
+| Динамика подвески и отдача шасси | `src/game/engine/systems/TankAnimationSystem.ts`, `src/game/tuning.ts` |
+| УВН башни и состояние тангажа ствола | `src/core/catalogData.ts` (`TURRETS`), `src/game/tank/components.ts` |

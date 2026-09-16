@@ -185,6 +185,10 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     turretSpeed: 7.5,
     recoil: WEAPON_TUNING.railgun.knockback,
     range: WEAPON_TUNING.railgun.range,
+    // УВН тяжёлой снайперской пары: умеренные углы, медленный довод ствола.
+    elevationAngle: (22 * Math.PI) / 180, // ≈ +22°
+    depressionAngle: (14 * Math.PI) / 180, // ≈ −14°
+    pitchSpeed: 6.0,
     desc: 'Hitscan-орудие с накоплением заряда и сквозным пробитием нескольких целей.',
     badge: 'СНАЙПЕР',
   },
@@ -199,6 +203,10 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     turretSpeed: 8.5,
     recoil: WEAPON_TUNING.flamethrower.knockback,
     range: WEAPON_TUNING.flamethrower.range,
+    // Огнемёт: ближний бой, широкий сектор, быстрый довод лёгких стволов-насадок.
+    elevationAngle: (30 * Math.PI) / 180, // ≈ +30°
+    depressionAngle: (20 * Math.PI) / 180, // ≈ −20°
+    pitchSpeed: 10.0,
     desc: 'Выпускает раскалённый конус пламени. Непрерывный тиковый урон по геометрии конуса.',
     badge: 'ОГНЕМЁТ',
   },
@@ -213,6 +221,10 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     turretSpeed: 8.0,
     recoil: WEAPON_TUNING.cannon.knockback,
     range: WEAPON_TUNING.cannon.range,
+    // Автопушка: базовые углы из черновика (~+22°/−14°), бодрый довод ствола.
+    elevationAngle: (22 * Math.PI) / 180, // ≈ +22°
+    depressionAngle: (14 * Math.PI) / 180, // ≈ −14°
+    pitchSpeed: 8.0,
     desc: 'Скорострельная крупнокалиберная автопушка с фугасным поражением площади.',
     badge: 'АВТОМАТ',
   },
@@ -227,6 +239,10 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     turretSpeed: 6.5,
     recoil: WEAPON_TUNING.gauss.knockback,
     range: WEAPON_TUNING.gauss.range,
+    // Гаусс: самый тяжёлый ствол — узкий сектор, медленный довод (снайпер).
+    elevationAngle: (18 * Math.PI) / 180, // ≈ +18°
+    depressionAngle: (12 * Math.PI) / 180, // ≈ −12°
+    pitchSpeed: 5.0,
     desc: 'Электромагнитная пушка: беглый огонь навскидку при клике и сокрушительный снайперский залп с автозахватом при удержании.',
     badge: 'СНАЙПЕР',
   },
@@ -243,6 +259,11 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     turretSpeed: 7.5,
     recoil: WEAPON_TUNING.isida.knockback,
     range: WEAPON_TUNING.isida.range,
+    // «Изида»: лёгкая нано-башня, самый широкий сектор и быстрый довод
+    // (луч должен успевать за целью на ближней-средней дистанции).
+    elevationAngle: (32 * Math.PI) / 180, // ≈ +32°
+    depressionAngle: (22 * Math.PI) / 180, // ≈ −22°
+    pitchSpeed: 9.5,
     desc: 'Нано-дуга непрерывного действия: точит броню врага и лечит стрелка (вампирство), в командных режимах ремонтирует союзников. Баллон энергии.',
     badge: 'НАНОЛУЧ',
   },

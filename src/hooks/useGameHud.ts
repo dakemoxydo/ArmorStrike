@@ -206,6 +206,12 @@ export function useGameHud(game: GameApi | null, active: boolean) {
         crossRef.current.style.setProperty('--charge-prog', prog.toFixed(3));
         crossRef.current.classList.toggle('is-charging', isCharging);
         crossRef.current.classList.toggle('is-charged', isCharging && prog >= 0.96);
+        // Захват цели вертикальной автонаводкой → боевой красный прицел с
+        // смыканием засечек (`.is-locked` в hud.css). Только в бою и пока жив.
+        crossRef.current.classList.toggle(
+          'is-locked',
+          s.mode === 'playing' && s.alive && !s.paused && !!s.isTargetLocked,
+        );
       }
 
       // Прицел lock-on (Гаусс), привязанный прямо к захваченному врагу

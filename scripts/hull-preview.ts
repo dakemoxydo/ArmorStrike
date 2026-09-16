@@ -239,7 +239,12 @@ function buildDraws(
 
   const set = hullGeometry(hullId);
   const slotMat: Record<string, THREE.Material> = {
-    body: mBody, metal: mMetal, dark: mDark, track: mTrack, lamp: mLamp,
+    body: mBody,
+    metal: mMetal,
+    dark: mDark,
+    trackLeft: mTrack,
+    trackRight: mTrack,
+    lamp: mLamp,
   };
 
   const stats: string[] = [];

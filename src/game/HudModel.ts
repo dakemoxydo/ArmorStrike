@@ -187,6 +187,7 @@ export class HudModel {
     target.lockTargetX = 50;
     target.lockTargetY = 50;
     target.lockTargetDist = 0;
+    target.isTargetLocked = false;
     target.incomingLock = false;
     return target;
   }

@@ -17,6 +17,9 @@ export interface TankVisual {
    * затирают её белым — иначе accent-металл терял бы свой цвет навсегда.
    */
   bodyBaseColors: number[];
+  trackLeftTex?: THREE.CanvasTexture;
+  trackRightTex?: THREE.CanvasTexture;
+  /** Primary / legacy trackTex reference (alias for trackLeftTex) */
   trackTex: THREE.CanvasTexture;
   railGlowMat?: THREE.MeshStandardMaterial;
 }
@@ -31,6 +34,14 @@ export interface TankParams {
   shotCooldown: number;
   weaponType?: WeaponType;
   range?: number;
+  /**
+   * Вертикальное наведение ствола (УВН) из каталога башни. Опциональны, чтобы
+   * не ломать тестовые двойники, не участвующие в питч-айме; тогда TankAimSystem
+   * держит ствол горизонтально (0). Реальные танки всегда получают значения.
+   */
+  elevationAngle?: number;
+  depressionAngle?: number;
+  pitchSpeed?: number;
 }
 
 /** Представленческое/визуальное состояние танка (только FX), не входит в
@@ -42,4 +53,16 @@ export interface TankFxState {
   barrelKick: number;
   smokeAcc: number;
   dustAcc: number;
+  /** Пройденное расстояние гусениц для спавна отпечатков траков (м). */
+  trackDist?: number;
+  /** Продольный наклон корпуса (pitch, рад): > 0 клевок носом, < 0 приседание на корму. */
+  pitch: number;
+  /** Угловая скорость продольного наклона (рад/с). */
+  pitchVel: number;
+  /** Боковой крен корпуса (roll, рад): крен в виражах и от боковой отдачи. */
+  roll: number;
+  /** Угловая скорость бокового крена (рад/с). */
+  rollVel: number;
+  /** Скорость на предыдущем кадре для оценки мгновенного ускорения (м/с). */
+  prevSpeed: number;
 }

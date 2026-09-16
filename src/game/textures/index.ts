@@ -16,7 +16,7 @@ export {
   duskGlowTexture,
   villageWallTexture,
 } from './village';
-export { glowTexture, smokeTexture, scorchTexture, hexTexture } from './effects';
+export { glowTexture, smokeTexture, scorchTexture, hexTexture, trackMarkTexture } from './effects';
 export { trackTexture, camoTexture } from './tank';
 export { signTexture } from './signs';
 export type { SignStyle } from './signs';

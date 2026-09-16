@@ -35,59 +35,46 @@ interface TrackSpec {
 }
 
 /**
- * Full running gear for one side: link runs, loop ends, sprocket teeth, road
- * wheels with hubs. Wheels are wider than the band, so from the side the band
- * shows between wheel faces instead of hiding them.
+ * Full running gear for one side: continuous closed-loop track belt with UVs mapped along
+ * the perimeter, sprocket teeth, road wheels with rubber tires and steel hubs.
  */
 function buildTrack(b: HullBuilder, side: 1 | -1, s: TrackSpec) {
   const x = side * s.x;
-  const endR = s.wheelR + s.linkH;
-  const bandBottom = s.wheelY - s.wheelR - s.linkH / 2;
-  const bandTop = s.wheelY + s.wheelR + s.linkH / 2;
-  const frontEndZ = s.front - endR * 0.6;
-  const rearEndZ = s.rear + endR * 0.6;
+  const slot: HullSlot = side === -1 ? 'trackLeft' : 'trackRight';
+  const endR = s.wheelR + s.linkH * 0.5;
+  const frontEndZ = s.front - endR * 0.5;
+  const rearEndZ = s.rear + endR * 0.5;
 
-  // Bottom run — discrete links so the tread pattern reads at close range.
-  const bottomFrom = s.rear + endR * 0.5;
-  const bottomTo = s.front - endR * 0.5;
-  const nBottom = Math.max(5, Math.round((bottomTo - bottomFrom) / 0.40));
-  const stepB = (bottomTo - bottomFrom) / nBottom;
-  for (let i = 0; i < nBottom; i++) {
-    b.box(s.width, s.linkH, stepB * 0.78, 'track', x, bandBottom, bottomFrom + stepB * (i + 0.5));
-  }
-
-  // Top run — shorter: it does not wrap the loop ends.
-  const topFrom = s.rear + endR * 1.05;
-  const topTo = s.front - endR * 1.05;
-  const nTop = Math.max(4, Math.round((topTo - topFrom) / 0.40));
-  const stepT = (topTo - topFrom) / nTop;
-  for (let i = 0; i < nTop; i++) {
-    b.box(s.width, s.linkH, stepT * 0.78, 'track', x, bandTop, topFrom + stepT * (i + 0.5));
-  }
+  // Continuous closed track loop: outer tread, inner face, side walls with seamless UVs
+  b.trackLoop(slot, x, s.width, s.linkH, s.wheelR, s.wheelY, frontEndZ, rearEndZ);
 
   // Loop ends: idler (front) and drive sprocket (rear) inside the band.
-  b.wheel(endR, s.width, 14, 'track', x, s.wheelY, frontEndZ);
-  b.wheel(endR, s.width, 14, 'track', x, s.wheelY, rearEndZ);
+  b.wheel(s.wheelR * 0.94, s.width * 0.92, 14, 'dark', x, s.wheelY, frontEndZ);
+  b.wheel(s.wheelR * 0.94, s.width * 0.92, 14, 'dark', x, s.wheelY, rearEndZ);
   b.wheel(s.hubR, s.width + 0.12, 12, 'metal', x, s.wheelY, frontEndZ);
   b.wheel(s.hubR, s.width + 0.12, 12, 'metal', x, s.wheelY, rearEndZ);
-  // Sprocket teeth on the rear rim: wider than the loop disc so they read from
-  // the side, but clamped inside the loop radius — the band's ground contact
-  // line is the lowest point of the hull and teeth must not pierce it.
-  const toothR = endR - 0.07;
+  b.wheel(s.hubR * 0.45, s.width + 0.16, 8, 'dark', x, s.wheelY, frontEndZ);
+  b.wheel(s.hubR * 0.45, s.width + 0.16, 8, 'dark', x, s.wheelY, rearEndZ);
+
+  // Sprocket teeth on the rear rim: inside the loop radius
+  const toothR = endR - 0.05;
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
-    b.box(s.width + 0.16, 0.14, 0.13, 'dark',
+    b.box(s.width + 0.10, 0.12, 0.10, 'metal',
       x, s.wheelY + Math.cos(a) * toothR, rearEndZ + Math.sin(a) * toothR, a, 0, 0);
   }
 
-  // Road wheels + hubs.
-  const firstZ = s.rear + endR * 1.15;
-  const lastZ = s.front - endR * 1.15;
+  // Road wheels + rubber tires + metal hubs
+  const firstZ = rearEndZ + endR * 1.15;
+  const lastZ = frontEndZ - endR * 1.15;
   const n = Math.max(2, s.wheelCount);
   for (let i = 0; i < n; i++) {
     const z = firstZ + (i / (n - 1)) * (lastZ - firstZ);
-    b.wheel(s.wheelR, s.wheelWidth, 12, 'dark', x, s.wheelY, z);
-    b.wheel(s.wheelR * 0.44, s.wheelWidth + 0.06, 8, 'metal', x, s.wheelY, z);
+    // Road wheel outer rubber tire
+    b.wheel(s.wheelR * 0.94, s.wheelWidth, 12, 'dark', x, s.wheelY, z);
+    // Road wheel dish & hub
+    b.wheel(s.wheelR * 0.65, s.wheelWidth + 0.04, 10, 'metal', x, s.wheelY, z);
+    b.wheel(s.wheelR * 0.30, s.wheelWidth + 0.08, 8, 'dark', x, s.wheelY, z);
   }
 }
 
@@ -161,10 +148,13 @@ function buildHunter(b: HullBuilder) {
     b.box(0.22, 0.20, 0.26, 'metal', side * 0.86, 0.70, -2.34);
   }
 
-  // --- Rear stowage bin ---
+  // --- Rear stowage bin & recovery log (бревно для самовытаскивания — канон ТО) ---
   b.box(1.50, 0.44, 0.54, 'body', 0, 2.06, -1.74);
   b.box(1.56, 0.08, 0.60, 'metal', 0, 2.30, -1.74);
   b.rivets(4, 0.035, 'metal', 0, 2.10, -1.46, 1.10, 0, 0);
+  b.cyl(0.10, 0.10, 2.00, 10, 'metal', 0, 1.22, -2.36, 0, 0, Math.PI / 2);
+  b.box(0.10, 0.16, 0.10, 'dark', -0.68, 1.22, -2.34);
+  b.box(0.10, 0.16, 0.10, 'dark', 0.68, 1.22, -2.34);
 
   // --- Side appliqué, tow cable, tool boxes, grab handles ---
   for (const side of [-1, 1] as const) {
@@ -639,7 +629,8 @@ export function buildHull(ctx: TankBuildContext, hullId: HullId) {
     body: ctx.bodyMat,
     metal: ctx.metalMat,
     dark: ctx.darkMat,
-    track: ctx.trackMat,
+    trackLeft: ctx.trackLeftMat ?? ctx.trackMat,
+    trackRight: ctx.trackRightMat ?? ctx.trackMat,
     lamp: ctx.lampMat,
   };
   for (const slot of HULL_SLOTS) {

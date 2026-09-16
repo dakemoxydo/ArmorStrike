@@ -80,6 +80,25 @@ knockback  *= exp(-KNOCKBACK_DECAY * dt)   // KNOCKBACK_DECAY = 5.5
 vel        = Δposition / dt                // для lead ИИ
 ```
 
+### Анимация гусениц (дифференциальное вращение)
+
+Визуальная перемотка непрерывных лент гусениц рассчитывается в `TankAnimationSystem` с учётом линейной и угловой скоростей:
+
+```
+turnDelta = steer * turnSpeed * trackHalfWidth   // trackHalfWidth ≈ 1.45 м
+v_left    = speed + turnDelta
+v_right   = speed - turnDelta
+
+// SCROLL_FACTOR = 1 / nominalLinkLen (0.22 м) ≈ 4.545 м⁻¹ для физической перемотки 1:1 без проскальзывания.
+// 1 тайл текстуры = 1 трак с шевронами грунтозацепов в каноничном стиле Tanki Online.
+trackLeftTex.offset.y  += v_left * dt * (1 / 0.22)
+trackRightTex.offset.y += v_right * dt * (1 / 0.22)
+```
+
+- **Прямой ход (вперёд/назад):** обе гусеницы синхронно перематываются со скоростью танка.
+- **Разворот на месте (нейтраль, speed = 0, steer ≠ 0):** гусеницы вращаются в противоположные стороны.
+- **Поворот в движении:** внешняя гусеница перематывается быстрее, внутренняя — медленнее или в противоход.
+
 ## Коллизии
 
 После motion: `PhysicsSystem` выталкивает круг радиуса `TANK.radius = 1.8` из AABB-стен/блоков и разводит танки (`tankSeparation`).

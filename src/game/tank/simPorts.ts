@@ -28,12 +28,20 @@ export interface PhysicsBody {
   speed: number;
 }
 
-/** Поворот башни к aimYaw. */
+/** Поворот башни к aimYaw + вертикальная автонаводка ствола (barrelPitch). */
 export interface AimBody {
-  params: Pick<TankParams, 'turretSpeed'>;
+  params: Pick<TankParams, 'turretSpeed' | 'elevationAngle' | 'depressionAngle' | 'pitchSpeed'>;
   aimYaw: number;
   yaw: number;
   turretYaw: number;
+  /** Текущий тангаж ствола (рад) — читается/доводится TankAimSystem. */
+  barrelPitch: number;
+  /** Вход питч-аима: есть ли валидная цель в этом тике. */
+  pitchLocked: boolean;
+  /** Вход питч-аима: dy цели относительно дула (рад-аргумент atan2). */
+  pitchDy: number;
+  /** Вход питч-аима: XZ-дистанция до цели (знаменатель atan2). */
+  pitchDistXZ: number;
 }
 
 /** Таймеры боя и обслуживание здоровья: fireTimer, reload, ремонт вне боя. */
@@ -53,7 +61,7 @@ export interface PresentationBody {
   visual: Pick<TankVisual, 'hull' | 'turret'>;
 }
 
-/** Дым повреждений / пыль гусениц. */
+/** Дым повреждений / пыль гусениц / следы траков. */
 export interface FxBody {
   alive: boolean;
   health: number;
@@ -61,8 +69,10 @@ export interface FxBody {
   position: THREE.Vector3;
   speed: number;
   yaw: number;
-  params: Pick<TankParams, 'speed'>;
-  fx: Pick<TankFxState, 'smokeAcc' | 'dustAcc'>;
+  steer?: number;
+  boostActive?: boolean;
+  params: Pick<TankParams, 'speed'> & Partial<Pick<TankParams, 'turnSpeed'>>;
+  fx: Pick<TankFxState, 'smokeAcc' | 'dustAcc'> & Partial<Pick<TankFxState, 'trackDist'>>;
 }
 
 /** Анимация ствола, гусениц, death pose, damage state. */
@@ -72,14 +82,26 @@ export interface AnimBody {
   boostActive: boolean;
   deathT: number;
   speed: number;
+  steer?: number;
+  yaw?: number;
+  turretYaw?: number;
+  /** Текущий тангаж ствола (рад) — пишется в barrelGroup.rotation.x (см. знак). */
+  barrelPitch?: number;
+  knockback?: THREE.Vector3;
+  params?: Pick<TankParams, 'speed' | 'turnSpeed'>;
   health: number;
   maxHealth: number;
   position: THREE.Vector3;
-  fx: Pick<TankFxState, 'barrelKick' | 'hitFlash' | 'healFlash' | 'smokeAcc'>;
+  fx: Pick<TankFxState, 'barrelKick' | 'hitFlash' | 'healFlash' | 'smokeAcc'> &
+    Partial<Pick<TankFxState, 'pitch' | 'pitchVel' | 'roll' | 'rollVel' | 'prevSpeed'>>;
   visual: Pick<
     TankVisual,
     'barrelGroup' | 'turret' | 'bodyMats' | 'bodyBaseColors' | 'ring' | 'trackTex'
-  >;
+  > & {
+    hull?: THREE.Group;
+    trackLeftTex?: THREE.CanvasTexture;
+    trackRightTex?: THREE.CanvasTexture;
+  };
 }
 
 /** Владелец оружия для WeaponSystem. */

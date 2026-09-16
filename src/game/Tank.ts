@@ -3,6 +3,7 @@
 // storage lives in motion / combat / buffs / fx / visual.
 import * as THREE from 'three';
 import { TANK } from './constants';
+import { SUSPENSION_TUNING } from './tuning';
 import type { HullId, TurretId } from '../core/catalog';
 import type { Weapon, WeaponOwner } from './weapons/types';
 import { disposeObject3D } from './resources/disposeObject3D';
@@ -69,6 +70,18 @@ export class TankEntity implements TankLike, WeaponOwner {
   get aimYaw() { return this.motion.aimYaw; }
   set aimYaw(v: number) { this.motion.aimYaw = v; }
 
+  get barrelPitch() { return this.motion.barrelPitch; }
+  set barrelPitch(v: number) { this.motion.barrelPitch = v; }
+
+  get pitchDy() { return this.motion.pitchDy; }
+  set pitchDy(v: number) { this.motion.pitchDy = v; }
+
+  get pitchDistXZ() { return this.motion.pitchDistXZ; }
+  set pitchDistXZ(v: number) { this.motion.pitchDistXZ = v; }
+
+  get pitchLocked() { return this.motion.pitchLocked; }
+  set pitchLocked(v: boolean) { this.motion.pitchLocked = v; }
+
   get speed() { return this.motion.speed; }
   set speed(v: number) { this.motion.speed = v; }
 
@@ -124,9 +137,36 @@ export class TankEntity implements TankLike, WeaponOwner {
     return this.visual.muzzle.getWorldPosition(out);
   }
 
+  /**
+   * Направление выстрела — полный 3D-вектор ствола: азимут `aimYaw` + наклон
+   * `barrelPitch` (положительный = вверх). XZ-проекция остаётся строго вдоль
+   * прицела (её модуль делится на cos pitch), поэтому горизонтальная трасса
+   * снаряда/луча не меняется, добавляется только вертикальная составляющая.
+   */
   aimDir(out: THREE.Vector3): THREE.Vector3 {
-    out.set(Math.sin(this.aimYaw), 0, Math.cos(this.aimYaw));
+    const pitch = this.motion.barrelPitch;
+    const cp = Math.cos(pitch);
+    out.set(Math.sin(this.aimYaw) * cp, Math.sin(pitch), Math.cos(this.aimYaw) * cp);
     return out;
+  }
+
+  /**
+   * Вход вертикальной автонаводки: геометрия к точке прицела `targetCenter`
+   * (мировой центр корпуса цели). dy и XZ-дистанция берутся от дула, как и
+   * вектор выстрела — цель выше дула даёт подъём, ниже — склонение.
+   */
+  setPitchAim(targetCenter: THREE.Vector3): void {
+    this.muzzleWorld(this._pitchTmp);
+    const dx = targetCenter.x - this._pitchTmp.x;
+    const dz = targetCenter.z - this._pitchTmp.z;
+    this.motion.pitchDistXZ = Math.sqrt(dx * dx + dz * dz);
+    this.motion.pitchDy = targetCenter.y - this._pitchTmp.y;
+    this.motion.pitchLocked = true;
+  }
+
+  /** Нет цели — целевой тангаж вернётся к горизонту (0). */
+  clearPitchAim(): void {
+    this.motion.pitchLocked = false;
   }
 
   /** Готовность к выстрелу по базовым условиям (fireTimer). Контракт
@@ -139,8 +179,16 @@ export class TankEntity implements TankLike, WeaponOwner {
     this.fireTimer = this.params.shotCooldown;
     // Visual kick scales with recoil so railgun (≈18) snaps harder than cannon (≈5).
     this.fx.barrelKick = Math.min(2.25, 0.55 + Math.abs(recoil) * 0.07);
-    this.aimDir(this._v);
+    // Отдача в корпус — строго горизонтальна по азимуту прицела. Не берём
+    // aimDir: он теперь 3D (с тангажом), а вертикальной составляющей отдачи
+    // у гусеничной техники быть не должно (и knockback.y всё равно не читается).
+    this._v.set(Math.sin(this.aimYaw), 0, Math.cos(this.aimYaw));
     this.knockback.addScaledVector(this._v, -recoil);
+
+    // Угловой импульс отдачи в подвеску корпуса с учётом угла башни relative to hull:
+    const relTurretYaw = this.turretYaw;
+    this.fx.pitchVel -= Math.cos(relTurretYaw) * recoil * SUSPENSION_TUNING.recoilPitchScale;
+    this.fx.rollVel += Math.sin(relTurretYaw) * recoil * SUSPENSION_TUNING.recoilRollScale;
   }
 
   /** Railgun charge pull-back / external barrel animation driver. */
@@ -167,6 +215,7 @@ export class TankEntity implements TankLike, WeaponOwner {
   }
 
   private _v = new THREE.Vector3();
+  private _pitchTmp = new THREE.Vector3();
 
   dispose(scene: THREE.Scene) {
     this.weapon?.dispose();

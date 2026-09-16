@@ -57,6 +57,11 @@ export interface HudSnapshot {
   lockTargetX?: number;
   lockTargetY?: number;
   lockTargetDist?: number;
+  /**
+   * Цель в секторе вертикальной автонаводки (AimHighlighter: конус + LOS,
+   * с учётом holdSec) — driving the HUD crosshair `.is-locked` state.
+   */
+  isTargetLocked?: boolean;
   /** Входящий снайперский захват (вражеский Гаусс нацелен на игрока). */
   incomingLock?: boolean;
   /** Нано-луч «Изиды»: режим для HUD-статуса и тейнта полосы энергии. */
