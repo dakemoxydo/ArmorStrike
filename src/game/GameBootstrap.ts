@@ -20,6 +20,7 @@ import { PreviewController } from './PreviewController';
 import { GarageInput } from '../ui/GarageInput';
 import { getQualityPreset, loadQuality } from './graphicsQuality';
 import type { GameEvent } from './types';
+import { DamageFloatQueue } from './damageFloats';
 import {
   applyPlayerDeathState,
   shouldAutoPauseOnInterrupt,
@@ -44,6 +45,8 @@ export interface GameContext {
   hudSink: { current: ((hud: import('./types').HudSnapshot) => void) | null };
   /** Live HUD object mutated every frame by GameLoop — same ref as getHud(). */
   hud: import('./types').HudSnapshot;
+  /** Очередь всплывающих чисел (сбрасывается на старте раунда). */
+  floats: DamageFloatQueue;
 }
 
 // ---- Builder: рендер и сцена ----
@@ -101,6 +104,7 @@ function buildDerivedSystems(
   run: RunState,
   emitEvent: (e: GameEvent) => void,
   combat: CombatSystem,
+  floats: DamageFloatQueue,
 ): {
   weaponDeps: WeaponFactoryDeps;
   bots: BotRoster;
@@ -118,6 +122,9 @@ function buildDerivedSystems(
     onSupportScore: (points: number) => {
       if (points > 0) run.score += points;
     },
+    // Числа лечения идут мимо DamageSystem (луч лечит сам), поэтому оружие
+    // пишет в ту же очередь, что и CombatSystem для урона.
+    onDamageFloat: (x, y, z, value, kind, type) => floats.push(x, y, z, value, kind, type),
   };
   const bots = new BotRoster();
   // getMatch filled after GameSimulation construction (see bootstrapGame).
@@ -214,6 +221,7 @@ function buildGameLoop(
   hudModel: HudModel,
   emitEvent: (e: GameEvent) => void,
   previewController: PreviewController,
+  floats: DamageFloatQueue,
 ): {
   gameLoop: GameLoop;
   hudSink: { current: ((hud: import('./types').HudSnapshot) => void) | null };
@@ -231,6 +239,7 @@ function buildGameLoop(
     emit: emitEvent,
     getPreviewVisual: () => previewController.previewVisual,
     onHud: (h) => hudSink.current?.(h),
+    floats,
   });
   return { gameLoop, hudSink, hud };
 }
@@ -245,16 +254,20 @@ export async function bootstrapGame(canvas: HTMLCanvasElement): Promise<GameCont
 
   // eslint-disable-next-line prefer-const -- assigned after CombatSystem closures capture it
   let sim!: GameSimulation;
+  // Очередь всплывающих чисел (п.1): пишут CombatSystem/оружие, читает GameLoop
+  // в конце кадра, когда камера уже финальна.
+  const floats = new DamageFloatQueue();
   const combat = new CombatSystem({
     arena, effects, audio,
     emit: (e) => emitEvent(e),
     onPlayerDeath: () => sim?.onPlayerDeath?.(),
     getMatch: () => sim?.match ?? null,
     getTanks: () => sim?.tanks ?? [],
+    floats,
   });
 
   const { weaponDeps, bots, hudModel, matchHolder } = buildDerivedSystems(
-    scene, arena, effects, audio, projectiles, input, run, emitEvent, combat,
+    scene, arena, effects, audio, projectiles, input, run, emitEvent, combat, floats,
   );
 
   sim = new GameSimulation(arena, effects, projectiles, input, audio, run, combat, bots, hudModel);
@@ -279,7 +292,9 @@ export async function bootstrapGame(canvas: HTMLCanvasElement): Promise<GameCont
 
   const { onResize, onVisibility } = registerWindowHandlers(canvas, renderWorld, cameraRig, sim, input, emitEvent);
   const garageInput = buildGarageInput(canvas, sim, cameraRig, emitEvent);
-  const { gameLoop, hudSink, hud } = buildGameLoop(sim, cameraRig, renderWorld, hudModel, emitEvent, previewController);
+  const { gameLoop, hudSink, hud } = buildGameLoop(
+    sim, cameraRig, renderWorld, hudModel, emitEvent, previewController, floats,
+  );
 
   // Hit-stop / slow-mo — только за убийство ИГРОКОМ. Раньше hitStop() стоял без
   // гейта и морозил матч (TimeScale отдаёт dt = 0) на каждой смерти любого танка:
@@ -308,5 +323,6 @@ export async function bootstrapGame(canvas: HTMLCanvasElement): Promise<GameCont
     onVisibility,
     hudSink,
     hud,
+    floats,
   };
 }

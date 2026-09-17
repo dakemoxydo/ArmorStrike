@@ -7,6 +7,7 @@ import type { PreviewController } from './PreviewController';
 import type { TimeScale } from './effects/TimeScale';
 import type { GameMode, GameEvent } from './types';
 import type { WeaponFactoryDeps } from './PlayerFactory';
+import type { DamageFloatQueue } from './damageFloats';
 import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID, isMapId } from './maps/mapCatalog';
 import { spawnMatchRoster } from './match/rosterSpawn';
@@ -23,6 +24,8 @@ export interface GameModeControllerDeps {
   weaponDeps: WeaponFactoryDeps;
   /** Hit-stop/slow-mo clock (owned by GameLoop) — reset on round start (L-2). */
   timeScale: TimeScale;
+  /** Очередь всплывающих чисел — сбрасывается на старте раунда (без переноса). */
+  floats: DamageFloatQueue;
   emit: (e: GameEvent) => void;
   /** Rebuild minimap static layer after arena map switch. */
   onArenaRebuilt?: () => void;
@@ -115,6 +118,8 @@ export class GameModeController {
     sim.effects.clearTransients();
     sim.input.resetKeys();
     this.d.timeScale.reset();
+    // Числа урона прошлого раунда не переезжают в новый (очередь ещё не спроецирована).
+    this.d.floats.clear();
     previewController.setVisible(false);
 
     const id = isMapId(mapId) ? mapId : DEFAULT_MAP_ID;

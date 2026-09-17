@@ -2,6 +2,7 @@
 import type { TurretId } from '../core/catalog';
 import type { MatchModeId, TeamId, MatchEndReason } from './match/matchTypes';
 import type { BeamMode } from './weapons/types';
+import type { DamageFloatKind } from './damageFloats';
 
 export type GameMode = 'menu' | 'garage' | 'playing' | 'over';
 export type { MatchModeId, TeamId, MatchEndReason };
@@ -95,6 +96,13 @@ export type GameEvent =
   | { type: 'enemyHit'; killed: boolean }
   | { type: 'kill'; victim: string; byPlayer: boolean }
   | { type: 'shotFired' }
+  /**
+   * Всплывающее число урона/лечения (п.1). `x`/`y` — проценты вьюпорта,
+   * спроецированные GameLoop в том же кадре (мировая точка → камера).
+   * HUD рисует их императивным DOM-пулом мимо React-состояния, поэтому канал
+   * не участвует в гейте ререндеров (`ui/hudRenderGate.ts`).
+   */
+  | { type: 'damageFloat'; x: number; y: number; value: number; kind: DamageFloatKind }
   | { type: 'killStreak'; count: number; label: string }
   | {
       type: 'gameOver';

@@ -3,6 +3,20 @@ import type { HullId, TurretId } from '../../core/catalog';
 import type { TankStyle } from '../../core/types';
 import type { TankVisual } from './types';
 import { TankFactory } from './TankFactory';
+import { markShared } from '../resources/sharedResources';
+
+/**
+ * Купол респавн-неуязвимости (п.15). Геометрия не зависит от корпуса/башни →
+ * одна на процесс (`markShared`), материал — на танк (пульс opacity живой,
+ * как у `ring`).
+ */
+let shieldGeometry: THREE.SphereGeometry | null = null;
+function sharedShieldGeometry(): THREE.SphereGeometry {
+  if (!shieldGeometry) {
+    shieldGeometry = markShared(new THREE.SphereGeometry(2.75, 18, 12));
+  }
+  return shieldGeometry;
+}
 
 export async function buildTankMesh(
   style: TankStyle,
@@ -42,8 +56,26 @@ export async function buildTankMesh(
   ring.position.y = 0.03;
   group.add(ring);
 
+  // Щит после респавна: рисуем только дальнюю скорлупу (BackSide) аддитивно —
+  // танк читается «внутри» пузыря, а не под молочно-белым шаром. Виден только
+  // при invulnT > 0 ( TankAnimationSystem ), в покое mesh скрыт → 0 draw call.
+  const shield = new THREE.Mesh(
+    sharedShieldGeometry(),
+    new THREE.MeshBasicMaterial({
+      color: style.glow,
+      transparent: true,
+      opacity: 0,
+      side: THREE.BackSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
+  shield.position.y = 1.25;
+  shield.visible = false;
+  group.add(shield);
+
   group.traverse((o) => {
-    if (o instanceof THREE.Mesh && o !== ring) {
+    if (o instanceof THREE.Mesh && o !== ring && o !== shield) {
       o.castShadow = true;
       o.receiveShadow = true;
     }
@@ -56,6 +88,7 @@ export async function buildTankMesh(
     barrelGroup,
     muzzle,
     ring,
+    shield,
     bodyMats,
     // Снимок до первого кадра FX — материалы уже финальные.
     bodyBaseColors: bodyMats.map((m) => m.color.getHex()),

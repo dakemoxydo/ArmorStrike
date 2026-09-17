@@ -22,6 +22,7 @@ import {
   saveCrosshairStyle,
   type CrosshairStyle,
 } from './ui/crosshairStyle';
+import { loadDamageNumbers, saveDamageNumbers } from './ui/damageNumbersSetting';
 import { pickQuickMatch } from './game/quickMatch';
 
 export default function App() {
@@ -51,6 +52,8 @@ export default function App() {
   const [muted, setMuted] = useState(loadMuted);
   /** Пресет прицела из настроек (меню паузы); persist — as2_crosshair. */
   const [crosshair, setCrosshair] = useState<CrosshairStyle>(loadCrosshairStyle);
+  /** Показывать числа урона/лечения (п.1); persist — as2_damage_numbers. */
+  const [damageNumbers, setDamageNumbers] = useState<boolean>(loadDamageNumbers);
   /** startRound асинхронен (GLB-корпуса) — без этого арена молча пустует. */
   const [roundLoading, setRoundLoading] = useState(false);
   /** Видимая ошибка старта раунда (M13b): раньше был только console.error. */
@@ -271,6 +274,11 @@ export default function App() {
     setCrosshair(style);
   }, []);
 
+  const changeDamageNumbers = useCallback((on: boolean) => {
+    saveDamageNumbers(on);
+    setDamageNumbers(on);
+  }, []);
+
   const resume = () => {
     if (!game) return;
     game.togglePause();
@@ -302,7 +310,13 @@ export default function App() {
       <div className="fx-scanlines pointer-events-none absolute inset-0 z-30" />
       <div className="fx-vignette pointer-events-none absolute inset-0 z-10" />
 
-      <HUD game={game} active={uiMode === 'playing' && !hideChrome} crosshair={crosshair} onToggleMute={toggleMute} />
+      <HUD
+        game={game}
+        active={uiMode === 'playing' && !hideChrome}
+        crosshair={crosshair}
+        damageNumbers={damageNumbers}
+        onToggleMute={toggleMute}
+      />
 
       {uiMode === 'playing' && paused && game && snap && !hideChrome && (
         <PauseMenu
@@ -311,6 +325,8 @@ export default function App() {
           stats={{ score: snap.score, kills: snap.kills, timeSec: snap.timeSec }}
           crosshair={crosshair}
           onCrosshair={changeCrosshair}
+          damageNumbers={damageNumbers}
+          onDamageNumbers={changeDamageNumbers}
           onResume={resume}
           onRestart={openModeSelect}
           onGarage={goGarage}

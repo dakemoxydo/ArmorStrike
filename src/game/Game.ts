@@ -72,6 +72,7 @@ export class Game implements GameApi {
       canvas: this.canvas,
       weaponDeps: ctx.weaponDeps,
       timeScale: ctx.gameLoop.timeScale,
+      floats: ctx.floats,
       emit: ctx.emitEvent,
       onArenaRebuilt: () => {
         const c = this.ctx;

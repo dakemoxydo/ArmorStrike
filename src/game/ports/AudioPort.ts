@@ -41,6 +41,8 @@ export interface AudioPort {
   explosion(): void;
   hitEnemy(): void;
   hitPlayer(): void;
+  /** Акцент критического попадания (поверх hitEnemy): звонкий верх + треск. */
+  critHit(): void;
   reload(): void;
   click(): void;
   death(): void;

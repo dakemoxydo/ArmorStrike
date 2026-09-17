@@ -24,6 +24,8 @@ import { fillMuzzleAndAim } from './muzzle';
 import { resolveWeaponDamage } from './weaponDamage';
 import { ownerReloadMul } from './reloadMul';
 import { applyHit } from '../engine/applyHit';
+import { rollCrit } from '../../core/damageRolls';
+import { FLOAT_HEIGHT } from '../damageFloats';
 import { addSupportHeal } from '../scoring';
 import { acquireIsidaTarget, isBeamCandidate, type BeamCone } from './isidaTargeting';
 import { NanoBeamFx } from './NanoBeamFx';
@@ -222,12 +224,16 @@ export class IsidaWeapon implements Weapon {
     // добивающем тике избыток (dmg − остаток HP цели) не применяется и не лечит.
     // Прочие «обнуляющие» условия DamageSystem исключены выше (alive/self/invuln/FF).
     const dealt = Math.min(dmg, Math.max(0, t.health));
+    const hpBefore = t.health;
     applyHit(
       this.deps.damageSystem, t, dealt, this.owner, tmpKnock, tune.knockback,
       (p) => this.deps.effects.trailPuff(p, ATK_COLOR),
       impactPoint(t, tmpImpact),
     );
-    const healed = dealt * tune.vampirism;
+    // Возврат считается от снятых HP, а не от заявленного урона: сопротивление
+    // корпуса по типу урона и крит считает DamageSystem — вампиризм обязан
+    // следовать за ними (щит/поглощение дают 0 возврата автоматически).
+    const healed = Math.max(0, hpBefore - t.health) * tune.vampirism;
     const cap = this.owner.params.maxHealth ?? Number.POSITIVE_INFINITY;
     if (healed > 0 && this.owner.health < cap) {
       this.owner.health = Math.min(cap, this.owner.health + healed);
@@ -235,11 +241,25 @@ export class IsidaWeapon implements Weapon {
   }
 
   private tickHeal(t: BeamTank): void {
+    // Крит лечения крутится по тому же накопителю башни, что и урон: кривая
+    // одна на орудие (WEAPON_TUNING.isida.crit), лечение идёт мимо
+    // DamageSystem, поэтому бросок — здесь.
+    const roll = rollCrit(this.owner.critChance ?? 0, tune.crit, Math.random);
+    this.owner.critChance = roll.nextChance;
+    const amount = tune.healPerSec * tune.tickRate * (roll.crit ? tune.crit.multiplier : 1);
     const before = t.health;
-    t.health = Math.min(t.maxHealth, t.health + tune.healPerSec * tune.tickRate);
+    t.health = Math.min(t.maxHealth, t.health + amount);
     const healed = t.health - before;
     if (t.fx) t.fx.healFlash = 1;
     this.deps.effects.trailPuff(impactPoint(t, tmpImpact), HEAL_COLOR);
+    // Числа лечения видят обе стороны (в отличие от урона): локальному игроку
+    // это либо собственное лечение, либо лечение, которое он налил союзнику.
+    if (healed > 0 && (this.owner.isPlayer || t.isPlayer)) {
+      this.deps.onDamageFloat?.(
+        t.position.x, t.position.y + FLOAT_HEIGHT, t.position.z,
+        healed, roll.crit ? 'critHeal' : 'heal', 'nano',
+      );
+    }
     if (healed > 0 && this.owner.isPlayer) {
       const st = addSupportHeal(this.supportCarry, healed);
       this.supportCarry.carry = st.carry;

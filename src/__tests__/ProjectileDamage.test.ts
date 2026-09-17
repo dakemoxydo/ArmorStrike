@@ -90,7 +90,14 @@ describe('cannon tank-hit damage pipeline (C2)', () => {
 
     expect(target.health).toBe(68);
     expect(onTankDamaged).toHaveBeenCalledTimes(1);
-    expect(onTankDamaged).toHaveBeenCalledWith(target, 32, owner);
+    // Контракт хука: (цель, итог, стрелок, info). У тестового танка нет ни типа
+    // урона, ни кривой крита → множитель 1, crit false, dealt == заявленный урон.
+    expect(onTankDamaged).toHaveBeenCalledWith(target, 32, owner, {
+      type: undefined,
+      crit: false,
+      resistMul: 1,
+      dealt: 32,
+    });
     expect(target.knockback.z).toBeCloseTo(4, 5);
   });
 

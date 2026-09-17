@@ -130,6 +130,16 @@ export class TankEntity implements TankLike, WeaponOwner {
   get timeSinceDamaged() { return this.combat.timeSinceDamaged; }
   set timeSinceDamaged(v: number) { this.combat.timeSinceDamaged = v; }
 
+  /** Накопленный шанс крита (мутируется DamageSystem на попаданиях). */
+  get critChance() { return this.combat.critChance; }
+  set critChance(v: number) { this.combat.critChance = v; }
+
+  // Статика сборки (из каталога) для расчёта урона в core/DamageSystem:
+  // тип урона башни, резисты корпуса, кривая крита орудия.
+  get damageType() { return this.params.damageType; }
+  get damageResist() { return this.params.damageResist; }
+  get critTuning() { return this.params.critTuning; }
+
   get position() { return this.visual.group.position; }
   get maxHealth() { return this.params.maxHealth; }
 

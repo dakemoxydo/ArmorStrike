@@ -43,6 +43,11 @@ export const WEAPON_TUNING = {
     },
     /** Per-pierce impact colors [1st, 2nd, 3rd+]. Bright → dim for penetration feedback. */
     pierceColors: [0x8fffe8, 0x6fe8ff, 0x4ecfe0] as const,
+    /**
+     * Крит: редкие тяжёлые выстрелы копят круто — 4-е попадание подряд
+     * гарантированно критическое (0 → .25 → .5 → .75 → 1).
+     */
+    crit: { step: 0.25, max: 1, multiplier: 1.4 },
   },
   flamethrower: {
     damagePerTick: 5.2,
@@ -55,6 +60,8 @@ export const WEAPON_TUNING = {
     knockback: 1.2,
     particleCount: 160,
     spawnRate: 40,
+    /** Крит: частые тики копят медленно и с низким потолком (иначе DoT критовал бы всегда). */
+    crit: { step: 0.02, max: 0.12, multiplier: 1.5 },
   },
   cannon: {
     damage: 25,
@@ -69,6 +76,8 @@ export const WEAPON_TUNING = {
     botKnockback: 2.0,
     splashRadius: 5.0,
     splashDmg: 12,
+    /** Крит: скорострельная автопушка копит за очередь, потолок — 30%. */
+    crit: { step: 0.06, max: 0.3, multiplier: 1.5 },
   },
   gauss: {
     damage: 65,
@@ -86,6 +95,8 @@ export const WEAPON_TUNING = {
     fireShakeBot: 0.16,
     beamDuration: 0.7,
     arcadeBeamDuration: 0.28,
+    /** Крит: самый тяжёлый выстрел в игре копит быстрее всех, но множитель умеренный. */
+    crit: { step: 0.3, max: 1, multiplier: 1.35 },
   },
   isida: {
     /** Тиковый урон по врагу = damagePerSec × tickRate (канон ТО: 30–66 HP/с, здесь M1–M2). */
@@ -117,6 +128,8 @@ export const WEAPON_TUNING = {
     colorAttack: 0xff2d6b,
     colorHeal: 0x39e6a8,
     colorIdle: 0x2ee6c0,
+    /** Крит: накопитель один на башню — дуга и лечение критуются из него же. */
+    crit: { step: 0.03, max: 0.15, multiplier: 1.4 },
   },
 };
 
@@ -130,6 +143,8 @@ export const HULLS: Record<HullId, HullDef> = {
     turnSpeed: 2.4,
     desc: 'Универсальный средний корпус. Отличное сочетание брони и скорости для любых задач.',
     badge: 'УНИВЕРСАЛ',
+    // Эталонный нейтральный корпус: без контр-пиков, от него меряются остальные.
+    resist: {},
   },
   viking: {
     id: 'viking',
@@ -140,6 +155,9 @@ export const HULLS: Record<HullId, HullDef> = {
     turnSpeed: 3.0,
     desc: 'Штурмовой низкопрофильный корпус. Высокая скорость и манёвренность для быстрых атак.',
     badge: 'ШТУРМОВОЙ',
+    // Навесные экраны держат осколочно-фугасные снаряды, тяжёлый бронебойный
+    // (рельса/гаусс) прошивает низкий профиль насквозь.
+    resist: { ballistic: 0.10, kinetic: -0.15, thermal: 0.05 },
   },
   mammoth: {
     id: 'mammoth',
@@ -150,6 +168,9 @@ export const HULLS: Record<HullId, HullDef> = {
     turnSpeed: 2.2,
     desc: 'Сверхтяжёлая монолитная броня. Повышенная прочность при достойной штурмовой скорости.',
     badge: 'ТЯЖЁЛЫЙ',
+    // Монолит держит кинетику, фугас его расшатывает, а нано-дуга работает прямо
+    // по забронированной площади — по тяжёлому корпусу она больнее.
+    resist: { kinetic: 0.15, ballistic: -0.10, thermal: 0.05, nano: -0.10 },
   },
   speedy: {
     id: 'speedy',
@@ -160,6 +181,9 @@ export const HULLS: Record<HullId, HullDef> = {
     turnSpeed: 3.6,
     desc: 'Сверхлёгкий низкопрофильный корпус-перехватчик. Абсолютная скорость и разворот — ценой меньшей брони.',
     badge: 'ПЕРЕХВАТЧИК',
+    // Брони нет вовсе: любой снаряд проходит «в мясо», зато обгоревший корпус
+    // и нано-луч держат сравнительно хорошо (мало массы — нечему греться).
+    resist: { ballistic: -0.05, kinetic: -0.05, thermal: 0.05, nano: 0.05 },
   },
   titan: {
     id: 'titan',
@@ -170,6 +194,10 @@ export const HULLS: Record<HullId, HullDef> = {
     turnSpeed: 1.9,
     desc: 'Флагман брони: разнесённые экраны, навесная защита лба и самая большая масса в игре. Несокрушимая огневая точка.',
     badge: 'ФЛАГМАН',
+    // Разнесённые экраны + навесная защита гасят и снаряды, и кинетику, и пламя.
+    // Единственная реальная уязвимость — нано-дуга: она «обнуляет» всю эту
+    // многослойную броню, поэтому Изида и есть контр-пик флагмана (−35%).
+    resist: { ballistic: 0.15, kinetic: 0.10, thermal: 0.10, nano: -0.35 },
   },
 };
 
@@ -178,6 +206,7 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     id: 'railgun',
     name: 'Рельсотрон',
     weaponType: 'railgun',
+    damageType: 'kinetic',
     damage: WEAPON_TUNING.railgun.damage,
     shotCooldown: 0,
     magazine: WEAPON_TUNING.railgun.magazine,
@@ -196,6 +225,7 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     id: 'flamethrower',
     name: 'Огнемёт «Firebird»',
     weaponType: 'flamethrower',
+    damageType: 'thermal',
     damage: WEAPON_TUNING.flamethrower.damagePerTick,
     shotCooldown: 0,
     magazine: WEAPON_TUNING.flamethrower.energyMax,
@@ -214,6 +244,7 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     id: 'cannon',
     name: 'Пушка «Смоки»',
     weaponType: 'cannon',
+    damageType: 'ballistic',
     damage: WEAPON_TUNING.cannon.damage,
     shotCooldown: WEAPON_TUNING.cannon.shotCooldown,
     magazine: WEAPON_TUNING.cannon.magazine,
@@ -232,6 +263,7 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     id: 'gauss',
     name: 'Пушка «Гаусс»',
     weaponType: 'gauss',
+    damageType: 'kinetic',
     damage: WEAPON_TUNING.gauss.damage,
     shotCooldown: 0,
     magazine: WEAPON_TUNING.gauss.magazine,
@@ -250,6 +282,7 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     id: 'isida',
     name: 'Башня «Изида»',
     weaponType: 'isida',
+    damageType: 'nano',
     // Тиковый урон (damagePerSec × tickRate): через TankParams.damage идёт
     // волновой scale у ботов (resolveWeaponDamage), как у огнемёта.
     damage: Math.round(WEAPON_TUNING.isida.damagePerSec * WEAPON_TUNING.isida.tickRate),

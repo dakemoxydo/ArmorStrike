@@ -1,7 +1,7 @@
 // ===== МЕНЮ ПАУЗЫ: продолжить, рестарт, гараж, выход, звук, качество, прицел =====
 import { useState } from 'react';
 import {
-  ArrowLeft, Clock3, Home, Monitor, Pause, Play, RefreshCcw,
+  ArrowLeft, Clock3, Hash, Home, Monitor, Pause, Play, RefreshCcw,
   Skull, Trophy, Volume2, VolumeX, Wrench,
 } from 'lucide-react';
 import { HULLS, TURRETS } from '../core/catalog';
@@ -17,6 +17,9 @@ interface PauseMenuProps {
   /** Активный пресет прицела (настройка хранится в App + localStorage). */
   crosshair: CrosshairStyle;
   onCrosshair: (style: CrosshairStyle) => void;
+  /** Показывать числа урона/лечения (п.1); persist — as2_damage_numbers. */
+  damageNumbers: boolean;
+  onDamageNumbers: (on: boolean) => void;
   onResume: () => void;
   onRestart: () => void;
   onGarage: () => void;
@@ -25,7 +28,8 @@ interface PauseMenuProps {
 }
 
 export default function PauseMenu({
-  game, muted, stats, crosshair, onCrosshair, onResume, onRestart, onGarage, onMenu, onToggleMute,
+  game, muted, stats, crosshair, onCrosshair, damageNumbers, onDamageNumbers,
+  onResume, onRestart, onGarage, onMenu, onToggleMute,
 }: PauseMenuProps) {
   const hull = HULLS[game.currentHull];
   const turret = TURRETS[game.currentTurret];
@@ -143,6 +147,18 @@ export default function PauseMenu({
                 </button>
               ))}
             </div>
+            {/* Числа урона/лечения (п.1). Настройка только презентационная:
+                расчёт урона её не видит, отключается для «чистого» боя. */}
+            <button
+              type="button"
+              onClick={() => onDamageNumbers(!damageNumbers)}
+              aria-pressed={damageNumbers}
+              className="btn-game btn-ghost w-full px-4 py-2.5 text-[11px] tracking-wider"
+              title="Всплывающие числа урона и лечения над целями"
+            >
+              <Hash size={14} className="bicon" aria-hidden />
+              <span>{damageNumbers ? 'ЧИСЛА УРОНА ВКЛ' : 'ЧИСЛА УРОНА ВЫКЛ'}</span>
+            </button>
           </div>
 
           {/* Секция 3 — выход. Единственное деструктивное действие, поэтому

@@ -6,6 +6,7 @@ import type { AudioPort } from '../ports/AudioPort';
 import type { ProjectileManager } from '../engine/Projectile';
 import type { LightRig } from '../effects/LightRig';
 import type { DamageSystem, TankLike } from '../../core/types';
+import type { DamageFloatSink } from '../damageFloats';
 
 
 export type { DamageSystem } from '../../core/types';
@@ -111,6 +112,12 @@ export interface WeaponDeps {
    * (паттерн onShotFired: оружие не знает про RunState).
    */
   onSupportScore?: (points: number) => void;
+  /**
+   * Всплывающее число над целью/союзником (п.1). Лечение («Изида») идёт мимо
+   * DamageSystem, поэтому оружие само сообщает мировую точку и величину;
+   * урон по врагам numbers-каналом занимается CombatSystem.
+   */
+  onDamageFloat?: DamageFloatSink;
 }
 
 /**

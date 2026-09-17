@@ -18,6 +18,11 @@ interface HudProps {
   /** Пресет прицела из настроек (значение по умолчанию задан в HudCrosshair). */
   crosshair?: CrosshairStyle;
   /**
+   * Показывать всплывающие числа урона/лечения (п.1). Настройка из меню паузы,
+   * persist — `as2_damage_numbers`.
+   */
+  damageNumbers?: boolean;
+  /**
    * Единый обработчик мьюта (H6): кнопка kill-feed обязана идти через
    * владелец App.muted, иначе «ЗВУК ВКЛ/ВЫКЛ» в PauseMenu инвертируется.
    */
@@ -42,12 +47,12 @@ function winPct(value: number, target: number): number {
   return Math.max(0, Math.min(100, (value / Math.max(1, target)) * 100));
 }
 
-export default function HUD({ game, active, crosshair, onToggleMute }: HudProps) {
+export default function HUD({ game, active, crosshair, damageNumbers, onToggleMute }: HudProps) {
   const {
     snap, feed, vignette, dmgArc, hitmark, showHint, frag, streak,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
-    flameFillRef, ghostRef, lockTargetRef, incomingLockRef,
-  } = useGameHud(game, active);
+    flameFillRef, ghostRef, lockTargetRef, incomingLockRef, floatsRef,
+  } = useGameHud(game, active, damageNumbers !== false);
 
   // Стабильная ссылка: инлайн-стрелка обнуляла бы memo(HudFeed) на каждом кадре.
   // Хук обязан идти до раннего return — порядок хуков не должен меняться.
@@ -144,6 +149,11 @@ export default function HUD({ game, active, crosshair, onToggleMute }: HudProps)
       {inGame && (
         <>
           <MemoRadar mapRef={mapRef} enemiesAlive={st.enemiesAlive} />
+
+          {/* Слой чисел урона/лечения (п.1): React рисует только пустой контейнер,
+              содержимое создаёт императивный пул из ui/damageFloatLayer — иначе
+              каждое попадание провоцировало бы ререндер HUD. */}
+          <div ref={floatsRef} className="damage-floats" aria-hidden />
 
           <div className="anim-up absolute left-1/2 top-5 -translate-x-1/2" style={{ '--d': '0.15s' } as React.CSSProperties}>
             <div className="hud-panel score-panel px-8 py-2.5 text-center" aria-label={scoreLabel}>

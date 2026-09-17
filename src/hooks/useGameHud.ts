@@ -6,6 +6,7 @@ import type { FeedEntry } from '../components/hud/HudFeed';
 import { WEAPONS } from '../core/WeaponCatalog';
 import { isLowHealth, liveRegionKey, liveRegionText } from '../ui/hudPresentation';
 import { hudNeedsRender } from '../ui/hudRenderGate';
+import { createDamageFloatLayer, type DamageFloatLayer } from '../ui/damageFloatLayer';
 
 const _defaultWeapon = WEAPONS.railgun;
 
@@ -49,7 +50,7 @@ const TOAST_MS = {
   streak: 1500,
 } as const;
 
-export function useGameHud(game: GameApi | null, active: boolean) {
+export function useGameHud(game: GameApi | null, active: boolean, showDamageNumbers = true) {
   const [, force] = useReducer((x: number) => x + 1, 0);
   const snap = useRef<HudSnapshot>(createSnapInit());
   const [feed, setFeed] = useState<FeedEntry[]>([]);
@@ -75,9 +76,21 @@ export function useGameHud(game: GameApi | null, active: boolean) {
   const lockTargetRef = useRef<HTMLDivElement>(null);
   /** Предупреждение о входящем снайперском захвате цели. */
   const incomingLockRef = useRef<HTMLDivElement>(null);
+  /** Корень слоя всплывающих чисел (п.1): содержимое создаёт damageFloatLayer. */
+  const floatsRef = useRef<HTMLDivElement>(null);
+  const floatLayerRef = useRef<DamageFloatLayer | null>(null);
+  /** Настройка «числа урона» для обработчика событий (без ре-подписки на клик). */
+  const showNumbersRef = useRef(showDamageNumbers);
   const mmBuf = useRef<MinimapDynamic[]>([]);
   const feedId = useRef(0);
   const lastLiveKey = useRef('');
+
+  useEffect(() => {
+    showNumbersRef.current = showDamageNumbers;
+    // Выключение настройки на лету: уже летящие числа убираются сразу, иначе
+    // «выключенный» канал ещё секунду досматривал бы анимации.
+    if (!showDamageNumbers) floatLayerRef.current?.clear();
+  }, [showDamageNumbers]);
 
   useEffect(() => {
     if (!game) return;
@@ -127,6 +140,24 @@ export function useGameHud(game: GameApi | null, active: boolean) {
         if (el && !el.classList.contains('shot-pulse')) {
           el.classList.add('shot-pulse');
         }
+      } else if (e.type === 'damageFloat') {
+        // Числа урона — императивный DOM-канал (п.1): ни setState, ни
+        // hudNeedsRender. Слой пула создаётся лениво на первое попадание и
+        // пересоздаётся, если React перемонтировал контейнер.
+        if (!showNumbersRef.current) return;
+        const root = floatsRef.current;
+        let layer = floatLayerRef.current;
+        if (layer && layer.root !== root) {
+          layer.dispose();
+          layer = null;
+          floatLayerRef.current = null;
+        }
+        if (!root) return;
+        if (!layer) {
+          layer = createDamageFloatLayer(root);
+          floatLayerRef.current = layer;
+        }
+        layer.spawn(e.x, e.y, e.value, e.kind);
       }
     };
     game.addListener(onEvent);
@@ -134,6 +165,10 @@ export function useGameHud(game: GameApi | null, active: boolean) {
       game.removeListener(onEvent);
       pendingTimers.forEach(clearTimeout);
       clearTimers.clear();
+      // Слой живёт в DOM, который React может размонтировать независимо —
+      // освобождаем таймеры пула явно.
+      floatLayerRef.current?.dispose();
+      floatLayerRef.current = null;
     };
   }, [game]);
 
@@ -286,7 +321,7 @@ export function useGameHud(game: GameApi | null, active: boolean) {
     feed, vignette, dmgArc, hitmark, showHint, frag, streak,
     setFeed, setVignette, setDmgArc, setHitmark, setShowHint, setFrag, setStreak,
     healthRef, healthNumRef, boostRef, reloadRef, crossRef, mapRef, liveRef,
-    flameFillRef, ghostRef, lockTargetRef, incomingLockRef,
+    flameFillRef, ghostRef, lockTargetRef, incomingLockRef, floatsRef,
     mmBuf, feedId,
   };
 }

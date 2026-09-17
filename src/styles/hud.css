@@ -926,6 +926,92 @@
   100% { opacity: 0; }
 }
 
+/* --- всплывающие числа урона и лечения (п.1, канон Tanki по виду) --- */
+/* Слой создаётся императивным пулом (src/ui/damageFloatLayer.ts): React держит
+   только пустой контейнер, ноды добавляются/переиспользуются вне рендера. */
+.damage-floats {
+  position: absolute;
+  inset: 0;
+  z-index: 26;
+  pointer-events: none;
+  overflow: hidden;
+  /* Layout императивных нод изолирован от остального HUD (readback в spawn). */
+  contain: layout style;
+}
+.dmg-float {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  font-family: 'Russo One', sans-serif;
+  font-size: 15px;
+  line-height: 1;
+  white-space: nowrap;
+  color: #eef6ff;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.9),
+    0 0 var(--glow-r-xs) rgba(0, 0, 0, 0.65);
+  will-change: transform, opacity;
+}
+.dmg-float.is-live {
+  animation: dmg-float-rise 0.95s cubic-bezier(0.22, 0.85, 0.3, 1) forwards;
+}
+/* Мелкие тики (огнемёт/дуга) — меньше и живёт короче, чтобы не сливаться в кашу. */
+.dmg-float.is-small { font-size: 12px; color: rgba(238, 246, 255, 0.88); }
+.dmg-float.is-small.is-live { animation-duration: 0.62s; }
+/* Крит — оранжевый и крупнее обычного числа. */
+.dmg-float.is-crit {
+  font-size: 21px;
+  color: #ffab2e;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.9),
+    0 0 var(--glow-r-sm) rgba(255, 171, 46, 0.75);
+}
+/* Добивающий — красный: число совпадает по цвету с хитмаркером убийства. */
+.dmg-float.is-kill {
+  font-size: 23px;
+  color: var(--danger, #ff4d3d);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.9),
+    0 0 var(--glow-r-sm) rgba(255, 77, 61, 0.8);
+}
+/* Лечение — зелёное со знаком «+», крит лечения — голубое (как в Tanki). */
+.dmg-float.is-heal {
+  color: #4fe08a;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.9),
+    0 0 var(--glow-r-xs) rgba(79, 224, 138, 0.6);
+}
+.dmg-float.is-crit-heal {
+  font-size: 21px;
+  color: #58b6ff;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.9),
+    0 0 var(--glow-r-sm) rgba(88, 182, 255, 0.7);
+}
+/* Попадание в респавн-щит (п.15): вместо числа — слово-маркер. */
+.dmg-float.is-immunity {
+  font-size: 12px;
+  letter-spacing: var(--track-wide);
+  color: #8fffe8;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.9),
+    0 0 var(--glow-r-xs) rgba(46, 230, 192, 0.7);
+}
+@keyframes dmg-float-rise {
+  0% { transform: translate(-50%, -50%) scale(0.72); opacity: 0; }
+  16% { transform: translate(-50%, -66%) scale(1.12); opacity: 1; }
+  38% { transform: translate(-50%, -84%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -165%) scale(0.94); opacity: 0; }
+}
+/* Под prefers-reduced-motion: без подъёма и «пружинки» — только проявление. */
+@keyframes dmg-float-still {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  72% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* --- баннер предупреждения о снайперском захвате (Гаусс) --- */
 .incoming-lock-banner {
   position: absolute;
@@ -1355,6 +1441,10 @@
   }
   .loader::before {
     animation: none;
+  }
+  /* Числа урона не «всплывают» — проявление и затухание на месте (п.1). */
+  .dmg-float.is-live {
+    animation-name: dmg-float-still;
   }
   /* Полосы состояния не «догоняют» значение — под reduced motion они должны
      менять ширину мгновенно, а не проигрывать переход. */

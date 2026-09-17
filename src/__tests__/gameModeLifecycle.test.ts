@@ -70,6 +70,7 @@ function makeDeps() {
     canvas: { style: {} } as unknown as HTMLCanvasElement,
     weaponDeps: {} as never,
     timeScale: { reset: vi.fn(() => order.push('timeScale.reset')) },
+    floats: { clear: vi.fn(() => order.push('floats.clear')) },
     emit: vi.fn(),
     onArenaRebuilt: vi.fn(() => order.push('onArenaRebuilt')),
   } as unknown as GameModeControllerDeps & Record<string, unknown>;
@@ -101,6 +102,8 @@ describe('GameModeController round-start reset sequence', () => {
     expect(d.sim.effects.clearTransients).toHaveBeenCalledTimes(1);
     expect(d.sim.input.resetKeys).toHaveBeenCalledTimes(1);
     expect((d.deps as unknown as { timeScale: { reset: () => void } }).timeScale.reset).toHaveBeenCalledTimes(1);
+    // Числа урона прошлого раунда не должны переезжать в новый (п.1).
+    expect((d.deps as unknown as { floats: { clear: () => void } }).floats.clear).toHaveBeenCalledTimes(1);
     expect(d.sim.match.reset).toHaveBeenCalledWith(expect.any(String), { mapId: 'village', scene: d.deps.scene });
     // Shader warm-up runs once per round, under the loading overlay.
     expect(
@@ -122,7 +125,8 @@ describe('GameModeController round-start reset sequence', () => {
     expect(i('clearTanks')).toBeLessThan(i('clearTransients'));
     expect(i('clearTransients')).toBeLessThan(i('input.resetKeys'));
     expect(i('input.resetKeys')).toBeLessThan(i('timeScale.reset'));
-    expect(i('timeScale.reset')).toBeLessThan(i('arena.rebuild'));
+    expect(i('timeScale.reset')).toBeLessThan(i('floats.clear'));
+    expect(i('floats.clear')).toBeLessThan(i('arena.rebuild'));
     expect(i('arena.rebuild')).toBeLessThan(i('onArenaRebuilt'));
     expect(i('onArenaRebuilt')).toBeLessThan(i('resetRun'));
     expect(i('resetRun')).toBeLessThan(i('resetStreaks'));

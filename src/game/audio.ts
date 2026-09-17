@@ -391,6 +391,19 @@ export class AudioFX implements AudioPort {
     this.noise(t, 0.16, 'lowpass', 600, 150, 0.35);
   }
 
+  /**
+   * Акцент критического попадания: звонкий верх (1500→820 Гц) + короткая
+   * металлическая стружка. Крит должен читаться на слух, даже когда числа
+   * урона выключены в настройках.
+   */
+  critHit() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.osc('triangle', t, 0.12, 1500, 820, 0.3);
+    this.osc('sine', t + 0.02, 0.16, 2300, 1500, 0.14);
+    this.noise(t, 0.045, 'highpass', 5200, 2600, 0.2);
+  }
+
   reload() {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;

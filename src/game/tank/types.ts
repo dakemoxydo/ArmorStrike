@@ -1,7 +1,7 @@
 // ===== Типы визуала и параметров танка (без сущности / без buildMesh) =====
 // Вынесены, чтобы разорвать цикл Tank.ts ↔ tank/buildMesh.ts.
 import type * as THREE from 'three';
-import type { WeaponType } from '../../core/catalog';
+import type { CritTuning, DamageType, WeaponType } from '../../core/catalog';
 
 export interface TankVisual {
   group: THREE.Group;
@@ -22,6 +22,12 @@ export interface TankVisual {
   /** Primary / legacy trackTex reference (alias for trackLeftTex) */
   trackTex: THREE.CanvasTexture;
   railGlowMat?: THREE.MeshStandardMaterial;
+  /**
+   * Купол респавн-неуязвимости (п.15): аддитивная сфера вокруг корпуса,
+   * `visible = false` вне щита. Геометрия/материал — на танк (как `ring`),
+   * видимость и пульс ведёт TankAnimationSystem по `invulnT`.
+   */
+  shield?: THREE.Mesh;
 }
 
 export interface TankParams {
@@ -42,6 +48,15 @@ export interface TankParams {
   elevationAngle?: number;
   depressionAngle?: number;
   pitchSpeed?: number;
+  /**
+   * Тип урона башни (ключ таблицы сопротивлений цели) и кривая крита орудия.
+   * Опциональны ради тестовых двойников: без них DamageSystem работает так же,
+   * как до введений контр-пиков (множитель 1, крита нет).
+   */
+  damageType?: DamageType;
+  /** Сопротивления корпуса по типу урона (из `HullDef.resist`). */
+  damageResist?: Partial<Record<DamageType, number>>;
+  critTuning?: CritTuning;
 }
 
 /** Представленческое/визуальное состояние танка (только FX), не входит в

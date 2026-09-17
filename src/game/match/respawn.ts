@@ -11,6 +11,8 @@ export interface Respawnable {
   speed: number;
   boostEnergy: number;
   fireTimer: number;
+  /** Накопленный шанс крита орудия (обнуляется при респавне, как и патроны). */
+  critChance?: number;
 }
 
 /** True when dead long enough to respawn. */
@@ -29,4 +31,7 @@ export function applyRespawnCombat(tank: Respawnable, invulnSec: number): void {
   tank.speed = 0;
   tank.boostEnergy = 1;
   tank.fireTimer = 0;
+  // Накопитель крита сгорает вместе с магазином: возрождение — новая сборка
+  // боя, «раскочегаренный» до смерти шанс давал бы преимущество с первых секунд.
+  tank.critChance = 0;
 }

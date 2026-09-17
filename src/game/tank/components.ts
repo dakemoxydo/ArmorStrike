@@ -40,6 +40,12 @@ export class TankCombatState {
   invulnT = 0;
   /** Время с момента последнего получения урона (для ремонта вне боя). */
   timeSinceDamaged = 999;
+  /**
+   * Накопленный шанс крита этого орудия (доля 0…1). Мутируется DamageSystem при
+   * каждом фактическом попадании: +step, после крита — 0. Сбрасывается при
+   * гибели/респавне (см. applyRespawnCombat).
+   */
+  critChance = 0;
 
   constructor(maxHealth: number) {
     this.health = maxHealth;

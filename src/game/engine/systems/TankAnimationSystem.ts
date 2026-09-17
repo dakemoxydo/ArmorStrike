@@ -35,6 +35,10 @@ function animateDeath(t: AnimBody, dt: number) {
   tintBody(t.visual, k);
   for (const m of t.visual.bodyMats) m.emissive.setScalar(0);
   t.visual.ring.visible = false;
+  if (t.visual.shield) {
+    t.visual.shield.visible = false;
+    (t.visual.shield.material as THREE.MeshBasicMaterial).opacity = 0;
+  }
 }
 
 export const TankAnimationSystem = {
@@ -184,6 +188,26 @@ export const TankAnimationSystem = {
 
       const ringMat = t.visual.ring.material as THREE.MeshBasicMaterial;
       ringMat.opacity = 0.45 + Math.sin(_elapsed * 4 + t.id) * 0.18;
+
+      // Купол респавн-неуязвимости (п.15): пока идёт invulnT, над танком
+      // светится пузырь, в последние доли секунды он мигает — это отсчёт до
+      // момента, когда танк снова начинает получать урон. Скрытый mesh стоит
+      // ноль draw call, поэтому держать его в сцене постоянно безопасно.
+      const shield = t.visual.shield;
+      if (shield) {
+        const invuln = t.invulnT ?? 0;
+        if (invuln > 0) {
+          const mat = shield.material as THREE.MeshBasicMaterial;
+          const pulse = 0.5 + 0.5 * Math.sin(_elapsed * 9 + t.id);
+          const fading = invuln < 0.6 && Math.sin(_elapsed * 26) < 0;
+          mat.opacity = fading ? 0.05 : 0.16 + 0.16 * pulse;
+          shield.scale.setScalar(1 + 0.035 * pulse);
+          if (!shield.visible) shield.visible = true;
+        } else if (shield.visible) {
+          shield.visible = false;
+          (shield.material as THREE.MeshBasicMaterial).opacity = 0;
+        }
+      }
     }
   },
 

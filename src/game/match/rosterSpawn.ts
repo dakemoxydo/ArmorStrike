@@ -78,6 +78,12 @@ export async function makeBot(
   const role = roleForBot(BOT_NORMAL.roleWave, index, bTurret);
 
   const c = botStyleColor(index, teamId);
+  // Личная краска (п.21): в командных режимах корпус — фракционный, поэтому
+  // индивидуальный цвет палитры уходит на акценты башни. В FFA корпус уже
+  // личный, и акценты остаются тёмным металлом.
+  const personal = teamId
+    ? new THREE.Color(COLORS.bots[index % COLORS.bots.length])
+    : undefined;
   const teamTag = teamId === 'alpha' ? 'А' : teamId === 'bravo' ? 'Б' : '';
   const name = teamTag
     ? `${teamTag}-${roleLabel(role).toUpperCase()}-${index + 1}`
@@ -92,7 +98,7 @@ export async function makeBot(
     isPlayer: false,
     hullId: bHull,
     turretId: bTurret,
-    style: buildBotStyle(c),
+    style: buildBotStyle(c, personal),
     healthScale: BOT_NORMAL.healthScale,
     damageScale: BOT_NORMAL.damageScale,
     shotCooldownScale: role === 'standard' ? firePad : 1,
@@ -150,7 +156,11 @@ export async function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): P
     isPlayer: true,
     hullId: ctx.hullId,
     turretId: ctx.turretId,
-    style: buildPlayerStyle(),
+    // П.21: в командных режимах корпус игрока красится в цвет его фракции
+    // (Alpha), как и корпуса союзников-ботов. Кольцо/лампа/антенна (`glow`)
+    // остаются мятными — личная метка «это я» не должна теряться в командном
+    // замесе. В Deathmatch палитра остаётся личной мятной.
+    style: buildPlayerStyle(team ? new THREE.Color(COLORS.teamAlpha) : undefined),
   });
   player.teamId = team ? 'alpha' : null;
   player.kills = 0;

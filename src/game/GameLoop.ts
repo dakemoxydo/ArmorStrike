@@ -10,6 +10,7 @@ import type { HudSnapshot, GameEvent } from './types';
 import type { TankVisual } from './Tank';
 import { TimeScale } from './effects/TimeScale';
 import { reticleImpactDistance } from './aimReticle';
+import type { DamageFloatQueue } from './damageFloats';
 import { clamp } from './engine/physics';
 
 export interface GameLoopDeps {
@@ -25,6 +26,8 @@ export interface GameLoopDeps {
   getPreviewVisual: () => TankVisual | null;
   /** Колбэк для пуша HUD-снапшота в React (вызывается каждый кадр). */
   onHud: (hud: HudSnapshot) => void;
+  /** Очередь всплывающих чисел урона/лечения (проецируется в конце кадра). */
+  floats?: DamageFloatQueue;
 }
 
 /** Тонкая обёртка над requestAnimationFrame: симуляция + рендер + HUD. */
@@ -43,6 +46,7 @@ export class GameLoop {
   private readonly _aimDir = new THREE.Vector3();
   private readonly _impactP = new THREE.Vector3();
   private readonly _lockTargetP = new THREE.Vector3();
+  private readonly _floatP = new THREE.Vector3();
   private _lastLockWarningTime = 0;
 
   constructor(private deps: GameLoopDeps) {}
@@ -114,6 +118,7 @@ export class GameLoop {
       sim.run.mode === 'playing' && sim.input.scoreHeld && !sim.run.paused;
     hudModel.getHud(sim.player, sim.tanks, showScoreboard, hud);
     this.updateCrosshair(hud);
+    this.publishDamageFloats();
     onHud(hud);
 
     renderWorld.render();
@@ -198,5 +203,31 @@ export class GameLoop {
     } else {
       hud.hasLockTarget = false;
     }
+  }
+
+  /**
+   * Числа урона/лечения (п.1): мир → экран. Вызывается ПОСЛЕ `cameraRig.update`
+   * и `updateCrosshair` — камера кадра финальна (тряска/FOV учтены), поэтому
+   * число прилетает туда же, где в этом кадре нарисована цель.
+   *
+   * Точки за камерой и за краем вьюпорта отбрасываются: попадание за спиной не
+   * должно «светить» цифрами из-за кадра. Вне боя очередь drain'ится впустую,
+   * чтобы числа прошлого раунда не переезжали в следующий.
+   */
+  private publishDamageFloats(): void {
+    const q = this.deps.floats;
+    if (!q || q.size === 0) return;
+    const playing = this.deps.sim.run.mode === 'playing';
+    const cam = this.deps.cameraRig.camera;
+    cam.updateMatrixWorld();
+    q.drain((r) => {
+      if (!playing) return;
+      this._floatP.set(r.x, r.y, r.z).project(cam);
+      if (this._floatP.z > 1) return;
+      const x = (this._floatP.x * 0.5 + 0.5) * 100;
+      const y = (-this._floatP.y * 0.5 + 0.5) * 100;
+      if (x < -2 || x > 102 || y < -2 || y > 102) return;
+      this.deps.emit({ type: 'damageFloat', x, y, value: r.value, kind: r.kind });
+    });
   }
 }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { HULLS, TURRETS } from '../core/catalog';
+import { HULLS, TURRETS, WEAPON_TUNING } from '../core/catalog';
 import type { HullId, TurretId, WeaponType } from '../core/catalog';
 import { TankEntity, buildTankMesh } from './Tank';
 import type { TankParams } from './Tank';
@@ -14,6 +14,7 @@ import type { EffectsPort } from './ports/EffectsPort';
 import type { AudioPort } from './ports/AudioPort';
 import type { ProjectileManager } from './engine/Projectile';
 import type { LightRig } from './effects/LightRig';
+import type { DamageFloatSink } from './damageFloats';
 
 export interface WeaponFactoryDeps {
   scene: THREE.Scene;
@@ -24,6 +25,7 @@ export interface WeaponFactoryDeps {
   lights: LightRig;
   onShotFired?: () => void;
   onSupportScore?: (points: number) => void;
+  onDamageFloat?: DamageFloatSink;
 }
 
 export function createWeapon(owner: WeaponOwner, type: WeaponType, deps: WeaponFactoryDeps): Weapon {
@@ -36,6 +38,7 @@ export function createWeapon(owner: WeaponOwner, type: WeaponType, deps: WeaponF
     lights: deps.lights,
     onShotFired: deps.onShotFired,
     onSupportScore: deps.onSupportScore,
+    onDamageFloat: deps.onDamageFloat,
   };
   if (type === 'railgun') return new RailgunWeapon(owner, wdeps);
   if (type === 'flamethrower') return new FlamethrowerWeapon(owner, wdeps);
@@ -70,6 +73,12 @@ export async function createTankEntity(input: TankBuildInput): Promise<TankEntit
     elevationAngle: turret.elevationAngle,
     depressionAngle: turret.depressionAngle,
     pitchSpeed: turret.pitchSpeed,
+    // Контр-пики и крит (п.2/3): берём из каталога 1:1, масштабы волны на них
+    // НЕ влияют (damageScale меняет базовое число, резист/крит — множители).
+    damageType: turret.damageType,
+    // Объект-таблица резистов общая на корпус (только читается) — не клонируем.
+    damageResist: hull.resist,
+    critTuning: WEAPON_TUNING[turret.weaponType].crit,
   };
   const visual = await buildTankMesh(input.style, input.hullId, input.turretId);
   const entity = new TankEntity(input.name, input.isPlayer, params, visual);

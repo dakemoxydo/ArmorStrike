@@ -92,11 +92,13 @@ export interface AnimBody {
   health: number;
   maxHealth: number;
   position: THREE.Vector3;
+  /** Секунды респавн-неуязвимости — видно по куполу щита (п.15). */
+  invulnT?: number;
   fx: Pick<TankFxState, 'barrelKick' | 'hitFlash' | 'healFlash' | 'smokeAcc'> &
     Partial<Pick<TankFxState, 'pitch' | 'pitchVel' | 'roll' | 'rollVel' | 'prevSpeed'>>;
   visual: Pick<
     TankVisual,
-    'barrelGroup' | 'turret' | 'bodyMats' | 'bodyBaseColors' | 'ring' | 'trackTex'
+    'barrelGroup' | 'turret' | 'bodyMats' | 'bodyBaseColors' | 'ring' | 'shield' | 'trackTex'
   > & {
     hull?: THREE.Group;
     trackLeftTex?: THREE.CanvasTexture;
