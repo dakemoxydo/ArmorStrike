@@ -19,8 +19,9 @@
 import * as THREE from 'three';
 import type { TurretId } from '../../core/catalog';
 import type { TankBuildContext } from './context';
-import { BARREL_REST_Y, BARREL_REST_Z } from '../tuning';
+import { BARREL_REST_Z } from '../tuning';
 import { TURRET_SLOTS, TurretBuilder } from './turretKit';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { TurretSlot, TurretSlotSet } from './turretKit';
 
 // ----------------------------------------------------------------- shared kit
@@ -136,86 +137,145 @@ function muzzleBrake(b: TurretBuilder, z: number, len: number, r: number, ribs: 
 // ------------------------------------------------------------------- railgun
 
 /**
- * Sniper. Long, low wedge with a capacitor bustle and a twin-rail barrel.
- * The bustle strips and the barrel rails share the `rail` slot, so the whole
- * weapon lights up as the shot charges.
+ * «Рельсотрон» по референсу Tanki Online (внешняя генерация, v4):
+ * низкий гранёный корпус-экструзия, ствол в ложементе между плоскими
+ * щеками, разгонная катушка, продольные направляющие, хомуты, дульный узел
+ * с кольцом и конусом-эмиттером строго на оси (0, muzzleZ=3.20).
+ * Луч стартует из одной центральной точки; barrelY жёстко 0.5 (заряд).
+ * Экструзии индексируются через mergeVertices — иначе слоты не склеятся.
  */
 function buildRailgun(t: TurretBuilder, g: TurretBuilder): TurretLayout {
-  turretRing(t, 1.22, 1.28);
+  const H = Math.PI / 2;
+  const BARREL_Y = 0.5;   // контракт движка — не менять
+  const MUZZLE_Z = 3.2;   // точка вылета луча в локальных координатах g
 
-  // --- Low wedge shell ---
-  t.box(2.02, 0.52, 2.40, 'body', 0, 0.48, -0.10); // lower shell
-  t.box(1.88, 0.12, 1.75, 'body', 0, 0.80, -0.35); // roof plate
-  // Nose wedge: rear-top corner meets the roof, front-bottom drops to the chin.
-  t.box(1.96, 0.20, 1.35, 'body', 0, 0.92, 0.78, 0.66, 0, 0);
-  t.box(1.80, 0.44, 0.42, 'body', 0, 0.40, 1.16); // lower nose block
-  for (const side of [-1, 1] as const) {
-    t.box(0.10, 0.40, 2.30, 'metal', side * 1.02, 0.50, -0.10); // side appliqué
-    t.box(0.07, 0.07, 2.30, 'dark', side * 1.07, 0.62, -0.10); // weld seam
-    t.rivets(7, 0.035, 'metal', side * 1.05, 0.36, -0.10, 0, 0, 2.10);
-    t.box(0.34, 0.18, 0.52, 'metal', side * 1.04, 0.30, 0.60); // wedge cheek appliqué
+  // ---------- локальные хелперы ----------
+  // Призма: профиль в плоскости XY, выдавлена вдоль Z, центрирована по Z.
+  // mergeVertices индексирует ExtrudeGeometry под мерж слота.
+  const prismZ = (pts: [number, number][], depth: number): THREE.BufferGeometry => {
+    const s = new THREE.Shape();
+    pts.forEach(([x, y], i) => (i === 0 ? s.moveTo(x, y) : s.lineTo(x, y)));
+    s.closePath();
+    const geo = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false });
+    geo.translate(0, 0, -depth / 2);
+    return mergeVertices(geo);
+  };
+  // Пластина: профиль в плоскости ZY (первая координата = Z), толщина вдоль X, центрирована по X
+  const prismX = (pts: [number, number][], thick: number): THREE.BufferGeometry => {
+    const s = new THREE.Shape();
+    pts.forEach(([z, y], i) => (i === 0 ? s.moveTo(z, y) : s.lineTo(z, y)));
+    s.closePath();
+    const geo = new THREE.ExtrudeGeometry(s, { depth: thick, bevelEnabled: false });
+    geo.translate(0, 0, -thick / 2);
+    geo.rotateY(-H); // shape.x -> world Z, extrude -> world X
+    return mergeVertices(geo);
+  };
+  // Восьмиугольный «бронированный» профиль корпуса Танков Онлайн (скошенные рёбра)
+  const armorOct = (hw: number, y0: number, y1: number, ch: number): [number, number][] => [
+    [-hw + ch, y0], [-hw, y0 + ch], [-hw, y1 - ch], [-hw + ch, y1],
+    [ hw - ch, y1], [ hw, y1 - ch], [ hw, y0 + ch], [ hw - ch, y0],
+  ];
+  // =====================================================================
+  //  t — СТАТИЧНАЯ ЧАСТЬ (низкий корпус башни), мировые координаты башни
+  // =====================================================================
+
+  // Погон
+  t.cyl(1.2, 1.2, 0.1, 24, 'dark', 0, 0.05, 0);
+  t.cyl(1.24, 1.24, 0.04, 24, 'metal', 0, 0.02, 0);
+  t.rivetRing(16, 0.03, 'metal', 0, 0.1, 0, 1.1);
+
+  // Основной корпус: низкий гранёный блок, z от -1.6 до 1.2
+  t.add(prismZ(armorOct(1.3, 0.1, 1.05, 0.25), 2.8), 'body', 0, 0, -0.2);
+
+  // Лобовая плита (уже, чуть выступает вперёд) и тёмное гнездо ствола
+  t.add(prismZ(armorOct(1.1, 0.2, 0.95, 0.2), 0.3), 'body', 0, 0, 1.35);
+  t.box(0.8, 0.8, 0.1, 'dark', 0, BARREL_Y, 1.5);
+  t.box(0.9, 0.06, 0.12, 'metal', 0, BARREL_Y + 0.43, 1.5);
+  t.box(0.9, 0.06, 0.12, 'metal', 0, BARREL_Y - 0.43, 1.5);
+
+  // Продольный «хребет» на крыше + скошенный нос хребта
+  t.add(prismZ([[-0.5, 1.05], [-0.5, 1.2], [-0.35, 1.32], [0.35, 1.32], [0.5, 1.2], [0.5, 1.05]], 2.4), 'body', 0, 0, -0.4);
+  t.add(prismX([[0.8, 1.05], [0.8, 1.32], [1.25, 1.05]], 1.0), 'body', 0, 0, 0);
+  t.box(0.7, 0.03, 2.2, 'dark', 0, 1.335, -0.4); // шов на гребне
+
+  // Бортовые экраны (доводят ширину до ~2.9)
+  t.box(0.12, 0.42, 2.0, 'body', -1.38, 0.55, -0.3);
+  t.box(0.12, 0.42, 2.0, 'body',  1.38, 0.55, -0.3);
+  t.box(0.12, 0.05, 2.0, 'dark', -1.38, 0.78, -0.3);
+  t.box(0.12, 0.05, 2.0, 'dark',  1.38, 0.78, -0.3);
+  t.rivets(5, 0.03, 'metal', -1.45, 0.55, -1.1, 0, 0, 0.4);
+  t.rivets(5, 0.03, 'metal',  1.45, 0.55, -1.1, 0, 0, 0.4);
+
+  // Заклёпки по верхним рёбрам брони
+  t.rivets(6, 0.03, 'metal', -1.18, 0.95, -1.4, 0, 0, 0.45);
+  t.rivets(6, 0.03, 'metal',  1.18, 0.95, -1.4, 0, 0, 0.45);
+
+  // Корма: железный блок с жалюзи охлаждения
+  t.add(prismZ(armorOct(1.1, 0.2, 0.95, 0.2), 0.4), 'metal', 0, 0, -1.8);
+  t.louvers(5, 1.2, 0.06, 0.12, 'dark', 0, 0.58, -2.01, 0);
+  t.box(2.0, 0.08, 0.08, 'dark', 0, 0.96, -1.85);
+  t.rivets(4, 0.03, 'metal', -0.9, 0.3, -2.02, 0.6, 0, 0);
+
+  // Энергоячейки (конденсаторы) на кормовой палубе — светятся при заряде
+  for (const sx of [-1, 1]) {
+    const cx = sx * 0.8;
+    t.box(0.34, 0.08, 0.9, 'metal', cx, 1.08, -1.1);                    // ложемент
+    t.cyl(0.17, 0.17, 0.8, 12, 'rail', cx, 1.22, -1.1, H);             // ячейка
+    t.cyl(0.2, 0.2, 0.08, 12, 'metal', cx, 1.22, -0.66, H);            // крышки
+    t.cyl(0.2, 0.2, 0.08, 12, 'metal', cx, 1.22, -1.54, H);
+    t.box(0.42, 0.05, 0.06, 'metal', cx, 1.22, -1.1);                  // стяжка
+    // энергошина от ячейки вперёд, вдоль хребта
+    t.box(0.05, 0.04, 1.7, 'rail', sx * 0.52, 1.14, 0.15);
   }
 
-  // --- Rear capacitor bustle (charges with the shot) ---
-  t.box(1.80, 0.62, 0.90, 'body', 0, 0.62, -1.36);
-  t.box(1.86, 0.09, 0.98, 'metal', 0, 0.96, -1.36);
-  for (const x of [-0.60, 0, 0.60]) {
-    t.cyl(0.20, 0.20, 0.52, 12, 'metal', x, 0.64, -1.90, 0, 0, Math.PI / 2);
-    t.cyl(0.22, 0.22, 0.07, 12, 'dark', x, 0.64, -1.90, 0, 0, Math.PI / 2);
-    t.box(0.44, 0.05, 0.10, 'rail', x, 0.86, -1.90); // capacitor strip
-  }
-  t.box(1.72, 0.05, 0.09, 'rail', 0, 0.92, -1.90); // bus bar ties the banks
-  t.box(1.20, 0.30, 0.34, 'metal', 0, 0.62, -2.06); // armour cover
-  t.rivets(6, 0.035, 'metal', 0, 0.99, -1.36, 1.60, 0, 0);
+  // Прицельный блок (статичная линза)
+  t.box(0.26, 0.18, 0.34, 'metal', -0.72, 1.15, 0.55);
+  t.cyl(0.06, 0.06, 0.04, 10, 'lamp', -0.72, 1.15, 0.73, H);
 
-  // --- Crew hatches, optics, sensor mast ---
-  cupola(t, -0.50, 0.86, -0.62, 0.40);
-  t.cyl(0.32, 0.34, 0.10, 12, 'metal', 0.52, 0.90, -0.52); // loader hatch
-  t.cyl(0.06, 0.06, 0.12, 8, 'metal', 0.52, 0.97, -0.52);
-  optic(t, 0.66, 0.70, 0.62, 0.80); // gunner's sight
-  t.box(0.10, 0.34, 0.10, 'metal', -0.66, 1.00, 0.30); // sensor mast
-  t.box(0.24, 0.14, 0.18, 'metal', -0.66, 1.20, 0.30);
-  t.box(0.14, 0.08, 0.05, 'lamp', -0.66, 1.20, 0.40);
+  // =====================================================================
+  //  g — ПОДВИЖНАЯ ЧАСТЬ (ствол), локальные координаты barrelGroup
+  //  ось ствола = y 0, казённик у z≈0, ствол в +Z, дуло на (0,0,MUZZLE_Z)
+  // =====================================================================
 
-  // --- Cheek details ---
-  for (const side of [-1, 1] as const) {
-    smokeLaunchers(t, side, 0.92, 0.72, 0.42);
-    spareLinks(t, side, 1.06, 0.62, 0.10, 3, 0.28);
-    t.box(0.10, 0.10, 0.50, 'metal', side * 1.02, 0.76, -0.72); // grab handle
-  }
-  basket(t, 1.10, 0.34, 0.44, 0.62, 0.44, -1.72);
-  t.cyl(0.05, 0.06, 0.14, 8, 'metal', 0.86, 0.94, -1.10); // antenna base
+  // Казённик (скрыт в корпусе, виден при отдаче)
+  g.box(0.7, 0.7, 0.8, 'metal', 0, 0, 0.15);
+  g.box(0.5, 0.5, 0.3, 'dark', 0, 0, -0.35);
+  g.rivets(3, 0.03, 'metal', -0.3, 0.36, -0.1, 0.3, 0, 0);
 
-  // --- Mantlet ---
-  t.box(1.04, 0.82, 0.42, 'metal', 0, 0.52, 1.20);
-  t.cyl(0.34, 0.38, 0.22, 14, 'dark', 0, 0.52, 1.34, Math.PI / 2, 0, 0);
-  for (const side of [-1, 1] as const) {
-    t.cyl(0.10, 0.10, 0.50, 10, 'metal', side * 0.56, 0.28, 1.02, Math.PI / 2, 0, 0);
-  }
+  // Коллар — выход ствола из гнезда
+  g.cyl(0.28, 0.32, 0.5, 16, 'metal', 0, 0, 0.9, H);
+  g.cyl(0.34, 0.34, 0.08, 16, 'dark', 0, 0, 1.17, H);
+  g.cyl(0.24, 0.24, 0.12, 16, 'metal', 0, 0, 1.25, H);
 
-  // --- Barrel: open rail housing with twin glowing rails on top, ringed by
-  //     accelerator coils, ending in a focusing array.
-  g.box(0.56, 0.56, 0.66, 'metal', 0, 0, 0.33); // breech
-  g.box(0.42, 0.42, 0.26, 'metal', 0, 0, 0.78); // transition
-  g.pipe(0.17, 0.21, 2.00, 14, 'metal', 0, 0, 1.44); // main bore (spans 0.44..2.44)
-  for (const side of [-1, 1] as const) {
-    g.box(0.11, 0.18, 2.00, 'metal', side * 0.11, 0.18, 1.50); // rail housing
-    g.box(0.06, 0.13, 2.02, 'rail', side * 0.11, 0.20, 1.50); // glowing rail
-  }
-  for (const z of [0.92, 1.22, 1.52, 1.82, 2.12]) {
-    g.box(0.30, 0.07, 0.08, 'metal', 0, 0.26, z); // cross bridge
-  }
-  for (const z of [1.00, 1.35, 1.70, 2.05]) {
-    g.cyl(0.28, 0.28, 0.10, 14, 'metal', 0, 0, z, Math.PI / 2, 0, 0); // coil ring
-    g.cyl(0.22, 0.22, 0.13, 10, 'dark', 0, 0, z, Math.PI / 2, 0, 0);
-  }
-  // Focusing muzzle array
-  g.cyl(0.26, 0.30, 0.16, 14, 'metal', 0, 0, 2.56, Math.PI / 2, 0, 0);
-  g.cyl(0.22, 0.22, 0.18, 12, 'dark', 0, 0, 2.66, Math.PI / 2, 0, 0);
-  g.cyl(0.20, 0.17, 0.12, 12, 'metal', 0, 0, 2.80, Math.PI / 2, 0, 0);
-  g.box(0.05, 0.24, 0.08, 'rail', 0, 0, 2.92); // final emitter
+  // Центральная тонкая трубка (сам «рельс»-канал), z 0.93 .. 3.18
+  g.cyl(0.09, 0.11, 2.25, 12, 'dark', 0, 0, 2.05, H);
 
-  return { barrelY: BARREL_REST_Y, muzzleZ: 3.20 };
+  // Две плоские сужающиеся пластины-направляющие (сэндвич вокруг трубки)
+  const platePts: [number, number][] = [
+    [1.1, -0.26], [1.1, 0.26], [1.4, 0.26], [2.95, 0.14], [2.95, -0.14], [1.4, -0.26],
+  ];
+  g.add(prismX(platePts, 0.07), 'metal', -0.21, 0, 0);
+  g.add(prismX(platePts, 0.07), 'metal',  0.21, 0, 0);
+
+  // Светящиеся направляющие на внутренних гранях пластин (разгораются при заряде)
+  g.box(0.03, 0.08, 1.7, 'rail', -0.165, 0, 2.1);
+  g.box(0.03, 0.08, 1.7, 'rail',  0.165, 0, 2.1);
+  // тонкие продольные проточки на внешних гранях
+  g.box(0.02, 0.05, 1.5, 'rail', -0.255, 0, 2.05);
+  g.box(0.02, 0.05, 1.5, 'rail',  0.255, 0, 2.05);
+
+  // Обжимные хомуты по длине ствола
+  g.box(0.56, 0.54, 0.12, 'metal', 0, 0, 1.45);
+  g.box(0.52, 0.42, 0.08, 'metal', 0, 0, 2.1);
+  g.box(0.48, 0.36, 0.08, 'metal', 0, 0, 2.65);
+  g.rivets(2, 0.025, 'dark', -0.29, 0.2, 1.45, 0.58, 0, 0);
+  g.rivets(2, 0.025, 'dark', -0.29, -0.2, 1.45, 0.58, 0, 0);
+
+  // Дульный узел: короткий металлический наконечник + эмиттер строго на оси
+  g.cyl(0.13, 0.16, 0.22, 12, 'metal', 0, 0, 3.0, H);
+  g.cyl(0.05, 0.07, 0.16, 10, 'rail', 0, 0, MUZZLE_Z - 0.08, H); // кончик на z = MUZZLE_Z
+
+  return { barrelY: BARREL_Y, muzzleZ: MUZZLE_Z };
 }
 
 // -------------------------------------------------------------- flamethrower
@@ -376,182 +436,168 @@ function buildCannon(t: TurretBuilder, g: TurretBuilder): TurretLayout {
 // --------------------------------------------------------------------- gauss
 
 /**
- * Gauss Sniper Turret.
- * Unique electromagnetic combat turret:
- * - Wide faceted stealth superstructure with side heat radiators;
- * - Heavy rear power module with 4 vertical supercapacitors and high-voltage bus bars;
- * - Advanced dual-aperture fire-control sensor pod for long-range auto-lock;
- * - Twin parallel accelerator barrels with 4 synchronized solenoid stages,
- *   longitudinal pulse buses, and central magnetic muzzle convergence yoke.
+ * «Гаусс» по референсу Tanki Online (внешняя генерация, v2):
+ * низкая широкая рубка с маской орудия, откидные «уши»-панели с шинами
+ * заряда, кормовая батарея-барабан, сдвоенный ствол-ускоритель в плоском
+ * кожухе с соленоидами, сходящийся коллиматор на оси (0, muzzleZ=3.0).
+ * Снаряд спавнится из одной центральной точки.
  */
 function buildGauss(t: TurretBuilder, g: TurretBuilder): TurretLayout {
-  turretRing(t, 1.24, 1.30);
+  type Slot = Parameters<TurretBuilder['box']>[3];
+  const PI = Math.PI, H = PI / 2;
+  const BY = 0.5;   // высота оси спарки
+  const MZ = 3.0;   // дуло в локальных координатах g
 
-  // --- Main turret core: wide faceted stealth superstructure ---
-  t.box(2.36, 0.48, 2.10, 'body', 0, 0.44, -0.05); // wide lower hull
-  t.box(2.16, 0.38, 1.76, 'body', 0, 0.82, -0.15); // mid fighting deck
-  t.box(1.86, 0.12, 1.46, 'body', 0, 1.04, -0.22); // upper roof plate
+  // ---------- хелперы ----------
+  const mirror = (fn: (s: number) => void) => { fn(1); fn(-1); };
+  // тор: по умолчанию лежит в XY (кольцо вокруг оси Z)
+  const torus = (b: TurretBuilder, R: number, r: number, seg: number, slot: Slot,
+                 x: number, y: number, z: number, rx = 0, ry = 0, rz = 0) =>
+    b.add(new THREE.TorusGeometry(R, r, 6, seg), slot, x, y, z, rx, ry, rz);
+  // точка на наклонённой панели-«ухе» (локальные смещения lx, ly внутри плоскости панели)
+  const EAR_X = 1.5, EAR_Y = 0.62, EAR_Z = -0.15, EAR_TILT = 0.3;
+  const earPt = (s: number, lx: number, ly: number) => {
+    const a = -s * EAR_TILT;
+    return { x: s * EAR_X + (lx * Math.cos(a) - ly * Math.sin(a)),
+             y: EAR_Y + (lx * Math.sin(a) + ly * Math.cos(a)), a };
+  };
 
-  // Front faceted glacis / nose block
-  t.box(2.04, 0.22, 1.05, 'body', 0, 0.94, 0.58, 0.68, 0, 0); // sloped glacis
-  t.box(2.20, 0.40, 0.50, 'body', 0, 0.42, 1.06); // lower nose chin block
+  // =====================================================================
+  //  СТАТИЧНАЯ ЧАСТЬ (t) — рубка
+  // =====================================================================
 
-  // Lateral stealth cheek bevels & reactive armor (ERA) panels
-  for (const side of [-1, 1] as const) {
-    // Angular side armor skirt
-    t.box(0.16, 0.44, 2.05, 'body', side * 1.20, 0.46, -0.05);
-    // Upper chamfer plate
-    t.box(0.14, 0.32, 1.60, 'body', side * 1.10, 0.82, -0.15, 0, side * 0.08, side * -0.32);
-    // Forward cheek deflectors flanking the trunnion
-    t.box(0.38, 0.36, 0.65, 'metal', side * 1.04, 0.48, 0.70, 0, side * 0.32, 0);
-    // High-voltage power conduits along the flanks
-    t.box(0.06, 0.06, 1.75, 'rail', side * 1.27, 0.58, -0.10);
-    t.box(0.08, 0.08, 1.80, 'dark', side * 1.25, 0.58, -0.10);
-    // High-efficiency cooling louvers for coil discharge heat
-    t.box(0.06, 0.28, 0.84, 'dark', side * 1.24, 0.46, -0.42);
-    t.louvers(6, 0.05, 0.22, 0.13, 'metal', side * 1.25, 0.36, -0.74, Math.PI / 6);
-    // Bolt detailing along the armor seam
-    t.rivets(8, 0.035, 'metal', side * 1.22, 0.30, -0.05, 0, 0, 1.80);
-  }
+  // --- погон ---
+  t.cyl(1.22, 1.22, 0.10, 24, 'dark', 0, 0.05, 0);
+  t.cyl(1.14, 1.20, 0.10, 24, 'metal', 0, 0.15, 0);
+  t.rivetRing(16, 0.035, 'metal', 0, 0.21, 0, 1.08);
 
-  // --- Rear Power Bustle: High-Voltage Supercapacitor Bank ---
-  t.box(2.12, 0.68, 1.05, 'body', 0, 0.66, -1.35);
-  t.box(2.18, 0.10, 1.12, 'metal', 0, 1.02, -1.35);
+  // --- корпус: низкая широкая рубка (потомок «Грома») ---
+  t.box(2.3, 0.32, 2.25, 'body', 0, 0.36, -0.05);                 // нижний пояс
+  t.box(2.0, 0.72, 2.3, 'body', 0, 0.56, -0.05);                  // основной объём
+  mirror(s => t.box(0.14, 0.78, 2.1, 'body', s * 1.06, 0.56, -0.05, 0, 0, s * 0.18)); // скошенные борта
+  t.box(1.9, 0.6, 0.16, 'body', 0, 0.62, 1.12, -0.5, 0, 0);       // лобовая скошенная плита
+  t.box(1.9, 0.6, 0.16, 'body', 0, 0.62, -1.22, 0.4, 0, 0);       // кормовая скошенная плита
+  t.box(1.7, 0.10, 1.9, 'body', 0, 0.94, -0.1);                   // крыша
+  // швы брони
+  t.box(1.72, 0.02, 0.03, 'dark', 0, 0.995, 0.5);
+  t.box(1.72, 0.02, 0.03, 'dark', 0, 0.995, -0.7);
+  mirror(s => t.box(0.03, 0.02, 1.9, 'dark', s * 0.84, 0.995, -0.1));
+  // люк и клёпка
+  t.cyl(0.28, 0.30, 0.08, 10, 'metal', -0.5, 1.02, -0.5);
+  t.rivetRing(8, 0.025, 'dark', -0.5, 1.065, -0.5, 0.22);
+  mirror(s => t.rivets(6, 0.03, 'metal', s * 0.95, 0.9, -0.85, 0, 0, 0.32));
+  t.rivets(7, 0.03, 'metal', -0.75, 0.56, 1.18, 0.25, 0, 0);
 
-  // Top heat exhaust vents on the bustle
-  t.box(1.60, 0.04, 0.72, 'dark', 0, 1.06, -1.35);
-  t.louvers(5, 1.50, 0.04, 0.12, 'metal', 0, 1.07, -1.58, Math.PI / 4);
+  // --- маска орудия (вокруг казённой части спарки) ---
+  t.box(1.15, 0.78, 0.3, 'metal', 0, BY, 1.05);
+  t.cyl(0.48, 0.54, 0.22, 12, 'metal', 0, BY, 1.28, H, 0, 0);
+  t.rivetRing(10, 0.03, 'dark', 0, BY, 1.39, 0.42);
+  mirror(s => t.box(0.18, 0.5, 0.3, 'body', s * 0.62, BY + 0.05, 1.08, 0, 0, s * 0.35)); // скулы маски
 
-  // 4 High-voltage vertical capacitor towers
-  for (const x of [-0.68, -0.23, 0.23, 0.68]) {
-    // Vertical capacitor canister
-    t.cyl(0.17, 0.17, 0.64, 12, 'metal', x, 0.66, -1.95);
-    // Dark ceramic isolation collars
-    t.cyl(0.19, 0.19, 0.08, 12, 'dark', x, 0.48, -1.95);
-    t.cyl(0.19, 0.19, 0.08, 12, 'dark', x, 0.84, -1.95);
-    // Emissive discharge rail on rear face
-    t.box(0.06, 0.50, 0.06, 'rail', x, 0.66, -2.11);
-    // Top terminal electrode cap
-    t.cyl(0.08, 0.08, 0.08, 8, 'metal', x, 1.00, -1.95);
-  }
-
-  // High-voltage inter-tower bus bars
-  t.box(1.72, 0.08, 0.08, 'rail', 0, 0.98, -1.95);
-  t.box(1.52, 0.06, 0.08, 'rail', 0, 0.42, -1.95);
-
-  // Protective cradle and rear bulkhead
-  t.box(1.98, 0.14, 0.36, 'metal', 0, 0.36, -2.04);
-  t.box(0.12, 0.62, 0.32, 'metal', -0.92, 0.66, -1.95);
-  t.box(0.12, 0.62, 0.32, 'metal', 0.92, 0.66, -1.95);
-  t.rivets(8, 0.035, 'metal', 0, 0.38, -2.18, 1.60, 0, 0);
-
-  // --- Targeting & Fire-Control Suite (Lock-on Sensors) ---
-  // Commander stealth cupola
-  cupola(t, -0.54, 1.08, -0.45, 0.36);
-
-  // Gunner/loader maintenance hatch
-  t.cyl(0.28, 0.30, 0.08, 12, 'metal', 0.54, 1.10, -0.40);
-  t.cyl(0.05, 0.05, 0.10, 8, 'metal', 0.54, 1.16, -0.40);
-
-  // Primary Long-Range Auto-Lock Sensor Pod (LIDAR / Optical tracking)
-  t.cyl(0.12, 0.14, 0.18, 10, 'metal', 0.62, 1.07, 0.25); // pedestal
-  t.box(0.38, 0.28, 0.48, 'metal', 0.62, 1.24, 0.25, -0.05, 0, 0); // housing
-  t.box(0.42, 0.08, 0.52, 'dark', 0.62, 1.39, 0.25); // sun hood
-  t.cyl(0.09, 0.09, 0.06, 10, 'lamp', 0.54, 1.24, 0.50, Math.PI / 2, 0, 0); // primary lens
-  t.box(0.10, 0.10, 0.04, 'lamp', 0.70, 1.24, 0.50); // secondary sensor window
-
-  // Secondary tactical rangefinder
-  optic(t, -0.66, 0.96, 0.60, 0.56, 0.11);
-
-  // Sensor / telemetry mast
-  t.cyl(0.04, 0.05, 0.55, 8, 'metal', -0.78, 1.32, -0.15);
-  t.box(0.18, 0.10, 0.12, 'dark', -0.78, 1.58, -0.15);
-  t.box(0.10, 0.05, 0.04, 'lamp', -0.78, 1.58, -0.08);
-
-  // Side smoke grenade launchers & grab handles
-  for (const side of [-1, 1] as const) {
-    smokeLaunchers(t, side, 1.04, 0.88, 0.32);
-    t.box(0.10, 0.10, 0.46, 'metal', side * 1.14, 0.78, -0.65);
-  }
-
-  // Stowage basket on rear bustle
-  basket(t, 1.20, 0.34, 0.44, 0, 0.46, -1.72);
-
-  // --- Mantlet: Wide Reinforced Trunnion for Twin Barrels ---
-  t.box(1.36, 0.74, 0.44, 'metal', 0, 0.52, 1.18);
-  t.box(1.42, 0.10, 0.48, 'dark', 0, 0.86, 1.18);
-  t.box(1.42, 0.10, 0.48, 'dark', 0, 0.18, 1.18);
-  for (const side of [-1, 1] as const) {
-    t.cyl(0.24, 0.26, 0.22, 14, 'dark', side * 0.23, 0.52, 1.36, Math.PI / 2, 0, 0);
-    t.cyl(0.09, 0.09, 0.48, 8, 'metal', side * 0.62, 0.52, 1.12, Math.PI / 2, 0, 0);
-  }
-
-  // --- Barrel Assembly: Twin Electromagnetic Accelerator Barrels ---
-  // Breech & Magnetic Feed Manifold
-  g.box(1.06, 0.54, 0.66, 'metal', 0, 0, 0.33);
-  g.box(0.96, 0.44, 0.28, 'dark', 0, 0, 0.74);
-  g.box(0.30, 0.20, 0.50, 'rail', 0, 0, 0.35); // central power coupling
-
-  const BARREL_X = 0.23;
-  const coilZPositions = [0.95, 1.35, 1.75, 2.15];
-
-  // Twin barrels
-  for (const side of [-1, 1] as const) {
-    const bx = side * BARREL_X;
-
-    // Main structural square rail housing
-    g.box(0.26, 0.26, 2.15, 'metal', bx, 0, 1.55);
-    // Dark central accelerator bore
-    g.pipe(0.09, 0.11, 2.18, 10, 'dark', bx, 0, 1.55);
-
-    // Outer longitudinal guide rails with glowing pulse buses
-    g.box(0.04, 0.12, 1.95, 'metal', bx + side * 0.14, 0, 1.55);
-    g.box(0.03, 0.06, 1.90, 'rail', bx + side * 0.15, 0, 1.55);
-
-    // 4 Solenoid induction stages on this barrel
-    for (const z of coilZPositions) {
-      // Outer reinforced coil collar
-      g.cyl(0.21, 0.21, 0.12, 12, 'metal', bx, 0, z, Math.PI / 2, 0, 0);
-      // Dark ceramic insulation ring
-      g.cyl(0.18, 0.18, 0.16, 10, 'dark', bx, 0, z, Math.PI / 2, 0, 0);
-      // Glowing induction band (emissive rail slot)
-      g.cyl(0.19, 0.19, 0.05, 12, 'rail', bx, 0, z, Math.PI / 2, 0, 0);
+  // --- «уши»: выдвижные антенные панели (главный признак Гаусса) ---
+  mirror(s => {
+    // шарнир и кронштейн
+    t.cyl(0.10, 0.10, 0.55, 10, 'metal', s * 1.16, 0.78, -0.2, H, 0, 0);
+    t.box(0.34, 0.12, 0.42, 'metal', s * 1.3, 0.78, -0.2);
+    t.box(0.34, 0.06, 0.3, 'dark', s * 1.3, 0.7, -0.2);
+    // панель, откинута наружу
+    const c = earPt(s, 0, 0);
+    t.box(0.08, 0.76, 1.4, 'body', c.x, c.y, EAR_Z, 0, 0, c.a);
+    // рамка
+    for (const ly of [0.36, -0.36]) {
+      const p = earPt(s, 0, ly);
+      t.box(0.11, 0.06, 1.46, 'metal', p.x, p.y, EAR_Z, 0, 0, c.a);
     }
+    // торцы
+    t.box(0.11, 0.8, 0.06, 'dark', c.x, c.y, EAR_Z + 0.71, 0, 0, c.a);
+    t.box(0.11, 0.8, 0.06, 'dark', c.x, c.y, EAR_Z - 0.71, 0, 0, c.a);
+    // шины заряда на панели (светятся с обеих сторон)
+    for (const ly of [-0.2, 0, 0.2]) {
+      const p = earPt(s, 0, ly);
+      t.box(0.10, 0.055, 1.22, 'rail', p.x, p.y, EAR_Z, 0, 0, c.a);
+    }
+    // эмиттер-«наконечник» уха
+    const tip = earPt(s, 0, 0);
+    t.cyl(0.05, 0.05, 0.25, 8, 'rail', tip.x, tip.y, EAR_Z + 0.82, H, 0, 0);
+    t.rivets(5, 0.022, 'dark', earPt(s, s * 0.05, -0.3).x, earPt(s, s * 0.05, -0.3).y, -0.7, 0, 0, 0.28);
+  });
 
-    // Muzzle collimator on this barrel
-    g.box(0.28, 0.28, 0.36, 'metal', bx, 0, 2.76);
-    g.pipe(0.11, 0.14, 0.38, 10, 'dark', bx, 0, 2.76);
-    g.box(0.30, 0.06, 0.24, 'dark', bx, 0, 2.76);
-    g.cyl(0.16, 0.18, 0.08, 10, 'metal', bx, 0, 2.96, Math.PI / 2, 0, 0);
-    g.cyl(0.14, 0.14, 0.04, 10, 'rail', bx, 0, 2.99, Math.PI / 2, 0, 0);
+  // --- корма: батарея конденсаторов ускорителя ---
+  t.cyl(0.23, 0.23, 1.7, 12, 'metal', 0, 0.56, -1.42, 0, 0, H);      // главный барабан вдоль X
+  mirror(s => t.cyl(0.26, 0.26, 0.08, 12, 'dark', s * 0.87, 0.56, -1.42, 0, 0, H));
+  for (const x of [-0.6, -0.2, 0.2, 0.6]) torus(t, 0.245, 0.03, 12, 'rail', x, 0.56, -1.42, 0, H, 0);
+  t.cyl(0.14, 0.14, 1.3, 10, 'metal', 0, 0.92, -1.35, 0, 0, H);      // верхний малый барабан
+  for (const x of [-0.4, 0, 0.4]) torus(t, 0.155, 0.025, 10, 'rail', x, 0.92, -1.35, 0, H, 0);
+  t.box(1.5, 0.12, 0.4, 'metal', 0, 0.3, -1.4);                        // полка под барабаном
+  t.louvers(5, 0.8, 0.045, 0.085, 'dark', 0, 0.66, -1.31, 0.4);        // жалюзи охлаждения на корме
+  mirror(s => t.box(0.12, 0.5, 0.5, 'body', s * 0.98, 0.5, -1.35));    // защитные щёки
+
+  // --- шины питания: корма → маска ---
+  mirror(s => {
+    t.pipe(0.05, 0.05, 1.7, 8, 'metal', s * 0.58, 1.0, -0.35);
+    t.box(0.06, 0.04, 1.6, 'rail', s * 0.46, 1.0, -0.3);
+    t.box(0.14, 0.08, 0.12, 'dark', s * 0.52, 1.0, 0.45);
+    t.box(0.14, 0.08, 0.12, 'dark', s * 0.52, 1.0, -1.05);
+  });
+
+  // --- прицельно-следящий блок с линзой ---
+  t.box(0.36, 0.3, 0.55, 'metal', 0.72, 1.1, 0.3);
+  t.box(0.3, 0.22, 0.1, 'dark', 0.72, 1.1, 0.6);
+  t.cyl(0.08, 0.08, 0.06, 10, 'lamp', 0.72, 1.12, 0.64, H, 0, 0);
+  t.cyl(0.04, 0.04, 0.05, 8, 'lamp', 0.62, 1.05, 0.64, H, 0, 0);
+  t.rivets(3, 0.02, 'dark', 0.58, 1.26, 0.1, 0, 0, 0.15);
+  // антенна
+  t.cyl(0.02, 0.035, 0.55, 6, 'metal', -0.85, 1.25, -0.95);
+  t.sphere(0.04, 'rail', -0.85, 1.54, -0.95, 6, 4);
+
+  // =====================================================================
+  //  ПОДВИЖНАЯ ЧАСТЬ (g) — сдвоенный ствол-ускоритель (локально: казённик у z=0)
+  // =====================================================================
+  const BX = 0.18;  // полу-расстояние между стволами
+
+  // --- казённик и амортизаторы отката ---
+  g.box(0.9, 0.56, 0.7, 'metal', 0, 0, 0.15);
+  g.box(0.6, 0.3, 0.2, 'dark', 0, 0, -0.22);
+  mirror(s => g.cyl(0.07, 0.07, 0.65, 8, 'dark', s * 0.32, 0.31, 0.6, H, 0, 0));
+  mirror(s => g.cyl(0.09, 0.09, 0.15, 8, 'metal', s * 0.32, 0.31, 0.32, H, 0, 0));
+
+  // --- два параллельных ствола ---
+  mirror(s => g.pipe(0.10, 0.12, 2.7, 12, 'metal', s * BX, 0, 1.65));  // z 0.30 … 3.00
+
+  // --- плоский кожух ускорителя с рядами соленоидов ---
+  g.box(0.82, 0.42, 1.5, 'body', 0, 0, 1.2);                   // z 0.45 … 1.95
+  g.box(0.9, 0.3, 1.5, 'body', 0, 0, 1.2);                     // скос граней (октагональный профиль)
+  g.box(0.7, 0.5, 1.5, 'body', 0, 0, 1.2);
+  for (let i = 0; i < 6; i++) {                                // рёбра + светящиеся катушки между ними
+    const z = 0.55 + i * 0.27;
+    g.box(0.94, 0.54, 0.06, 'metal', 0, 0, z);
+    if (i < 5) g.box(0.86, 0.46, 0.14, 'rail', 0, 0, z + 0.135);
   }
+  g.box(0.3, 0.06, 1.3, 'dark', 0, 0.26, 1.2);                 // центральная канавка
+  g.box(0.3, 0.06, 1.3, 'dark', 0, -0.26, 1.2);
 
-  // --- Inter-Barrel Synchronization Clamps & Bridge Trusses ---
-  for (const z of coilZPositions) {
-    // Rigid magnetic clamp tying both barrel stages together
-    g.box(0.78, 0.32, 0.10, 'metal', 0, 0, z);
-    // Central glowing high-voltage diode / conductor
-    g.box(0.10, 0.16, 0.08, 'dark', 0, 0, z);
-    g.box(0.06, 0.10, 0.09, 'rail', 0, 0, z);
-  }
+  // --- открытые соленоиды на стволах перед кожухом ---
+  mirror(s => {
+    for (const z of [2.1, 2.3, 2.5]) torus(g, 0.17, 0.045, 10, 'rail', s * BX, 0, z);
+    for (const z of [2.2, 2.4]) torus(g, 0.16, 0.03, 10, 'dark', s * BX, 0, z);
+  });
+  g.box(0.74, 0.06, 0.85, 'metal', 0, 0.21, 2.35);             // направляющие, стягивающие спарку
+  g.box(0.74, 0.06, 0.85, 'metal', 0, -0.21, 2.35);
+  g.box(0.06, 0.36, 0.85, 'metal', 0, 0, 2.35);                // центральная перемычка
 
-  // Interlocking cross-braces between coil stages
-  for (const z of [1.15, 1.55, 1.95]) {
-    g.box(0.66, 0.05, 0.08, 'metal', 0, 0.15, z); // top cross-brace
-    g.box(0.66, 0.05, 0.08, 'metal', 0, -0.15, z); // bottom cross-brace
-  }
+  // --- коллиматор: спарка сходится к центральной оси, вылет из (0, MZ) ---
+  g.box(0.78, 0.46, 0.26, 'metal', 0, 0, 2.72);
+  g.box(0.86, 0.34, 0.26, 'metal', 0, 0, 2.72);
+  g.cyl(0.13, 0.38, 0.3, 8, 'dark', 0, 0, MZ - 0.14, H, 0, 0);  // сходящийся конус
+  g.cyl(0.14, 0.14, 0.14, 10, 'rail', 0, 0, MZ - 0.02, H, 0, 0); // центральный эмиттер
+  torus(g, 0.22, 0.035, 12, 'rail', 0, 0, MZ - 0.05);
+  mirror(s => g.box(0.06, 0.42, 0.3, 'metal', s * 0.42, 0, 2.86, 0, s * 0.35, 0)); // дефлекторы дульного тормоза
+  mirror(s => g.box(0.16, 0.05, 0.14, 'dark', s * 0.3, 0.2, 2.9));
+  mirror(s => g.box(0.16, 0.05, 0.14, 'dark', s * 0.3, -0.2, 2.9));
+  g.rivets(4, 0.022, 'dark', -0.3, 0.24, 2.6, 0.2, 0, 0);
+  g.rivets(4, 0.022, 'dark', -0.3, -0.24, 2.6, 0.2, 0, 0);
 
-  // Central laser alignment rail / telemetry conduit
-  g.box(0.08, 0.06, 2.05, 'metal', 0, 0.16, 1.55);
-  g.box(0.03, 0.03, 2.00, 'lamp', 0, 0.20, 1.55);
-
-  // Central Muzzle Convergence Yoke (focal point for electromagnetic discharge)
-  g.box(0.70, 0.22, 0.12, 'metal', 0, 0, 2.80);
-  g.box(0.48, 0.14, 0.14, 'dark', 0, 0, 2.92);
-  g.box(0.12, 0.12, 0.08, 'rail', 0, 0, 3.00); // central focal emitter
-  g.box(0.04, 0.04, 0.04, 'lamp', 0, 0, 3.04); // central laser dot
-
-  return { barrelY: 0.52, muzzleZ: 3.05 };
+  return { barrelY: BY, muzzleZ: MZ };
 }
 
 // --------------------------------------------------------------------- isida
