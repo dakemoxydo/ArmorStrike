@@ -8,6 +8,7 @@
 //
 // Conventions: +Z is forward, +X is right, Y is up, ground at Y=0.
 import * as THREE from 'three';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { HullId } from '../../core/catalog';
 import type { TankBuildContext } from './context';
 import { HULL_SLOTS, HullBuilder, slope } from './hullKit';
@@ -80,93 +81,618 @@ function buildTrack(b: HullBuilder, side: 1 | -1, s: TrackSpec) {
 
 // ------------------------------------------------------------------- hunter
 
-/** Medium universal MBT: balanced, classic silhouette, bolted appliqué. */
+/** Medium universal MBT (внешняя генерация, итерация 1): lofted-ванна + фасеточный
+ * верхний корпус, chamfer-панели (Extrude), шланги-трубы, асимметричный ЗИП.
+ * Адаптация: chamferBoxGeo обёрнут в mergeVertices — сырой ExtrudeGeometry
+ * неиндексированный и ронял бы mergeGeometries всего слота (build() бросает).
+ */
 function buildHunter(b: HullBuilder) {
-  const TRACK: TrackSpec = {
+  for (const side of [-1, 1] as const) buildTrack(b, side, {
     x: 1.42, width: 0.70, wheelWidth: 0.86,
     front: 2.18, rear: -2.18,
     wheelR: 0.30, wheelY: 0.46, wheelCount: 6,
     linkH: 0.14, hubR: 0.30,
+  });
+
+  type Slot = 'body' | 'metal' | 'dark' | 'lamp';
+  type LoftStation = {
+    z: number;
+    yb: number;
+    ys: number;
+    yt: number;
+    hb: number;
+    hs: number;
+    ht: number;
   };
-  for (const side of [-1, 1] as const) buildTrack(b, side, TRACK);
 
-  // --- Hull shell ---
-  b.box(2.55, 0.74, 4.30, 'body', 0, 0.87, -0.05); // lower hull
-  b.box(2.40, 0.60, 3.30, 'body', 0, 1.56, -0.35); // fighting compartment
-  for (const side of [-1, 1] as const) {
-    b.box(0.80, 0.30, 4.00, 'body', side * 1.42, 1.20, -0.05); // sponson over the track
-    b.box(0.96, 0.08, 4.42, 'metal', side * 1.44, 0.99, -0.05); // fender lip
-    b.box(0.84, 0.30, 0.08, 'dark', side * 1.44, 0.86, 2.24); // front mud flap
-    b.box(0.84, 0.26, 0.08, 'dark', side * 1.44, 0.88, -2.28); // rear mud flap
-  }
+  const loftGeo = (stations: LoftStation[]): THREE.BufferGeometry => {
+    const ringSize = 6;
+    const positions: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
 
-  // --- Sloped glacis ---
-  const G = slope(0, 1.44, 1.60, 0.55);
-  const gl = (w: number, h: number, d: number, slot: HullSlot, u: number, v: number, n = 0) => {
-    const [x, y, z] = G(u, v, n);
-    b.box(w, h, d, slot, x, y, z, 0.55, 0, 0);
+    for (const s of stations) {
+      const ring = [
+        [-s.hb, s.yb],
+        [s.hb, s.yb],
+        [s.hs, s.ys],
+        [s.ht, s.yt],
+        [-s.ht, s.yt],
+        [-s.hs, s.ys],
+      ];
+
+      for (const [x, y] of ring) {
+        positions.push(x, y, s.z);
+        uvs.push((x + 2.0) / 4.0, (s.z + 2.6) / 5.2);
+      }
+    }
+
+    for (let i = 0; i < stations.length - 1; i++) {
+      for (let j = 0; j < ringSize; j++) {
+        const k = (j + 1) % ringSize;
+        const a = i * ringSize + j;
+        const c = i * ringSize + k;
+        const d = (i + 1) * ringSize + j;
+        const e = (i + 1) * ringSize + k;
+        indices.push(a, e, d, a, c, e);
+      }
+    }
+
+    for (let j = 1; j < ringSize - 1; j++) {
+      indices.push(0, j + 1, j);
+    }
+
+    const front = (stations.length - 1) * ringSize;
+    for (let j = 1; j < ringSize - 1; j++) {
+      indices.push(front, front + j, front + j + 1);
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3),
+    );
+    geo.setAttribute(
+      'uv',
+      new THREE.Float32BufferAttribute(uvs, 2),
+    );
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return geo;
   };
-  gl(2.44, 0.16, 1.42, 'body', 0, 0, 0);
-  b.box(2.50, 0.68, 0.24, 'body', 0, 0.85, 2.14); // lower nose plate
-  b.box(2.40, 0.20, 0.30, 'body', 0, 1.10, 2.24); // nose brow
-  b.box(2.42, 0.06, 0.06, 'dark', 0, 1.16, 2.27); // nose seam
-  gl(0.70, 0.10, 0.54, 'metal', 0.58, 0.10, 0.13); // driver's hatch
-  for (const u of [0.34, 0.58, 0.82]) gl(0.12, 0.09, 0.12, 'dark', u, 0.40, 0.15); // periscopes
-  for (let i = 0; i < 4; i++) gl(0.30, 0.11, 0.46, 'dark', -0.62 + i * 0.34, -0.16, 0.13); // spare links
-  for (const side of [-1, 1] as const) gl(0.20, 0.18, 0.26, 'metal', side * 0.98, -0.50, 0.10); // tow hooks
-  gl(0.62, 0.10, 0.34, 'metal', -0.58, 0.42, 0.14); // MG mount base
-  // Bolt row along the glacis top edge.
-  for (let i = 0; i < 9; i++) {
-    const [bx, by, bz] = G(-1.04 + i * 0.26, -0.64, 0.12);
-    b.sphere(0.035, 'metal', bx, by, bz, 6, 4);
-  }
 
-  // --- Headlights on the fenders (with brush guards) ---
+  const chamferBoxGeo = (
+    w: number,
+    h: number,
+    d: number,
+    chamfer: number,
+  ): THREE.BufferGeometry => {
+    const hw = w * 0.5;
+    const hh = h * 0.5;
+    const c = Math.min(chamfer, hw * 0.49, hh * 0.49);
+    const shape = new THREE.Shape();
+
+    shape.moveTo(-hw + c, -hh);
+    shape.lineTo(hw - c, -hh);
+    shape.lineTo(hw, -hh + c);
+    shape.lineTo(hw, hh - c);
+    shape.lineTo(hw - c, hh);
+    shape.lineTo(-hw + c, hh);
+    shape.lineTo(-hw, hh - c);
+    shape.lineTo(-hw, -hh + c);
+    shape.closePath();
+
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: d,
+      steps: 1,
+      bevelEnabled: false,
+      curveSegments: 1,
+    });
+    geo.translate(0, 0, -d * 0.5);
+    // Сырой Extrude неиндексированный — без mergeVertices роняет merge слота.
+    return mergeVertices(geo);
+  };
+
+  const addChamfer = (
+    w: number,
+    h: number,
+    d: number,
+    chamfer: number,
+    slot: Slot,
+    x: number,
+    y: number,
+    z: number,
+    rx = 0,
+    ry = 0,
+    rz = 0,
+  ): void => {
+    b.add(
+      chamferBoxGeo(w, h, d, chamfer),
+      slot,
+      x, y, z,
+      rx, ry, rz,
+      1, 1, 1,
+    );
+  };
+
+  const glacisAngle = 0.49;
+  const glacisY = (z: number): number =>
+    1.80 - (z - 1.05) * (0.75 / 1.37);
+
+  const glacisBox = (
+    w: number,
+    h: number,
+    d: number,
+    slot: Slot,
+    x: number,
+    z: number,
+    lift: number,
+    ry = 0,
+    rz = 0,
+  ): void => {
+    b.box(
+      w, h, d, slot,
+      x, glacisY(z) + lift, z,
+      glacisAngle, ry, rz,
+    );
+  };
+
+  // Narrow armored bathtub: kept inside the inner edges of the tracks.
+  b.add(
+    loftGeo([
+      {
+        z: -2.31,
+        yb: 0.30, ys: 0.72, yt: 0.98,
+        hb: 0.78, hs: 0.94, ht: 0.98,
+      },
+      {
+        z: -1.62,
+        yb: 0.24, ys: 0.82, yt: 1.07,
+        hb: 0.96, hs: 1.03, ht: 1.08,
+      },
+      {
+        z: 1.54,
+        yb: 0.24, ys: 0.81, yt: 1.04,
+        hb: 0.96, hs: 1.03, ht: 1.07,
+      },
+      {
+        z: 2.42,
+        yb: 0.37, ys: 0.70, yt: 0.87,
+        hb: 0.66, hs: 0.84, ht: 0.79,
+      },
+    ]),
+    'body',
+    0, 0, 0,
+    0, 0, 0,
+    1, 1, 1,
+  );
+
+  b.box(
+    1.82, 0.075, 3.55, 'dark',
+    0, 0.285, -0.04,
+    0, 0, 0,
+  );
+
+  // Main faceted upper shell and long sloped glacis.
+  b.add(
+    loftGeo([
+      {
+        z: -2.28,
+        yb: 0.82, ys: 1.08, yt: 1.42,
+        hb: 0.93, hs: 1.24, ht: 1.06,
+      },
+      {
+        z: -1.62,
+        yb: 0.92, ys: 1.27, yt: 1.72,
+        hb: 1.01, hs: 1.44, ht: 1.20,
+      },
+      {
+        z: -1.35,
+        yb: 0.94, ys: 1.31, yt: 1.80,
+        hb: 1.02, hs: 1.45, ht: 1.22,
+      },
+      {
+        z: 1.05,
+        yb: 0.94, ys: 1.30, yt: 1.80,
+        hb: 1.02, hs: 1.44, ht: 1.20,
+      },
+      {
+        z: 2.42,
+        yb: 0.71, ys: 0.99, yt: 1.05,
+        hb: 0.75, hs: 1.08, ht: 0.87,
+      },
+    ]),
+    'body',
+    0, 0, 0,
+    0, 0, 0,
+    1, 1, 1,
+  );
+
+  // Full over-track fenders with tapered front ends.
   for (const side of [-1, 1] as const) {
-    b.box(0.30, 0.24, 0.22, 'metal', side * 0.94, 1.22, 2.00);
-    b.box(0.22, 0.16, 0.06, 'lamp', side * 0.94, 1.22, 2.12);
-    b.box(0.38, 0.04, 0.04, 'metal', side * 0.94, 1.35, 2.10);
-    b.box(0.04, 0.30, 0.04, 'metal', side * 0.94, 1.22, 2.13);
-    b.box(0.04, 0.30, 0.04, 'metal', side * 0.79, 1.22, 2.13);
-    b.box(0.04, 0.30, 0.04, 'metal', side * 1.09, 1.22, 2.13);
+    b.box(
+      0.60, 0.12, 3.46, 'body',
+      side * 1.64, 1.02, -0.20,
+      0, 0, 0,
+    );
+    b.box(
+      0.54, 0.12, 0.92, 'body',
+      side * 1.55, 1.02, 1.92,
+      0, -side * 0.16, 0,
+    );
+    b.box(
+      0.58, 0.12, 0.36, 'body',
+      side * 1.64, 1.02, -2.10,
+      0, 0, 0,
+    );
+    b.box(
+      0.05, 0.17, 3.44, 'body',
+      side * 1.93, 1.065, -0.20,
+      0, 0, 0,
+    );
+
+    // Rubber rear mud flaps sit behind, not inside, the standard loop.
+    b.box(
+      0.56, 0.46, 0.055, 'dark',
+      side * 1.64, 0.72, -2.37,
+      0, 0, 0,
+    );
+
+    // M3-inspired segmented side sponsons.
+    addChamfer(
+      0.46, 0.34, 1.04, 0.075, 'body',
+      side * 1.53, 1.29, 0.83,
+    );
+    addChamfer(
+      0.50, 0.40, 0.78, 0.085, 'body',
+      side * 1.53, 1.34, -0.18,
+    );
+    addChamfer(
+      0.46, 0.38, 0.90, 0.08, 'body',
+      side * 1.53, 1.32, -1.22,
+    );
+
+    for (const z of [0.29, -0.67, -1.72]) {
+      b.box(
+        0.025, 0.22, 0.075, 'dark',
+        side * 1.77, 1.29, z,
+        0, 0, 0,
+      );
+    }
+
+    // Fender hinges and supports, all above the track band.
+    for (const z of [-1.78, -0.88, 0.03, 0.94]) {
+      b.box(
+        0.13, 0.12, 0.07, 'body',
+        side * 1.82, 1.12, z,
+        0, 0, 0,
+      );
+    }
   }
 
-  // --- Engine deck ---
-  b.box(2.30, 0.10, 1.40, 'body', 0, 1.90, -1.30); // raised deck plate
-  b.louvers(5, 1.62, 0.07, 0.20, 'dark', 0, 1.96, -1.84, -0.35);
+  // Broad, flat turret deck and clean 1.3-radius interface.
+  addChamfer(
+    2.86, 0.10, 2.50, 0.15, 'body',
+    0, 1.81, -0.12,
+  );
+
+  b.cyl(
+    1.28, 1.32, 0.10, 48, 'body',
+    0, 1.89, -0.10,
+    0, 0, 0,
+  );
+
+  b.add(
+    new THREE.TorusGeometry(1.30, 0.025, 6, 48),
+    'dark',
+    0, 1.915, -0.10,
+    Math.PI * 0.5, 0, 0,
+    1, 1, 1,
+  );
+
+  // Offset driver's hatch on the upper glacis.
+  addChamfer(
+    0.68, 0.035, 0.52, 0.08, 'dark',
+    -0.38, glacisY(1.43) + 0.025, 1.43,
+    glacisAngle,
+  );
+  addChamfer(
+    0.60, 0.060, 0.45, 0.075, 'body',
+    -0.38, glacisY(1.43) + 0.060, 1.43,
+    glacisAngle,
+  );
+
+  // Driver periscopes with small armored brows.
+  for (const x of [-0.56, -0.38, -0.20]) {
+    b.box(
+      0.15, 0.060, 0.10, 'body',
+      x, glacisY(1.24) + 0.070, 1.24,
+      glacisAngle, 0, 0,
+    );
+    b.box(
+      0.10, 0.035, 0.045, 'dark',
+      x, glacisY(1.27) + 0.085, 1.27,
+      glacisAngle, 0, 0,
+    );
+  }
+
+  // Lower central glacis appliqué.
+  addChamfer(
+    1.34, 0.030, 0.68, 0.07, 'dark',
+    0, glacisY(2.00) + 0.020, 2.00,
+    glacisAngle,
+  );
+  addChamfer(
+    1.18, 0.055, 0.58, 0.07, 'body',
+    0, glacisY(2.00) + 0.055, 2.00,
+    glacisAngle,
+  );
+
+  for (const x of [-0.48, -0.29, -0.10, 0.10, 0.29, 0.48]) {
+    b.sphere(
+      0.025, 'metal',
+      x, glacisY(1.79) + 0.075, 1.79,
+      7, 5,
+    );
+  }
+
+  // Hunter's characteristic paired front-side intake recesses.
   for (const side of [-1, 1] as const) {
-    b.louvers(3, 0.50, 0.07, 0.20, 'dark', side * 0.82, 1.96, -1.16, -0.35);
-    b.cyl(0.12, 0.12, 0.08, 8, 'metal', side * 0.78, 1.98, -0.70); // fuel cap
-    b.rivets(5, 0.035, 'metal', side * 1.15, 1.84, -1.30, 0, 0, 1.10);
+    addChamfer(
+      0.31, 0.045, 0.48, 0.06, 'dark',
+      side * 1.01, glacisY(1.80) + 0.042, 1.80,
+      glacisAngle,
+    );
+
+    for (const z of [1.67, 1.82, 1.97]) {
+      glacisBox(
+        0.30, 0.025, 0.045, 'body',
+        side * 1.01, z, 0.072,
+      );
+    }
+
+    // Slender reinforcing strips guide the eye toward the turret ring.
+    glacisBox(
+      0.09, 0.045, 0.70, 'body',
+      side * 0.77, 1.62, 0.055,
+      -side * 0.09,
+    );
   }
 
-  // --- Rear plate, exhausts, tow hooks ---
-  b.box(2.44, 0.84, 0.20, 'body', 0, 0.95, -2.22);
+  // Low, armored prow.
+  addChamfer(
+    1.56, 0.22, 0.20, 0.055, 'body',
+    0, 0.76, 2.34,
+  );
+  b.box(
+    1.22, 0.045, 0.035, 'dark',
+    0, 0.72, 2.445,
+    0, 0, 0,
+  );
+
+  // Deep-set headlights: lamp is used nowhere else.
   for (const side of [-1, 1] as const) {
-    b.cyl(0.10, 0.13, 0.80, 10, 'metal', side * 0.74, 1.42, -2.30, -0.45, 0, 0);
-    b.cyl(0.11, 0.11, 0.10, 10, 'dark', side * 0.74, 1.75, -2.47, -0.45, 0, 0);
-    b.box(0.22, 0.20, 0.26, 'metal', side * 0.86, 0.70, -2.34);
+    b.box(
+      0.34, 0.070, 0.085, 'body',
+      side * 0.74, 1.075, 2.39,
+      0, 0, 0,
+    );
+    b.cyl(
+      0.16, 0.16, 0.070, 16, 'dark',
+      side * 0.74, 0.94, 2.445,
+      Math.PI * 0.5, 0, 0,
+    );
+    b.cyl(
+      0.105, 0.105, 0.022, 16, 'lamp',
+      side * 0.74, 0.94, 2.482,
+      Math.PI * 0.5, 0, 0,
+    );
+
+    b.add(
+      new THREE.TorusGeometry(0.085, 0.024, 6, 14),
+      'metal',
+      side * 0.55, 0.56, 2.465,
+      0, 0, 0,
+      1, 1, 1,
+    );
   }
 
-  // --- Rear stowage bin & recovery log (бревно для самовытаскивания — канон ТО) ---
-  b.box(1.50, 0.44, 0.54, 'body', 0, 2.06, -1.74);
-  b.box(1.56, 0.08, 0.60, 'metal', 0, 2.30, -1.74);
-  b.rivets(4, 0.035, 'metal', 0, 2.10, -1.46, 1.10, 0, 0);
-  b.cyl(0.10, 0.10, 2.00, 10, 'metal', 0, 1.22, -2.36, 0, 0, Math.PI / 2);
-  b.box(0.10, 0.16, 0.10, 'dark', -0.68, 1.22, -2.34);
-  b.box(0.10, 0.16, 0.10, 'dark', 0.68, 1.22, -2.34);
+  // Raised rear engine-deck volume.
+  addChamfer(
+    2.28, 0.18, 0.66, 0.11, 'body',
+    0, 1.69, -1.84,
+  );
 
-  // --- Side appliqué, tow cable, tool boxes, grab handles ---
+  // Twin inset radiator grilles with strong body-colored ribs.
   for (const side of [-1, 1] as const) {
-    b.box(0.07, 0.44, 1.30, 'metal', side * 1.20, 1.50, -0.70);
-    b.box(0.06, 0.06, 0.44, 'metal', side * 1.18, 1.78, 0.30);
-    b.rivets(6, 0.035, 'metal', side * 1.21, 1.74, -0.75, 0, 0, 1.30);
-    b.box(0.06, 0.06, 4.00, 'dark', side * 1.19, 1.30, -0.05); // side seam
-    b.cyl(0.05, 0.05, 3.10, 6, 'metal', side * 1.32, 1.36, -0.30, Math.PI / 2, 0, 0); // tow cable
-    b.box(0.52, 0.22, 0.82, 'metal', side * 1.44, 1.45, -1.60); // tool box
-    b.box(0.56, 0.05, 0.86, 'metal', side * 1.44, 1.58, -1.60);
-    b.box(0.34, 0.18, 0.50, 'dark', side * 1.44, 1.44, 1.35); // spare parts box
+    b.box(
+      0.94, 0.022, 0.54, 'dark',
+      side * 0.55, 1.795, -1.84,
+      0, 0, 0,
+    );
+
+    for (let j = -2; j <= 2; j++) {
+      b.box(
+        0.045, 0.030, 0.50, 'body',
+        side * 0.55 + j * 0.17, 1.818, -1.84,
+        0, 0, 0,
+      );
+    }
   }
+
+  b.box(
+    0.16, 0.045, 0.61, 'body',
+    0, 1.82, -1.84,
+    0, 0, 0,
+  );
+
+  b.box(
+    1.72, 0.022, 0.13, 'dark',
+    0, 1.795, -2.13,
+    0, 0, 0,
+  );
+  for (const x of [-0.72, -0.48, -0.24, 0, 0.24, 0.48, 0.72]) {
+    b.box(
+      0.045, 0.030, 0.11, 'body',
+      x, 1.818, -2.13,
+      0, 0, 0,
+    );
+  }
+
+  // Rear access recess and bolted transmission cover.
+  b.box(
+    1.40, 0.40, 0.028, 'dark',
+    0, 1.04, -2.292,
+    0, 0, 0,
+  );
+  addChamfer(
+    0.90, 0.25, 0.035, 0.055, 'body',
+    0, 1.03, -2.317,
+  );
+  b.rivets(
+    5, 0.026, 'metal',
+    -0.38, 0.91, -2.34,
+    0.19, 0, 0,
+  );
+
+  // HD-inspired twin rear exhaust shrouds and dark outlet pipes.
+  for (const side of [-1, 1] as const) {
+    addChamfer(
+      0.42, 0.28, 0.25, 0.065, 'body',
+      side * 0.75, 1.31, -2.18,
+    );
+    b.cyl(
+      0.18, 0.19, 0.09, 16, 'body',
+      side * 0.75, 1.31, -2.30,
+      Math.PI * 0.5, 0, 0,
+    );
+    b.pipe(
+      0.14, 0.15, 0.28, 16, 'dark',
+      side * 0.75, 1.31, -2.41,
+      side * 0.05, 0,
+    );
+
+    b.add(
+      new THREE.TorusGeometry(0.075, 0.022, 6, 12),
+      'metal',
+      side * 0.54, 0.54, -2.33,
+      0, 0, 0,
+      1, 1, 1,
+    );
+  }
+
+  // Right-side armored stowage box.
+  addChamfer(
+    0.22, 0.27, 0.62, 0.045, 'body',
+    1.69, 1.55, -1.13,
+  );
+  b.box(
+    0.025, 0.20, 0.52, 'dark',
+    1.815, 1.55, -1.13,
+    0, 0, 0,
+  );
+
+  // Left-side cylindrical stowage canister.
+  b.pipe(
+    0.115, 0.115, 0.56, 12, 'body',
+    -1.69, 1.49, -1.13,
+    0, 0,
+  );
+  b.cyl(
+    0.09, 0.09, 0.026, 12, 'dark',
+    -1.69, 1.49, -1.425,
+    Math.PI * 0.5, 0, 0,
+  );
+  b.cyl(
+    0.09, 0.09, 0.026, 12, 'dark',
+    -1.69, 1.49, -0.835,
+    Math.PI * 0.5, 0, 0,
+  );
+
+  // Spare links on the right-front fender.
+  for (const z of [0.55, 0.76, 0.97, 1.18]) {
+    b.box(
+      0.34, 0.070, 0.15, 'body',
+      1.66, 1.145, z,
+      0, 0, 0,
+    );
+    b.box(
+      0.18, 0.022, 0.065, 'dark',
+      1.66, 1.192, z,
+      0, 0, 0,
+    );
+  }
+
+  // Shovel/tool on the left fender.
+  b.pipe(
+    0.022, 0.022, 0.92, 8, 'metal',
+    -1.83, 1.145, 0.70,
+    0, 0,
+  );
+  addChamfer(
+    0.18, 0.045, 0.22, 0.025, 'body',
+    -1.83, 1.15, 1.25,
+  );
+  b.box(
+    0.09, 0.055, 0.12, 'body',
+    -1.83, 1.15, 0.17,
+    0, 0, 0,
+  );
+
+  // Tow cable following the left sponson line.
+  const cableCurve = new THREE.CatmullRomCurve3(
+    [
+      new THREE.Vector3(-1.78, 1.43, -1.55),
+      new THREE.Vector3(-1.83, 1.52, -0.82),
+      new THREE.Vector3(-1.83, 1.47, 0.12),
+      new THREE.Vector3(-1.79, 1.36, 1.26),
+    ],
+    false,
+    'centripetal',
+  );
+  b.add(
+    new THREE.TubeGeometry(cableCurve, 24, 0.025, 6, false),
+    'metal',
+    0, 0, 0,
+    0, 0, 0,
+    1, 1, 1,
+  );
+
+  for (const z of [-1.25, -0.28, 0.72]) {
+    b.box(
+      0.07, 0.10, 0.10, 'body',
+      -1.79, 1.43, z,
+      0, 0, 0,
+    );
+  }
+
+  // Fuel cap opposite an asymmetric antenna mount.
+  b.cyl(
+    0.105, 0.13, 0.075, 16, 'body',
+    -1.18, 1.82, -1.47,
+    0, 0, 0,
+  );
+  b.cyl(
+    0.065, 0.065, 0.022, 14, 'dark',
+    -1.18, 1.87, -1.47,
+    0, 0, 0,
+  );
+
+  b.cyl(
+    0.11, 0.15, 0.12, 14, 'body',
+    1.20, 1.84, -1.47,
+    0, 0, 0,
+  );
+  b.cyl(
+    0.018, 0.026, 0.36, 8, 'metal',
+    1.20, 2.05, -1.47,
+    0, 0, 0,
+  );
+  b.sphere(
+    0.025, 'metal',
+    1.20, 2.245, -1.47,
+    8, 6,
+  );
 
   // --- Turret ring collar ---
   b.cyl(1.32, 1.38, 0.14, 18, 'body', 0, 1.87, -0.10);

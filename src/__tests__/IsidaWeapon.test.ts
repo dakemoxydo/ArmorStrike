@@ -276,6 +276,9 @@ describe('IsidaWeapon — атака: захват, тики, вампиризм
 
 describe('IsidaWeapon — ремонт союзника и очки поддержки', () => {
   it('TDM: без врагов лечит союзника (кратно healPerTick) и вешает healFlash', () => {
+    // Лечение критует из pity-накопителя башни (rollCrit ← Math.random):
+    // без фиксации RNG тест флакает (~17% прогонов). Глушим криты.
+    const rng = vi.spyOn(Math, 'random').mockReturnValue(0.999);
     const { deps } = makeDeps();
     const owner = makeOwner();
     owner.teamId = 'alpha';
@@ -289,6 +292,7 @@ describe('IsidaWeapon — ремонт союзника и очки поддер
     expect(healed / HEAL_PER_TICK).toBeCloseTo(Math.round(healed / HEAL_PER_TICK), 6);
     expect((ally as any).fx.healFlash).toBe(1);
     weapon.dispose();
+    rng.mockRestore();
   });
 
   it('очки поддержки игроку: floor(фактическое лечение × supportPerHp)', () => {
