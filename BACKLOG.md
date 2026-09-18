@@ -132,7 +132,7 @@
 
 ## [L] INFRASTRUCTURE, BACKEND & CLOUD
 - [x] L1: Деплой на Vercel (CI/CD ветки main, Vite SPA) + подключение Supabase (Postgres, Auth, RLS, project tukylkqpvzltzqrnfutc) + локальные Agent Skills и MCP-мост Antigravity.
-- [ ] L2: Облачные профили игроков (Supabase Auth, таблица `profiles`, синхронизация прогресса с `RunState`).
+- [x] L2: Облачные профили игроков (Supabase Auth, таблица `profiles`, синхронизация прогресса с `RunState`, вход по username/email, мгновенная регистрация без писем, сброс пароля, гостевой режим) — `Cloud_Profiles_And_Auth.md`.
 - [ ] L3: Глобальная таблица лидеров (таблица `leaderboard`, авто-запись рекордов из `GameOverScreen`, лидерборд в UI).
 - [ ] L4: Сетевой реалтайм мультиплеер (архитектура комнат/сокетов, лобби, синхронизация танков).
 

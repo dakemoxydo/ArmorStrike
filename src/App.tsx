@@ -15,6 +15,8 @@ import MapSelect from './components/MapSelect';
 import ModeSelect from './components/ModeSelect';
 import StarterPackModal from './components/StarterPackModal';
 import QuestsModal from './components/QuestsModal';
+import AuthModal, { type AuthTab } from './components/auth/AuthModal';
+import { AuthService } from './game/auth/authService';
 import type { MapId } from './game/maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './game/maps/mapCatalog';
 import type { MatchModeId } from './game/types';
@@ -67,6 +69,9 @@ export default function App() {
   const [roundError, setRoundError] = useState<string | null>(null);
   /** Стартовый пак новобранца: распакован ли (иначе открывается StarterPackModal). */
   const [starterClaimed, setStarterClaimed] = useState(true);
+  /** Модальное окно авторизации/регистрации/сброса пароля */
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalInitialTab, setAuthModalInitialTab] = useState<AuthTab>('login');
 
   // Boot: Game.create awaits async tank mesh / systems; listeners are safe pre/post ready.
   useEffect(() => {
@@ -149,6 +154,39 @@ export default function App() {
       g?.dispose();
     };
   }, []);
+
+  // Слушатель изменения состояния авторизации Supabase
+  useEffect(() => {
+    const sub = AuthService.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setAuthModalInitialTab('reset_password');
+        setAuthModalOpen(true);
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        if (game) {
+          await game.loadCloudProfile(session.user.id);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        if (game) {
+          game.setAuthUser(null);
+        }
+      }
+    });
+
+    return () => {
+      sub.unsubscribe();
+    };
+  }, [game]);
+
+  // Первичная подгрузка облачного профиля, если пользователь уже авторизован
+  useEffect(() => {
+    if (!game) return;
+    (async () => {
+      const user = await AuthService.getCurrentUser();
+      if (user) {
+        await game.loadCloudProfile(user.id);
+      }
+    })();
+  }, [game]);
 
   /** Flow: ModeSelect → MapSelect → startRound. */
   const openModeSelect = useCallback(() => {
@@ -364,6 +402,10 @@ export default function App() {
           onStart={openModeSelect}
           onBack={goMenu}
           onQuests={() => setQuestsOpen(true)}
+          onOpenAuth={() => {
+            setAuthModalInitialTab('login');
+            setAuthModalOpen(true);
+          }}
           claimableQuestsCount={claimableQuestsCount}
         />
       )}
@@ -374,10 +416,15 @@ export default function App() {
           turret={currTurret}
           credits={game?.credits ?? 0}
           claimableQuestsCount={claimableQuestsCount}
+          game={game}
           onStart={openModeSelect}
           onQuickGame={quickGame}
           onGarage={goGarage}
           onQuests={() => setQuestsOpen(true)}
+          onOpenAuth={() => {
+            setAuthModalInitialTab('login');
+            setAuthModalOpen(true);
+          }}
         />
       )}
 
@@ -426,6 +473,14 @@ export default function App() {
 
       {questsOpen && (
         <QuestsModal game={game} onClose={() => setQuestsOpen(false)} />
+      )}
+
+      {authModalOpen && (
+        <AuthModal
+          game={game}
+          initialTab={authModalInitialTab}
+          onClose={() => setAuthModalOpen(false)}
+        />
       )}
 
       {roundError && !roundLoading && (

@@ -2,21 +2,25 @@ import {
   Coins, Flame, Gamepad2, MousePointer2, Play, RotateCw, Shield, Shuffle, Target, Trophy, Wrench, Zap,
 } from 'lucide-react';
 import type { HullDef, TurretDef } from '../core/catalog';
+import type { GameApi } from '../game/GameApi';
+import UserBadge from './auth/UserBadge';
 
 interface MainMenuProps {
   hull: HullDef;
   turret: TurretDef;
   credits?: number;
   claimableQuestsCount?: number;
+  game?: GameApi | null;
   onStart: () => void;
   onQuickGame: () => void;
   onGarage: () => void;
   onQuests?: () => void;
+  onOpenAuth?: () => void;
 }
 
 export default function MainMenu({
   hull, turret, credits = 0, claimableQuestsCount = 0,
-  onStart, onQuickGame, onGarage, onQuests,
+  game, onStart, onQuickGame, onGarage, onQuests, onOpenAuth,
 }: MainMenuProps) {
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-between p-8 md:p-14 bg-gradient-to-r from-[#04060bf2] via-[#04060ba8] to-transparent">
@@ -25,6 +29,10 @@ export default function MainMenu({
 
       {/* Top right currency & quests bar */}
       <div className="absolute top-6 right-8 md:right-14 z-20 flex items-center gap-3">
+        {onOpenAuth && (
+          <UserBadge game={game ?? null} onOpenAuth={onOpenAuth} />
+        )}
+
         {onQuests && (
           <button
             type="button"

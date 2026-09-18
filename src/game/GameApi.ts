@@ -29,6 +29,13 @@ export interface GameApi {
   readonly starterPackClaimed: boolean;
   readonly credits: number;
   readonly quests: readonly QuestProgress[];
+  readonly username: string;
+  readonly isGuest: boolean;
+  readonly userId: string | null;
+  readonly syncStatus: 'idle' | 'saving' | 'synced' | 'error';
+
+  setAuthUser(user: { id: string; username: string } | null): void;
+  loadCloudProfile(userId: string): Promise<boolean>;
 
   claimStarterPack(hullId: HullId, turretId: TurretId): Promise<void>;
   claimQuest(questId: string): number;

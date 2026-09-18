@@ -21,6 +21,7 @@ import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './maps/mapCatalog';
 import { ECONOMY_PRICES } from './economy/matchRewards';
 import type { QuestProgress } from './economy/questCatalog';
+import { CloudSaveService } from './auth/cloudSaveService';
 
 export class Game implements GameApi {
   /** Local event bus — safe to use before async bootstrap finishes. */
@@ -120,6 +121,34 @@ export class Game implements GameApi {
   get starterPackClaimed(): boolean { return this.requireSim().run.starterPackClaimed; }
   get credits(): number { return this.requireSim().run.credits; }
   get quests(): readonly QuestProgress[] { return this.requireSim().run.quests; }
+  get username(): string { return this.requireSim().run.username; }
+  get isGuest(): boolean { return this.requireSim().run.isGuest; }
+  get userId(): string | null { return this.requireSim().run.userId; }
+  get syncStatus(): 'idle' | 'saving' | 'synced' | 'error' { return this.requireSim().run.syncStatus; }
+
+  setAuthUser(user: { id: string; username: string } | null): void {
+    const run = this.requireSim().run;
+    if (user) {
+      run.userId = user.id;
+      run.username = user.username;
+      run.isGuest = false;
+    } else {
+      run.userId = null;
+      run.username = 'Гость';
+      run.isGuest = true;
+    }
+    run.save();
+    this.ctx?.emitEvent({ type: 'garageChanged' });
+  }
+
+  async loadCloudProfile(userId: string): Promise<boolean> {
+    const sim = this.requireSim();
+    const profile = await CloudSaveService.loadProfile(userId);
+    if (!profile) return false;
+    CloudSaveService.applyProfileToRunState(profile, sim.run);
+    this.ctx?.emitEvent({ type: 'garageChanged' });
+    return true;
+  }
   get previewVisual(): TankVisual | null {
     return this.ctx?.previewController.previewVisual ?? null;
   }

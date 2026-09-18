@@ -29,6 +29,7 @@ export interface RosterSpawnCtx {
   nameplates: Map<number, { plate: Nameplate; color: number }>;
   hullId: HullId;
   turretId: TurretId;
+  playerName?: string;
 }
 
 export interface RosterSpawnResult {
@@ -152,7 +153,7 @@ export async function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): P
 
   // --- Player ---
   const player = await createTankEntity({
-    name: 'ВЫ',
+    name: ctx.playerName?.trim() || 'ВЫ',
     isPlayer: true,
     hullId: ctx.hullId,
     turretId: ctx.turretId,

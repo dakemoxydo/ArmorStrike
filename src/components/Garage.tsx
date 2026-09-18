@@ -12,17 +12,19 @@ import HullCard from './HullCard';
 import TurretCard from './TurretCard';
 import CrateOpeningModal from './CrateOpeningModal';
 import DirectUnlockModal from './DirectUnlockModal';
+import UserBadge from './auth/UserBadge';
 
 interface GarageProps {
   game: GameApi | null;
   onStart: () => void;
   onBack: () => void;
   onQuests?: () => void;
+  onOpenAuth?: () => void;
   claimableQuestsCount?: number;
 }
 
 export default function Garage({
-  game, onStart, onBack, onQuests, claimableQuestsCount = 0,
+  game, onStart, onBack, onQuests, onOpenAuth, claimableQuestsCount = 0,
 }: GarageProps) {
   const [activeTab, setActiveTab] = useState<'hulls' | 'turrets'>('hulls');
   /** Local selection mirrors GameApi so UI re-renders without remounting the grid. */
@@ -267,6 +269,10 @@ export default function Garage({
             <span>ВЫКУП</span>
             <span className="text-amber-300 font-display text-[11px]">1200 CR</span>
           </button>
+
+          {onOpenAuth && (
+            <UserBadge game={game} onOpenAuth={onOpenAuth} />
+          )}
 
           {onQuests && (
             <button

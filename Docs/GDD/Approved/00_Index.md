@@ -40,6 +40,7 @@
 | [[Game_Lifecycle]] | Режимы, пауза, death cam, быстрая игра | `RunState`, `deathLifecycle` |
 | [[Starter_Crates_And_Progression]] | Стартовые контейнеры новобранца (Draft Pick 3 карт), закрытый арсенал | `RunState`, `GarageBinding`, `StarterPackModal` |
 | [[Economy_Currency_And_Quests]] | Экономика (Кредиты CR), боевые выплаты, система квестов и покупка контейнеров | `matchRewards`, `questCatalog`, `RunState`, `QuestsModal` |
+| [[Cloud_Profiles_And_Auth]] | Профили игроков, Supabase Auth (username/email), гостевой режим и облачные сохранения | `RunState`, `AuthService`, `CloudSaveService`, `AuthModal`, `UserBadge` |
 
 **Removed-механики** (wave-era, удалены в P0) — надгробные доки в `../Archive/`: [[../Archive/Wave_System|Wave_System]], [[../Archive/Wave_Buffs|Wave_Buffs]]. Approved = только реализованное; история — в git.
 

@@ -9,6 +9,7 @@ import {
   type MatchSummaryForQuests,
   type QuestProgress,
 } from './economy/questCatalog';
+import { CloudSaveService } from './auth/cloudSaveService';
 
 export const LS_KEY = 'as2_loadout';
 
@@ -29,6 +30,16 @@ export class RunState {
   credits = 0;
   /** Активные боевые задачи (3 слота). */
   quests: QuestProgress[] = createInitialQuests();
+  /** Имя игрока / позывной (по умолчанию 'Гость'). */
+  username = 'Гость';
+  /** Признак гостевой сессии (true = не авторизован). */
+  isGuest = true;
+  /** Идентификатор пользователя Supabase (если авторизован). */
+  userId: string | null = null;
+  /** Статус синхронизации с облаком. */
+  syncStatus: 'idle' | 'saving' | 'synced' | 'error' = 'idle';
+  /** Слушатель смены статуса синхронизации для UI */
+  onSyncStatusChange?: (status: 'idle' | 'saving' | 'synced' | 'error') => void;
 
   constructor() {
     // Восстановление прошлого профиля/инвентаря при создании (A6)
@@ -170,6 +181,18 @@ export class RunState {
             this.credits = Math.max(0, Math.floor(o.credits));
           }
 
+          if (typeof o.username === 'string' && o.username.trim().length > 0) {
+            this.username = o.username.trim();
+          }
+
+          if (typeof o.isGuest === 'boolean') {
+            this.isGuest = o.isGuest;
+          }
+
+          if (typeof o.userId === 'string') {
+            this.userId = o.userId;
+          }
+
           if (Array.isArray(o.quests) && o.quests.length > 0) {
             const valid = o.quests.filter((q: unknown): q is QuestProgress => {
               return (
@@ -190,11 +213,19 @@ export class RunState {
     } catch { /* ignore */ }
   }
 
+  setSyncStatus(status: 'idle' | 'saving' | 'synced' | 'error') {
+    this.syncStatus = status;
+    this.onSyncStatusChange?.(status);
+  }
+
   save() {
     try {
       if (typeof localStorage === 'undefined') return;
       const data = {
-        version: 2,
+        version: 3,
+        username: this.username,
+        isGuest: this.isGuest,
+        userId: this.userId,
         hullId: this.currentHull,
         turretId: this.currentTurret,
         unlockedHulls: this.unlockedHulls,
@@ -204,6 +235,18 @@ export class RunState {
         quests: this.quests,
       };
       localStorage.setItem(LS_KEY, JSON.stringify(data));
+
+      // Если игрок авторизован — запускаем дебаунсированное сохранение в Supabase
+      if (!this.isGuest && this.userId) {
+        this.setSyncStatus('saving');
+        CloudSaveService.scheduleSave(
+          this.userId,
+          CloudSaveService.extractRunStateData(this),
+          (success) => {
+            this.setSyncStatus(success ? 'synced' : 'error');
+          },
+        );
+      }
     } catch { /* ignore */ }
   }
 

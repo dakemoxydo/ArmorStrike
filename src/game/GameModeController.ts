@@ -141,6 +141,7 @@ export class GameModeController {
       nameplates: sim.nameplates,
       hullId: sim.run.currentHull,
       turretId: sim.run.currentTurret,
+      playerName: sim.run.username,
     });
 
     // Another startRound or leave-to-menu invalidated us after async spawn.
