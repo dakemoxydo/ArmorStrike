@@ -3,6 +3,7 @@ import * as THREE from 'three';
 
 const tmpDelta = new THREE.Vector3();
 const tmpMid = new THREE.Vector3();
+const tmpDir = new THREE.Vector3();
 const yAxis = new THREE.Vector3(0, 1, 0);
 
 export class GaussBeamFx {
@@ -52,7 +53,8 @@ export class GaussBeamFx {
     tmpMid.addVectors(from, to).multiplyScalar(0.5);
     this.group.position.copy(tmpMid);
 
-    this.group.quaternion.setFromUnitVectors(yAxis, tmpDelta.clone().normalize());
+    tmpDir.copy(tmpDelta).normalize();
+    this.group.quaternion.setFromUnitVectors(yAxis, tmpDir);
     this.group.scale.set(1, len, 1);
 
     this.coreMesh.material.opacity = 0.95;

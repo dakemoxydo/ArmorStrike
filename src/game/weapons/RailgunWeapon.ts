@@ -96,6 +96,17 @@ export class RailgunWeapon implements Weapon {
   private shotDelayTimer = 0;
   /** M20: активный бегущий фронт луча (null — свипа нет). */
   private beamSweep: BeamSweep | null = null;
+  /** J11: re-used collections and visual payload objects to avoid per-shot allocations */
+  private readonly _hitTanksSet = new Set<number>();
+  private readonly _shotVisual: PendingShotVisual = {
+    muzzle: new THREE.Vector3(),
+    dir: new THREE.Vector3(),
+    dist: 0,
+    pierces: [],
+    wall: null,
+  };
+  private readonly _wallVisual = { p: new THREE.Vector3(), d: 0 };
+  private readonly _piercePool: Array<{ p: THREE.Vector3; color: number; heavy: boolean; d: number }> = [];
 
   constructor(owner: WeaponOwner, deps: WeaponDeps) {
     this.owner = owner;
@@ -243,7 +254,11 @@ export class RailgunWeapon implements Weapon {
     const rt = WEAPON_TUNING.railgun;
 
     // Audio + body recoil (instant)
-    this.deps.audio.shoot('railgun');
+    if (isPlayer) {
+      this.deps.audio.shoot('railgun');
+    } else {
+      this.deps.audio.shoot('railgun', this.owner.position);
+    }
     this.owner.onFired(rt.knockback);
 
     // Muzzle / camera / FOV punch (instant — the crack precedes the beam)
@@ -265,13 +280,12 @@ export class RailgunWeapon implements Weapon {
     // visuals are collected into a payload and replayed tracerDelay later (M19 #4).
     const rawRange = this.owner.params.range ?? rt.range;
     const range = Number.isFinite(rawRange) ? rawRange : RAY_RANGE_FALLBACK;
-    const shot: PendingShotVisual = {
-      muzzle: tmpMuzzle.clone(),
-      dir: tmpDir.clone(),
-      dist: range,
-      pierces: [],
-      wall: null,
-    };
+    const shot = this._shotVisual;
+    shot.muzzle.copy(tmpMuzzle);
+    shot.dir.copy(tmpDir);
+    shot.dist = range;
+    shot.pierces.length = 0;
+    shot.wall = null;
     shot.dist = this.resolveHits(this.castHitscan(tanks), colliders, shot);
 
     this.pendingShot = shot;
@@ -407,7 +421,8 @@ export class RailgunWeapon implements Weapon {
     let maxHitDist = range;
     const baseDamage = resolveWeaponDamage(this.owner.params.damage, rt.damage);
     let currentDamage = baseDamage;
-    const hitTanksSet = new Set<number>();
+    this._hitTanksSet.clear();
+    const hitTanksSet = this._hitTanksSet;
     let hitCount = 0;
 
     const wall = this.nearestShotBlocker(colliders, rawRange);
@@ -434,7 +449,16 @@ export class RailgunWeapon implements Weapon {
       // M20: hit.distance — позиция на таймлайне бегущего фронта (от дула).
       const pierceColor = rt.pierceColors[Math.min(hitCount - 1, rt.pierceColors.length - 1)];
       this.deps.audio.railgunPierce(hitCount - 1);
-      shot.pierces.push({ p: hit.point.clone(), color: pierceColor, heavy, d: hit.distance });
+      let pEntry = this._piercePool[hitCount - 1];
+      if (!pEntry) {
+        pEntry = { p: new THREE.Vector3(), color: 0, heavy: false, d: 0 };
+        this._piercePool[hitCount - 1] = pEntry;
+      }
+      pEntry.p.copy(hit.point);
+      pEntry.color = pierceColor;
+      pEntry.heavy = heavy;
+      pEntry.d = hit.distance;
+      shot.pierces.push(pEntry);
       applyHit(
         this.deps.damageSystem, hitTank, dmg, this.owner, tmpDir, force,
         // Effect callback intentionally empty: beam FX are deferred via shot.pierces.
@@ -451,7 +475,9 @@ export class RailgunWeapon implements Weapon {
       if (wallDmg > 0) {
         this.deps.damageSystem.damageBlock(wall.id, wallDmg, wall.point);
       }
-      shot.wall = { p: wall.point.clone(), d: wall.dist };
+      this._wallVisual.p.copy(wall.point);
+      this._wallVisual.d = wall.dist;
+      shot.wall = this._wallVisual;
       maxHitDist = wall.dist;
     }
     // Without a wall the beam draws to full range for sniper feel (per GDD).

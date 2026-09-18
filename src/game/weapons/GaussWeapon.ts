@@ -26,6 +26,15 @@ interface GaussCone {
   range: number;
 }
 
+const tmpGaussCone: GaussCone = {
+  x: 0,
+  z: 0,
+  dirX: 0,
+  dirZ: 1,
+  halfCos: Math.cos(WEAPON_TUNING.gauss.lockConeAngle),
+  range: WEAPON_TUNING.gauss.range,
+};
+
 function isOpponent(self: WeaponOwner, other: CombatPeer): boolean {
   if (self.id === other.id) return false;
   const tA = self.teamId ?? null;
@@ -182,15 +191,13 @@ export class GaussWeapon implements Weapon {
         if (this.isTriggerActive && !this.needsTriggerRelease && this.owner.fireTimer <= 0) {
           fillMuzzleAndAim(this.owner, tmpMuzzle, tmpDir);
           const range = this.owner.params.range ?? WEAPON_TUNING.gauss.range;
-          const cone: GaussCone = {
-            x: this.owner.position.x,
-            z: this.owner.position.z,
-            dirX: tmpDir.x,
-            dirZ: tmpDir.z,
-            halfCos: Math.cos(WEAPON_TUNING.gauss.lockConeAngle),
-            range,
-          };
-          const target = findGaussTarget(ctx.tanks, this.owner, cone, ctx.colliders);
+          tmpGaussCone.x = this.owner.position.x;
+          tmpGaussCone.z = this.owner.position.z;
+          tmpGaussCone.dirX = tmpDir.x;
+          tmpGaussCone.dirZ = tmpDir.z;
+          tmpGaussCone.halfCos = Math.cos(WEAPON_TUNING.gauss.lockConeAngle);
+          tmpGaussCone.range = range;
+          const target = findGaussTarget(ctx.tanks, this.owner, tmpGaussCone, ctx.colliders);
           if (target) {
             this.state = 'LOCKING';
             this.lockedTarget = target;
@@ -334,7 +341,11 @@ export class GaussWeapon implements Weapon {
     this.beamFx.fire(tmpMuzzle, tmpTargetPos, WEAPON_TUNING.gauss.beamDuration);
     this.deps.effects.muzzle(tmpMuzzle, 0xc084fc);
     this.owner.onFired(WEAPON_TUNING.gauss.knockback);
-    this.deps.audio.shoot('gauss');
+    if (this.owner.isPlayer) {
+      this.deps.audio.shoot('gauss');
+    } else {
+      this.deps.audio.shoot('gauss', this.owner.position);
+    }
 
     if (this.owner.isPlayer) {
       this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakePlayer);
@@ -424,7 +435,11 @@ export class GaussWeapon implements Weapon {
     this.beamFx.fire(tmpMuzzle, tmpTargetPos, WEAPON_TUNING.gauss.arcadeBeamDuration);
     this.deps.effects.muzzle(tmpMuzzle, 0xc084fc);
     this.owner.onFired(WEAPON_TUNING.gauss.arcadeKnockback);
-    this.deps.audio.shoot('gauss');
+    if (this.owner.isPlayer) {
+      this.deps.audio.shoot('gauss');
+    } else {
+      this.deps.audio.shoot('gauss', this.owner.position);
+    }
 
     if (this.owner.isPlayer) {
       this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakePlayer * 0.4);

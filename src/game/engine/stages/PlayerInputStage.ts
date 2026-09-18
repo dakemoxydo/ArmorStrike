@@ -5,9 +5,17 @@ import type { FrameContext, SimSystem } from './types';
 import type { PlayerController } from '../../PlayerController';
 import type { AudioPort } from '../../ports/AudioPort';
 import { isBeamTurretId } from '../../../ui/hudPresentation';
+import type { WeaponAmmoState } from '../../weapons/types';
 
 export class PlayerInputStage implements SimSystem {
   readonly name = 'playerInput';
+  private readonly ammoSink: WeaponAmmoState = {
+    ammo: 0,
+    magazine: 0,
+    reloading: false,
+    reloadProgress: 0,
+    isCharging: false,
+  };
 
   constructor(
     private input: PlayerController,
@@ -20,7 +28,7 @@ export class PlayerInputStage implements SimSystem {
       // WASD/mouse → tank fields; wantsFire/requestReload фиксируются в
       // контроллере и применяются позже (WeaponFireStage).
       this.input.update(p);
-      const ammo = p.weapon?.getAmmoState();
+      const ammo = p.weapon?.getAmmoState(this.ammoSink);
       const reloading = ammo?.reloading ?? false;
       // Railgun reports isCharging as "reloading" for HUD progress, but charging
       // isn't a magazine reload — don't play the reload click on charge start.

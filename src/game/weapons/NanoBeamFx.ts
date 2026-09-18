@@ -123,10 +123,9 @@ export class NanoBeamFx {
   ): void {
     this.time += dt;
     this.alpha = Math.min(1, this.alpha + dt * 8);
-    const origins = [fromA, fromB];
     for (let i = 0; i < 2; i++) {
       const { mesh, mat } = this.layers[i];
-      const from = origins[i];
+      const from = i === 0 ? fromA : fromB;
       const len = from.distanceTo(to);
       mesh.visible = true;
       // E4: общая beam-геометрия центрирована (z∈[−0.5,0.5]), mesh ставится

@@ -66,43 +66,56 @@ function office(
 
     if (style === 'bands') {
       const bands = Math.max(2, Math.floor(h / 3));
-      for (let i = 1; i < bands; i++) {
-        const y = (i / bands) * h;
-        const band = new THREE.Mesh(
-          new THREE.BoxGeometry(w * 0.92, 0.65, d * 0.92),
-          win,
-        );
-        band.position.y = y;
-        g.add(band);
+      const bandCount = bands - 1;
+      if (bandCount > 0) {
+        const bandGeo = new THREE.BoxGeometry(w * 0.92, 0.65, d * 0.92);
+        const bandsInst = new THREE.InstancedMesh(bandGeo, win, bandCount);
+        const dummy = new THREE.Object3D();
+        for (let i = 1; i < bands; i++) {
+          const y = (i / bands) * h;
+          dummy.position.set(0, y, 0);
+          dummy.updateMatrix();
+          bandsInst.setMatrixAt(i - 1, dummy.matrix);
+        }
+        bandsInst.instanceMatrix.needsUpdate = true;
+        g.add(bandsInst);
       }
     } else if (style === 'grid') {
       const rows = Math.max(2, Math.floor(h / 2.4));
       const cols = Math.max(2, Math.floor(w / 2.8));
-      for (let r = 1; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const wx = (c / (cols - 1) - 0.5) * w * 0.72;
-          const wy = (r / rows) * h;
-          const pane = new THREE.Mesh(
-            new THREE.BoxGeometry(1.1, 0.9, d * 0.94),
-            win,
-          );
-          pane.position.set(wx, wy, 0);
-          g.add(pane);
+      const totalPanes = (rows - 1) * cols;
+      if (totalPanes > 0) {
+        const paneGeo = new THREE.BoxGeometry(1.1, 0.9, d * 0.94);
+        const panesInst = new THREE.InstancedMesh(paneGeo, win, totalPanes);
+        const dummy = new THREE.Object3D();
+        let pIdx = 0;
+        for (let r = 1; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const wx = (c / (cols - 1) - 0.5) * w * 0.72;
+            const wy = (r / rows) * h;
+            dummy.position.set(wx, wy, 0);
+            dummy.updateMatrix();
+            panesInst.setMatrixAt(pIdx++, dummy.matrix);
+          }
         }
+        panesInst.instanceMatrix.needsUpdate = true;
+        g.add(panesInst);
       }
     } else {
       // vertical fins
       const n = Math.max(3, Math.floor(w / 2.2));
       const finMat = concrete(0x5a6678);
+      const finGeo = new THREE.BoxGeometry(0.35, h * 0.92, d * 0.98);
+      const finsInst = new THREE.InstancedMesh(finGeo, finMat, n);
+      const dummy = new THREE.Object3D();
       for (let i = 0; i < n; i++) {
         const fx = (i / (n - 1) - 0.5) * w * 0.85;
-        const fin = new THREE.Mesh(
-          new THREE.BoxGeometry(0.35, h * 0.92, d * 0.98),
-          finMat,
-        );
-        fin.position.set(fx, h * 0.46, 0);
-        g.add(fin);
+        dummy.position.set(fx, h * 0.46, 0);
+        dummy.updateMatrix();
+        finsInst.setMatrixAt(i, dummy.matrix);
       }
+      finsInst.instanceMatrix.needsUpdate = true;
+      g.add(finsInst);
       const mid = new THREE.Mesh(
         new THREE.BoxGeometry(w * 0.7, h * 0.55, d * 0.88),
         win,
@@ -628,16 +641,37 @@ function buildCityOverpass(ctx: ArenaBuildContext) {
 
   // pillars — solid hard cover under the span. I4: внешняя пара была ±64
   // (8.7 м до спавнов (±70,−90)) — сдвинута к ±56, настил остаётся с выносом.
-  for (const px of [-56, -24, 24, 56]) {
-    ctx.addColliderBlock(px, z, 4.4, 4.4, pillarH, false, () => {
-      const g = new THREE.Group();
-      g.add(ctx.box(4.2, pillarH, 4.2, pillarMat));
-      const cap = ctx.box(5.0, 0.5, 5.0, concrete(0x4a5565));
-      cap.position.y = pillarH + 0.2;
-      g.add(cap);
-      return g;
-    }, 0, 'wall');
-  }
+  const pxs = [-56, -24, 24, 56];
+  const pillarGeo = new THREE.BoxGeometry(4.2, pillarH, 4.2);
+  const capGeo = new THREE.BoxGeometry(5.0, 0.5, 5.0);
+  const capMat = concrete(0x4a5565);
+  const pillarsInst = new THREE.InstancedMesh(pillarGeo, pillarMat, pxs.length);
+  const capsInst = new THREE.InstancedMesh(capGeo, capMat, pxs.length);
+  pillarsInst.castShadow = true;
+  pillarsInst.receiveShadow = true;
+  capsInst.castShadow = true;
+  capsInst.receiveShadow = true;
+
+  const dummy = new THREE.Object3D();
+  pxs.forEach((px, i) => {
+    dummy.position.set(px, pillarH / 2, z);
+    dummy.rotation.set(0, 0, 0);
+    dummy.updateMatrix();
+    pillarsInst.setMatrixAt(i, dummy.matrix);
+
+    dummy.position.set(px, pillarH + 0.2, z);
+    dummy.updateMatrix();
+    capsInst.setMatrixAt(i, dummy.matrix);
+
+    ctx.colliders.push(colliderFromCenter(px, z, 4.4, 4.4, pillarH, 'wall', {
+      destructible: false,
+      blocksSight: true,
+    }));
+  });
+  pillarsInst.instanceMatrix.needsUpdate = true;
+  capsInst.instanceMatrix.needsUpdate = true;
+  ctx.group.add(pillarsInst);
+  ctx.group.add(capsInst);
 
   // deck + rails — visual only (tanks pass under; no shot-block slab)
   const deck = new THREE.Mesh(new THREE.BoxGeometry(148, 1.0, 12), deckMat);
@@ -673,70 +707,108 @@ function buildCityOverpass(ctx: ArenaBuildContext) {
 function buildCityStreetProps(ctx: ArenaBuildContext) {
   const poleMat = new THREE.MeshStandardMaterial({ color: 0x333a44, roughness: 0.5, metalness: 0.6 });
   const lampMat = new THREE.MeshBasicMaterial({ color: 0xaaccff });
-  const lamp = (x: number, z: number) => {
-    ctx.addColliderBlock(x, z, 0.8, 0.8, 5.5, false, () => {
-      const g = new THREE.Group();
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 5.2, 8), poleMat);
-      pole.position.y = 2.6;
-      g.add(pole);
-      const head = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.25, 0.5), lampMat);
-      head.position.y = 5.3;
-      g.add(head);
-      return g;
-    }, 0, 'block', false);
-  };
 
+  const lampPositions: [number, number][] = [];
   const edge = 124;
   for (const p of [-100, -60, -20, 20, 60, 100]) {
-    lamp(p, -edge);
-    lamp(p, edge);
-    lamp(-edge, p);
-    lamp(edge, p);
+    lampPositions.push([p, -edge], [p, edge], [-edge, p], [edge, p]);
   }
   // intersection lamps at main × secondary
   for (const s of [1, -1]) {
-    lamp(s * 16, s * 16);
-    lamp(s * 16, -s * 16);
-    lamp(s * 56, 16);
-    lamp(s * 56, -16);
-    lamp(16, s * 56);
-    lamp(-16, s * 56);
+    lampPositions.push(
+      [s * 16, s * 16],
+      [s * 16, -s * 16],
+      [s * 56, 16],
+      [s * 56, -16],
+      [16, s * 56],
+      [-16, s * 56],
+    );
   }
 
+  const poleGeo = new THREE.CylinderGeometry(0.12, 0.18, 5.2, 8);
+  const headGeo = new THREE.BoxGeometry(1.2, 0.25, 0.5);
+  const lampPoles = new THREE.InstancedMesh(poleGeo, poleMat, lampPositions.length);
+  const lampHeads = new THREE.InstancedMesh(headGeo, lampMat, lampPositions.length);
+  lampPoles.castShadow = true;
+
+  const dummy = new THREE.Object3D();
+  lampPositions.forEach(([x, z], i) => {
+    dummy.position.set(x, 2.6, z);
+    dummy.rotation.set(0, 0, 0);
+    dummy.updateMatrix();
+    lampPoles.setMatrixAt(i, dummy.matrix);
+
+    dummy.position.set(x, 5.3, z);
+    dummy.updateMatrix();
+    lampHeads.setMatrixAt(i, dummy.matrix);
+
+    ctx.colliders.push(colliderFromCenter(x, z, 0.8, 0.8, 5.5, 'block', {
+      destructible: false,
+      blocksSight: false,
+    }));
+  });
+  lampPoles.instanceMatrix.needsUpdate = true;
+  lampHeads.instanceMatrix.needsUpdate = true;
+  ctx.group.add(lampPoles);
+  ctx.group.add(lampHeads);
+
   // traffic light poles at main cross
-  const tl = (x: number, z: number) => {
-    ctx.addColliderBlock(x, z, 0.7, 0.7, 4.5, false, () => {
-      const g = new THREE.Group();
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 4.2, 8), poleMat);
-      pole.position.y = 2.1;
-      g.add(pole);
-      const box = new THREE.Mesh(
-        new THREE.BoxGeometry(0.45, 1.1, 0.35),
-        concrete(0x222830),
-      );
-      box.position.y = 4.0;
-      g.add(box);
-      // E7: у живого светофора горит одна секция. Фазу переключения дал бы
-      // animNodes, но декор статичен по билд-контракту — значит «зелёный»:
-      // красная/жёлтая — тёмные «стеклянные» остатки, зелёная — активная.
-      const lenses: [number, number][] = [
-        [0.35, 0x4a2026], [0, 0x4a3c20], [-0.35, 0x33ff66],
-      ];
-      for (const [cy, col] of lenses) {
-        const lens = new THREE.Mesh(
-          new THREE.CircleGeometry(0.12, 8),
-          new THREE.MeshBasicMaterial({ color: col }),
-        );
-        lens.position.set(0, 4.0 + cy, 0.2);
-        g.add(lens);
-      }
-      return g;
-    }, 0, 'block', false);
-  };
-  tl(16, 16);
-  tl(-16, 16);
-  tl(16, -16);
-  tl(-16, -16);
+  const tlPositions: [number, number][] = [
+    [16, 16], [-16, 16], [16, -16], [-16, -16],
+  ];
+  const tlPoleGeo = new THREE.CylinderGeometry(0.1, 0.14, 4.2, 8);
+  const tlBoxGeo = new THREE.BoxGeometry(0.45, 1.1, 0.35);
+  const tlLensGeo = new THREE.CircleGeometry(0.12, 8);
+  const tlPoles = new THREE.InstancedMesh(tlPoleGeo, poleMat, tlPositions.length);
+  const tlBoxes = new THREE.InstancedMesh(tlBoxGeo, concrete(0x222830), tlPositions.length);
+  const tlLensGreen = new THREE.InstancedMesh(
+    tlLensGeo,
+    new THREE.MeshBasicMaterial({ color: 0x33ff66 }),
+    tlPositions.length,
+  );
+  const tlLensDark = new THREE.InstancedMesh(
+    tlLensGeo,
+    new THREE.MeshBasicMaterial({ color: 0x4a2e20 }),
+    tlPositions.length * 2,
+  );
+  tlPoles.castShadow = true;
+
+  let darkIdx = 0;
+  tlPositions.forEach(([x, z], i) => {
+    dummy.position.set(x, 2.1, z);
+    dummy.rotation.set(0, 0, 0);
+    dummy.updateMatrix();
+    tlPoles.setMatrixAt(i, dummy.matrix);
+
+    dummy.position.set(x, 4.0, z);
+    dummy.updateMatrix();
+    tlBoxes.setMatrixAt(i, dummy.matrix);
+
+    // E7: у живого светофора горит одна секция:
+    // красная/жёлтая — тёмные «стеклянные» остатки, зелёная — активная.
+    dummy.position.set(x, 4.0 - 0.35, z + 0.18);
+    dummy.updateMatrix();
+    tlLensGreen.setMatrixAt(i, dummy.matrix);
+
+    for (const cy of [0.35, 0]) {
+      dummy.position.set(x, 4.0 + cy, z + 0.18);
+      dummy.updateMatrix();
+      tlLensDark.setMatrixAt(darkIdx++, dummy.matrix);
+    }
+
+    ctx.colliders.push(colliderFromCenter(x, z, 0.7, 0.7, 4.5, 'block', {
+      destructible: false,
+      blocksSight: false,
+    }));
+  });
+  tlPoles.instanceMatrix.needsUpdate = true;
+  tlBoxes.instanceMatrix.needsUpdate = true;
+  tlLensGreen.instanceMatrix.needsUpdate = true;
+  tlLensDark.instanceMatrix.needsUpdate = true;
+  ctx.group.add(tlPoles);
+  ctx.group.add(tlBoxes);
+  ctx.group.add(tlLensGreen);
+  ctx.group.add(tlLensDark);
 }
 
 // ── city ramps (not shared factory positions) ──────────────────────────────

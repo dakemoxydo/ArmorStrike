@@ -36,7 +36,9 @@ BASE_PATH=/game/ npm run build
 
 Asset URLs are base-aware by construction: Vite rewrites CSS `url()` to relative paths (`./fonts/…`) and `assetUrl()` reads `import.meta.env.BASE_URL`. CI rebuilds under `/game/` and fails if any absolute asset reference survives.
 
-## Controls
+## Controls (Desktop Only)
+
+> **Platform policy (K3):** ArmorStrike is explicitly designed and calibrated for **Desktop** browser environments (keyboard + mouse with Pointer Lock API). Mobile devices, touch screens, and virtual gamepads are intentionally unsupported.
 
 | Action | Key |
 |--------|-----|

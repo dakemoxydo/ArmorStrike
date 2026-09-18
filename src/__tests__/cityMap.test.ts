@@ -244,3 +244,19 @@ describe('city layout — no invisible solids', () => {
     }
   });
 });
+
+describe('city layout — instancing (B8)', () => {
+  it('uses InstancedMesh for duplicated props and office elements', () => {
+    const { group } = build();
+    let instancedCount = 0;
+    let totalInstances = 0;
+    group.traverse((o) => {
+      if (o instanceof THREE.InstancedMesh) {
+        instancedCount++;
+        totalInstances += o.count;
+      }
+    });
+    expect(instancedCount).toBeGreaterThanOrEqual(15);
+    expect(totalInstances).toBeGreaterThanOrEqual(200);
+  });
+});
