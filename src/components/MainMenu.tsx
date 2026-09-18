@@ -1,5 +1,5 @@
 import {
-  Coins, Flame, Gamepad2, MousePointer2, Play, RotateCw, Shield, Shuffle, Target, Trophy, Wrench, Zap,
+  Coins, Flame, Gamepad2, Globe, MousePointer2, Play, RotateCw, Shield, Shuffle, Target, Trophy, Wrench, Zap,
 } from 'lucide-react';
 import type { HullDef, TurretDef } from '../core/catalog';
 import type { GameApi } from '../game/GameApi';
@@ -13,6 +13,7 @@ interface MainMenuProps {
   game?: GameApi | null;
   onStart: () => void;
   onQuickGame: () => void;
+  onServerBrowser?: () => void;
   onGarage: () => void;
   onQuests?: () => void;
   onOpenAuth?: () => void;
@@ -20,7 +21,7 @@ interface MainMenuProps {
 
 export default function MainMenu({
   hull, turret, credits = 0, claimableQuestsCount = 0,
-  game, onStart, onQuickGame, onGarage, onQuests, onOpenAuth,
+  game, onStart, onQuickGame, onServerBrowser, onGarage, onQuests, onOpenAuth,
 }: MainMenuProps) {
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-between p-8 md:p-14 bg-gradient-to-r from-[#04060bf2] via-[#04060ba8] to-transparent">
@@ -77,26 +78,36 @@ export default function MainMenu({
           Соедини корпус и орудие в Гараже — выбери режим — и выходи в бой.
         </p>
 
-        {/* S1: главное действие — сразу под лидом. Рядом — быстрый вход:
-            случайный режим + карта без двух экранов подготовки. */}
+        {/* S1: главное действие — сразу под лидом. Рядом — быстрый сетевой вход и серверы. */}
         <div className="anim-left mt-8" style={{ '--d': '0.4s' } as React.CSSProperties}>
           <div className="flex flex-wrap items-center gap-3">
-            <button type="button" onClick={onStart} className="btn-game btn-primary px-12 py-4 text-lg" aria-label="Начать игру — выбор режима и карты">
+            <button type="button" onClick={onStart} className="btn-game btn-primary px-10 py-4 text-lg" aria-label="Начать игру — выбор режима и карты">
               <Play size={22} className="bicon" aria-hidden />
               <span>ИГРАТЬ</span>
             </button>
             <button
               type="button"
               onClick={onQuickGame}
-              className="btn-game btn-ghost px-6 py-4 text-base"
-              aria-label="Быстрая игра: случайный режим и случайная карта"
+              className="btn-game btn-ghost px-6 py-4 text-base text-amber-300 border-amber-500/30 hover:bg-amber-500/10"
+              aria-label="Быстрая игра: мгновенный вход на любой открытый сервер"
             >
               <Shuffle size={18} className="bicon" aria-hidden />
               <span>БЫСТРАЯ ИГРА</span>
             </button>
+            {onServerBrowser && (
+              <button
+                type="button"
+                onClick={onServerBrowser}
+                className="btn-game btn-ghost px-6 py-4 text-base border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10"
+                aria-label="Список серверов и комнат мультиплеера"
+              >
+                <Globe size={18} className="bicon" aria-hidden />
+                <span>СЕРВЕРЫ</span>
+              </button>
+            )}
           </div>
           <p className="mt-2.5 text-[11px] tracking-wider text-white/45">
-            БЫСТРАЯ ИГРА — случайный режим · случайная карта
+            БЫСТРАЯ ИГРА — вход на открытый сервер без пароля · автозаполнение ботами
           </p>
         </div>
 

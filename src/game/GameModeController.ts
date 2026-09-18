@@ -12,7 +12,12 @@ import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID, isMapId } from './maps/mapCatalog';
 import { spawnMatchRoster } from './match/rosterSpawn';
 import { DEFAULT_MATCH_MODE } from './match/matchConfig';
-import type { MatchModeId } from './match/matchTypes';
+import type { MatchModeId, TeamId } from './match/matchTypes';
+
+export interface RoundOptions {
+  botsEnabled?: boolean;
+  playerTeam?: TeamId;
+}
 
 export interface GameModeControllerDeps {
   sim: GameSimulation;
@@ -90,9 +95,9 @@ export class GameModeController {
    * Start match on map. Concurrent calls are queued; only the latest sequence
    * applies roster + playing mode (avoids double tanks during GLB load).
    */
-  startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId): Promise<void> {
+  startRound(mapId: MapId = DEFAULT_MAP_ID, matchMode?: MatchModeId, options?: RoundOptions): Promise<void> {
     const seq = ++this.startSeq;
-    const job = this.startChain.then(() => this.executeStartRound(seq, mapId, matchMode));
+    const job = this.startChain.then(() => this.executeStartRound(seq, mapId, matchMode, options));
     // Keep chain alive so later starts still run after a failed start.
     this.startChain = job.catch(() => undefined);
     return job;
@@ -102,6 +107,7 @@ export class GameModeController {
     seq: number,
     mapId: MapId,
     matchMode?: MatchModeId,
+    options?: RoundOptions,
   ): Promise<void> {
     // Superseded while waiting in the queue — skip entirely.
     if (seq !== this.startSeq) return;
@@ -142,6 +148,8 @@ export class GameModeController {
       hullId: sim.run.currentHull,
       turretId: sim.run.currentTurret,
       playerName: sim.run.username,
+      botsEnabled: options?.botsEnabled,
+      playerTeam: options?.playerTeam,
     });
 
     // Another startRound or leave-to-menu invalidated us after async spawn.

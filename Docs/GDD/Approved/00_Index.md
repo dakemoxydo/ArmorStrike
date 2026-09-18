@@ -41,6 +41,7 @@
 | [[Starter_Crates_And_Progression]] | Стартовые контейнеры новобранца (Draft Pick 3 карт), закрытый арсенал | `RunState`, `GarageBinding`, `StarterPackModal` |
 | [[Economy_Currency_And_Quests]] | Экономика (Кредиты CR), боевые выплаты, система квестов и покупка контейнеров | `matchRewards`, `questCatalog`, `RunState`, `QuestsModal` |
 | [[Cloud_Profiles_And_Auth]] | Профили игроков, Supabase Auth (username/email), гостевой режим и облачные сохранения | `RunState`, `AuthService`, `CloudSaveService`, `AuthModal`, `UserBadge` |
+| [[Multiplayer_Lobby_And_Rooms]] | Сетевой мультиплеер, браузер серверов, создание комнат, быстрая игра и репликация танков | `multiplayerService`, `RemotePlayerManager`, `NetworkSyncStage`, `ServerBrowserModal` |
 
 **Removed-механики** (wave-era, удалены в P0) — надгробные доки в `../Archive/`: [[../Archive/Wave_System|Wave_System]], [[../Archive/Wave_Buffs|Wave_Buffs]]. Approved = только реализованное; история — в git.
 
@@ -59,6 +60,7 @@
 - [[../../Architecture/Standard_Arena_Level_Design|Standard Arena Level Design]] — content-builder-правила арены и верификация (factory/city/village)
 - [[../../Architecture/Standard_Resources|Standard Resources]] — memoized-фабрики текстур, `markShared`-владение, dispose
 - [[../../Architecture/Graphics_Presets_Matrix|Graphics Presets Matrix]] — матрица low/med/high: pixel ratio, тени, bloom, частицы
+- [[../../Architecture/Standard_Multiplayer|Standard Multiplayer]] — сетевая синхронизация, Supabase Realtime, Presence, RemotePlayerManager, интерполяция, RPC-комнаты
 
 ## Жанр и петля
 
@@ -88,3 +90,5 @@
 | Визуал башни (процедурный) | `src/game/tank/turret.ts` |
 | Динамика подвески и отдача шасси | `src/game/engine/systems/TankAnimationSystem.ts`, `src/game/tuning.ts` |
 | УВН башни и состояние тангажа ствола | `src/core/catalogData.ts` (`TURRETS`), `src/game/tank/components.ts` |
+| Сетевой сервис, комнаты и пакеты | `src/game/network/multiplayerService.ts`, `src/game/network/types.ts` |
+| Удалённые игроки и сетевая интерполяция | `src/game/network/RemotePlayerManager.ts`, `src/game/engine/stages/NetworkSyncStage.ts` |

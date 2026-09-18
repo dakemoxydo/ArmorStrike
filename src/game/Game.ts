@@ -11,6 +11,7 @@ import type {
   GarageViewportInset,
   HudSnapshot,
   MatchModeId,
+  TeamId,
   MinimapDynamic,
   MinimapStatic,
 } from './types';
@@ -22,6 +23,14 @@ import { DEFAULT_MAP_ID } from './maps/mapCatalog';
 import { ECONOMY_PRICES } from './economy/matchRewards';
 import type { QuestProgress } from './economy/questCatalog';
 import { CloudSaveService } from './auth/cloudSaveService';
+import { MultiplayerService } from './network/multiplayerService';
+import { RemotePlayerManager } from './network/RemotePlayerManager';
+import type {
+  RoomData,
+  TankDamagePacket,
+  TankTransformPacket,
+  WeaponFirePacket,
+} from './network/types';
 
 export class Game implements GameApi {
   /** Local event bus — safe to use before async bootstrap finishes. */
@@ -32,6 +41,10 @@ export class Game implements GameApi {
   private quality: QualityController | null = null;
   private modes: GameModeController | null = null;
   private garage: GarageBinding | null = null;
+
+  private multiplayerService: MultiplayerService | null = null;
+  private currentRoom: RoomData | null = null;
+  private isHostFlag = false;
 
   private hudCallback: ((hud: HudSnapshot) => void) | null = null;
   private hud: HudSnapshot | null = null;
@@ -274,6 +287,97 @@ export class Game implements GameApi {
       });
     }
     return out;
+  }
+
+  get isMultiplayer(): boolean { return this.currentRoom !== null; }
+  get activeRoom(): RoomData | null { return this.currentRoom; }
+  get isMultiplayerHost(): boolean { return this.isHostFlag; }
+
+  async startMultiplayerRound(room: RoomData, isHost: boolean, team?: TeamId): Promise<void> {
+    const sim = this.requireSim();
+    const ctx = this.ctx;
+    if (!ctx) throw new Error('Game context not initialized');
+
+    // Очищаем предыдущую сетевую сессию при наличии
+    await this.leaveMultiplayer();
+
+    this.currentRoom = room;
+    this.isHostFlag = isHost;
+
+    const mp = new MultiplayerService();
+    this.multiplayerService = mp;
+
+    const userId = sim.run.userId || ('usr_' + Math.random().toString(36).slice(2, 9));
+    const profile = {
+      userId,
+      username: sim.run.username,
+      hullId: sim.run.currentHull,
+      turretId: sim.run.currentTurret,
+    };
+
+    const remotePlayers = new RemotePlayerManager(ctx.scene, ctx.weaponDeps, sim.tanks, sim.nameplates);
+    sim.remotePlayers = remotePlayers;
+    sim.networkSync.setServices(mp, remotePlayers, userId);
+
+    mp.connectToRoom(room.id, profile, (event, payload) => {
+      if (event === 'tank_transform') {
+        remotePlayers.handleTransform(payload as TankTransformPacket);
+      } else if (event === 'weapon_fire') {
+        remotePlayers.handleFire(payload as WeaponFirePacket);
+      } else if (event === 'tank_damage') {
+        remotePlayers.handleDamage(payload as TankDamagePacket);
+      } else if (event === 'presence_sync') {
+        if (payload && typeof payload === 'object') {
+          const dict = payload as Record<string, unknown>;
+          for (const key of Object.keys(dict)) {
+            const presences = dict[key];
+            if (Array.isArray(presences)) {
+              for (const p of presences as Array<{ userId?: string; username?: string; hullId?: HullId; turretId?: TurretId }>) {
+                if (p.userId && p.userId !== userId) {
+                  const peerTeam: TeamId = room.mode === 'deathmatch'
+                    ? null
+                    : (team === 'alpha' ? 'bravo' : 'alpha');
+                  void remotePlayers.spawnPeer(
+                    p.userId,
+                    p.username || 'Боец',
+                    p.hullId || 'hunter',
+                    p.turretId || 'railgun',
+                    peerTeam,
+                  );
+                }
+              }
+            }
+          }
+        }
+      } else if (event === 'player_left') {
+        if (Array.isArray(payload)) {
+          for (const p of payload as Array<{ userId?: string }>) {
+            if (p.userId) remotePlayers.removePeer(p.userId);
+          }
+        }
+      }
+    });
+
+    // Запуск раунда с сетевыми настройками
+    await this.requireModes().startRound(room.map_id, room.mode, {
+      botsEnabled: room.bots_enabled,
+      playerTeam: team,
+    });
+  }
+
+  async leaveMultiplayer(): Promise<void> {
+    if (this.currentRoom && this.multiplayerService) {
+      const sim = this.sim;
+      const userId = sim?.run.userId || 'unknown';
+      await MultiplayerService.leaveRoom(this.currentRoom.id, userId);
+      this.multiplayerService.disconnect();
+      this.multiplayerService = null;
+      sim?.remotePlayers?.clear();
+      if (sim) sim.remotePlayers = null;
+      sim?.networkSync.setServices(null, null, userId);
+      this.currentRoom = null;
+      this.isHostFlag = false;
+    }
   }
 
   dispose() {

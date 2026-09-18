@@ -29,7 +29,9 @@ import {
   type CrosshairStyle,
 } from './ui/crosshairStyle';
 import { loadDamageNumbers, saveDamageNumbers } from './ui/damageNumbersSetting';
-import { pickQuickMatch } from './game/quickMatch';
+import ServerBrowserModal from './components/multiplayer/ServerBrowserModal';
+import { MultiplayerService } from './game/network/multiplayerService';
+import type { CreateRoomOptions } from './game/network/types';
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -72,6 +74,8 @@ export default function App() {
   /** Модальное окно авторизации/регистрации/сброса пароля */
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalInitialTab, setAuthModalInitialTab] = useState<AuthTab>('login');
+  /** Модальное окно списка серверов мультиплеера */
+  const [serverBrowserOpen, setServerBrowserOpen] = useState(false);
 
   // Boot: Game.create awaits async tank mesh / systems; listeners are safe pre/post ready.
   useEffect(() => {
@@ -255,30 +259,118 @@ export default function App() {
     void runStartRound(game, lastMapId);
   }, [game, lastMapId, runStartRound]);
 
-  /** Быстрая игра: случайный режим + карта, без экранов подготовки. */
-  const quickGame = useCallback(() => {
+  /** Сетевая игра: мгновенный подбор матча (быстрая игра) */
+  const handleQuickMatch = useCallback(async () => {
     if (!game) return;
-    const pick = pickQuickMatch();
-    setLastMatchMode(pick.mode);
-    setLastMapId(pick.mapId);
-    setModeSelectOpen(false);
-    setMapSelectOpen(false);
-    setPaused(false);
-    game.setMatchMode(pick.mode);
-    void runStartRound(game, pick.mapId);
-  }, [game, runStartRound]);
+    setRoundLoading(true);
+    setRoundError(null);
+    try {
+      const playerInfo = {
+        userId: game.userId || ('usr_' + Math.random().toString(36).slice(2, 9)),
+        username: game.username,
+        hullId: game.currentHull,
+        turretId: game.currentTurret,
+      };
+      const res = await MultiplayerService.quickMatch(playerInfo);
+      if (res.success && res.room) {
+        setServerBrowserOpen(false);
+        setModeSelectOpen(false);
+        setMapSelectOpen(false);
+        setPaused(false);
+        setLastMapId(res.room.map_id);
+        setLastMatchMode(res.room.mode);
+        await game.startMultiplayerRound(res.room, res.isHost, res.team);
+      } else {
+        setRoundError(res.error || 'Не удалось найти свободный сервер');
+      }
+    } catch (err) {
+      console.error('[ArmorStrike] quickMatch failed:', err);
+      setRoundError('Ошибка поиска сетевой игры');
+    } finally {
+      setRoundLoading(false);
+    }
+  }, [game]);
+
+  /** Подключение к выбранному серверу */
+  const handleJoinRoom = useCallback(async (roomId: string, password?: string) => {
+    if (!game) return;
+    setRoundLoading(true);
+    setRoundError(null);
+    try {
+      const playerInfo = {
+        userId: game.userId || ('usr_' + Math.random().toString(36).slice(2, 9)),
+        username: game.username,
+        hullId: game.currentHull,
+        turretId: game.currentTurret,
+      };
+      const res = await MultiplayerService.joinRoom(roomId, playerInfo, password);
+      if (res.success && res.room) {
+        setServerBrowserOpen(false);
+        setModeSelectOpen(false);
+        setMapSelectOpen(false);
+        setPaused(false);
+        setLastMapId(res.room.map_id);
+        setLastMatchMode(res.room.mode);
+        await game.startMultiplayerRound(res.room, false, res.team);
+      } else {
+        setRoundError(res.error || 'Ошибка входа на сервер');
+      }
+    } catch (err) {
+      console.error('[ArmorStrike] joinRoom failed:', err);
+      setRoundError('Не удалось подключиться к серверу');
+    } finally {
+      setRoundLoading(false);
+    }
+  }, [game]);
+
+  /** Создание сервера */
+  const handleCreateRoom = useCallback(async (opts: CreateRoomOptions) => {
+    if (!game) return;
+    setRoundLoading(true);
+    setRoundError(null);
+    try {
+      const playerInfo = {
+        userId: game.userId || ('usr_' + Math.random().toString(36).slice(2, 9)),
+        username: game.username,
+        hullId: game.currentHull,
+        turretId: game.currentTurret,
+      };
+      const res = await MultiplayerService.createRoom(opts, playerInfo);
+      if (res.success && res.room) {
+        setServerBrowserOpen(false);
+        setModeSelectOpen(false);
+        setMapSelectOpen(false);
+        setPaused(false);
+        setLastMapId(res.room.map_id);
+        setLastMatchMode(res.room.mode);
+        const isTeam = opts.mode === 'team_deathmatch' || opts.mode === 'capture_point';
+        await game.startMultiplayerRound(res.room, true, isTeam ? 'alpha' : null);
+      } else {
+        setRoundError(res.error || 'Ошибка создания сервера');
+      }
+    } catch (err) {
+      console.error('[ArmorStrike] createRoom failed:', err);
+      setRoundError('Не удалось создать игровой сервер');
+    } finally {
+      setRoundLoading(false);
+    }
+  }, [game]);
 
   const goGarage = useCallback(() => {
     if (!game) return;
+    void game.leaveMultiplayer();
     setMapSelectOpen(false);
     setModeSelectOpen(false);
+    setServerBrowserOpen(false);
     game.setMode('garage');
   }, [game]);
 
   const goMenu = useCallback(() => {
     if (!game) return;
+    void game.leaveMultiplayer();
     setMapSelectOpen(false);
     setModeSelectOpen(false);
+    setServerBrowserOpen(false);
     game.setMode('menu');
   }, [game]);
 
@@ -418,7 +510,8 @@ export default function App() {
           claimableQuestsCount={claimableQuestsCount}
           game={game}
           onStart={openModeSelect}
-          onQuickGame={quickGame}
+          onQuickGame={handleQuickMatch}
+          onServerBrowser={() => setServerBrowserOpen(true)}
           onGarage={goGarage}
           onQuests={() => setQuestsOpen(true)}
           onOpenAuth={() => {
@@ -480,6 +573,16 @@ export default function App() {
           game={game}
           initialTab={authModalInitialTab}
           onClose={() => setAuthModalOpen(false)}
+        />
+      )}
+
+      {serverBrowserOpen && (
+        <ServerBrowserModal
+          username={game?.username ?? 'Боец'}
+          onJoinRoom={handleJoinRoom}
+          onCreateRoom={handleCreateRoom}
+          onQuickMatch={handleQuickMatch}
+          onClose={() => setServerBrowserOpen(false)}
         />
       )}
 

@@ -26,6 +26,8 @@ import {
   EngineAudioStage,
 } from './WorldStages';
 
+import { NetworkSyncStage } from './NetworkSyncStage';
+
 export interface StageDeps {
   arena: Arena;
   effects: EffectsPort;
@@ -37,12 +39,18 @@ export interface StageDeps {
   hudModel: HudModel;
   match: MatchRuntime;
   nameplates: NameplateMap;
+  networkSync?: NetworkSyncStage;
 }
 
 /** Упорядоченный список стадий (повторяет порядок тика из GDD/Game_Lifecycle). */
 export function buildSimulationStages(d: StageDeps): SimSystem[] {
-  return [
+  const stages: SimSystem[] = [
     new PlayerInputStage(d.input, d.audio),
+  ];
+  if (d.networkSync) {
+    stages.push(d.networkSync);
+  }
+  stages.push(
     new BotAiStage(d.bots, d.arena, d.match),
     // Tanks BEFORE triggers: motion/aim integrate and the turret pose syncs
     // here, so weapons fire from the CURRENT-frame muzzle (see WeaponFireStage).
@@ -60,7 +68,8 @@ export function buildSimulationStages(d: StageDeps): SimSystem[] {
     new MatchStage(d.match),
     new BoostStage(d.effects),
     new EngineAudioStage(d.audio),
-  ];
+  );
+  return stages;
 }
 
 // Re-export types for external consumers.

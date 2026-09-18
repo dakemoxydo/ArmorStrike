@@ -30,6 +30,8 @@ export interface RosterSpawnCtx {
   hullId: HullId;
   turretId: TurretId;
   playerName?: string;
+  botsEnabled?: boolean;
+  playerTeam?: TeamId;
 }
 
 export interface RosterSpawnResult {
@@ -149,30 +151,34 @@ export async function makeBot(
 export async function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): Promise<RosterSpawnResult> {
   const bots: BotEntry[] = [];
   const used = new Set<number>();
-  const team = isTeamMode(cfg.mode);
+  const isTeam = isTeamMode(cfg.mode);
+  const playerTeam: TeamId = isTeam ? (ctx.playerTeam ?? 'alpha') : null;
 
   // --- Player ---
+  const teamColor = playerTeam === 'bravo'
+    ? new THREE.Color(COLORS.teamBravo)
+    : playerTeam === 'alpha'
+    ? new THREE.Color(COLORS.teamAlpha)
+    : undefined;
+
   const player = await createTankEntity({
     name: ctx.playerName?.trim() || 'ВЫ',
     isPlayer: true,
     hullId: ctx.hullId,
     turretId: ctx.turretId,
-    // П.21: в командных режимах корпус игрока красится в цвет его фракции
-    // (Alpha), как и корпуса союзников-ботов. Кольцо/лампа/антенна (`glow`)
-    // остаются мятными — личная метка «это я» не должна теряться в командном
-    // замесе. В Deathmatch палитра остаётся личной мятной.
-    style: buildPlayerStyle(team ? new THREE.Color(COLORS.teamAlpha) : undefined),
+    style: buildPlayerStyle(teamColor),
   });
-  player.teamId = team ? 'alpha' : null;
+  player.teamId = playerTeam;
   player.kills = 0;
   player.deaths = 0;
   player.invulnT = 0;
-  if (team) applyTeamRing(player, 'alpha');
+  if (playerTeam) applyTeamRing(player, playerTeam);
 
-  if (team) {
-    const idx = pickPointIndex(ALPHA_SPAWN_POINTS, used, 0, 0, 0);
+  if (isTeam) {
+    const spawnPool = playerTeam === 'bravo' ? BRAVO_SPAWN_POINTS : ALPHA_SPAWN_POINTS;
+    const idx = pickPointIndex(spawnPool, used, 0, 0, 0);
     used.add(idx);
-    const [px, pz] = ALPHA_SPAWN_POINTS[idx];
+    const [px, pz] = spawnPool[idx];
     placeTank(player, px, pz, 0);
   } else {
     placeTank(player, 0, -120, 0);
@@ -182,7 +188,12 @@ export async function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): P
   ctx.scene.add(player.visual.group);
   ctx.tanks.push(player);
 
-  if (!team) {
+  // If bots are explicitly disabled, return player alone (for human-only multiplayer)
+  if (ctx.botsEnabled === false) {
+    return { player, bots };
+  }
+
+  if (!isTeam) {
     // DM: 7 FFA bots
     for (let i = 0; i < cfg.dmBotCount; i++) {
       const idx = pickPointIndex(

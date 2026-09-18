@@ -12,6 +12,8 @@ import type { CombatSystem } from '../CombatSystem';
 import type { HudModel } from '../HudModel';
 import type { GameEvent } from '../types';
 import { buildSimulationStages, type SimSystem, type FrameContext, type ScalarCell } from './stages';
+import { NetworkSyncStage } from './stages/NetworkSyncStage';
+import type { RemotePlayerManager } from '../network/RemotePlayerManager';
 import { applyGameOverInputState } from '../deathLifecycle';
 import { MatchRuntime } from '../match/MatchRuntime';
 import type { MatchResult } from '../match/matchTypes';
@@ -22,6 +24,8 @@ export class GameSimulation {
   tanks: TankEntity[] = [];
   nameplates = new Map<number, { plate: Nameplate; color: number }>();
   readonly match: MatchRuntime;
+  readonly networkSync: NetworkSyncStage;
+  remotePlayers: RemotePlayerManager | null = null;
 
   /** Internal cells projected into FrameContext by reference. */
   private readonly deathCell: ScalarCell<number> = { value: -1 };
@@ -62,6 +66,8 @@ export class GameSimulation {
     readonly bots: BotRoster,
     readonly hudModel: HudModel,
   ) {
+    this.networkSync = new NetworkSyncStage(null, null, input, run.username);
+
     this.match = new MatchRuntime({
       run,
       audio,
@@ -85,6 +91,7 @@ export class GameSimulation {
       hudModel,
       match: this.match,
       nameplates: this.nameplates,
+      networkSync: this.networkSync,
     });
   }
 
@@ -152,6 +159,7 @@ export class GameSimulation {
   }
 
   clearTanks(scene: THREE.Scene) {
+    this.remotePlayers?.clear();
     for (const np of this.nameplates.values()) np.plate.dispose(scene);
     this.nameplates.clear();
     for (const t of this.tanks) t.dispose(scene);

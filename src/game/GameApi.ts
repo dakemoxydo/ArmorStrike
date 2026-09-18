@@ -9,6 +9,7 @@ import type {
   GarageViewportInset,
   HudSnapshot,
   MatchModeId,
+  TeamId,
   MinimapDynamic,
   MinimapStatic,
 } from './types';
@@ -77,6 +78,12 @@ export interface GameApi {
   fillMinimapDynamics(out: MinimapDynamic[]): MinimapDynamic[];
   /** CP zone markers for minimap (empty outside capture_point). */
   getCaptureMinimap(): CaptureHudPoint[];
+
+  /** Сетевая игра */
+  readonly isMultiplayer: boolean;
+  readonly activeRoom: import('./network/types').RoomData | null;
+  startMultiplayerRound(room: import('./network/types').RoomData, isHost: boolean, team?: TeamId): Promise<void>;
+  leaveMultiplayer(): Promise<void>;
 
   dispose(): void;
 }
