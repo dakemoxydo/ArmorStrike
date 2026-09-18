@@ -66,11 +66,11 @@ export default function CrateOpeningModal({
       aria-modal="true"
       aria-labelledby="crate-modal-title"
     >
-      <div className="hud-panel max-w-4xl w-full p-6 md:p-8 flex flex-col gap-6 relative border border-cyan-500/30 shadow-2xl bg-[#07111a]/95">
+      <div className="hud-panel max-w-4xl w-full p-6 md:p-8 flex flex-col gap-6 relative border border-amber-500/30 shadow-2xl bg-[#07111a]/95">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 cut-chip">
+            <div className="p-2.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 cut-chip">
               <PackageOpen size={24} aria-hidden />
             </div>
             <div>
@@ -180,17 +180,17 @@ function HullOptionCard({
       onClick={onSelect}
       className={`hud-panel flex flex-col justify-between p-5 text-left transition-all border ${
         isSelected
-          ? 'border-cyan-400 bg-cyan-950/40 shadow-lg shadow-cyan-500/20 scale-[1.02]'
-          : 'border-white/10 hover:border-cyan-500/40 bg-white/5'
+          ? 'border-amber-400 bg-amber-950/40 shadow-lg shadow-amber-500/20 scale-[1.02]'
+          : 'border-white/10 hover:border-amber-500/40 bg-white/5'
       }`}
     >
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] tracking-widest text-cyan-300 font-mono">
+          <span className="text-[10px] tracking-widest text-amber-300 font-mono">
             КЛАСС ШАССИ
           </span>
           {isSelected && (
-            <span className="cut-chip bg-cyan-400 text-slate-950 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">
+            <span className="cut-chip bg-amber-400 text-slate-950 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">
               ВЫБРАНО
             </span>
           )}
@@ -217,12 +217,12 @@ function HullOptionCard({
         <div>
           <div className="flex justify-between text-xs mb-1">
             <span className="text-white/60 flex items-center gap-1.5">
-              <Gauge size={13} className="text-cyan-400" /> Скорость
+              <Gauge size={13} className="text-amber-400" /> Скорость
             </span>
-            <span className="font-display text-cyan-300">{hull.speed} м/с</span>
+            <span className="font-display text-amber-300">{hull.speed} м/с</span>
           </div>
           <div className="h-1.5 bg-black/40 cut-chip overflow-hidden border border-white/10">
-            <div className="h-full bg-cyan-400" style={{ width: `${speedPct}%` }} />
+            <div className="h-full bg-amber-400" style={{ width: `${speedPct}%` }} />
           </div>
         </div>
       </div>
@@ -277,9 +277,9 @@ function TurretOptionCard({
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-white/60 flex items-center gap-1.5">
-            <Zap size={13} className="text-cyan-400" /> Магазин
+            <Zap size={13} className="text-amber-400" /> Магазин
           </span>
-          <span className="font-display text-cyan-300">{turret.magazine}</span>
+          <span className="font-display text-amber-300">{turret.magazine}</span>
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-white/60 flex items-center gap-1.5">

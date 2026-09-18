@@ -30,7 +30,7 @@ export default function HullCard({ hull, isSelected, isLocked, delay, onSelect, 
     >
       <div className="flex items-center justify-between mb-2">
         <span className="font-display text-lg tracking-wide text-white">{hull.name}</span>
-        {isSelected && <Check size={18} className="g-check text-cyan-300" aria-hidden />}
+        {isSelected && <Check size={18} className="g-check text-amber-300" aria-hidden />}
         {isLocked && <Lock size={16} className="text-white/50" aria-hidden />}
       </div>
       {isLocked ? (
@@ -38,7 +38,7 @@ export default function HullCard({ hull, isSelected, isLocked, delay, onSelect, 
           <Lock size={10} aria-hidden /> ЗАКРЫТО
         </div>
       ) : (
-        <div className="card-badge cut-chip px-2 py-0.5 mb-2 text-[10px] tracking-wider uppercase bg-cyan-500/20 text-cyan-200 border border-cyan-500/40">
+        <div className="card-badge cut-chip px-2 py-0.5 mb-2 text-[10px] tracking-wider uppercase bg-amber-500/20 text-amber-200 border border-amber-500/40">
           {hull.badge}
         </div>
       )}
@@ -57,10 +57,10 @@ export default function HullCard({ hull, isSelected, isLocked, delay, onSelect, 
         <div>
           <div className="flex justify-between text-white/70 mb-1">
             <span className="flex items-center gap-1"><Gauge size={10} aria-hidden /> СКОРОСТЬ</span>
-            <span className="font-display text-cyan-300">{hull.speed}</span>
+            <span className="font-display text-amber-300">{hull.speed}</span>
           </div>
           <div className="g-bar">
-            <i className="g-stat-bar bg-cyan-400" style={{ width: `${(hull.speed / MAX_HULL_SPEED) * 100}%` }} />
+            <i className="g-stat-bar bg-amber-400" style={{ width: `${(hull.speed / MAX_HULL_SPEED) * 100}%` }} />
           </div>
         </div>
       </div>

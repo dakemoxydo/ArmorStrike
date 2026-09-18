@@ -94,7 +94,7 @@ export function hexTexture(): THREE.CanvasTexture {
     const S = 256;
     const { c, ctx } = makeCanvas(S);
     ctx.clearRect(0, 0, S, S);
-    ctx.strokeStyle = 'rgba(80,220,255,0.5)';
+    ctx.strokeStyle = 'rgba(245,158,11,0.55)';
     ctx.lineWidth = 2;
     const r = 24;
     const h = Math.sin(Math.PI / 3) * r;

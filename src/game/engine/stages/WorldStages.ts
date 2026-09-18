@@ -39,7 +39,7 @@ export class NameplateSystemStage implements SimSystem {
   ) {}
 
   update(ctx: FrameContext): void {
-    NameplateSystem.updateTanks(ctx.tanks, this.nameplates);
+    NameplateSystem.updateTanks(ctx.tanks, this.nameplates, ctx.player.position);
   }
 }
 

@@ -188,7 +188,7 @@
 .ch-pick:active { transform: translateY(1px); }
 .ch-pick.is-active {
   color: #fff;
-  background: linear-gradient(135deg, rgba(46, 230, 192, 0.14), rgba(7, 15, 26, 0.85));
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(7, 15, 26, 0.85));
   box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.85), 0 0 var(--glow-r-md) rgba(var(--glow), 0.22);
 }
 .ch-pick-label { font-size: 11px; letter-spacing: var(--track-base); }
@@ -197,7 +197,7 @@
   position: relative;
   width: 18px;
   height: 18px;
-  color: #2ee6c0;
+  color: var(--accent, #f59e0b);
 }
 .ch-prev::before {
   content: '';
@@ -252,7 +252,7 @@
   font-family: 'Russo One', sans-serif;
   font-size: var(--fs-caption);
   letter-spacing: var(--track-wide);
-  color: var(--map-accent, var(--accent, #2ee6c0));
+  color: var(--map-accent, var(--accent, #f59e0b));
   pointer-events: none;
 }
 

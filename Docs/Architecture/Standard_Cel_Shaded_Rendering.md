@@ -1,7 +1,7 @@
 # Standard Cel-Shaded Rendering (Комиксный конвейер рендеринга)
 
 **Статус:** Standard Pattern  
-**Код:** `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/tank/TankFactory.ts`, `src/game/ArenaBuilder.ts`, `src/game/Arena.ts`, `src/game/atmospherePresets.ts`
+**Код:** `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/tank/TankFactory.ts`, `src/game/ArenaBuilder.ts`, `src/game/Arena.ts`, `src/game/atmospherePresets.ts`, `src/game/RenderWorld.ts`
 
 ---
 
@@ -74,7 +74,16 @@ if (_cel_sLum > 0.0005) {
 
 ---
 
-## 5. Бюджет и инварианты производительности
+## 5. Свет сцены (без IBL и без bloom)
+
+Cel-квантование читается только при плоском ключе. `RenderWorld` поэтому:
+
+- `renderer.toneMapping = LinearToneMapping` (не ACESFilmic — киношная кривая сжимает ступени).
+- `scene.environment = null` (нет `RoomEnvironment` PMREM: IBL заливал тени и металлы как PBR).
+- Экспозиция и sun/hemi/rim по-прежнему из `atmospherePresets.ts`.
+- `UnrealBloomPass` не строится ни на одном пресете: полноэкранный bloom размывает inverted-hull контур. Поля composer/bloomPass остаются только чтобы `dispose()` снял leftover.
+
+## 6. Бюджет и инварианты производительности
 
 | Параметр | Значение | Обоснование |
 |---|---|---|

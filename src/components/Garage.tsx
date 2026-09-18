@@ -253,7 +253,7 @@ export default function Garage({
             className="btn-game btn-ghost px-3 py-2 text-xs flex items-center gap-1.5 disabled:opacity-50"
             title={!hasLockedItems ? 'Все предметы получены' : credits < 600 ? 'Недостаточно CR (600 CR)' : 'Открыть кейс'}
           >
-            <PackageOpen size={14} className="text-cyan-400" aria-hidden />
+            <PackageOpen size={14} className="text-amber-400" aria-hidden />
             <span>КЕЙС</span>
             <span className="text-amber-300 font-display text-[11px]">600 CR</span>
           </button>
@@ -363,7 +363,7 @@ export default function Garage({
 
         <div className="garage-passport flex flex-col gap-2">
           <div className="anim-up hud-panel p-3" style={{ '--d': '0.3s' } as React.CSSProperties}>
-            <div className="hud-label text-cyan-300/90 mb-1.5 flex items-center gap-1.5">
+            <div className="hud-label text-amber-300/90 mb-1.5 flex items-center gap-1.5">
               <HardDrive size={14} aria-hidden /> СБОРОЧНЫЙ ПАСПОРТ
             </div>
             <div className="space-y-2">
@@ -372,7 +372,7 @@ export default function Garage({
               <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-white/10">
                 <span className="text-[10px] tracking-widest text-white/60 whitespace-nowrap">КОРПУС · БАШНЯ</span>
                 <span className="font-display text-sm whitespace-nowrap">
-                  <span className="text-cyan-300">{currHull.name}</span>
+                  <span className="text-amber-300">{currHull.name}</span>
                   <span className="text-white/45"> · </span>
                   <span className="text-amber-300">{currTurret.name}</span>
                 </span>
@@ -384,7 +384,7 @@ export default function Garage({
                 </div>
                 <div className="cut-chip bg-white/5 px-2 py-1.5 border border-white/10">
                   <div className="text-[10px] tracking-widest text-white/55 mb-0.5">СКОРОСТЬ</div>
-                  <div className="font-display text-lg text-cyan-300">{currHull.speed}</div>
+                  <div className="font-display text-lg text-amber-300">{currHull.speed}</div>
                 </div>
                 <div className="cut-chip bg-white/5 px-2 py-1.5 border border-white/10">
                   <div className="text-[10px] tracking-widest text-white/55 mb-0.5">УРОН / ВЫСТРЕЛ</div>
@@ -407,7 +407,7 @@ export default function Garage({
                   </div>
                 )}
                 {currTurret.weaponType === 'railgun' && (
-                  <div className="garage-weapon-tip text-[10px] text-cyan-200/70 bg-cyan-500/10 border border-cyan-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
+                  <div className="garage-weapon-tip text-[10px] text-amber-200/70 bg-amber-500/10 border border-amber-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
                     ТОЧНЫЙ ЭНЕРГЕТИЧЕСКИЙ ЛУЧ · {currTurret.damage} ЕД.
                   </div>
                 )}

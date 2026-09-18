@@ -96,3 +96,6 @@
 | Удалённые игроки и сетевая интерполяция | `src/game/network/RemotePlayerManager.ts`, `src/game/engine/stages/NetworkSyncStage.ts` |
 | Cel-Shading и чернильный контур силуэтов | `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts` |
 | Пресеты дневной комиксной атмосферы | `src/game/atmospherePresets.ts` |
+| Комиксный свет (Linear, без IBL/bloom) | `src/game/RenderWorld.ts` |
+| Земля карт без перлина | `src/game/textures/ground.ts` |
+| Неймплейты (срез, fade) | `src/game/nameplate.ts`, `src/game/engine/systems/NameplateSystem.ts` |

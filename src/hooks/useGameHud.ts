@@ -219,7 +219,7 @@ export function useGameHud(game: GameApi | null, active: boolean, showDamageNumb
         reloadRef.current.style.background =
           s.reloading
             ? `conic-gradient(var(--warn, #ffd24a) ${p}deg, rgba(255,255,255,0.07) ${p}deg)`
-            : `conic-gradient(var(--accent, #2ee6c0) 360deg, rgba(0,0,0,0) 0deg)`;
+            : `conic-gradient(var(--accent, #f59e0b) 360deg, rgba(0,0,0,0) 0deg)`;
       }
       if ((s.turretId === 'flamethrower' || s.turretId === 'isida') && flameFillRef.current) {
         // Оба — непрерывная «оболочка» энергии: ширина пишется в ref, без React-force.

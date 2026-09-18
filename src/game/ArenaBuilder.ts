@@ -69,7 +69,7 @@ export function buildArena(
         wallColor: 0xbfd2e6,
         pillarColor: 0x222d3d,
         lampColor: 0xffb84d,
-        stripColor: 0x2ee6c0,
+        stripColor: 0xf59e0b,
         signA: ['ЗАВОД-51', 'ЛИТЕЙНЫЙ КОМПЛЕКС «ARMORSTRIKE»'],
         signB: ['ЦЕХ №7', 'МЕХАНИЧЕСКАЯ СБОРКА'],
       });

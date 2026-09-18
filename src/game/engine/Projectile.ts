@@ -23,6 +23,9 @@ export interface Shot {
   glow: THREE.Sprite;
   mat: THREE.MeshStandardMaterial;
   glowMat: THREE.SpriteMaterial;
+  /** Additive tapered ribbon behind the bolt. Optional on test doubles. */
+  trailMesh?: THREE.Mesh;
+  trailMat?: THREE.MeshBasicMaterial;
   dir: THREE.Vector3;
   alive: boolean;
   traveled: number;
@@ -74,12 +77,16 @@ export class ProjectileManager {
   private cursor = 0;
   private readonly scene: THREE.Scene;
   private readonly capGeo: THREE.BufferGeometry;
+  private readonly trailGeo: THREE.BufferGeometry;
   private readonly glowTex: THREE.Texture;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.capGeo = new THREE.CapsuleGeometry(PROJECTILE.radius, 1.15, 4, 10);
     this.capGeo.rotateX(Math.PI / 2);
+    // Tapered ribbon: lookAt aims -Z forward, so +Z is the wake.
+    this.trailGeo = new THREE.CylinderGeometry(0.10, 0.28, 8.4, 6);
+    this.trailGeo.rotateX(Math.PI / 2);
     this.glowTex = glowTexture();
 
     for (let i = 0; i < POOL_SIZE; i++) {
@@ -94,14 +101,25 @@ export class ProjectileManager {
       });
       const glow = new THREE.Sprite(glowMat);
       glow.scale.setScalar(1.7);
+      const trailMat = new THREE.MeshBasicMaterial({
+        color: 0xffb020,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+      });
+      const trailMesh = new THREE.Mesh(this.trailGeo, trailMat);
+      trailMesh.position.z = 4.1;
       const group = new THREE.Group();
       group.add(coreMesh);
       group.add(glow);
+      group.add(trailMesh);
       group.visible = false;
       scene.add(group);
 
       this.shots.push({
-        group, coreMesh, glow, mat, glowMat,
+        group, coreMesh, glow, mat, glowMat, trailMesh, trailMat,
         dir: new THREE.Vector3(), alive: false, traveled: 0,
         // speed is owned by the weapon behavior (set in init() on fire);
         // pooled slots are never in flight before init, so 0 is safe.
@@ -149,6 +167,7 @@ export class ProjectileManager {
     s.mat.emissive.copy(s.color);
     s.mat.color.copy(s.color);
     s.glowMat.color.copy(s.color);
+    if (s.trailMat) s.trailMat.color.copy(s.color);
     s.group.visible = true;
     return true;
   }
@@ -258,9 +277,11 @@ export class ProjectileManager {
       this.scene.remove(s.group);
       s.mat.dispose();
       s.glowMat.dispose();
+      s.trailMat?.dispose();
     }
     this.shots = [];
     this.capGeo.dispose();
+    this.trailGeo.dispose();
     // glowTex is a markShared cache singleton (textures/shared.ts) — the cache
     // owns it for the process lifetime, so it is NOT disposed here.
   }

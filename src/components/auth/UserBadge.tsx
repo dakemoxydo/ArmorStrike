@@ -52,13 +52,13 @@ export default function UserBadge({ game, onOpenAuth }: UserBadgeProps) {
         <button
           type="button"
           onClick={onOpenAuth}
-          className="btn-game btn-ghost px-3 py-1.5 text-xs flex items-center gap-2 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300"
+          className="btn-game btn-ghost px-3 py-1.5 text-xs flex items-center gap-2 border border-amber-500/30 hover:border-amber-400 text-amber-300"
           title="Войти в аккаунт или зарегистрироваться"
           aria-label="Войти в аккаунт"
         >
-          <User size={14} className="text-cyan-400" aria-hidden />
+          <User size={14} className="text-amber-400" aria-hidden />
           <span className="font-semibold tracking-wider">ГОСТЬ</span>
-          <span className="cut-chip bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 text-[9px] border border-cyan-400/40">
+          <span className="cut-chip bg-amber-500/20 text-amber-300 px-1.5 py-0.5 text-[9px] border border-amber-400/40">
             ВОЙТИ
           </span>
         </button>
@@ -68,7 +68,7 @@ export default function UserBadge({ game, onOpenAuth }: UserBadgeProps) {
 
   return (
     <div className="relative flex items-center">
-      <div className="hud-panel flex items-center gap-2 px-3 py-1.5 bg-slate-900/80 border border-cyan-500/30">
+      <div className="hud-panel flex items-center gap-2 px-3 py-1.5 bg-slate-900/80 border border-amber-500/30">
         <ShieldCheck size={16} className="text-emerald-400" aria-hidden />
 
         {/* Username */}
@@ -79,7 +79,7 @@ export default function UserBadge({ game, onOpenAuth }: UserBadgeProps) {
         {/* Cloud sync indicator */}
         <span title={`Синхронизация: ${syncStatus}`}>
           {syncStatus === 'saving' && (
-            <Loader2 size={13} className="text-cyan-400 animate-spin" aria-hidden />
+            <Loader2 size={13} className="text-amber-400 animate-spin" aria-hidden />
           )}
           {syncStatus === 'synced' && (
             <CloudCheck size={13} className="text-emerald-400" aria-hidden />

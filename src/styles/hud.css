@@ -103,7 +103,7 @@
   width: 3px;
   height: 3px;
   margin-right: 6px;
-  background: var(--accent, #2ee6c0);
+  background: var(--accent, #f59e0b);
   transform: rotate(45deg);
   box-shadow: 0 0 var(--glow-r-xs) rgba(var(--glow), 0.8);
   flex-shrink: 0;
@@ -286,7 +286,7 @@
   width: 56px; height: 56px;
   border-radius: var(--radius-circle);
   display: flex; align-items: center; justify-content: center;
-  background: conic-gradient(#2ee6c0 360deg, transparent 0deg);
+  background: conic-gradient(var(--accent, #f59e0b) 360deg, transparent 0deg);
   position: relative;
   flex-shrink: 0;
   box-shadow:
@@ -1274,8 +1274,8 @@
 }
 .scoreboard-table tbody tr:last-child td { border-bottom: none; }
 .scoreboard-table tr.row-player td {
-  color: #6ef2c8;
-  background: rgba(46, 230, 192, 0.08);
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.10);
   box-shadow: inset 2px 0 0 rgba(var(--glow), 0.9);
 }
 .scoreboard-table td.dead { color: rgba(255, 90, 80, 0.55); text-decoration: line-through; }
@@ -1287,10 +1287,10 @@
 }
 .sb-hp > div {
   height: 100%;
-  background: var(--accent, #2ee6c0);
+  background: var(--accent, #f59e0b);
   transition: width 0.25s ease, background-color 0.25s ease;
 }
-.sb-hp > div.hp-high { background: var(--accent, #2ee6c0); }
+.sb-hp > div.hp-high { background: #34d399; }
 .sb-hp > div.hp-mid { background: var(--warn, #ffd24a); }
 .sb-hp > div.hp-low { background: var(--danger, #ff4d3d); }
 
@@ -1479,7 +1479,7 @@
     from 0deg,
     transparent 0 55%,
     rgba(var(--glow), 0.25) 55% 78%,
-    var(--accent, #2ee6c0) 78% 100%
+    var(--accent, #f59e0b) 78% 100%
   );
   mask: radial-gradient(closest-side, transparent 0 68%, #000 68%);
   -webkit-mask: radial-gradient(closest-side, transparent 0 68%, #000 68%);

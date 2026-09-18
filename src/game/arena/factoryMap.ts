@@ -19,7 +19,7 @@ import { buildSkyline } from './skyline';
 
 const AMBER = 0xffb02e;
 const HAZARD_ORANGE = 0xff8a1a;
-const HOLO = 0x2ee6c0;
+const HOLO = 0xf59e0b;
 
 /** Factory-themed interior: foundry, container terminal, assembly halls, tank farm. */
 export function buildFactoryContent(ctx: ArenaBuildContext) {

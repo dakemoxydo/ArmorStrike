@@ -14,7 +14,7 @@
 | `pixelRatioMax` | 1 | 1.5 | 2 | `renderer.setPixelRatio(min(devicePixelRatio, max))` |
 | `shadowMapSize` | 512 | 1024 | 2048 | `sun.shadow.mapSize`, старая карта диспозится |
 | `shadows` | true | true | true | `renderer.shadowMap.enabled` + `sun.castShadow` |
-| Bloom composer | нет | нет | да | downgrade → полный dispose; возврат → свежий композер от CSS-размера канваса |
+| Bloom composer | нет | нет | нет | UnrealBloom размывает чернильный контур; leftover composer только диспозится |
 | Декоративные анимации арены (beacon blink, furnace glow, molten) | **выключены** | вкл | вкл | `ArenaEffects.update`: `if quality !== 'low'` |
 | Спавн/объёмы частиц и дыма | без изменений | без изменений | без изменений | пулы фиксированы: smoke ≤44, sparks 800, flame 160, wrecks ≤6 |
 
@@ -22,8 +22,8 @@
 
 1. **Частицы/дым** — бюджеты пулов константны на всех пресетах. Осознанный выбор
    (аудит iter 7): пулы уже ограничены, их аллокация не зависит от качества;
-   «низкое качество» экономит fill-rate (pixelRatio) и постпроцессинг, а не
-   количество спрайтов.
+   «низкое качество» экономит fill-rate (pixelRatio), а не количество спрайтов.
+   Постпроцессинг bloom снят на всех тирах (комиксный контур).
 2. **Тени** — включены даже на low; меняется только разрешение карты
    (512 достаточно для стилистики, полное отключение сломало бы визуальную
    согласованность карт).
@@ -36,8 +36,8 @@
 - Цикл: low → medium → high → low (`nextQuality`); применяется немедленно,
   сохраняется в localStorage (`as2_quality`), восстанавливается при следующем
   запуске (`loadQuality`, fallback 'high').
-- Смена пресета безопасна в любой момент раунда: bloom teardown/rebuild покрыт
-  тестом `renderWorldQuality.test.ts`; shadow map dispose — частью `applyQuality`.
+- Смена пресета безопасна в любой момент раунда: leftover bloom teardown покрыт
+  тестом `renderWorldQuality.test.ts` (high больше не строит composer); shadow map dispose — частью `applyQuality`.
 - Если `shadows` когда-нибудь меняется между пресетами, `applyQuality` форсит
   разовый `material.needsUpdate` по сцене: three.js не перекомпилирует уже
   собранные материалы при переключении `renderer.shadowMap.enabled` сам

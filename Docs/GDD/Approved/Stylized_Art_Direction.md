@@ -1,7 +1,7 @@
 # GDD — Стилизованный Low-Poly / Cel-Shaded / Комикс арт-дирекшен
 
 **Статус:** Approved  
-**Код:** `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/tank/TankFactory.ts`, `src/game/atmospherePresets.ts`, `src/game/textures/tank.ts`, `src/styles/hud.css`
+**Код:** `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/tank/TankFactory.ts`, `src/game/atmospherePresets.ts`, `src/game/textures/tank.ts`, `src/game/textures/ground.ts`, `src/game/RenderWorld.ts`, `src/game/nameplate.ts`, `src/styles/hud.css`
 
 ---
 
@@ -64,11 +64,33 @@
 - Все здания, стены, контейнеры, трубы и постройки арены получают `applyCelShading`, объединяя технику и мир в единый 3-уровневый комиксный конвейер.
 - Мировые маркеры точек захвата A/B/C оформлены в виде круглых комиксных бейджей с чернильным контуром толщиной 8px `#0b0e14`, шрифтом `'Russo One'` и объёмной чернильной подложкой.
 
+### 8. Свет без киношного IBL
+- **Файл:** `src/game/RenderWorld.ts`
+- `LinearToneMapping` + `scene.environment = null`. ACES + RoomEnvironment PMREM заливали cel-ступени.
+- Bloom выключен на всех пресетах (размывает ink-outline).
+
+### 9. Земля без перлина
+- **Файл:** `src/game/textures/ground.ts`
+- Завод: закатный бетон `#b89a72`, янтарные швы и CP. Деревня: зелёные плашки полей + грунтовые дороги. Город: дневной асфальт `#7a8490` и плиты с чернильным швом. Вызовов `noise()` нет.
+
+### 10. Идентичность игрока
+- **Файлы:** `src/core/constants.ts` (`COLORS.player = 0xf59e0b`), `src/core/TankCatalog.ts`
+- FFA-камуфляж оливково-янтарный (`#6b7a32` / `#d4c070`), не мята. UI-хром (модалки, гараж, миникарта «я») — янтарь `--accent`. Цвет рельсы/Изиды (`#2ee6c0`) остаётся оружейным, не акцентным.
+
+### 11. Трассер Смоки
+- **Файлы:** `src/game/engine/Projectile.ts`, `src/game/engine/ProjectileBehavior.ts`
+- Пуловый аддитивный конус-ribbon за болтом. `trailPuff` на снаряде не вызывается (`trailInterval = Infinity`).
+
+### 12. Неймплейты
+- **Файлы:** `src/game/nameplate.ts`, `src/game/engine/systems/NameplateSystem.ts`
+- Срез угла, `Russo One`, 8-dir чернила, HP как HUD. Fade/scale от дистанции до локального игрока: непрозрачны до 48 м, исчезают к 110 м (E2).
+
 ---
 
 ## Тесты и инварианты
 
-- `src/__tests__/comicStyle.test.ts` — верификация `applyCelShading`, чернильного контура танков, текстур, применения cel-shading к геометрии уровней и дизайн-токенов чернильного UI.
+- `src/__tests__/comicStyle.test.ts` — верификация `applyCelShading`, чернильного контура танков, текстур, применения cel-shading к геометрии уровней, дизайн-токенов чернильного UI, янтаря игрока, земли без `noise()`, LinearToneMapping без IBL/bloom.
+- `src/__tests__/nameplate.test.ts` — срез/Russo One, fade 48–110 м от наблюдателя.
 - `src/__tests__/atmospherePresets.test.ts` — пины экспозиции и параметров комиксных атмосфер.
 - `src/__tests__/uiUxPresentation.test.ts` — соблюдение дизайн-токенов свечений, срезов, шрифтовой разрядки и контрастности.
 - `src/__tests__/lowFixesBatch.test.ts` — инвариант перерисовки канваса букв точек захвата (B10).

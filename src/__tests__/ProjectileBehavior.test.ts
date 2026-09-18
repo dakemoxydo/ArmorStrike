@@ -80,8 +80,11 @@ describe('ProjectileBehavior (cannon pool only)', () => {
     expect(target.knockback.z).toBeCloseTo(4, 5);
   });
 
-  it('cannon trailInterval is 0.04', () => {
+  it('cannon uses a mesh ribbon, not puff trail ticks', () => {
     const s = makeShot();
-    expect(BEHAVIORS.cannon!.trailInterval(s)).toBe(0.04);
+    expect(BEHAVIORS.cannon!.trailInterval(s)).toBe(Number.POSITIVE_INFINITY);
+    const effects = { trailPuff: vi.fn() };
+    BEHAVIORS.cannon!.trailEffect(s, new THREE.Vector3(), { effects } as never);
+    expect(effects.trailPuff).not.toHaveBeenCalled();
   });
 });

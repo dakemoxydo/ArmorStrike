@@ -123,6 +123,30 @@ describe('Comic / Cel-Shaded Art Direction', () => {
       expect(mat.customProgramCacheKey()).toBe('cel-shaded-std-v1');
     });
 
+    it('player identity is amber, not mint cyan', async () => {
+      const { readFileSync } = await import('node:fs');
+      const { resolve } = await import('node:path');
+      const constants = readFileSync(resolve(__dirname, '../core/constants.ts'), 'utf8');
+      const catalog = readFileSync(resolve(__dirname, '../core/TankCatalog.ts'), 'utf8');
+      expect(constants).toMatch(/player:\s*0xf59e0b/);
+      expect(constants).not.toMatch(/player:\s*0x2ee6c0/);
+      expect(catalog).toContain('#6b7a32');
+      expect(catalog).not.toContain('#2fae8f');
+    });
+
+    it('ground textures have no Perlin noise() and RenderWorld has no IBL/ACES/bloom', async () => {
+      const { readFileSync } = await import('node:fs');
+      const { resolve } = await import('node:path');
+      const ground = readFileSync(resolve(__dirname, '../game/textures/ground.ts'), 'utf8');
+      const world = readFileSync(resolve(__dirname, '../game/RenderWorld.ts'), 'utf8');
+      expect(ground).not.toMatch(/\bnoise\s*\(/);
+      expect(world).toContain('LinearToneMapping');
+      expect(world).not.toMatch(/ACESFilmicToneMapping/);
+      expect(world).not.toMatch(/from ['"]three\/addons\/environments\/RoomEnvironment/);
+      expect(world).not.toMatch(/from ['"]three\/addons\/postprocessing\/UnrealBloomPass/);
+      expect(world).toContain('this.scene.environment = null');
+    });
+
     it('defines comic ink border and 3D offset shadow in variables and buttons', async () => {
       const { readFileSync } = await import('node:fs');
       const { resolve } = await import('node:path');

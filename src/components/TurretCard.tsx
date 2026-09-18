@@ -53,13 +53,13 @@ export default function TurretCard({ turret, isSelected, isLocked, delay, onSele
         <div>
           <div className="flex justify-between text-white/70 mb-1">
             <span className="flex items-center gap-1"><Target size={10} aria-hidden /> ДАЛЬНОСТЬ</span>
-            <span className="font-display text-cyan-300">
+            <span className="font-display text-amber-300">
               {Number.isFinite(turret.range) ? `${turret.range} м` : '∞'}
             </span>
           </div>
           <div className="g-bar">
             <i
-              className="g-stat-bar bg-cyan-400"
+              className="g-stat-bar bg-amber-400"
               style={{ width: `${Number.isFinite(turret.range) ? Math.min(100, (turret.range / 85) * 100) : 100}%` }}
             />
           </div>

@@ -1,14 +1,9 @@
 // ===== Подсистема рендера: renderer, сцена, камера, свет, небо, окружение =====
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { CameraRig } from './CameraRig';
 import { getQualityPreset, type QualityLevel, type QualityPreset } from './graphicsQuality';
 import type { MapId } from './maps/mapCatalog';
 import { getAtmosphere } from './atmospherePresets';
-import { disposeObject3D } from './resources/disposeObject3D';
 
 const NIGHT = getAtmosphere('factory');
 
@@ -25,15 +20,15 @@ export class RenderWorld {
   private quality: QualityLevel;
   private atmosphere: MapId = 'factory';
 
-  /** Post-processing: bloom (только на high quality). */
-  private composer: EffectComposer | null = null;
-  private bloomPass: UnrealBloomPass | null = null;
-  private useComposer = false;
   /**
-   * PMREM render target backing `scene.environment`. Owned by this class —
-   * `renderer.dispose()` does NOT free render targets, so it must be released
-   * explicitly in `dispose()`.
+   * Legacy bloom composer slot. UnrealBloom blurs ink outlines, so the comic
+   * pipeline never builds it; the field stays so dispose() can tear down a
+   * leftover injected in tests / old sessions.
    */
+  private composer: { setSize: (w: number, h: number) => void; dispose: () => void; render: () => void } | null = null;
+  private bloomPass: { dispose: () => void } | null = null;
+  private useComposer = false;
+  /** Always null — comic lighting has no RoomEnvironment IBL. */
   private envRT: THREE.WebGLRenderTarget | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -51,7 +46,8 @@ export class RenderWorld {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, preset.pixelRatioMax));
     this.renderer.shadowMap.enabled = preset.shadows;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    // Linear + no IBL: ACES + RoomEnvironment filled cel bands and looked PBR.
+    this.renderer.toneMapping = THREE.LinearToneMapping;
     this.renderer.toneMappingExposure = NIGHT.exposure;
 
     this.camera = new THREE.PerspectiveCamera(58, 1, 0.1, 900);
@@ -103,15 +99,7 @@ export class RenderWorld {
     );
     this.scene.add(this.sky);
 
-    const pmrem = new THREE.PMREMGenerator(this.renderer);
-    // sigma=0: no pre-blur (official RoomEnvironment pattern). sigma>0.04 hits PMREM MAX_SAMPLES=20 warn.
-    const roomEnv = new RoomEnvironment();
-    this.envRT = pmrem.fromScene(roomEnv, 0);
-    this.scene.environment = this.envRT.texture;
-    pmrem.dispose();
-    // RoomEnvironment is a throwaway scene that never joins our scene graph,
-    // so its geometries/materials would otherwise leak for the process lifetime.
-    disposeObject3D(roomEnv);
+    this.scene.environment = null;
 
     this.hemi = new THREE.HemisphereLight(NIGHT.hemiSky, NIGHT.hemiGround, NIGHT.hemiIntensity);
     this.scene.add(this.hemi);
@@ -128,31 +116,6 @@ export class RenderWorld {
     this.rim = new THREE.DirectionalLight(NIGHT.rimColor, NIGHT.rimIntensity);
     this.rim.position.set(-30, 20, -40);
     this.scene.add(this.rim);
-
-    // Bloom post-processing (только на high quality)
-    this.setupBloom(preset);
-  }
-
-  private setupBloom(preset: QualityPreset) {
-    if (preset.id !== 'high') {
-      this.useComposer = false;
-      return;
-    }
-    this.composer = new EffectComposer(this.renderer);
-    // Дефолтный RT EffectComposer — без stencil-attachment; маска силуэтной
-    // обводки (modelOutline.ts) пишется именно в stencil. FB создаётся лениво
-    // при первом рендере, поэтому флагов на обоих RT достаточно.
-    this.composer.renderTarget1.stencilBuffer = true;
-    this.composer.renderTarget2.stencilBuffer = true;
-    this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.35,  // strength — мягкий bloom
-      0.6,   // radius
-      0.85,  // threshold — только яркие emissive
-    );
-    this.composer.addPass(this.bloomPass);
-    this.useComposer = true;
   }
 
   getQuality(): QualityLevel {
@@ -230,23 +193,8 @@ export class RenderWorld {
         }
       });
     }
-    // Bloom only on 'high'. Tear the composer down on every downgrade (frees
-    // its full-size render targets) and rebuild on return — a fresh composer
-    // picks up the current pixelRatio and canvas size, so post-processing
-    // never renders at stale DPI/size after quality cycling.
-    if (preset.id !== 'high') {
-      this.disposeBloom();
-    } else if (!this.composer) {
-      this.setupBloom(preset);
-      this.resizeComposer();
-    }
-  }
-
-  /** Align the bloom composer to the canvas CSS size (fallback: window). */
-  private resizeComposer() {
-    if (!this.composer) return;
-    const el = this.renderer.domElement;
-    this.composer.setSize(el.clientWidth || window.innerWidth, el.clientHeight || window.innerHeight);
+    // Comic pipeline: never rebuild UnrealBloom (blurs inverted-hull ink).
+    this.disposeBloom();
   }
 
   private disposeBloom() {

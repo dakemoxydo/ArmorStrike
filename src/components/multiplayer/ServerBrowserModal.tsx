@@ -118,20 +118,20 @@ export default function ServerBrowserModal({
     >
       <div
         ref={trapRef}
-        className="hud-panel relative flex flex-col w-full max-w-5xl h-[85vh] border border-cyan-500/40 bg-[#060a12]/95 p-6 md:p-8 shadow-2xl overflow-hidden"
+        className="hud-panel relative flex flex-col w-full max-w-5xl h-[85vh] border border-amber-500/40 bg-[#060a12]/95 p-6 md:p-8 shadow-2xl overflow-hidden"
       >
         {/* Top Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+            <div className="flex h-11 w-11 items-center justify-center bg-amber-500/10 border border-amber-500/30 text-amber-400">
               <Globe size={22} aria-hidden />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-display text-2xl tracking-wider text-cyan-300">
+                <h2 className="font-display text-2xl tracking-wider text-amber-300">
                   СПИСОК СЕРВЕРОВ
                 </h2>
-                <span className="cut-chip bg-cyan-500/20 text-cyan-300 px-2 py-0.5 text-xs font-mono">
+                <span className="cut-chip bg-amber-500/20 text-amber-300 px-2 py-0.5 text-xs font-mono">
                   {rooms.length} ОНЛАЙН
                 </span>
               </div>
@@ -183,7 +183,7 @@ export default function ServerBrowserModal({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Поиск по имени..."
-                className="w-full pl-8 pr-3 py-1.5 bg-black/50 border border-white/15 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-white/50"
+                className="w-full pl-8 pr-3 py-1.5 bg-black/50 border border-white/15 focus:border-amber-400 focus:outline-none text-xs text-white placeholder-white/50"
               />
             </div>
 
@@ -195,7 +195,7 @@ export default function ServerBrowserModal({
                   type="button"
                   onClick={() => setModeFilter(m)}
                   className={`px-2.5 py-1 text-[11px] font-display transition-colors ${
-                    modeFilter === m ? 'bg-cyan-500/25 text-cyan-200 font-bold' : 'text-white/60 hover:text-white'
+                    modeFilter === m ? 'bg-amber-500/25 text-amber-200 font-bold' : 'text-white/60 hover:text-white'
                   }`}
                 >
                   {m === 'all' ? 'ВСЕ РЕЖИМЫ' : modeLabel(m)}
@@ -211,7 +211,7 @@ export default function ServerBrowserModal({
                   type="button"
                   onClick={() => setMapFilter(mp)}
                   className={`px-2.5 py-1 text-[11px] font-display transition-colors ${
-                    mapFilter === mp ? 'bg-cyan-500/25 text-cyan-200 font-bold' : 'text-white/60 hover:text-white'
+                    mapFilter === mp ? 'bg-amber-500/25 text-amber-200 font-bold' : 'text-white/60 hover:text-white'
                   }`}
                 >
                   {mp === 'all' ? 'ВСЕ КАРТЫ' : mapLabel(mp)}
@@ -226,7 +226,7 @@ export default function ServerBrowserModal({
                 type="checkbox"
                 checked={hideFull}
                 onChange={(e) => setHideFull(e.target.checked)}
-                className="border-white/20 bg-black/40 text-cyan-400 focus:ring-0"
+                className="border-white/20 bg-black/40 text-amber-400 focus:ring-0"
               />
               <span>Скрыть полные</span>
             </label>
@@ -236,7 +236,7 @@ export default function ServerBrowserModal({
                 type="checkbox"
                 checked={hidePassword}
                 onChange={(e) => setHidePassword(e.target.checked)}
-                className="border-white/20 bg-black/40 text-cyan-400 focus:ring-0"
+                className="border-white/20 bg-black/40 text-amber-400 focus:ring-0"
               />
               <span>Без пароля</span>
             </label>
@@ -245,7 +245,7 @@ export default function ServerBrowserModal({
               type="button"
               onClick={() => void fetchRooms()}
               disabled={loading}
-              className="p-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors disabled:opacity-50"
+              className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors disabled:opacity-50"
               title="Обновить список серверов"
             >
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} aria-hidden />
@@ -263,7 +263,7 @@ export default function ServerBrowserModal({
 
           {loading && rooms.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 gap-3 text-white/50">
-              <Loader2 size={28} className="animate-spin text-cyan-400" aria-hidden />
+              <Loader2 size={28} className="animate-spin text-amber-400" aria-hidden />
               <div className="text-xs tracking-wider">ЗАГРУЗКА СПИСКА СЕРВЕРОВ...</div>
             </div>
           ) : rooms.length === 0 ? (
@@ -326,7 +326,7 @@ export default function ServerBrowserModal({
                             {room.has_password && (
                               <Lock size={14} className="text-amber-400 shrink-0" aria-label="Требуется пароль" />
                             )}
-                            <div className="font-semibold text-white group-hover:text-cyan-300 transition-colors">
+                            <div className="font-semibold text-white group-hover:text-amber-300 transition-colors">
                               {room.name}
                             </div>
                           </div>
@@ -375,7 +375,7 @@ export default function ServerBrowserModal({
                             className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 ${
                               room.status === 'in_progress'
                                 ? 'bg-amber-500/15 text-amber-300'
-                                : 'bg-cyan-500/15 text-cyan-300'
+                                : 'bg-amber-500/15 text-amber-300'
                             }`}
                           >
                             {room.status === 'in_progress' ? 'В бою' : 'Ожидание'}

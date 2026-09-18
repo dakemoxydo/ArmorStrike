@@ -26,8 +26,8 @@ const cannon: ProjectileBehavior = {
     s.speed = tune.speed;
     s.maxRange = customRange ?? tune.range;
     s.color.setHex(0xffb020);
-    s.glow.scale.setScalar(2.2);
-    s.coreMesh.scale.set(1.3, 1.3, 1.4);
+    s.glow.scale.setScalar(3.6);
+    s.coreMesh.scale.set(1.55, 1.55, 2.4);
     s.splashRadius = tune.splashRadius;
     // Доля splash от полного урона (16/32 при дефолтном damage) — масштабируется с damage.
     s.splashDmg = Math.round(damage * (tune.splashDmg / tune.damage));
@@ -47,13 +47,11 @@ const cannon: ProjectileBehavior = {
   onExpire(_, pos, ctx) {
     ctx.effects.explosion(pos, 0xffb020, 0.8);
   },
-  trailEffect(_, pos, ctx) {
-    ctx.effects.trailPuff(pos, CANNON_TRAIL_COLOR);
+  trailEffect() {
+    // Ribbon is a pooled mesh on the shot — no puff trail.
   },
-  trailInterval() { return 0.04; },
+  trailInterval() { return Number.POSITIVE_INFINITY; },
 };
-
-const CANNON_TRAIL_COLOR = new THREE.Color(0xffb020);
 
 export const BEHAVIORS: Partial<Record<WeaponType, ProjectileBehavior>> = {
   cannon,

@@ -74,7 +74,7 @@ export default function CreateServerModal({
     >
       <div
         ref={trapRef}
-        className="hud-panel relative w-full max-w-xl border border-cyan-500/40 bg-[#060a12]/95 p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="hud-panel relative w-full max-w-xl border border-amber-500/40 bg-[#060a12]/95 p-6 md:p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
       >
         {/* Close button */}
         <button
@@ -88,11 +88,11 @@ export default function CreateServerModal({
         </button>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-11 w-11 items-center justify-center bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+          <div className="flex h-11 w-11 items-center justify-center bg-amber-500/10 border border-amber-500/30 text-amber-400">
             <Globe size={22} aria-hidden />
           </div>
           <div>
-            <h2 className="font-display text-xl tracking-wider text-cyan-300">
+            <h2 className="font-display text-xl tracking-wider text-amber-300">
               СОЗДАТЬ СЕРВЕР
             </h2>
             <div className="text-xs text-white/60">
@@ -120,7 +120,7 @@ export default function CreateServerModal({
               maxLength={32}
               onChange={(e) => setName(e.target.value)}
               placeholder="Название сервера..."
-              className="w-full px-3 py-2 bg-black/60 border border-white/20 focus:border-cyan-400 focus:outline-none text-sm text-white placeholder-white/50"
+              className="w-full px-3 py-2 bg-black/60 border border-white/20 focus:border-amber-400 focus:outline-none text-sm text-white placeholder-white/50"
             />
           </div>
 
@@ -139,7 +139,7 @@ export default function CreateServerModal({
                     onClick={() => setMode(m.id)}
                     className={`p-3 text-left border transition-all ${
                       active
-                        ? 'border-cyan-400 bg-cyan-500/15 text-cyan-200'
+                        ? 'border-amber-400 bg-amber-500/15 text-amber-200'
                         : 'border-white/10 bg-black/40 text-white/70 hover:border-white/25 hover:bg-black/60'
                     }`}
                   >
@@ -166,7 +166,7 @@ export default function CreateServerModal({
                     onClick={() => setMapId(map.id)}
                     className={`p-3 text-center border transition-all ${
                       active
-                        ? 'border-cyan-400 bg-cyan-500/15 text-cyan-200'
+                        ? 'border-amber-400 bg-amber-500/15 text-amber-200'
                         : 'border-white/10 bg-black/40 text-white/70 hover:border-white/25 hover:bg-black/60'
                     }`}
                   >
@@ -192,7 +192,7 @@ export default function CreateServerModal({
                     onClick={() => setMaxPlayers(cap)}
                     className={`flex-1 py-1.5 border text-xs font-display ${
                       maxPlayers === cap
-                        ? 'border-cyan-400 bg-cyan-500/20 text-cyan-200'
+                        ? 'border-amber-400 bg-amber-500/20 text-amber-200'
                         : 'border-white/10 bg-black/40 text-white/60 hover:border-white/25'
                     }`}
                   >

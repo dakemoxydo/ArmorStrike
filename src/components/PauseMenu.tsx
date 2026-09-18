@@ -55,7 +55,7 @@ export default function PauseMenu({
 
       <div className="relative flex w-full max-w-md flex-col items-center px-6">
         <div className="anim-pop flex flex-col items-center" style={{ '--d': '0s' } as React.CSSProperties}>
-          <Pause size={38} className="pause-breathe text-cyan-300" aria-hidden />
+          <Pause size={38} className="pause-breathe text-amber-300" aria-hidden />
           <h2 id="pause-title" className="font-display mt-3 text-4xl tracking-hero text-white md:text-5xl">
             ПАУЗА
           </h2>
@@ -83,7 +83,7 @@ export default function PauseMenu({
         <div className="anim-up hud-panel mt-3 w-full p-3" style={{ '--d': '0.26s' } as React.CSSProperties}>
           <div className="flex items-center justify-between text-[11px]">
             <span className="tracking-widest text-white/55">СБОРКА</span>
-            <span className="font-display text-cyan-300">{hull.name}</span>
+            <span className="font-display text-amber-300">{hull.name}</span>
             <span className="text-white/60">+</span>
             <span className="font-display text-amber-300">{turret.name}</span>
           </div>

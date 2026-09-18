@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { cachedTexture, cachedTextureEvict, cachedTextureHas, makeCanvas, noise } from './shared';
+import { cachedTexture, cachedTextureEvict, cachedTextureHas, makeCanvas } from './shared';
 
 /**
  * Factory ground: литейный комплекс ЗАВОД-51 (arena 300).
@@ -56,10 +56,9 @@ export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
     ctx.restore();
   };
 
-  // ── base: залитый бетон промплощадки ──────────────────────────────────────
-  ctx.fillStyle = '#151920';
+  // ── base: закатный бетон промплощадки (без перлина) ───────────────────────
+  ctx.fillStyle = '#b89a72';
   ctx.fillRect(0, 0, S, S);
-  noise(ctx, S, 11000, 0.05);
 
   // ── district slabs (лёгкая тональная разметка зон) ────────────────────────
   ctx.fillStyle = 'rgba(255,110,40,0.075)';  rectX(-120, 30, 84, 56);   // NW foundry
@@ -70,13 +69,13 @@ export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
 
   // ── lanes: main cross + ring road ─────────────────────────────────────────
   const lane = (x0: number, z0: number, w: number, d: number, horizontal: boolean, glow = false) => {
-    ctx.fillStyle = '#0e1218';
+    ctx.fillStyle = '#5a4632';
     rectX(x0, z0, w, d);
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.strokeStyle = 'rgba(11,14,20,0.35)';
     ctx.lineWidth = 0.22 * K;
     ctx.strokeRect(px(x0), pz(z0), w * K, d * K);
     if (glow) {
-      ctx.strokeStyle = 'rgba(46,230,192,0.10)';
+      ctx.strokeStyle = 'rgba(245,158,11,0.22)';
       ctx.lineWidth = 0.4 * K;
       ctx.strokeRect(px(x0), pz(z0), w * K, d * K);
     }
@@ -105,7 +104,7 @@ export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
 
   // ── centre plaza: chevrons под козловым краном + CP-B ─────────────────────
   hazardBand(-32, -6, 64, 12, 0.10);
-  ctx.strokeStyle = 'rgba(46,230,192,0.16)';
+  ctx.strokeStyle = 'rgba(245,158,11,0.28)';
   ctx.lineWidth = 0.45 * K;
   ctx.strokeRect(px(-32), pz(-32), 64 * K, 64 * K);
   // crane rail beds (legs at x ±36, z ±9)
@@ -127,9 +126,9 @@ export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
   // ── capture-point rings (anchors from match/captureAnchors.ts) ────────────
   const cp: [string, number, number][] = [['A', -88, 8], ['B', 0, 0], ['C', 92, -6]];
   for (const [id, cx, cz] of cp) {
-    ring(cx, cz, 20, 'rgba(46,230,192,0.20)', 0.5, [3.2, 2.4]);
-    ring(cx, cz, 6, 'rgba(46,230,192,0.12)', 0.35);
-    label(id, cx, cz, 0, 7, 'rgba(46,230,192,0.22)');
+    ring(cx, cz, 20, 'rgba(245,158,11,0.35)', 0.5, [3.2, 2.4]);
+    ring(cx, cz, 6, 'rgba(245,158,11,0.20)', 0.35);
+    label(id, cx, cz, 0, 7, 'rgba(245,158,11,0.32)');
   }
 
   // ── NW foundry: расплав, шлак, трещины ────────────────────────────────────
@@ -238,46 +237,15 @@ export function factoryGroundTexture(arenaSize: number): THREE.CanvasTexture {
   ctx.strokeRect(px(-132), pz(-132), 264 * K, 264 * K);
   ctx.setLineDash([]);
 
-  // ── wear: oil stains, cracks, tyre arcs ───────────────────────────────────
-  for (let i = 0; i < 22; i++) {
-    ctx.fillStyle = `rgba(4,6,10,${0.12 + Math.random() * 0.12})`;
-    ctx.beginPath();
-    ctx.ellipse(S * (0.06 + Math.random() * 0.88), S * (0.06 + Math.random() * 0.88),
-      (2 + Math.random() * 4.5) * K, (1.2 + Math.random() * 2.6) * K, Math.random() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.strokeStyle = 'rgba(8,10,12,0.28)';
-  for (let i = 0; i < 16; i++) {
-    ctx.lineWidth = 0.55 * K;
-    ctx.beginPath();
-    ctx.arc(S * (0.08 + Math.random() * 0.84), S * (0.08 + Math.random() * 0.84),
-      (5 + Math.random() * 10) * K, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2 + 0.9);
-    ctx.stroke();
-  }
-  // tyre arcs along the main cross
-  ctx.strokeStyle = 'rgba(0,0,0,0.20)';
-  for (let i = 0; i < 10; i++) {
-    const tz = -140 + i * 28;
-    ctx.lineWidth = 0.5 * K;
-    ctx.beginPath();
-    ctx.arc(px(-8.5), pz(tz), 2.6 * K, Math.PI * 0.6, Math.PI * 1.4);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(px(8.5), pz(tz + 9), 2.6 * K, Math.PI * 1.6, Math.PI * 0.4);
-    ctx.stroke();
-  }
-
-  // ── soft grid + final grain ───────────────────────────────────────────────
-  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+  // ── ink slab grid (комиксные швы плит, без зерна) ─────────────────────────
+  ctx.strokeStyle = 'rgba(11,14,20,0.22)';
   ctx.lineWidth = 2;
   for (let m = -half; m <= half; m += 25) {
     ctx.beginPath(); ctx.moveTo(px(m), 0); ctx.lineTo(px(m), S); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, pz(m)); ctx.lineTo(S, pz(m)); ctx.stroke();
   }
-  label('ЗАВОД-51', 0, 128, 0, 9, 'rgba(46,230,192,0.10)');
-  label('ЗАВОД-51', 0, -136, 0, 9, 'rgba(46,230,192,0.10)');
-
-  noise(ctx, S, 5200, 0.04);
+  label('ЗАВОД-51', 0, 128, 0, 9, 'rgba(245,158,11,0.22)');
+  label('ЗАВОД-51', 0, -136, 0, 9, 'rgba(245,158,11,0.22)');
 
     const t = new THREE.CanvasTexture(c);
     t.anisotropy = 8;
@@ -321,28 +289,27 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
     ctx.restore();
   };
 
-  ctx.fillStyle = '#2a2418';
+  ctx.fillStyle = '#5a7a38';
   ctx.fillRect(0, 0, S, S);
-  noise(ctx, S, 14000, 0.06);
 
-  // grass patches
-  for (let i = 0; i < 160; i++) {
-    ctx.fillStyle = `rgba(50,90,40,${0.08 + Math.random() * 0.12})`;
-    ctx.beginPath();
-    ctx.ellipse(
-      S * (0.05 + Math.random() * 0.9),
-      S * (0.05 + Math.random() * 0.9),
-      (6 + Math.random() * 20) * K,
-      (5 + Math.random() * 16) * K,
-      Math.random() * Math.PI,
-      0,
-      Math.PI * 2,
-    );
-    ctx.fill();
-  }
+  // graphic field slabs (two greens, ink seams — no perlin grass)
+  const fieldSlab = (x0: number, z0: number, w: number, d: number, tone: string) => {
+    ctx.fillStyle = tone;
+    rectX(x0, z0, w, d);
+    ctx.strokeStyle = 'rgba(11,14,20,0.28)';
+    ctx.lineWidth = 0.35 * K;
+    ctx.strokeRect(px(x0), pz(z0), w * K, d * K);
+  };
+  fieldSlab(-148, -148, 96, 72, '#4e6e30');
+  fieldSlab(-40, -148, 88, 64, '#678544');
+  fieldSlab(56, -148, 92, 70, '#4e6e30');
+  fieldSlab(-148, -64, 70, 88, '#678544');
+  fieldSlab(78, -64, 70, 90, '#4e6e30');
+  fieldSlab(-148, 40, 92, 108, '#678544');
+  fieldSlab(56, 48, 92, 100, '#4e6e30');
 
   const dirtRoad = (x0: number, z0: number, w: number, d: number) => {
-    ctx.fillStyle = '#3a3020';
+    ctx.fillStyle = '#8a7040';
     rectX(x0, z0, w, d);
     // wheel ruts
     ctx.strokeStyle = 'rgba(30,24,14,0.4)';
@@ -383,15 +350,13 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
   path(-20, 32, -48, 48, 5);  // to the pond
 
   // ── village square: packed earth + dense cobble paving (|x|,|z| < 30) ─────
-  ctx.fillStyle = 'rgba(96,80,54,0.4)';
+  ctx.fillStyle = '#c4a86a';
   rectX(-30, -30, 60, 60);
-  for (let x = -28; x < 28; x += 3.2) {
-    for (let z = -28; z < 28; z += 3.2) {
-      const jx = (Math.random() - 0.5) * 1.6, jz = (Math.random() - 0.5) * 1.6;
-      ctx.fillStyle = `rgba(118,104,80,${0.24 + Math.random() * 0.16})`;
-      ctx.beginPath();
-      ctx.arc(px(x + jx), pz(z + jz), (1.1 + Math.random() * 0.9) * K, 0, Math.PI * 2);
-      ctx.fill();
+  ctx.strokeStyle = 'rgba(11,14,20,0.35)';
+  ctx.lineWidth = 0.4 * K;
+  for (let x = -28; x < 28; x += 4) {
+    for (let z = -28; z < 28; z += 4) {
+      ctx.strokeRect(px(x), pz(z), 3.6 * K, 3.6 * K);
     }
   }
   // packed-earth ring around the well (-16,30) and the market plaza centre
@@ -494,35 +459,19 @@ export function villageGroundTexture(arenaSize: number): THREE.CanvasTexture {
     ctx.stroke();
   }
 
-  // puddles along the dirt cross (wet dusk ground)
-  for (let i = 0; i < 14; i++) {
-    const onNS = Math.random() > 0.5;
-    const x = onNS ? (Math.random() - 0.5) * 16 : (Math.random() - 0.5) * 280;
-    const z = onNS ? (Math.random() - 0.5) * 280 : (Math.random() - 0.5) * 16;
-    ctx.fillStyle = `rgba(20,24,26,${0.28 + Math.random() * 0.2})`;
-    ctx.beginPath();
-    ctx.ellipse(px(x), pz(z), (1.4 + Math.random() * 2.6) * K, (1.0 + Math.random() * 1.6) * K, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(150,170,190,0.10)';
-    ctx.lineWidth = 0.2 * K;
-    ctx.stroke();
-  }
-
-  // soft grid
-  ctx.strokeStyle = 'rgba(180,150,80,0.05)';
+  // ink slab grid
+  ctx.strokeStyle = 'rgba(11,14,20,0.12)';
   ctx.lineWidth = 2;
   for (let m = -half; m <= half; m += 25) {
     ctx.beginPath(); ctx.moveTo(px(m), 0); ctx.lineTo(px(m), S); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, pz(m)); ctx.lineTo(S, pz(m)); ctx.stroke();
   }
-  label('ДЕРЕВНЯ', 0, 128, 0, 9, 'rgba(200,162,74,0.10)');
-  label('ДЕРЕВНЯ', 0, -136, 0, 9, 'rgba(200,162,74,0.10)');
-  label('ПЛОЩАДЬ', 0, -30, 0, 4.6, 'rgba(255,226,170,0.20)');
-  label('МЕЛЬНИЦА', 118, 96, 0, 4.2, 'rgba(255,226,170,0.18)');
-  label('АМБАР', -98, 74, 0, 4.2, 'rgba(255,226,170,0.16)');
-  label('АМБАР', 98, -74, 0, 4.2, 'rgba(255,226,170,0.16)');
-
-  noise(ctx, S, 6000, 0.04);
+  label('ДЕРЕВНЯ', 0, 128, 0, 9, 'rgba(200,162,74,0.22)');
+  label('ДЕРЕВНЯ', 0, -136, 0, 9, 'rgba(200,162,74,0.22)');
+  label('ПЛОЩАДЬ', 0, -30, 0, 4.6, 'rgba(255,226,170,0.28)');
+  label('МЕЛЬНИЦА', 118, 96, 0, 4.2, 'rgba(255,226,170,0.22)');
+  label('АМБАР', -98, 74, 0, 4.2, 'rgba(255,226,170,0.20)');
+  label('АМБАР', 98, -74, 0, 4.2, 'rgba(255,226,170,0.20)');
     const t = new THREE.CanvasTexture(c);
     t.anisotropy = 8;
     t.colorSpace = THREE.SRGBColorSpace;
@@ -544,16 +493,19 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
   const rectX = (x0: number, z0: number, w: number, d: number) =>
     ctx.fillRect(px(x0), pz(z0), w * K, d * K);
 
-  ctx.fillStyle = '#10141a';
+  ctx.fillStyle = '#7a8490';
   ctx.fillRect(0, 0, S, S);
-  noise(ctx, S, 7000, 0.04);
 
-  // district pavement tiles (slightly varied blocks)
+  // district pavement tiles (deterministic comic slabs, no grain)
   const block = 32;
   for (let x = -half + 8; x < half - 8; x += block) {
     for (let z = -half + 8; z < half - 8; z += block) {
-      ctx.fillStyle = `rgba(42,50,62,${0.10 + Math.random() * 0.07})`;
+      const tone = 0.10 + (Math.abs(x * 13 + z * 7) % 7) * 0.02;
+      ctx.fillStyle = `rgba(210,216,224,${tone})`;
       rectX(x + 2.4, z + 2.4, block - 4.8, block - 4.8);
+      ctx.strokeStyle = 'rgba(11,14,20,0.18)';
+      ctx.lineWidth = 0.28 * K;
+      ctx.strokeRect(px(x + 2.4), pz(z + 2.4), (block - 4.8) * K, (block - 4.8) * K);
     }
   }
 
@@ -570,11 +522,10 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
   sidewalk(-half + 12, 14, arenaSize - 24, 5);
 
   const drawAve = (x0: number, z0: number, w: number, d: number, horizontal: boolean, glow = false) => {
-    ctx.fillStyle = '#0a0c10';
+    ctx.fillStyle = '#4a5560';
     rectX(x0, z0, w, d);
-    // wet-sheen edge
     if (glow) {
-      ctx.strokeStyle = 'rgba(94,200,255,0.12)';
+      ctx.strokeStyle = 'rgba(11,14,20,0.35)';
       ctx.lineWidth = 0.35 * K;
       ctx.strokeRect(px(x0), pz(z0), w * K, d * K);
     }
@@ -604,13 +555,12 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
   drawAve(-half + 10, -64, arenaSize - 20, 16, true, false);
 
   // Plaza under monument
-  ctx.fillStyle = 'rgba(50,75,110,0.20)';
+  ctx.fillStyle = 'rgba(200,208,220,0.35)';
   rectX(-30, -30, 60, 60);
-  ctx.strokeStyle = 'rgba(94,200,255,0.28)';
+  ctx.strokeStyle = 'rgba(11,14,20,0.40)';
   ctx.lineWidth = 0.55 * K;
   ctx.strokeRect(px(-30), pz(-30), 60 * K, 60 * K);
-  // inner fountain ring hint
-  ctx.strokeStyle = 'rgba(94,200,255,0.14)';
+  ctx.strokeStyle = 'rgba(11,14,20,0.22)';
   ctx.lineWidth = 0.4 * K;
   ctx.beginPath();
   ctx.arc(px(0), pz(0), 9 * K, 0, Math.PI * 2);
@@ -648,21 +598,9 @@ export function cityGroundTexture(arenaSize: number): THREE.CanvasTexture {
   // Overpass shadow band (south secondary z≈-80)
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
   rectX(-74, -88, 148, 16);
-  ctx.strokeStyle = 'rgba(255,77,154,0.10)';
+  ctx.strokeStyle = 'rgba(11,14,20,0.22)';
   ctx.lineWidth = 0.3 * K;
   ctx.strokeRect(px(-74), pz(-88), 148 * K, 16 * K);
-
-  // cyan edge wet-glow on main cross centerlines
-  ctx.strokeStyle = 'rgba(94,200,255,0.08)';
-  ctx.lineWidth = 0.7 * K;
-  ctx.beginPath();
-  ctx.moveTo(px(0), pz(-half + 16));
-  ctx.lineTo(px(0), pz(half - 16));
-  ctx.moveTo(px(-half + 16), pz(0));
-  ctx.lineTo(px(half - 16), pz(0));
-  ctx.stroke();
-
-  noise(ctx, S, 3500, 0.035);
     const t = new THREE.CanvasTexture(c);
     t.anisotropy = 8;
     t.colorSpace = THREE.SRGBColorSpace;

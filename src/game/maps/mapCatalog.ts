@@ -18,8 +18,8 @@ export const MAPS: Record<MapId, MapDef> = {
     name: 'Завод',
     nameEn: 'Factory',
     blurb: 'Литейный комплекс ЗАВОД-51: домна и цеха, контейнерный терминал, портальный кран над плазой, цистерны и разрушаемые укрытия.',
-    accent: '#2ee6c0',
-    accentRgb: '46, 230, 192',
+    accent: '#f59e0b',
+    accentRgb: '245, 158, 11',
   },
   village: {
     id: 'village',

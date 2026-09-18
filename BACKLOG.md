@@ -61,7 +61,7 @@
 
 ## [E] RENDERING & BEAUTY
 - [x] E1: Atmosphere-preset gap check — все карты покрыты; GDD exposure drift fixed (1.14→1.0) с тест-пинами.
-- [ ] E2: Nameplate fade/scale clamp at long distance — readability pass with screenshot evidence.
+- [x] E2: Nameplate fade/scale clamp at long distance — `Nameplate.setRange` 48→110 м от локального игрока, срез+Russo One; пины `nameplate.test.ts`.
 - [ ] E3: Particle budget parity across quality tiers — аудит 2026-09-15: кап фактически равный (пулы константны, прогон low/med/high = 33/32/34 спрайтов дыма), но Graphics_Presets_Matrix.md:23-26 объявляет это «осознанным выбором», а строка :19 «smoke ≤44» учитывает только аренный пул (боевой SmokeSystem 42 не упомянут). Сначала арбитраж доков, потом код.
 - [x] E4: Нано-дуга Изиды — фикс 2026-09-15: `mesh.position` = midpoint(from,to) конвенцией рельсы; пин `NanoBeamFx.test.ts` (новая, +2).
 - [x] E5: «Светящиеся окна» скайлайна были невидимы (pane внутри бокса) — фикс 2026-09-15: вынос панели на пересечение луча «центр башни→арена» с AABB грани (`src/game/arena/skyline.ts`) +5 см запаса; эффект работает на всех 3 картах.

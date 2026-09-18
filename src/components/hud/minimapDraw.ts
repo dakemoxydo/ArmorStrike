@@ -75,9 +75,9 @@ function bakeSweep(S: number): HTMLCanvasElement {
     ? c.createConicGradient(0, S / 2, S / 2)
     : null;
   if (grad) {
-    grad.addColorStop(0, 'rgba(46,230,192,0.10)');
-    grad.addColorStop(0.15, 'rgba(46,230,192,0)');
-    grad.addColorStop(1, 'rgba(46,230,192,0)');
+    grad.addColorStop(0, 'rgba(245,158,11,0.12)');
+    grad.addColorStop(0.15, 'rgba(245,158,11,0)');
+    grad.addColorStop(1, 'rgba(245,158,11,0)');
     c.fillStyle = grad;
     c.fillRect(0, 0, S, S);
   }
@@ -200,10 +200,10 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
     const y = toY(d.z);
     const rel = d.relation ?? (d.isPlayer ? 'self' : 'enemy');
     const fill =
-      rel === 'self' ? '#2ee6c0' : rel === 'ally' ? '#3b9eff' : '#ff4d3d';
+      rel === 'self' ? '#f59e0b' : rel === 'ally' ? '#3b9eff' : '#ff4d3d';
     const stroke =
       rel === 'self'
-        ? 'rgba(46,230,192,0.8)'
+        ? 'rgba(245,158,11,0.85)'
         : rel === 'ally'
           ? 'rgba(59,158,255,0.75)'
           : 'rgba(255,80,60,0.65)';

@@ -19,7 +19,7 @@ function getQuestIcon(type?: string) {
     case 'win_tdm':
       return <Trophy size={20} className="text-amber-400" aria-hidden />;
     case 'capture_points':
-      return <Swords size={20} className="text-cyan-400" aria-hidden />;
+      return <Swords size={20} className="text-amber-400" aria-hidden />;
     default:
       return <Sparkles size={20} className="text-emerald-400" aria-hidden />;
   }
@@ -51,7 +51,7 @@ export default function QuestsModal({ game, onClose }: QuestsModalProps) {
       aria-modal="true"
       aria-labelledby="quests-modal-title"
     >
-      <div className="hud-panel relative flex w-full max-w-2xl flex-col gap-6 p-6 md:p-8 bg-[#070d14]/95 border border-cyan-500/30">
+      <div className="hud-panel relative flex w-full max-w-2xl flex-col gap-6 p-6 md:p-8 bg-[#070d14]/95 border border-amber-500/30">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
@@ -125,8 +125,8 @@ export default function QuestsModal({ game, onClose }: QuestsModalProps) {
                         <div
                           className={`h-full transition-all duration-500 ${
                             isCompleted
-                              ? 'bg-gradient-to-r from-emerald-500 to-cyan-400'
-                              : 'bg-gradient-to-r from-amber-500 to-cyan-400'
+                              ? 'bg-gradient-to-r from-emerald-500 to-amber-400'
+                              : 'bg-gradient-to-r from-amber-500 to-amber-400'
                           }`}
                           style={{ width: `${pct}%` }}
                         />

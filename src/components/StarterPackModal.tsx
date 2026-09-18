@@ -75,11 +75,11 @@ export default function StarterPackModal({
       aria-modal="true"
       aria-labelledby="starter-pack-title"
     >
-      <div className="hud-panel max-w-4xl w-full p-6 md:p-8 flex flex-col gap-6 relative border border-cyan-500/30 shadow-2xl bg-[#07111a]/95">
+      <div className="hud-panel max-w-4xl w-full p-6 md:p-8 flex flex-col gap-6 relative border border-amber-500/30 shadow-2xl bg-[#07111a]/95">
         {/* Шапка модального окна */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 cut-chip">
+            <div className="p-2.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 cut-chip">
               <PackageOpen size={24} aria-hidden />
             </div>
             <div>
@@ -99,7 +99,7 @@ export default function StarterPackModal({
             <span
               className={`px-2.5 py-1 cut-chip border ${
                 step === 'hull'
-                  ? 'bg-cyan-500/30 border-cyan-400 text-cyan-200'
+                  ? 'bg-amber-500/30 border-amber-400 text-amber-200'
                   : 'bg-white/5 border-white/15 text-white/50'
               }`}
             >
@@ -142,12 +142,12 @@ export default function StarterPackModal({
                 return (
                   <div
                     key={h.id}
-                    className="hud-panel p-4 flex flex-col justify-between gap-4 border border-cyan-500/20 bg-cyan-950/20 hover:border-cyan-400/60 transition-colors"
+                    className="hud-panel p-4 flex flex-col justify-between gap-4 border border-amber-500/20 bg-amber-950/20 hover:border-amber-400/60 transition-colors"
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-display text-lg tracking-wide text-white">{h.name}</span>
-                        <span className="card-badge cut-chip px-2 py-0.5 text-[10px] tracking-wider uppercase bg-cyan-500/20 text-cyan-200 border border-cyan-500/40">
+                        <span className="card-badge cut-chip px-2 py-0.5 text-[10px] tracking-wider uppercase bg-amber-500/20 text-amber-200 border border-amber-500/40">
                           {h.badge}
                         </span>
                       </div>
@@ -174,11 +174,11 @@ export default function StarterPackModal({
                             <span className="flex items-center gap-1">
                               <Gauge size={12} aria-hidden /> СКОРОСТЬ
                             </span>
-                            <span className="font-display text-cyan-300">{h.speed}</span>
+                            <span className="font-display text-amber-300">{h.speed}</span>
                           </div>
                           <div className="g-bar">
                             <i
-                              className="g-stat-bar bg-cyan-400"
+                              className="g-stat-bar bg-amber-400"
                               style={{ width: `${(h.speed / MAX_HULL_SPEED) * 100}%` }}
                             />
                           </div>
@@ -206,7 +206,7 @@ export default function StarterPackModal({
         {step === 'turret' && (
           <div className="flex flex-col gap-4">
             <div className="text-sm text-white/80 leading-relaxed">
-              Корпус <span className="text-cyan-300 font-display">{assembledHull?.name}</span> утверждён!
+              Корпус <span className="text-amber-300 font-display">{assembledHull?.name}</span> утверждён!
               Теперь откройте контейнер вооружения и выберите одно из 3 орудий:
             </div>
 
@@ -249,13 +249,13 @@ export default function StarterPackModal({
                             <span className="flex items-center gap-1">
                               <Target size={12} aria-hidden /> ДАЛЬНОСТЬ
                             </span>
-                            <span className="font-display text-cyan-300">
+                            <span className="font-display text-amber-300">
                               {Number.isFinite(t.range) ? `${t.range} м` : '∞'}
                             </span>
                           </div>
                           <div className="g-bar">
                             <i
-                              className="g-stat-bar bg-cyan-400"
+                              className="g-stat-bar bg-amber-400"
                               style={{ width: `${Number.isFinite(t.range) ? Math.min(100, (t.range / 85) * 100) : 100}%` }}
                             />
                           </div>
@@ -296,7 +296,7 @@ export default function StarterPackModal({
                 <Sparkles size={14} aria-hidden /> ПЕРВАЯ БОЕВАЯ МАШИНА СОБРАНА
               </div>
               <h3 className="font-display text-2xl md:text-3xl tracking-wider text-white">
-                <span className="text-cyan-300">{assembledHull.name}</span>
+                <span className="text-amber-300">{assembledHull.name}</span>
                 <span className="text-white/50"> · </span>
                 <span className="text-amber-300">{assembledTurret.name}</span>
               </h3>
@@ -312,7 +312,7 @@ export default function StarterPackModal({
               </div>
               <div className="cut-chip bg-white/5 p-2.5 border border-white/10">
                 <div className="text-[10px] tracking-widest text-white/50 mb-1">СКОРОСТЬ</div>
-                <div className="font-display text-lg text-cyan-300">{assembledHull.speed} м/с</div>
+                <div className="font-display text-lg text-amber-300">{assembledHull.speed} м/с</div>
               </div>
               <div className="cut-chip bg-white/5 p-2.5 border border-white/10">
                 <div className="text-[10px] tracking-widest text-white/50 mb-1">УРОН ОРУДИЯ</div>
@@ -320,7 +320,7 @@ export default function StarterPackModal({
               </div>
               <div className="cut-chip bg-white/5 p-2.5 border border-white/10">
                 <div className="text-[10px] tracking-widest text-white/50 mb-1">ДАЛЬНОСТЬ</div>
-                <div className="font-display text-lg text-cyan-300">
+                <div className="font-display text-lg text-amber-300">
                   {Number.isFinite(assembledTurret.range) ? `${assembledTurret.range} м` : '∞'}
                 </div>
               </div>

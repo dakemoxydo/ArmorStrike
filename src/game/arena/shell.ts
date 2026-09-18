@@ -93,7 +93,7 @@ export function buildArenaShell(ctx: ArenaBuildContext, theme: ArenaShellTheme) 
   }
 
   const stripMat = new THREE.MeshBasicMaterial({
-    color: theme.stripColor ?? 0x2ee6c0,
+    color: theme.stripColor ?? 0xf59e0b,
     transparent: true,
     opacity: 0.75,
   });

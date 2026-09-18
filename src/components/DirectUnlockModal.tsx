@@ -59,7 +59,7 @@ export default function DirectUnlockModal({
       aria-modal="true"
       aria-labelledby="unlock-modal-title"
     >
-      <div className="hud-panel max-w-lg w-full p-6 flex flex-col gap-5 relative border border-cyan-500/30 shadow-2xl bg-[#07111a]/95">
+      <div className="hud-panel max-w-lg w-full p-6 flex flex-col gap-5 relative border border-amber-500/30 shadow-2xl bg-[#07111a]/95">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-3">
@@ -112,7 +112,7 @@ export default function DirectUnlockModal({
         {/* Item details */}
         <div className="hud-panel p-4 bg-white/5 border border-white/10 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-xl text-cyan-200">{currentItem.name}</h3>
+            <h3 className="font-display text-xl text-amber-200">{currentItem.name}</h3>
             <span className="cut-chip bg-white/10 px-2 py-0.5 text-[10px] tracking-wider text-white/80 font-mono">
               {isHull ? 'ШАССИ' : weaponMeta?.kind.toUpperCase()}
             </span>
@@ -133,9 +133,9 @@ export default function DirectUnlockModal({
               </div>
               <div className="cut-chip bg-black/30 p-2 border border-white/10">
                 <div className="text-[10px] text-white/60 flex items-center justify-center gap-1">
-                  <Gauge size={12} className="text-cyan-400" /> СКОРОСТЬ
+                  <Gauge size={12} className="text-amber-400" /> СКОРОСТЬ
                 </div>
-                <div className="font-display text-base text-cyan-300 mt-0.5">{hull.speed} м/с</div>
+                <div className="font-display text-base text-amber-300 mt-0.5">{hull.speed} м/с</div>
               </div>
             </div>
           )}
@@ -150,9 +150,9 @@ export default function DirectUnlockModal({
               </div>
               <div className="cut-chip bg-black/30 p-2 border border-white/10">
                 <div className="text-[10px] text-white/60 flex items-center justify-center gap-1">
-                  <Zap size={12} className="text-cyan-400" /> МАГАЗИН
+                  <Zap size={12} className="text-amber-400" /> МАГАЗИН
                 </div>
-                <div className="font-display text-base text-cyan-300 mt-0.5">{turret.magazine}</div>
+                <div className="font-display text-base text-amber-300 mt-0.5">{turret.magazine}</div>
               </div>
               <div className="cut-chip bg-black/30 p-2 border border-white/10">
                 <div className="text-[10px] text-white/60 flex items-center justify-center gap-1">

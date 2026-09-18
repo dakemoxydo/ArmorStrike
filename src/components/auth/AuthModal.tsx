@@ -218,11 +218,11 @@ export default function AuthModal({
       aria-modal="true"
       aria-labelledby="auth-modal-title"
     >
-      <div className="hud-panel relative flex w-full max-w-md flex-col gap-5 p-6 md:p-8 bg-[#070d14]/95 border border-cyan-500/30">
+      <div className="hud-panel relative flex w-full max-w-md flex-col gap-5 p-6 md:p-8 bg-[#070d14]/95 border border-amber-500/30">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <Shield size={24} className="text-cyan-400" aria-hidden />
+            <Shield size={24} className="text-amber-400" aria-hidden />
             <div>
               <h2 id="auth-modal-title" className="font-display text-xl tracking-wide text-white">
                 {tab === 'login' && 'ВХОД В АККАУНТ'}
@@ -230,7 +230,7 @@ export default function AuthModal({
                 {tab === 'forgot' && 'СБРОС ПАРОЛЯ'}
                 {tab === 'reset_password' && 'НОВЫЙ ПАРОЛЬ'}
               </h2>
-              <div className="text-[11px] tracking-wider text-cyan-300/60 uppercase">
+              <div className="text-[11px] tracking-wider text-amber-300/60 uppercase">
                 {tab === 'login' && 'ОБЛАЧНЫЕ СОХРАНЕНИЯ И СТАТИСТИКА'}
                 {tab === 'register' && 'МГНОВЕННЫЙ СТАРТ БЕЗ ПИСЕМ'}
                 {tab === 'forgot' && 'ВОССТАНОВЛЕНИЕ ДОСТУПА'}
@@ -271,7 +271,7 @@ export default function AuthModal({
               onClick={() => switchTab('login')}
               className={`py-2 text-xs font-semibold tracking-wider transition-colors ${
                 tab === 'login'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                   : 'text-white/60 hover:text-white'
               }`}
             >
@@ -282,7 +282,7 @@ export default function AuthModal({
               onClick={() => switchTab('register')}
               className={`py-2 text-xs font-semibold tracking-wider transition-colors ${
                 tab === 'register'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                   : 'text-white/60 hover:text-white'
               }`}
             >
@@ -308,7 +308,7 @@ export default function AuthModal({
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
                   placeholder="name@mail.com или username"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-amber-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -321,7 +321,7 @@ export default function AuthModal({
                 <button
                   type="button"
                   onClick={() => switchTab('forgot')}
-                  className="text-[10px] text-cyan-400/80 hover:text-cyan-300 underline"
+                  className="text-[10px] text-amber-400/80 hover:text-amber-300 underline"
                 >
                   Забыли пароль?
                 </button>
@@ -336,7 +336,7 @@ export default function AuthModal({
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-amber-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -376,7 +376,7 @@ export default function AuthModal({
                   value={regUsername}
                   onChange={(e) => setRegUsername(e.target.value)}
                   placeholder="От 3 до 20 символов"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-amber-400 focus:outline-none"
                 />
               </div>
               <span className="text-[10px] text-white/60">
@@ -398,7 +398,7 @@ export default function AuthModal({
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-amber-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -419,7 +419,7 @@ export default function AuthModal({
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="мин. 6 знаков"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-cyan-400 focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-amber-400 focus:outline-none"
                   />
                 </div>
               </div>
@@ -439,13 +439,13 @@ export default function AuthModal({
                     value={regConfirmPassword}
                     onChange={(e) => setRegConfirmPassword(e.target.value)}
                     placeholder="повторите"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-cyan-400 focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-amber-400 focus:outline-none"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="text-[11px] text-cyan-300/80 bg-cyan-950/30 p-2.5 border border-cyan-500/20 text-left">
+            <div className="text-[11px] text-amber-300/80 bg-amber-950/30 p-2.5 border border-amber-500/20 text-left">
               💡 Ваш текущий прогресс (кредиты, открытые танки и квесты) будет сохранён в новом аккаунте.
             </div>
 
@@ -487,7 +487,7 @@ export default function AuthModal({
                   value={forgotId}
                   onChange={(e) => setForgotId(e.target.value)}
                   placeholder="name@mail.com или username"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-amber-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -535,7 +535,7 @@ export default function AuthModal({
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="минимум 6 символов"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-amber-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -555,7 +555,7 @@ export default function AuthModal({
                   value={newConfirmPassword}
                   onChange={(e) => setNewConfirmPassword(e.target.value)}
                   placeholder="повторите пароль"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-cyan-400 focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-white/20 text-sm text-white placeholder-white/50 focus:border-amber-400 focus:outline-none"
                 />
               </div>
             </div>

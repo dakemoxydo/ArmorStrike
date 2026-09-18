@@ -134,7 +134,7 @@ describe('RenderWorld.applyQuality bloom lifecycle', () => {
     vi.stubGlobal('window', { devicePixelRatio: 1, innerWidth: 1280, innerHeight: 720 });
   });
 
-  it('downgrade disposes composer and bloom pass and clears composer state', () => {
+  it('any quality tear-down leftover bloom and never rebuilds UnrealBloom', () => {
     const { rw, deps } = makeWorld('high');
     const { composer, bloomPass } = injectLiveBloom(rw);
 
@@ -147,6 +147,8 @@ describe('RenderWorld.applyQuality bloom lifecycle', () => {
     expect(Reflect.get(rw, 'useComposer')).toBe(false);
     expect(deps.getPixelRatio()).toBe(1); // min(dpr=1, medium cap 1.5)
     expect(Reflect.get(rw, 'quality')).toBe('medium');
+    expect(h.composers).toHaveLength(0);
+    expect(h.blooms).toHaveLength(0);
   });
 
   it('downgrade also resizes the shadow map and drops the old shadow texture', () => {
@@ -158,25 +160,18 @@ describe('RenderWorld.applyQuality bloom lifecycle', () => {
     expect(deps.sun.shadow.map).toBeNull();
   });
 
-  it('returning to high rebuilds a composer sized to the canvas CSS box', () => {
+  it('high does not construct a bloom composer (ink outlines stay sharp)', () => {
     const { rw } = makeWorld('low');
 
     rw.applyQuality(QUALITY_PRESETS.high);
 
-    expect(h.composers).toHaveLength(1); // exactly one fresh composer
-    expect(h.blooms).toHaveLength(1);
-    expect(Reflect.get(rw, 'useComposer')).toBe(true);
-    const composer = Reflect.get(rw, 'composer') as FakeComposer;
-    // Canvas CSS size (640x360), NOT window.innerWidth/Height (1280x720):
-    // the F-3 regression was sizing from window after cycling.
-    expect(composer.setSize).toHaveBeenCalledWith(640, 360);
-    // Дефолтный RT EffectComposer — без stencil; setupBloom обязан включить
-    // его на обоих, иначе mask-обводка силуэта (modelOutline) мертва в high.
-    expect(composer.renderTarget1.stencilBuffer).toBe(true);
-    expect(composer.renderTarget2.stencilBuffer).toBe(true);
+    expect(h.composers).toHaveLength(0);
+    expect(h.blooms).toHaveLength(0);
+    expect(Reflect.get(rw, 'useComposer')).toBe(false);
+    expect(Reflect.get(rw, 'composer')).toBeNull();
   });
 
-  it('high→low→high cycle disposes the old rig and constructs exactly one replacement', () => {
+  it('high→low→high cycle disposes leftover bloom and never rebuilds it', () => {
     const { rw } = makeWorld('high');
     const original = injectLiveBloom(rw);
 
@@ -185,20 +180,20 @@ describe('RenderWorld.applyQuality bloom lifecycle', () => {
 
     expect(original.composer.dispose).toHaveBeenCalledTimes(1);
     expect(original.bloomPass.dispose).toHaveBeenCalledTimes(1);
-    expect(h.composers).toHaveLength(1); // one new composer, not two
-    const replacement = Reflect.get(rw, 'composer') as FakeComposer;
-    expect(replacement).not.toBe(original.composer);
-    expect(Reflect.get(rw, 'bloomPass')).not.toBeNull();
-    expect(Reflect.get(rw, 'useComposer')).toBe(true);
+    expect(h.composers).toHaveLength(0);
+    expect(Reflect.get(rw, 'composer')).toBeNull();
+    expect(Reflect.get(rw, 'useComposer')).toBe(false);
   });
 
-  it('re-applying high while already high keeps the existing composer', () => {
+  it('re-applying high tears down an injected leftover composer', () => {
     const { rw } = makeWorld('high');
-    injectLiveBloom(rw);
+    const live = injectLiveBloom(rw);
 
     rw.applyQuality(QUALITY_PRESETS.high);
 
-    expect(h.composers).toHaveLength(0); // no duplicate construction
+    expect(live.composer.dispose).toHaveBeenCalledTimes(1);
+    expect(live.bloomPass.dispose).toHaveBeenCalledTimes(1);
+    expect(h.composers).toHaveLength(0);
     expect(h.blooms).toHaveLength(0);
   });
 
