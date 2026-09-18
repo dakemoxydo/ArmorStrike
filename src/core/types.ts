@@ -28,6 +28,10 @@ export interface TankLike {
   aimYaw?: number;
   /** Match team: null = FFA. Optional for tests/stubs. */
   teamId?: string | null;
+  /** Network peer: pose/HP are replicated; local combat must not mutate them. */
+  isRemote?: boolean;
+  /** Stable multiplayer id (auth/guest/bot:N). Optional for offline stubs. */
+  networkId?: string | null;
   /** Spawn invulnerability seconds remaining. Optional for tests/stubs. */
   invulnT?: number;
   /** Тип урона этого танка (из каталога башни). Optional для стабов/без башни. */
@@ -86,5 +90,5 @@ export interface DamageSystemHooks {
    */
   onDamageIgnored?: (target: TankLike, source: TankLike) => void;
   /** Вызывается при уничтожении блока арены (для взрыва/дебриса). */
-  onBlockDestroyed: (pos: THREE.Vector3, size: number) => void;
+  onBlockDestroyed: (pos: THREE.Vector3, size: number, blockId?: number) => void;
 }

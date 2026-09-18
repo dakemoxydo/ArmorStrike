@@ -34,12 +34,12 @@ export class NameplateSystemStage implements SimSystem {
   readonly name = 'nameplate';
 
   constructor(
-    private bots: BotRoster,
+    _bots: BotRoster,
     private nameplates: NameplateMap,
   ) {}
 
-  update(_ctx: FrameContext): void {
-    NameplateSystem.update(this.bots.bots, this.nameplates);
+  update(ctx: FrameContext): void {
+    NameplateSystem.updateTanks(ctx.tanks, this.nameplates);
   }
 }
 

@@ -14,6 +14,7 @@ import type { GameEvent } from '../types';
 import { buildSimulationStages, type SimSystem, type FrameContext, type ScalarCell } from './stages';
 import { NetworkSyncStage } from './stages/NetworkSyncStage';
 import type { RemotePlayerManager } from '../network/RemotePlayerManager';
+import type { NetworkSession } from '../network/NetworkSession';
 import { applyGameOverInputState } from '../deathLifecycle';
 import { MatchRuntime } from '../match/MatchRuntime';
 import type { MatchResult } from '../match/matchTypes';
@@ -26,6 +27,9 @@ export class GameSimulation {
   readonly match: MatchRuntime;
   readonly networkSync: NetworkSyncStage;
   remotePlayers: RemotePlayerManager | null = null;
+  networkSession: NetworkSession | null = null;
+  /** True while a Realtime room is attached — pause must not freeze the sim. */
+  networked = false;
 
   /** Internal cells projected into FrameContext by reference. */
   private readonly deathCell: ScalarCell<number> = { value: -1 };
@@ -66,7 +70,7 @@ export class GameSimulation {
     readonly bots: BotRoster,
     readonly hudModel: HudModel,
   ) {
-    this.networkSync = new NetworkSyncStage(null, null, input, run.username);
+    this.networkSync = new NetworkSyncStage();
 
     this.match = new MatchRuntime({
       run,
@@ -139,6 +143,8 @@ export class GameSimulation {
       mode: result.mode,
       bestStreak: result.playerBestStreak,
     });
+
+    this.networkSession?.notifyMatchOver();
 
     this.stepEmit({
       type: 'gameOver',

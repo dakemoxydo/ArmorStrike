@@ -75,7 +75,7 @@ export class GameLoop {
 
     const { sim, cameraRig, renderWorld, hudModel, hud, emit, getPreviewVisual, onHud } = this.deps;
 
-    const combatLive = sim.run.mode === 'playing' && !sim.run.paused;
+    const combatLive = sim.run.mode === 'playing' && (!sim.run.paused || sim.networked);
     // A7: выход из 'playing' (конец матча) останавливает sim.step, а вместе с
     // ним WeaponFireStage — зажатый спуск оставался «вжат» до конца экрана
     // итогов (зацикленный flame-whoosh, замороженные луч/muzzle-свет).
@@ -100,7 +100,7 @@ export class GameLoop {
       for (const t of sim.tanks) t.weapon?.update(dt, wctx);
     }
 
-    if (!sim.run.paused) {
+    if (!sim.run.paused || sim.networked) {
       sim.arena.update(dt, this.elapsed);
       sim.effects.update(dt);
     }
@@ -117,10 +117,10 @@ export class GameLoop {
       sim.audio.setListener(cameraRig.camPos.x, cameraRig.camPos.z, sim.input.look.yaw);
     }
 
-    if (sim.run.paused || sim.run.mode === 'over') sim.audio.setEngine(0);
-    // Пауза замораживает и аудио-таймлайн: гул/тики заряда рельсы иначе
-    // доигрывали под затемнением (rAF идёт, шаг симуляции — нет). Идемпотентно.
-    sim.audio.setPaused(sim.run.paused);
+    if ((sim.run.paused && !sim.networked) || sim.run.mode === 'over') sim.audio.setEngine(0);
+    // Offline pause freezes the audio timeline. Networked pause is local-only —
+    // the match keeps running, so charge loops / remote shots must still play.
+    sim.audio.setPaused(sim.run.paused && !sim.networked);
     const showScoreboard =
       sim.run.mode === 'playing' && sim.input.scoreHeld && !sim.run.paused;
     hudModel.getHud(sim.player, sim.tanks, showScoreboard, hud);

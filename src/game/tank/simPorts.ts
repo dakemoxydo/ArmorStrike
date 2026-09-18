@@ -7,6 +7,8 @@ import type { TankFxState, TankParams, TankVisual } from './types';
 
 /** Движение корпуса + boost + knockback. */
 export interface MotionBody {
+  /** Network peer: skip local integration. Optional for tests/stubs. */
+  isRemote?: boolean;
   position: THREE.Vector3;
   params: Pick<TankParams, 'speed' | 'reverseSpeed' | 'turnSpeed'>;
   boosting: boolean;
@@ -26,6 +28,7 @@ export interface PhysicsBody {
   position: THREE.Vector3;
   radius: number;
   speed: number;
+  isRemote?: boolean;
 }
 
 /** Поворот башни к aimYaw + вертикальная автонаводка ствола (barrelPitch). */

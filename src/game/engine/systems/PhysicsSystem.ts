@@ -23,6 +23,7 @@ function resolveWalls(tanks: PhysicsBody[], colliders: Collider[], dt: number, f
   const solid = solidColliders(colliders);
   for (const t of tanks) {
     if (!t.alive) continue;
+    if (t.isRemote) continue;
     const res = resolveCircle(t.position.x, t.position.z, t.radius, solid);
     if (res.hit) {
       const impact = Math.hypot(res.x - t.position.x, res.z - t.position.z);
@@ -56,10 +57,14 @@ export const PhysicsSystem = {
         _pb.x = b.position.x;
         _pb.z = b.position.z;
         if (separateTankPair(_pa, _pb, ar, b.radius)) {
-          a.position.x = _pa.x;
-          a.position.z = _pa.z;
-          b.position.x = _pb.x;
-          b.position.z = _pb.z;
+          if (!a.isRemote) {
+            a.position.x = _pa.x;
+            a.position.z = _pa.z;
+          }
+          if (!b.isRemote) {
+            b.position.x = _pb.x;
+            b.position.z = _pb.z;
+          }
         }
       }
     }

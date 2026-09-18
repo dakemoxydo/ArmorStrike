@@ -41,3 +41,24 @@ describe('H6: single mute source', () => {
     expect(app).toMatch(/e\.key === 'as2_muted'[\s\S]{0,80}setMuted\(e\.newValue === '1'\)/);
   });
 });
+
+describe('keyboard / rematch / network id wiring', () => {
+  it('Escape ignores Auth/Quests/server browser; M ignores text fields', () => {
+    expect(app).toMatch(/authModalOpen \|\| questsOpen \|\| serverBrowserOpen/);
+    expect(app).toMatch(/e\.code === 'KeyM'[\s\S]{0,120}isInteractiveKeyboardTarget/);
+  });
+
+  it('pause ЗАНОВО rematches; MP join uses a stable network id', () => {
+    expect(app).toMatch(/onRestart=\{rematch\}/);
+    expect(app).toMatch(/userId: game\.getNetworkId\(\)/);
+  });
+});
+
+describe('multiplayer host/client wiring', () => {
+  it('host fills bots from the room flag; clients never spawn a local roster of bots', () => {
+    const game = readFileSync(resolve(__dirname, '../game/Game.ts'), 'utf8');
+    expect(game).toMatch(/botsEnabled: isHost && room\.bots_enabled/);
+    expect(game).toMatch(/sim\.match\.replication = isHost \? 'host' : 'client'/);
+    expect(game).toMatch(/sim\.networked = true/);
+  });
+});

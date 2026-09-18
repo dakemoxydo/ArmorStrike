@@ -35,6 +35,7 @@ export interface GameApi {
   readonly userId: string | null;
   readonly syncStatus: 'idle' | 'saving' | 'synced' | 'error';
 
+  getNetworkId(): string;
   setAuthUser(user: { id: string; username: string } | null): void;
   loadCloudProfile(userId: string): Promise<boolean>;
 
@@ -81,6 +82,7 @@ export interface GameApi {
 
   /** Сетевая игра */
   readonly isMultiplayer: boolean;
+  readonly isMultiplayerHost: boolean;
   readonly activeRoom: import('./network/types').RoomData | null;
   startMultiplayerRound(room: import('./network/types').RoomData, isHost: boolean, team?: TeamId): Promise<void>;
   leaveMultiplayer(): Promise<void>;

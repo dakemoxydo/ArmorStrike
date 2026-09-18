@@ -189,6 +189,37 @@ describe('GaussWeapon — снайперский захват цели и авт
     expect(deps.effects.explosion).toHaveBeenCalled();
   });
 
+  it('снайперский залп останавливается shot-blocker (билборд без LOS)', () => {
+    const owner = makeTank(1);
+    owner.position.set(0, 0, 0);
+    const target = makeTarget(2, 0, 30);
+    const billboard: Collider = {
+      id: 11,
+      minX: -5,
+      maxX: 5,
+      minZ: 10,
+      maxZ: 15,
+      height: 4,
+      blocksShots: true,
+      blocksSight: false,
+      destructible: false,
+      active: true,
+      kind: 'wall',
+    };
+    const deps = makeDeps();
+    const weapon = new GaussWeapon(owner, deps);
+    const ctx: WeaponContext = { tanks: [target], colliders: [billboard] };
+
+    weapon.setFire(true);
+    weapon.update(0.016, ctx);
+    expect(weapon.state).toBe('LOCKING');
+    weapon.update(WEAPON_TUNING.gauss.lockTime + 0.05, ctx);
+
+    expect(weapon.state).toBe('COOLDOWN');
+    expect(deps.damageSystem.applyDamage).not.toHaveBeenCalled();
+    expect(deps.effects.explosion).toHaveBeenCalled();
+  });
+
   it('разрыв прямой видимости (LOS) стеной срывает захват', () => {
     const owner = makeTank(1);
     owner.position.set(0, 0, 0);

@@ -7,7 +7,7 @@ import type { DamageSystem, TankLike } from '../../core/types';
 import type { WeaponType } from '../../core/catalog';
 import { glowTexture } from '../textures';
 import { BEHAVIORS } from './ProjectileBehavior';
-import { applySplashHit } from './applyHit';
+import { applySplashHit, isFriendlyPair } from './applyHit';
 
 export interface HitContext {
   colliders: Collider[];
@@ -47,6 +47,7 @@ function doSplash(hitPos: THREE.Vector3, ctx: HitContext, s: Shot, exclude?: Tan
   if (s.splashRadius <= 0 || !s.owner) return;
   for (const t of ctx.tanks) {
     if (!t.alive || t === s.owner || t === exclude) continue;
+    if (isFriendlyPair(s.owner, t)) continue;
     const dx = t.position.x - hitPos.x;
     const dz = t.position.z - hitPos.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
@@ -191,7 +192,7 @@ export class ProjectileManager {
           beh.onCollideWall(s, hitPosA, ctx);
           if (s.splashRadius > 0) doSplash(hitPosA, ctx, s);
 
-          if (c.destructible) {
+          if (c.destructible && !s.owner?.isRemote) {
             hitPosA.y = Math.min(c.height * 0.5, 2);
             ctx.damageSystem.damageBlock(c.id, s.damage, hitPosA);
           }
@@ -205,6 +206,7 @@ export class ProjectileManager {
         let bestT = Infinity;
         for (const t of ctx.tanks) {
           if (!t.alive || t === s.owner) continue;
+          if (s.owner && isFriendlyPair(s.owner, t)) continue;
           // C5: ближайшая по траектории цель, а не первая в ростере (в DM
           // игрок — нулевой элемент, и снаряд «из-за спины» бота попадал в него).
           const tHit = segmentHitsCircleT(px, pz, pos.x, pos.z, t.position.x, t.position.z, t.radius + PROJECTILE.radius);

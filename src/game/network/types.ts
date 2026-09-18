@@ -43,6 +43,8 @@ export interface CreateRoomOptions {
 export interface TankTransformPacket {
   userId: string;
   x: number;
+  /** Vertical pose (ramps). Omitted packets read as 0. */
+  y?: number;
   z: number;
   yaw: number;
   aimYaw: number;
@@ -50,6 +52,17 @@ export interface TankTransformPacket {
   speed: number;
   boosting: boolean;
   timestamp: number;
+  /** Owner-reconciled combat snapshot (lossy broadcast recovery). */
+  health?: number;
+  maxHealth?: number;
+  alive?: boolean;
+  invulnT?: number;
+  kills?: number;
+  deaths?: number;
+  team?: TeamId;
+  hullId?: HullId;
+  turretId?: TurretId;
+  username?: string;
 }
 
 export interface WeaponFirePacket {
@@ -59,6 +72,8 @@ export interface WeaponFirePacket {
   dir: [number, number, number];
   barrelPitch: number;
   timestamp: number;
+  /** false = release trigger (required for flame/Isida stop). Omitted = fire. */
+  firing?: boolean;
 }
 
 export interface TankDamagePacket {
@@ -67,13 +82,35 @@ export interface TankDamagePacket {
   damage: number;
   remainingHealth: number;
   isKill: boolean;
+  /** Heal ticks (Isida) reuse this packet with kind='heal'. */
+  kind?: 'damage' | 'heal';
+  kx?: number;
+  kz?: number;
 }
 
 export interface MatchSyncPacket {
   timeSec: number;
   teamScore?: { alpha: number; bravo: number };
   teamKills?: { alpha: number; bravo: number };
-  captures?: { id: string; owner: TeamId; progress: number }[];
+  captures?: {
+    id: string;
+    owner: TeamId;
+    progress: number;
+    contested?: boolean;
+    actor?: TeamId;
+  }[];
+  ended?: boolean;
+  reason?: 'score' | 'time';
+  winnerName?: string | null;
+  winnerTeam?: TeamId;
+}
+
+export interface PeerDespawnPacket {
+  userId: string;
+}
+
+export interface BlockDestroyPacket {
+  blockId: number;
 }
 
 export interface RemoteTankState {

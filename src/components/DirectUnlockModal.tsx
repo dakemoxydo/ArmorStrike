@@ -135,7 +135,7 @@ export default function DirectUnlockModal({
                 <div className="text-[10px] text-white/60 flex items-center justify-center gap-1">
                   <Gauge size={12} className="text-cyan-400" /> СКОРОСТЬ
                 </div>
-                <div className="font-display text-base text-cyan-300 mt-0.5">{hull.speed} км/ч</div>
+                <div className="font-display text-base text-cyan-300 mt-0.5">{hull.speed} м/с</div>
               </div>
             </div>
           )}

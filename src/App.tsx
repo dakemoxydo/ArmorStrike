@@ -256,7 +256,10 @@ export default function App() {
     setModeSelectOpen(false);
     setMapSelectOpen(false);
     setPaused(false);
-    void runStartRound(game, lastMapId);
+    void (async () => {
+      if (game.isMultiplayer) await game.leaveMultiplayer();
+      await runStartRound(game, lastMapId);
+    })();
   }, [game, lastMapId, runStartRound]);
 
   /** Сетевая игра: мгновенный подбор матча (быстрая игра) */
@@ -266,7 +269,7 @@ export default function App() {
     setRoundError(null);
     try {
       const playerInfo = {
-        userId: game.userId || ('usr_' + Math.random().toString(36).slice(2, 9)),
+        userId: game.getNetworkId(),
         username: game.username,
         hullId: game.currentHull,
         turretId: game.currentTurret,
@@ -298,7 +301,7 @@ export default function App() {
     setRoundError(null);
     try {
       const playerInfo = {
-        userId: game.userId || ('usr_' + Math.random().toString(36).slice(2, 9)),
+        userId: game.getNetworkId(),
         username: game.username,
         hullId: game.currentHull,
         turretId: game.currentTurret,
@@ -330,7 +333,7 @@ export default function App() {
     setRoundError(null);
     try {
       const playerInfo = {
-        userId: game.userId || ('usr_' + Math.random().toString(36).slice(2, 9)),
+        userId: game.getNetworkId(),
         username: game.username,
         hullId: game.currentHull,
         turretId: game.currentTurret,
@@ -378,12 +381,13 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (!game) return;
       // Mode/map select own Escape / Enter while open.
-      if (mapSelectOpen || modeSelectOpen) return;
+      if (mapSelectOpen || modeSelectOpen || authModalOpen || questsOpen || serverBrowserOpen) return;
       if (e.code === 'Escape') {
         if (uiMode === 'playing') game.togglePause();
         else if (uiMode === 'garage') goMenu();
       }
       if (e.code === 'KeyM') {
+        if (isInteractiveKeyboardTarget(e.target)) return;
         const nowMuted = game.toggleMute();
         setMuted(nowMuted);
       }
@@ -394,7 +398,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, uiMode, goMenu, openModeSelect, mapSelectOpen, modeSelectOpen]);
+  }, [game, uiMode, goMenu, openModeSelect, mapSelectOpen, modeSelectOpen, authModalOpen, questsOpen, serverBrowserOpen]);
 
   const snap: HudSnapshot | null = game ? game.getHud() : null;
 
@@ -481,7 +485,7 @@ export default function App() {
           damageNumbers={damageNumbers}
           onDamageNumbers={changeDamageNumbers}
           onResume={resume}
-          onRestart={openModeSelect}
+          onRestart={rematch}
           onGarage={goGarage}
           onMenu={goMenu}
           onToggleMute={toggleMute}

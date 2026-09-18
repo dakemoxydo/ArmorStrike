@@ -219,7 +219,7 @@ function HullOptionCard({
             <span className="text-white/60 flex items-center gap-1.5">
               <Gauge size={13} className="text-cyan-400" /> Скорость
             </span>
-            <span className="font-display text-cyan-300">{hull.speed} км/ч</span>
+            <span className="font-display text-cyan-300">{hull.speed} м/с</span>
           </div>
           <div className="h-1.5 bg-black/40 cut-chip overflow-hidden border border-white/10">
             <div className="h-full bg-cyan-400" style={{ width: `${speedPct}%` }} />

@@ -24,13 +24,9 @@ import { ECONOMY_PRICES } from './economy/matchRewards';
 import type { QuestProgress } from './economy/questCatalog';
 import { CloudSaveService } from './auth/cloudSaveService';
 import { MultiplayerService } from './network/multiplayerService';
+import { NetworkSession } from './network/NetworkSession';
 import { RemotePlayerManager } from './network/RemotePlayerManager';
-import type {
-  RoomData,
-  TankDamagePacket,
-  TankTransformPacket,
-  WeaponFirePacket,
-} from './network/types';
+import type { RoomData } from './network/types';
 
 export class Game implements GameApi {
   /** Local event bus — safe to use before async bootstrap finishes. */
@@ -139,25 +135,32 @@ export class Game implements GameApi {
   get userId(): string | null { return this.requireSim().run.userId; }
   get syncStatus(): 'idle' | 'saving' | 'synced' | 'error' { return this.requireSim().run.syncStatus; }
 
+  getNetworkId(): string {
+    return this.requireSim().run.getNetworkId();
+  }
+
   setAuthUser(user: { id: string; username: string } | null): void {
     const run = this.requireSim().run;
     if (user) {
       run.userId = user.id;
       run.username = user.username;
       run.isGuest = false;
+      run.save();
     } else {
-      run.userId = null;
-      run.username = 'Гость';
-      run.isGuest = true;
+      run.resetToGuest();
     }
-    run.save();
     this.ctx?.emitEvent({ type: 'garageChanged' });
   }
 
   async loadCloudProfile(userId: string): Promise<boolean> {
     const sim = this.requireSim();
+    sim.run.userId = userId;
+    sim.run.isGuest = false;
     const profile = await CloudSaveService.loadProfile(userId);
-    if (!profile) return false;
+    if (!profile) {
+      sim.run.save();
+      return false;
+    }
     CloudSaveService.applyProfileToRunState(profile, sim.run);
     this.ctx?.emitEvent({ type: 'garageChanged' });
     return true;
@@ -298,83 +301,70 @@ export class Game implements GameApi {
     const ctx = this.ctx;
     if (!ctx) throw new Error('Game context not initialized');
 
-    // Очищаем предыдущую сетевую сессию при наличии
     await this.leaveMultiplayer();
 
     this.currentRoom = room;
     this.isHostFlag = isHost;
 
+    const userId = sim.run.getNetworkId();
+
+    // Host fills empty slots with bots (GDD §5); clients never simulate bots.
+    await this.requireModes().startRound(room.map_id, room.mode, {
+      botsEnabled: isHost && room.bots_enabled,
+      playerTeam: team,
+    });
+
     const mp = new MultiplayerService();
     this.multiplayerService = mp;
 
-    const userId = sim.run.userId || ('usr_' + Math.random().toString(36).slice(2, 9));
     const profile = {
       userId,
       username: sim.run.username,
       hullId: sim.run.currentHull,
       turretId: sim.run.currentTurret,
+      team: team ?? null,
     };
 
     const remotePlayers = new RemotePlayerManager(ctx.scene, ctx.weaponDeps, sim.tanks, sim.nameplates);
+    const session = new NetworkSession({
+      sim,
+      scene: ctx.scene,
+      weaponDeps: ctx.weaponDeps,
+      combat: sim.combat,
+      room,
+      isHost,
+      localId: userId,
+      localTeam: team ?? null,
+      service: mp,
+      remotes: remotePlayers,
+    });
+    session.bootstrapRoster();
+
     sim.remotePlayers = remotePlayers;
-    sim.networkSync.setServices(mp, remotePlayers, userId);
+    sim.networkSession = session;
+    sim.networked = true;
+    sim.match.replication = isHost ? 'host' : 'client';
+    sim.networkSync.setSession(session);
 
-    mp.connectToRoom(room.id, profile, (event, payload) => {
-      if (event === 'tank_transform') {
-        remotePlayers.handleTransform(payload as TankTransformPacket);
-      } else if (event === 'weapon_fire') {
-        remotePlayers.handleFire(payload as WeaponFirePacket);
-      } else if (event === 'tank_damage') {
-        remotePlayers.handleDamage(payload as TankDamagePacket);
-      } else if (event === 'presence_sync') {
-        if (payload && typeof payload === 'object') {
-          const dict = payload as Record<string, unknown>;
-          for (const key of Object.keys(dict)) {
-            const presences = dict[key];
-            if (Array.isArray(presences)) {
-              for (const p of presences as Array<{ userId?: string; username?: string; hullId?: HullId; turretId?: TurretId }>) {
-                if (p.userId && p.userId !== userId) {
-                  const peerTeam: TeamId = room.mode === 'deathmatch'
-                    ? null
-                    : (team === 'alpha' ? 'bravo' : 'alpha');
-                  void remotePlayers.spawnPeer(
-                    p.userId,
-                    p.username || 'Боец',
-                    p.hullId || 'hunter',
-                    p.turretId || 'railgun',
-                    peerTeam,
-                  );
-                }
-              }
-            }
-          }
-        }
-      } else if (event === 'player_left') {
-        if (Array.isArray(payload)) {
-          for (const p of payload as Array<{ userId?: string }>) {
-            if (p.userId) remotePlayers.removePeer(p.userId);
-          }
-        }
-      }
-    });
-
-    // Запуск раунда с сетевыми настройками
-    await this.requireModes().startRound(room.map_id, room.mode, {
-      botsEnabled: room.bots_enabled,
-      playerTeam: team,
-    });
+    session.connect(profile);
   }
 
   async leaveMultiplayer(): Promise<void> {
     if (this.currentRoom && this.multiplayerService) {
       const sim = this.sim;
-      const userId = sim?.run.userId || 'unknown';
+      const userId = sim?.run.getNetworkId() ?? 'unknown';
       await MultiplayerService.leaveRoom(this.currentRoom.id, userId);
       this.multiplayerService.disconnect();
       this.multiplayerService = null;
+      sim?.networkSession?.dispose();
+      if (sim) sim.networkSession = null;
       sim?.remotePlayers?.clear();
-      if (sim) sim.remotePlayers = null;
-      sim?.networkSync.setServices(null, null, userId);
+      if (sim) {
+        sim.remotePlayers = null;
+        sim.networked = false;
+        sim.match.replication = 'local';
+      }
+      sim?.networkSync.setSession(null);
       this.currentRoom = null;
       this.isHostFlag = false;
     }
@@ -383,6 +373,7 @@ export class Game implements GameApi {
   dispose() {
     this.disposed = true;
     this.listeners.clear();
+    void this.leaveMultiplayer();
     if (!this.ctx) return;
     this.teardownContext(this.ctx);
     this.ctx = null;

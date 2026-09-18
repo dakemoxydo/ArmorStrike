@@ -113,6 +113,11 @@ export interface WeaponDeps {
    */
   onSupportScore?: (points: number) => void;
   /**
+   * Direct HP mutation that bypasses DamageSystem (Isida heal).
+   * NetworkSession uses this to replicate remainingHealth to the owner.
+   */
+  onHealthNet?: (target: TankLike, remainingHealth: number, delta: number) => void;
+  /**
    * Всплывающее число над целью/союзником (п.1). Лечение («Изида») идёт мимо
    * DamageSystem, поэтому оружие само сообщает мировую точку и величину;
    * урон по врагам numbers-каналом занимается CombatSystem.

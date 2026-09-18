@@ -78,7 +78,7 @@ describe('E6: TankFxSystem accumulator -= threshold', () => {
 describe('G3: reload click gated for beam turrets', () => {
   function stageScenario(turretId: string, ammo: Record<string, unknown>) {
     const audio = { reload: vi.fn() } as unknown as AudioPort;
-    const input = { update: vi.fn() } as unknown as PlayerController;
+    const input = { update: vi.fn(), enabled: true } as unknown as PlayerController;
     const stage = new PlayerInputStage(input, audio);
     const player = {
       alive: true,

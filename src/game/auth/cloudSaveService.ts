@@ -27,6 +27,7 @@ export interface CloudProfile {
 export class CloudSaveService {
   private static saveTimeout: ReturnType<typeof setTimeout> | null = null;
   private static pendingData: Partial<CloudProfile> | null = null;
+  private static pendingUserId: string | null = null;
 
   /** Загрузить профиль игрока из Supabase */
   static async loadProfile(userId: string): Promise<CloudProfile | null> {
@@ -77,6 +78,14 @@ export class CloudSaveService {
     data: Partial<CloudProfile>,
     onSaved?: (success: boolean) => void,
   ) {
+    if (this.pendingUserId && this.pendingUserId !== userId && this.pendingData) {
+      const prevId = this.pendingUserId;
+      const prevData = this.pendingData;
+      this.pendingData = null;
+      void this.saveProfileImmediate(prevId, prevData);
+    }
+
+    this.pendingUserId = userId;
     this.pendingData = { ...this.pendingData, ...data };
 
     if (this.saveTimeout) {
@@ -84,12 +93,14 @@ export class CloudSaveService {
     }
 
     this.saveTimeout = setTimeout(async () => {
-      if (!this.pendingData) return;
+      if (!this.pendingData || !this.pendingUserId) return;
       const toSave = this.pendingData;
+      const id = this.pendingUserId;
       this.pendingData = null;
+      this.pendingUserId = null;
       this.saveTimeout = null;
 
-      const success = await this.saveProfileImmediate(userId, toSave);
+      const success = await this.saveProfileImmediate(id, toSave);
       onSaved?.(success);
     }, 500);
   }
@@ -109,6 +120,7 @@ export class CloudSaveService {
 
   /** Применить данные облачного профиля к локальному экземпляру RunState */
   static applyProfileToRunState(profile: CloudProfile, runState: RunState) {
+    runState.userId = profile.id;
     runState.username = profile.username;
     runState.isGuest = false;
 

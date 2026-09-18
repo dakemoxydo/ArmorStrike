@@ -4,6 +4,7 @@
 import type * as THREE from 'three';
 import type { TankEntity } from '../Tank';
 import type { MapId } from '../maps/mapCatalog';
+import type { TeamId } from './matchTypes';
 import { zonesForMap } from './captureAnchors';
 import {
   countPresenceInZone,
@@ -80,5 +81,34 @@ export class CaptureController {
     const delta = scoreDeltaFromZones(this.zones, dt);
     this.markers?.sync(this.zones);
     return delta;
+  }
+
+  /** Re-push current zones to markers without stepping sim (client replication). */
+  syncMarkers() {
+    if (this.zones.length === 0) return;
+    this.markers?.sync(this.zones);
+  }
+
+  applyNetworkState(
+    captures: readonly {
+      id: string;
+      owner: TeamId;
+      progress: number;
+      contested?: boolean;
+      actor?: TeamId;
+    }[],
+  ) {
+    if (this.zones.length === 0) return;
+    for (const snap of captures) {
+      const zone = this.zones.find((z) => z.id === snap.id);
+      if (!zone) continue;
+      zone.owner = snap.owner === 'alpha' || snap.owner === 'bravo' ? snap.owner : null;
+      zone.progress = snap.progress;
+      if (snap.contested !== undefined) zone.contested = snap.contested;
+      if (snap.actor !== undefined) {
+        zone.actor = snap.actor === 'alpha' || snap.actor === 'bravo' ? snap.actor : null;
+      }
+    }
+    this.markers?.sync(this.zones);
   }
 }

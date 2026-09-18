@@ -15,7 +15,7 @@
 | [[Tank_Aim]] | Наведение башни | `TankAimSystem` |
 | [[Vertical_Auto_Aim]] | Вертикальная автонаводка (наклон ствола к цели) + захват в прицеле | `TankAimSystem` (`barrelPitch`), `TargetHighlightStage`, `Tank.setPitchAim`/`aimDir` |
 | [[Target_Highlight_Aim]] | Подсветка врага в конусе прицела (P7) | `TargetHighlightStage`, `AimHighlighter`, `modelOutline.ts` |
-| [[Health_And_Regen]] | HP, смерть, респаун (без пассивного регена) | `TankEntity` (`combat`/`fx`), `TankCombatTimersSystem` |
+| [[Health_And_Regen]] | HP, смерть, респаун, ремонт вне боя | `TankEntity` (`combat`/`fx`), `TankCombatTimersSystem` |
 | [[Damage_System]] | Урон / knockback / блоки | `DamageSystem`, `CombatSystem`, `applyHit` |
 | [[Kill_Feedback]] | Hit-stop / slow-mo за убийство игроком | `TimeScale`, `CombatSystem.setOnKillPunch` |
 | [[Weapon_Cannon]] | Пушка «Смоки» | `CannonWeapon`, `ProjectileManager` |
@@ -41,7 +41,7 @@
 | [[Starter_Crates_And_Progression]] | Стартовые контейнеры новобранца (Draft Pick 3 карт), закрытый арсенал | `RunState`, `GarageBinding`, `StarterPackModal` |
 | [[Economy_Currency_And_Quests]] | Экономика (Кредиты CR), боевые выплаты, система квестов и покупка контейнеров | `matchRewards`, `questCatalog`, `RunState`, `QuestsModal` |
 | [[Cloud_Profiles_And_Auth]] | Профили игроков, Supabase Auth (username/email), гостевой режим и облачные сохранения | `RunState`, `AuthService`, `CloudSaveService`, `AuthModal`, `UserBadge` |
-| [[Multiplayer_Lobby_And_Rooms]] | Сетевой мультиплеер, браузер серверов, создание комнат, быстрая игра и репликация танков | `multiplayerService`, `RemotePlayerManager`, `NetworkSyncStage`, `ServerBrowserModal` |
+| [[Multiplayer_Lobby_And_Rooms]] | Сетевой мультиплеер, браузер серверов, создание комнат, быстрая игра и репликация танков | `multiplayerService`, `NetworkSession`, `RemotePlayerManager`, `NetworkSyncStage`, `ServerBrowserModal` |
 | [[Stylized_Art_Direction]] | Стилизованный Low-Poly / Cel-Shaded / Комикс арт-дирекшен: ступенчатый шейдинг, чернильная обводка танков и геометрии, комиксный UI/HUD, дневное солнце | `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/styles/*.css`, `src/game/ArenaBuilder.ts` |
 
 **Removed-механики** (wave-era, удалены в P0) — надгробные доки в `../Archive/`: [[../Archive/Wave_System|Wave_System]], [[../Archive/Wave_Buffs|Wave_Buffs]]. Approved = только реализованное; история — в git.

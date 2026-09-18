@@ -20,7 +20,7 @@ export class WeaponFireStage implements SimSystem {
     const p = ctx.player;
     // M8 stays true: a dead owner's weapon must drop its trigger so audio/state
     // do not leak (flame loop).
-    p.weapon?.setFire(p.alive ? this.input.wantsFire : false);
+    p.weapon?.setFire(p.alive && this.input.enabled ? this.input.wantsFire : false);
 
     for (const b of this.bots.bots) {
       b.tank.weapon?.setFire(b.tank.alive ? b.ai.wantsFire : false);

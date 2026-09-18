@@ -28,12 +28,20 @@
      - weapon_fire                     - player_left
      - tank_damage                     - presenceState sync
      - match_sync
+     - block_destroy
+     - peer_despawn
 ```
 
 ### 1.1 Разделение зон ответственности
 - **PostgreSQL RPC:** управление жизненным циклом комнат (создание, подбор «Быстрой игры», проверка паролей, учет вместимости слотов, heartbeat, авто-очистка брошенных серверов `cleanup_stale_rooms`).
 - **Supabase Realtime Presence:** непрерывный учет активных участников в WebSocket-канале `room:${roomId}`. Автоматически оповещает о разрыве соединения (`player_left`).
 - **Supabase Realtime Broadcast:** высокочастотный обмен легковесными UDP-подобными пакетами через WebSocket без сохранения в базу данных.
+
+### 1.2 Модель авторитета
+- **Поза:** каждый клиент владеет своим танком и шлёт `tank_transform` на 20 Гц (включая HP/alive/y — восстановление после потери UDP-подобных пакетов).
+- **Бой:** авторитет стрелка. Локальный игрок и боты хоста применяют `DamageSystem`; удалённые выстрелы косметические (`isRemote` не снимает HP и не ломает блоки). Снимок урона уходит пакетом `tank_damage`.
+- **Матч:** авторитет хоста. Хост считает время, teamScore/teamKills, захват CP и конец боя; клиенты применяют `match_sync` и не вызывают `evaluateMatchEnd`.
+- **Боты:** только на хосте (`room.bots_enabled`). Реплицируются как `bot:N`. При drop-in живых игроков хост уступает слоты (`desiredBotCount`).
 
 ---
 
@@ -42,14 +50,12 @@
 Сетевая стадия встроена в конвейер стадий симуляции (`src/game/engine/stages/`):
 
 ```
-PlayerInputStage ──► TankMotionStage ──► NetworkSyncStage ──► CombatStage ──► Render
-                                                │
-                 ┌──────────────────────────────┴──────────────────────────────┐
-                 ▼                                                             ▼
-       Local Tank Broadcast (20 Hz)                                RemotePlayerManager.update(dt)
-   - position (x, z)                                             - Lerp позиций (rate = 14)
-   - yaw, aimYaw, barrelPitch                                    - Нормализованная интерполяция углов
-   - speed, boosting                                             - Таймаут отключений (15 с)
+PlayerInputStage ──► NetworkSyncStage ──► TankMotion ──► Weapons ──► MatchStage ──► Render
+         │                    │
+         │                    ├─ session.tick: lerp remotes, 20 Hz transform, fire edges
+         │                    └─ host: bot transforms + match_sync 4 Hz
+         ▼
+   NetworkSession (pose / combat / match / bots)
 ```
 
 1. **Частота отправки:** 20 Гц (интервал 50 мс, `1 / NETWORK_TICK_RATE`). Не перегружает WebSocket-соединение и укладывается в бесплатный лимит Realtime квот.
@@ -85,20 +91,25 @@ PlayerInputStage ──► TankMotionStage ──► NetworkSyncStage ──► 
 ## 4. Событийная модель боя (Fire & Damage)
 
 1. **Стрельба (`weapon_fire`):**
-   - При выстреле локального игрока отправляется пакет с координатами дула, направлением `dir` и типом башни `turretId`.
-   - При получении пакета `weapon_fire` для удалённого танка вызываются визуальные эффекты и звук выстрела его оружия (`tank.weapon.onFired(...)`).
+   - Локальный игрок и боты хоста шлют фронт спуска (`firing` true/false) и 3D-`dir`.
+   - Удалённый танк вызывает `weapon.setFire` — VFX/звук идут, HP/блоки нет (`source.isRemote`).
 
 2. **Урон и уничтожение (`tank_damage`):**
-   - Урон обсчитывается на стороне стрелявшего/цели и рассылается пакетом `tank_damage`.
-   - Если HP удалённого танка падает до 0, инициируется анимация разрушения (Wreck/Hit-stop) и выводится уведомление в kill-feed.
+   - После локального `applyDamage` `CombatSystem` шлёт снимок (`remainingHealth`, `isKill`).
+   - Получатель вызывает `applyReplicatedHit` (без повторного крита/резиста). Лечение «Изиды» — `kind: 'heal'`.
+   - Потерянный kill-пакет восстанавливается полем `alive` в следующем `tank_transform`.
+
+3. **Матч (`match_sync`):**
+   - Хост шлёт время, очки, зоны CP и флаг `ended`. Клиент вызывает `MatchRuntime.applyHostSync`.
 
 ---
 
 ## 5. Host Authority и Drop-in
 
-- **Drop-in:** игроки могут подключаться к уже идущему матчу без ожидания лобби.
-- **Боты:** если `bots_enabled = true`, недостающие слоты заполняются локальными ботами хоста. При подключении живых игроков боты уступают слоты реальным танкистам.
-- **Heartbeat:** хост посылает `heartbeat_room` каждые 15 секунд. Зависшие комнаты автоматически снимаются с листинга через 45 секунд отсутствия пульса.
+- **Drop-in:** игроки могут подключаться к уже идущему матчу без ожидания лобби (Presence + transform snapshot).
+- **Боты:** если `bots_enabled = true`, недостающие слоты заполняются локальными ботами хоста (`bot:N` в эфире). При подключении живых игроков боты уступают слоты (`peer_despawn`).
+- **Пауза:** в сетевом матче симуляция не замирает (локальный оверлей не стопает `GameLoop`); auto-pause по tab-hide / lock-lost выключен.
+- **Heartbeat:** клиенты шлют `heartbeat_room` каждые 15 секунд. Зависшие комнаты снимаются с листинга через 45 секунд.
 
 ---
 
@@ -108,6 +119,8 @@ PlayerInputStage ──► TankMotionStage ──► NetworkSyncStage ──► 
 |-----------|------|
 | Сетевой сервис и API комнат | `src/game/network/multiplayerService.ts` |
 | Интерфейсы пакетов и типов комнат | `src/game/network/types.ts` |
+| Чистые хелперы авторитета | `src/game/network/replication.ts` |
+| Сессия комнаты (pose/combat/match/bots) | `src/game/network/NetworkSession.ts` |
 | Менеджер удалённых танков и интерполяция | `src/game/network/RemotePlayerManager.ts` |
 | Стадия симуляции тика | `src/game/engine/stages/NetworkSyncStage.ts` |
 | Подключение к симуляции | `src/game/engine/GameSimulation.ts`, `src/game/Game.ts` |

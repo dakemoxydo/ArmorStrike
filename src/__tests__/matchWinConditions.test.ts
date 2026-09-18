@@ -64,6 +64,20 @@ describe('evaluateMatchEnd', () => {
     expect(r?.reason).toBe('score');
   });
 
+  it('TDM: Bravo local player wins when Bravo hits the threshold', () => {
+    const cfg = configForMode('team_deathmatch');
+    const r = evaluateMatchEnd({
+      config: cfg,
+      matchTimeSec: 50,
+      personals: [],
+      teamKills: { alpha: 20, bravo: cfg.winTeamKills },
+      teamScore: { alpha: 0, bravo: 0 },
+      playerTeam: 'bravo',
+    });
+    expect(r?.winnerTeam).toBe('bravo');
+    expect(r?.playerWon).toBe(true);
+  });
+
   it('TDM: time limit picks team leader', () => {
     const cfg = configForMode('team_deathmatch');
     const r = evaluateMatchEnd({

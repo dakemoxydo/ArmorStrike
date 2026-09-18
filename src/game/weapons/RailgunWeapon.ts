@@ -472,7 +472,7 @@ export class RailgunWeapon implements Weapon {
       // After N penetrations currentDamage may round to 0; skip the block hit
       // but keep the wall impact FX so the beam still visibly stops.
       const wallDmg = Math.round(currentDamage);
-      if (wallDmg > 0) {
+      if (wallDmg > 0 && !this.owner.isRemote) {
         this.deps.damageSystem.damageBlock(wall.id, wallDmg, wall.point);
       }
       this._wallVisual.p.copy(wall.point);

@@ -290,7 +290,7 @@ export class GaussWeapon implements Weapon {
 
         // 100% заполнение круга — автоматический выстрел!
         if (this.lockTimer >= lockDur) {
-          this.executeSniperFiring(target, ctx.tanks);
+          this.executeSniperFiring(target, ctx.tanks, ctx.colliders as Collider[]);
           this.stopLockAudio(true);
           this.state = 'COOLDOWN';
           this.lastCooldownDuration = this.cooldownDuration();
@@ -317,9 +317,49 @@ export class GaussWeapon implements Weapon {
     return false;
   }
 
-  private executeSniperFiring(target: CombatPeer, tanks?: CombatPeer[]): void {
+  private executeSniperFiring(target: CombatPeer, tanks?: CombatPeer[], colliders?: readonly Collider[]): void {
     fillMuzzleAndAim(this.owner, tmpMuzzle, tmpDir);
     tmpTargetPos.set(target.position.x, target.position.y + 0.8, target.position.z);
+
+    const dx = tmpTargetPos.x - tmpMuzzle.x;
+    const dz = tmpTargetPos.z - tmpMuzzle.z;
+    const dist = Math.hypot(dx, dz);
+    if (colliders && dist > 0.001) {
+      const inv = 1 / dist;
+      const blocker = nearestShotBlockerDist(
+        tmpMuzzle.x,
+        tmpMuzzle.z,
+        dx * inv,
+        dz * inv,
+        dist,
+        colliders as Collider[],
+        tmpMuzzle.y,
+      );
+      if (blocker && blocker.dist < dist - 0.05) {
+        tmpTargetPos.set(
+          tmpMuzzle.x + dx * inv * blocker.dist,
+          tmpMuzzle.y,
+          tmpMuzzle.z + dz * inv * blocker.dist,
+        );
+        this.deps.effects.impact(tmpTargetPos, 0xc084fc);
+        this.deps.effects.explosion(tmpTargetPos, 0xc084fc, 0.7);
+        this.beamFx.fire(tmpMuzzle, tmpTargetPos, WEAPON_TUNING.gauss.beamDuration);
+        this.deps.effects.muzzle(tmpMuzzle, 0xc084fc);
+        this.owner.onFired(WEAPON_TUNING.gauss.knockback);
+        if (this.owner.isPlayer) {
+          this.deps.audio.shoot('gauss');
+          this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakePlayer);
+          this.deps.effects.addFovPunch(6.5);
+          this.deps.onShotFired?.();
+        } else if (this.playerNear(tanks, 45)) {
+          this.deps.audio.shoot('gauss', this.owner.position);
+          this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakeBot);
+        } else {
+          this.deps.audio.shoot('gauss', this.owner.position);
+        }
+        return;
+      }
+    }
 
     const dmg = resolveWeaponDamage(this.owner.params.damage, WEAPON_TUNING.gauss.damage);
     const knockDir = tmpDir.clone();

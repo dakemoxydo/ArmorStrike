@@ -41,6 +41,9 @@ describe('resultsText / balance P6', () => {
     expect(resultsHeadline({
       playerWon: false, winnerName: null, winnerTeam: 'bravo', reason: 'time',
     })).toMatch(/BRAVO|ВРЕМЯ/);
+    expect(resultsHeadline({
+      playerWon: true, winnerName: null, winnerTeam: 'bravo', reason: 'score',
+    })).toContain('ПОБЕДА BRAVO');
   });
 
   it('balance: TDM winTeamKills is 50, DM winKills is 25', () => {

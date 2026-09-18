@@ -138,5 +138,5 @@
 - [x] L1: Деплой на Vercel (CI/CD ветки main, Vite SPA) + подключение Supabase (Postgres, Auth, RLS, project tukylkqpvzltzqrnfutc) + локальные Agent Skills и MCP-мост Antigravity.
 - [x] L2: Облачные профили игроков (Supabase Auth, таблица `profiles`, синхронизация прогресса с `RunState`, вход по username/email, мгновенная регистрация без писем, сброс пароля, гостевой режим) — `Cloud_Profiles_And_Auth.md`.
 - [ ] L3: Глобальная таблица лидеров (таблица `leaderboard`, авто-запись рекордов из `GameOverScreen`, лидерборд в UI).
-- [x] L4: Сетевой реалтайм мультиплеер (Supabase Realtime Broadcast + Presence, RPC комнат/паролей/быстрой игры, NetworkSyncStage, интерполяция RemotePlayerManager, ServerBrowserModal, CreateServerModal) — [[Docs/GDD/Approved/Multiplayer_Lobby_And_Rooms|Multiplayer_Lobby_And_Rooms]], [[Docs/Architecture/Standard_Multiplayer|Standard_Multiplayer]].
+- [x] L4: Сетевой реалтайм мультиплеер (Supabase Realtime Broadcast + Presence, RPC комнат/паролей/быстрой игры, NetworkSession host-authority match + shooter-authority combat, боты хоста `bot:N`, drop-in yield, NetworkSyncStage, интерполяция RemotePlayerManager, ServerBrowserModal, CreateServerModal) — [[Docs/GDD/Approved/Multiplayer_Lobby_And_Rooms|Multiplayer_Lobby_And_Rooms]], [[Docs/Architecture/Standard_Multiplayer|Standard_Multiplayer]].
 

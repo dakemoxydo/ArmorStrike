@@ -67,7 +67,7 @@ describe('createDamageSystem', () => {
     const hitPos = new THREE.Vector3(1, 1, 1);
     ds.damageBlock(1, 50, hitPos);
     expect(blocks.get(1)!.active).toBe(false);
-    expect(onBlockDestroyed).toHaveBeenCalledWith(hitPos, 1.4);
+    expect(onBlockDestroyed).toHaveBeenCalledWith(hitPos, 1.4, 1);
   });
 
   it("при неполном разрушении возвращает 'hit' и НЕ зовёт onBlockDestroyed", () => {
@@ -105,5 +105,16 @@ describe('createDamageSystem', () => {
     const ds = createDamageSystem({} as any, { onTankDamaged, onBlockDestroyed: vi.fn() });
     ds.applyDamage(target, 30, source);
     expect(onTankDamaged).not.toHaveBeenCalled();
+  });
+
+  it('remote-owned shots are cosmetic (HP arrives via tank_damage)', () => {
+    const target = makeTank();
+    const source = makeTank({ isRemote: true });
+    const onTankDamaged = vi.fn();
+    const ds = createDamageSystem({} as any, { onTankDamaged, onBlockDestroyed: vi.fn() });
+    ds.applyDamage(target, 40, source);
+    expect(target.takeDamage).not.toHaveBeenCalled();
+    expect(onTankDamaged).not.toHaveBeenCalled();
+    expect(target.health).toBe(100);
   });
 });

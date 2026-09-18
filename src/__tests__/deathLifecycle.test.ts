@@ -14,6 +14,7 @@ describe('deathLifecycle (C1 death softlock)', () => {
     expect(shouldAutoPauseOnInterrupt('over', false, -1)).toBe(false);
     expect(shouldAutoPauseOnInterrupt('menu', false, -1)).toBe(false);
     expect(shouldAutoPauseOnInterrupt('garage', false, -1)).toBe(false);
+    expect(shouldAutoPauseOnInterrupt('playing', false, -1, true)).toBe(false);
   });
 
   it('player death arms timer, clears pause, disables input (order-safe for releaseLock)', () => {

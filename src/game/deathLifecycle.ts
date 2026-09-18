@@ -12,7 +12,9 @@ export function shouldAutoPauseOnInterrupt(
   mode: GameModeLike,
   paused: boolean,
   deathT: number,
+  networked = false,
 ): boolean {
+  if (networked) return false;
   return mode === 'playing' && !paused && deathT < 0;
 }
 

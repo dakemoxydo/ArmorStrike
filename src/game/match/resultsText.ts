@@ -34,12 +34,9 @@ export function resultsHeadline(input: ResultsHeadlineInput): string {
   if (!winnerName && !winnerTeam) {
     return reason === 'time' ? 'НИЧЬЯ · ВРЕМЯ' : 'НИЧЬЯ';
   }
-  if (winnerTeam === 'alpha') {
-    return playerWon ? `ПОБЕДА ALPHA${timeNote}` : `ПОРАЖЕНИЕ · ALPHA${timeNote}`;
-  }
-  if (winnerTeam === 'bravo') {
-    // Local player is always Alpha in shipped roster.
-    return `ПОРАЖЕНИЕ · BRAVO${timeNote}`;
+  if (winnerTeam === 'alpha' || winnerTeam === 'bravo') {
+    const tag = winnerTeam.toUpperCase();
+    return playerWon ? `ПОБЕДА ${tag}${timeNote}` : `ПОРАЖЕНИЕ · ${tag}${timeNote}`;
   }
   // DM personal
   if (winnerName) {

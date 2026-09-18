@@ -28,7 +28,7 @@
 |-----|---|---|---|
 | factory | (−88, 8) west | (0, 0) center | (92, −6) east |
 | village | (0, 4) plaza | (−100, 20) west | (100, −20) east |
-| city | (0, 0) plaza | (0, 78) north | (12, −86) south |
+| city | (0, 0) plaza | (0, 78) north | (0, −78) south |
 
 Источник: `src/game/match/captureAnchors.ts`.
 

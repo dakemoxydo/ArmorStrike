@@ -174,8 +174,8 @@ export async function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): P
   player.invulnT = 0;
   if (playerTeam) applyTeamRing(player, playerTeam);
 
-  if (isTeam) {
-    const spawnPool = playerTeam === 'bravo' ? BRAVO_SPAWN_POINTS : ALPHA_SPAWN_POINTS;
+  if (isTeam && playerTeam) {
+    const spawnPool = spawnPoolFor(playerTeam);
     const idx = pickPointIndex(spawnPool, used, 0, 0, 0);
     used.add(idx);
     const [px, pz] = spawnPool[idx];
@@ -193,7 +193,7 @@ export async function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): P
     return { player, bots };
   }
 
-  if (!isTeam) {
+  if (!isTeam || !playerTeam) {
     // DM: 7 FFA bots
     for (let i = 0; i < cfg.dmBotCount; i++) {
       const idx = pickPointIndex(
@@ -210,33 +210,61 @@ export async function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): P
     return { player, bots };
   }
 
-  // TDM / CP: alpha allies + bravo enemies
+  // TDM / CP: allies share the player's team and spawn pool; enemies the opposite.
+  const sides = rosterTeamSides(playerTeam);
   const allyCount = cfg.teamSize - 1;
   const enemyCount = cfg.teamSize;
-  const alphaUsed = new Set<number>(used);
-  const bravoUsed = new Set<number>();
+  const allyUsed = new Set<number>(used);
+  const enemyUsed = new Set<number>();
 
   for (let i = 0; i < allyCount; i++) {
     const idx = pickPointIndex(
-      ALPHA_SPAWN_POINTS,
-      alphaUsed,
+      sides.allySpawns,
+      allyUsed,
       player.position.x,
       player.position.z,
       12,
     );
-    alphaUsed.add(idx);
-    const [x, z] = ALPHA_SPAWN_POINTS[idx];
-    bots.push(await makeBot(i, 'alpha', x, z, ctx));
+    allyUsed.add(idx);
+    const [x, z] = sides.allySpawns[idx];
+    bots.push(await makeBot(i, sides.allyTeam, x, z, ctx));
   }
 
   for (let i = 0; i < enemyCount; i++) {
-    const idx = pickPointIndex(BRAVO_SPAWN_POINTS, bravoUsed, 0, 0, 0);
-    bravoUsed.add(idx);
-    const [x, z] = BRAVO_SPAWN_POINTS[idx];
-    bots.push(await makeBot(allyCount + i, 'bravo', x, z, ctx));
+    const idx = pickPointIndex(sides.enemySpawns, enemyUsed, 0, 0, 0);
+    enemyUsed.add(idx);
+    const [x, z] = sides.enemySpawns[idx];
+    bots.push(await makeBot(allyCount + i, sides.enemyTeam, x, z, ctx));
   }
 
   return { player, bots };
+}
+
+/** Ally/enemy teams and spawn pools relative to the local player's team. */
+export function rosterTeamSides(playerTeam: Exclude<TeamId, null>): {
+  allyTeam: Exclude<TeamId, null>;
+  enemyTeam: Exclude<TeamId, null>;
+  allySpawns: readonly [number, number][];
+  enemySpawns: readonly [number, number][];
+} {
+  if (playerTeam === 'bravo') {
+    return {
+      allyTeam: 'bravo',
+      enemyTeam: 'alpha',
+      allySpawns: BRAVO_SPAWN_POINTS,
+      enemySpawns: ALPHA_SPAWN_POINTS,
+    };
+  }
+  return {
+    allyTeam: 'alpha',
+    enemyTeam: 'bravo',
+    allySpawns: ALPHA_SPAWN_POINTS,
+    enemySpawns: BRAVO_SPAWN_POINTS,
+  };
+}
+
+function spawnPoolFor(teamId: Exclude<TeamId, null>): readonly [number, number][] {
+  return teamId === 'bravo' ? BRAVO_SPAWN_POINTS : ALPHA_SPAWN_POINTS;
 }
 
 /** Points pool for respawning a tank of given team / FFA. */

@@ -253,6 +253,31 @@ describe('MatchRuntime.update (J8 + сквозной C7)', () => {
     // ожил (respawn ниже отработает) — после revival deathT уходит в -1
   });
 
+  it('client replication: does not evaluate win or step capture', () => {
+    const { hooks, run, overs } = makeHooks();
+    const rt = new MatchRuntime(hooks);
+    rt.reset('deathmatch');
+    rt.replication = 'client';
+    run.matchTime = 60;
+    const a = fakeTank({ id: 1, isPlayer: true, name: 'Ace', kills: rt.config.winKills });
+    rt.update(1 / 60, tanks(a), a as unknown as TankEntity);
+    expect(overs).toHaveLength(0);
+    expect(rt.ended).toBe(false);
+
+    rt.applyHostSync({
+      timeSec: 12,
+      teamKills: { alpha: 3, bravo: 1 },
+      ended: true,
+      reason: 'score',
+      winnerName: 'Ace',
+      winnerTeam: null,
+    }, a as unknown as TankEntity);
+    expect(run.matchTime).toBe(12);
+    expect(rt.ended).toBe(true);
+    expect(overs).toHaveLength(1);
+    expect(overs[0].playerWon).toBe(true);
+  });
+
   it('порог фразового добивания в одном тике → draw без смещения (C7, end-to-end)', () => {
     const { hooks, run, overs } = makeHooks();
     const rt = new MatchRuntime(hooks);

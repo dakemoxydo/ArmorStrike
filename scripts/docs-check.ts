@@ -78,10 +78,10 @@ function report(file: string, text: string, index: number, what: string, target:
 // Longest extensions first: `tsx` must win over `ts` (a plain prefix match
 // would otherwise read "Foo.tsx" as missing "Foo.ts").
 const PATH_IN_TEXT =
-  /(?<![\w/.\-])((?:src|scripts|Docs|public)\/[\w/\-.]*?\.(?:tsx|jsx|ts|js|mjs|cjs|json|css|html|md|svg|png|woff2|glb))(?![\w])/g;
+  /(?<![\w/.-])((?:src|scripts|Docs|public)\/[\w/.-]*?\.(?:tsx|jsx|ts|js|mjs|cjs|json|css|html|md|svg|png|woff2|glb))(?![\w])/g;
 const MD_LINK = /\]\(([^)\s#]+)(#[^)]*)?\)/g;
 const WIKI_LINK = /\[\[([^\]|#]+)(#[^\]|]*)?(\|[^\]]*)?\]\]/g;
-const NPM_RUN = /npm\s+run\s+([\w:\-]+)/g;
+const NPM_RUN = /npm\s+run\s+([\w:-]+)/g;
 
 for (const file of files) {
   const text = readFileSync(join(ROOT, file), 'utf8');

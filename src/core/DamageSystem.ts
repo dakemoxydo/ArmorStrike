@@ -26,6 +26,8 @@ export function createDamageSystem(
       // делает скоринг устойчивым к источникам урона без фильтра !alive.
       if (!target.alive) return;
       if (source.id === target.id) return;
+      // Remote-owned shots are cosmetic: HP/kills arrive via tank_damage.
+      if (source.isRemote) return;
       // dmg<=0: knockback/VFX helpers call applyHit/applySplashHit with 0 damage.
       // Проверка стоит ДО щита: иначе каждый knockback-хелп кричал бы «ИММУНИТЕТ».
       if (dmg <= 0) {
@@ -71,7 +73,7 @@ export function createDamageSystem(
     damageBlock: (blockId: number, dmg: number, hitPos: THREE.Vector3) => {
       const res = arena.damageBlock(blockId, dmg);
       if (res === 'destroyed') {
-        hooks.onBlockDestroyed(hitPos, 1.4);
+        hooks.onBlockDestroyed(hitPos, 1.4, blockId);
       }
     },
   };

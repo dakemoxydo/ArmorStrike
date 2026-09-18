@@ -25,6 +25,7 @@ export interface PlayerProfileInfo {
   username: string;
   hullId: HullId;
   turretId: TurretId;
+  team?: TeamId;
 }
 
 export type NetworkEventHandler = (event: string, payload: unknown) => void;
@@ -49,7 +50,9 @@ export class MultiplayerService {
 
       let query = supabase
         .from('rooms')
-        .select('*')
+        .select(
+          'id,name,host_id,host_name,mode,map_id,max_players,player_count,has_password,bots_enabled,status,created_at,last_heartbeat',
+        )
         .in('status', ['waiting', 'in_progress'])
         .order('created_at', { ascending: false })
         .limit(50);
@@ -95,46 +98,27 @@ export class MultiplayerService {
     player: PlayerProfileInfo,
   ): Promise<{ success: boolean; room?: RoomData; error?: string }> {
     try {
-      const roomPayload = {
-        name: opts.name.trim() || `Сервер ${player.username}`,
-        host_id: player.userId,
-        host_name: player.username,
-        mode: opts.mode,
-        map_id: opts.map_id,
-        max_players: opts.max_players ?? 8,
-        player_count: 1,
-        has_password: Boolean(opts.password && opts.password.trim().length > 0),
-        password_hash: opts.password?.trim() || null,
-        bots_enabled: opts.bots_enabled ?? true,
-        status: 'waiting',
-      };
-
-      const { data: room, error: createErr } = await supabase
-        .from('rooms')
-        .insert(roomPayload)
-        .select()
-        .single();
-
-      if (createErr || !room) {
-        return { success: false, error: createErr?.message || 'Не удалось создать комнату' };
-      }
-
-      // Добавляем хоста в room_players
-      const isTeam = opts.mode === 'team_deathmatch' || opts.mode === 'capture_point';
-      const initialTeam: TeamId = isTeam ? 'alpha' : null;
-
-      await supabase.from('room_players').insert({
-        room_id: room.id,
-        user_id: player.userId,
-        username: player.username,
-        hull_id: player.hullId,
-        turret_id: player.turretId,
-        team: initialTeam,
-        is_host: true,
-        ping: 0,
+      const { data, error } = await supabase.rpc('create_room', {
+        p_name: opts.name.trim() || `Сервер ${player.username}`,
+        p_host_id: player.userId,
+        p_host_name: player.username,
+        p_mode: opts.mode,
+        p_map_id: opts.map_id,
+        p_max_players: opts.max_players ?? 8,
+        p_password: opts.password?.trim() || null,
+        p_bots_enabled: opts.bots_enabled ?? true,
+        p_hull_id: player.hullId,
+        p_turret_id: player.turretId,
       });
 
-      return { success: true, room: room as RoomData };
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      if (!data || !data.success) {
+        return { success: false, error: data?.error || 'Не удалось создать комнату' };
+      }
+
+      return { success: true, room: data.room as RoomData };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
@@ -293,6 +277,12 @@ export class MultiplayerService {
     channel.on('broadcast', { event: 'chat_msg' }, ({ payload }) => {
       this.dispatch('chat_msg', payload);
     });
+    channel.on('broadcast', { event: 'peer_despawn' }, ({ payload }) => {
+      this.dispatch('peer_despawn', payload);
+    });
+    channel.on('broadcast', { event: 'block_destroy' }, ({ payload }) => {
+      this.dispatch('block_destroy', payload);
+    });
 
     // Presence: отслеживание подключения/отключения игроков
     channel.on('presence', { event: 'sync' }, () => {
@@ -311,6 +301,7 @@ export class MultiplayerService {
           username: player.username,
           hullId: player.hullId,
           turretId: player.turretId,
+          team: player.team ?? null,
           onlineAt: new Date().toISOString(),
         });
       }
@@ -373,6 +364,24 @@ export class MultiplayerService {
       type: 'broadcast',
       event: 'match_sync',
       payload: packet,
+    });
+  }
+
+  sendPeerDespawn(userId: string) {
+    if (!this.currentChannel) return;
+    this.currentChannel.send({
+      type: 'broadcast',
+      event: 'peer_despawn',
+      payload: { userId },
+    });
+  }
+
+  sendBlockDestroy(blockId: number) {
+    if (!this.currentChannel) return;
+    this.currentChannel.send({
+      type: 'broadcast',
+      event: 'block_destroy',
+      payload: { blockId },
     });
   }
 

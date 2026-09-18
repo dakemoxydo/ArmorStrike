@@ -56,7 +56,7 @@ function CountUp({ value, duration = 1300 }: { value: number; duration?: number 
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
-  return <span ref={ref}>{value}</span>;
+  return <span ref={ref}>0</span>;
 }
 
 export default function GameOverScreen({

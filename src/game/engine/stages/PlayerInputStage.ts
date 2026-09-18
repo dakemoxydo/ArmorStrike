@@ -24,6 +24,13 @@ export class PlayerInputStage implements SimSystem {
 
   update(ctx: FrameContext): void {
     const p = ctx.player;
+    if (!this.input.enabled) {
+      p.throttle = 0;
+      p.steer = 0;
+      p.boosting = false;
+      ctx.prevReloading.value = false;
+      return;
+    }
     if (p.alive) {
       // WASD/mouse → tank fields; wantsFire/requestReload фиксируются в
       // контроллере и применяются позже (WeaponFireStage).

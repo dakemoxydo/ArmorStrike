@@ -11,6 +11,8 @@ import { applyPlayerKillScore } from '../scoring';
 import type { BotRoster } from '../BotRoster';
 import { configForMode, DEFAULT_MATCH_MODE } from './matchConfig';
 import type { MatchConfig, MatchModeId, MatchResult } from './matchTypes';
+import type { MatchSyncPacket } from '../network/types';
+import { localPlayerWonFromSync } from '../network/replication';
 import { isEnemy } from './teams';
 import { evaluateMatchEnd } from './winConditions';
 import type { CaptureZoneState } from './captureLogic';
@@ -38,12 +40,20 @@ export interface MatchResetOpts {
   scene?: THREE.Scene;
 }
 
+export type MatchReplication = 'local' | 'host' | 'client';
+
 export class MatchRuntime {
   config: MatchConfig = configForMode(DEFAULT_MATCH_MODE);
   ended = false;
   teamKills = { alpha: 0, bravo: 0 };
   teamScore = { alpha: 0, bravo: 0 };
   lastResult: MatchResult | null = null;
+  /**
+   * local — offline (simulate + end).
+   * host — simulate + end, broadcast via NetworkSession.
+   * client — apply host snapshots; do not simulate CP or win.
+   */
+  replication: MatchReplication = 'local';
 
   private readonly respawn: RespawnController;
   private readonly capture = new CaptureController();
@@ -150,6 +160,11 @@ export class MatchRuntime {
       this.hooks.setDeathT(-1);
     }
 
+    if (this.replication === 'client') {
+      this.capture.syncMarkers();
+      return;
+    }
+
     if (this.config.mode === 'capture_point') {
       const delta = this.capture.update(dt, tanks);
       this.teamScore.alpha += delta.alpha;
@@ -177,6 +192,7 @@ export class MatchRuntime {
       personals,
       teamKills: this.teamKills,
       teamScore: this.teamScore,
+      playerTeam: player?.teamId ?? 'alpha',
     });
 
     if (win) {
@@ -199,5 +215,63 @@ export class MatchRuntime {
       this.lastResult = result;
       this.hooks.requestMatchOver(result);
     }
+  }
+
+  /** Client: replace scores / CP / clock from the host snapshot. */
+  applyHostSync(packet: MatchSyncPacket, player: TankEntity | null) {
+    this.hooks.run.matchTime = packet.timeSec;
+    if (packet.teamScore) {
+      this.teamScore.alpha = packet.teamScore.alpha;
+      this.teamScore.bravo = packet.teamScore.bravo;
+    }
+    if (packet.teamKills) {
+      this.teamKills.alpha = packet.teamKills.alpha;
+      this.teamKills.bravo = packet.teamKills.bravo;
+    }
+    if (packet.captures) this.capture.applyNetworkState(packet.captures);
+
+    if (packet.ended && !this.ended) {
+      const result: MatchResult = {
+        reason: packet.reason === 'time' ? 'time' : 'score',
+        mode: this.config.mode,
+        winnerName: packet.winnerName ?? null,
+        winnerTeam: packet.winnerTeam ?? null,
+        playerWon: player
+          ? localPlayerWonFromSync(packet, { teamId: player.teamId, name: player.name })
+          : false,
+        playerKills: player?.kills ?? this.hooks.run.kills,
+        playerDeaths: player?.deaths ?? 0,
+        playerScore: this.hooks.run.score,
+        playerBestStreak: this.hooks.getBestStreak?.() ?? 0,
+        teamKills: { ...(packet.teamKills ?? this.teamKills) },
+        teamScore: { ...(packet.teamScore ?? this.teamScore) },
+        matchTimeSec: packet.timeSec,
+      };
+      this.ended = true;
+      this.lastResult = result;
+      this.hooks.requestMatchOver(result);
+    }
+  }
+
+  toSyncPacket(ended = this.ended): MatchSyncPacket {
+    const captures = this.config.mode === 'capture_point'
+      ? this.capture.zones.map((z) => ({
+        id: z.id,
+        owner: z.owner,
+        progress: z.progress,
+        contested: z.contested,
+        actor: z.actor,
+      }))
+      : undefined;
+    return {
+      timeSec: this.hooks.run.matchTime,
+      teamScore: { ...this.teamScore },
+      teamKills: { ...this.teamKills },
+      captures,
+      ended,
+      reason: this.lastResult?.reason,
+      winnerName: this.lastResult?.winnerName ?? null,
+      winnerTeam: this.lastResult?.winnerTeam ?? null,
+    };
   }
 }

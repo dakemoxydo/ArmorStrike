@@ -84,7 +84,7 @@ describe('MultiplayerService', () => {
   });
 
   describe('createRoom', () => {
-    it('creates room and inserts player as host', async () => {
+    it('creates room via create_room RPC (server hashes password)', async () => {
       const insertedRoom = {
         id: 'new-room-99',
         name: 'Новый Сервер',
@@ -99,18 +99,9 @@ describe('MultiplayerService', () => {
         status: 'waiting',
       };
 
-      const insertRoomMock = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: insertedRoom, error: null }),
-        }),
-      });
-
-      const insertPlayerMock = vi.fn().mockResolvedValue({ error: null });
-
-      (supabase.from as any).mockImplementation((table: string) => {
-        if (table === 'rooms') return { insert: insertRoomMock };
-        if (table === 'room_players') return { insert: insertPlayerMock };
-        return {};
+      (supabase.rpc as any).mockResolvedValue({
+        data: { success: true, room: insertedRoom },
+        error: null,
       });
 
       const res = await MultiplayerService.createRoom(
@@ -124,12 +115,12 @@ describe('MultiplayerService', () => {
 
       expect(res.success).toBe(true);
       expect(res.room?.id).toBe('new-room-99');
-      expect(insertPlayerMock).toHaveBeenCalledWith(
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        'create_room',
         expect.objectContaining({
-          room_id: 'new-room-99',
-          user_id: 'user_123',
-          is_host: true,
-          team: 'alpha',
+          p_host_id: 'user_123',
+          p_mode: 'team_deathmatch',
+          p_hull_id: 'hunter',
         }),
       );
     });
@@ -191,8 +182,6 @@ describe('MultiplayerService', () => {
     });
 
     it('auto-creates a room when no open servers found', async () => {
-      (supabase.rpc as any).mockResolvedValue({ data: [], error: null });
-
       const insertedRoom = {
         id: 'auto-room-777',
         name: 'Битва #555',
@@ -207,17 +196,14 @@ describe('MultiplayerService', () => {
         status: 'waiting',
       };
 
-      (supabase.from as any).mockImplementation((table: string) => {
-        if (table === 'rooms') {
-          return {
-            insert: vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: insertedRoom, error: null }),
-              }),
-            }),
-          };
+      (supabase.rpc as any).mockImplementation((rpcName: string) => {
+        if (rpcName === 'find_quick_match') {
+          return Promise.resolve({ data: [], error: null });
         }
-        return { insert: vi.fn().mockResolvedValue({ error: null }) };
+        if (rpcName === 'create_room') {
+          return Promise.resolve({ data: { success: true, room: insertedRoom }, error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
       });
 
       const res = await MultiplayerService.quickMatch(dummyPlayer, 'deathmatch', 'factory');

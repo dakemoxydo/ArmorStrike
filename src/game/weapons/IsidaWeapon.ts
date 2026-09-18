@@ -220,6 +220,10 @@ export class IsidaWeapon implements Weapon {
    * здесь (щит поглощает тик без возврата, луч при этом продолжает жечь).
    */
   private tickAttack(t: BeamTank): void {
+    if (this.owner.isRemote) {
+      this.deps.effects.trailPuff(impactPoint(t, tmpImpact), ATK_COLOR);
+      return;
+    }
     if ((t.invulnT ?? 0) > 0) return;
     const dmg = resolveWeaponDamage(this.owner.params.damage, tune.damagePerSec * tune.tickRate);
     const dx = t.position.x - tmpMuzzle.x;
@@ -247,6 +251,10 @@ export class IsidaWeapon implements Weapon {
   }
 
   private tickHeal(t: BeamTank): void {
+    if (this.owner.isRemote) {
+      this.deps.effects.trailPuff(impactPoint(t, tmpImpact), HEAL_COLOR);
+      return;
+    }
     // Крит лечения крутится по тому же накопителю башни, что и урон: кривая
     // одна на орудие (WEAPON_TUNING.isida.crit), лечение идёт мимо
     // DamageSystem, поэтому бросок — здесь.
@@ -271,6 +279,7 @@ export class IsidaWeapon implements Weapon {
       this.supportCarry.carry = st.carry;
       if (st.earned > 0) this.deps.onSupportScore?.(st.earned);
     }
+    if (healed > 0) this.deps.onHealthNet?.(t, t.health, healed);
     // Долечили до кондиции — цель теряет смысл, пересобрать захват на следующий кадр.
     if (t.health >= t.maxHealth * tune.healHpFrac) this.target = null;
   }

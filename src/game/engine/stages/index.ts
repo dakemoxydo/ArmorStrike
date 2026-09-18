@@ -14,7 +14,7 @@ import { PlayerInputStage } from './PlayerInputStage';
 import { BotAiStage } from './BotAiStage';
 import { WeaponFireStage } from './WeaponFireStage';
 import { WeaponSystemStage, TankSystemStage, TankAnimationSystemStage, TankFxSystemStage } from './TankStages';
-import { TargetHighlightStage } from './TargetHighlightStage';
+import { PlayerAimStage, TargetHighlightStage, TargetOutlineStage } from './TargetHighlightStage';
 import {
   AmbientStage,
   NameplateSystemStage,
@@ -44,6 +44,7 @@ export interface StageDeps {
 
 /** Упорядоченный список стадий (повторяет порядок тика из GDD/Game_Lifecycle). */
 export function buildSimulationStages(d: StageDeps): SimSystem[] {
+  const highlight = new TargetHighlightStage(d.arena);
   const stages: SimSystem[] = [
     new PlayerInputStage(d.input, d.audio),
   ];
@@ -52,6 +53,8 @@ export function buildSimulationStages(d: StageDeps): SimSystem[] {
   }
   stages.push(
     new BotAiStage(d.bots, d.arena, d.match),
+    // Player pitch lock BEFORE tank integrate so this frame's shot uses it.
+    new PlayerAimStage(highlight),
     // Tanks BEFORE triggers: motion/aim integrate and the turret pose syncs
     // here, so weapons fire from the CURRENT-frame muzzle (see WeaponFireStage).
     new TankSystemStage(),
@@ -62,7 +65,7 @@ export function buildSimulationStages(d: StageDeps): SimSystem[] {
     new AmbientStage(d.effects),
     new NameplateSystemStage(d.bots, d.nameplates),
     new PhysicsSystemStage(d.arena),
-    new TargetHighlightStage(d.arena),
+    new TargetOutlineStage(highlight),
     new ProjectileStage(d.projectiles, d.arena, d.effects, d.combat),
     new MinimapStage(d.arena, d.hudModel),
     new MatchStage(d.match),

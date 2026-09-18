@@ -3,7 +3,7 @@ import { HULLS, TURRETS, WEAPON_TUNING } from '../core/catalog';
 import type { HullId, TurretId, WeaponType } from '../core/catalog';
 import { TankEntity, buildTankMesh } from './Tank';
 import type { TankParams } from './Tank';
-import type { TankStyle } from '../core/types';
+import type { TankLike, TankStyle } from '../core/types';
 import { RailgunWeapon } from './weapons/RailgunWeapon';
 import { FlamethrowerWeapon } from './weapons/FlamethrowerWeapon';
 import { CannonWeapon } from './weapons/CannonWeapon';
@@ -26,6 +26,8 @@ export interface WeaponFactoryDeps {
   onShotFired?: () => void;
   onSupportScore?: (points: number) => void;
   onDamageFloat?: DamageFloatSink;
+  /** Mutable box so MP can attach a sink after weapons are already built. */
+  healthNet?: { emit: (target: TankLike, remainingHealth: number, delta: number) => void };
 }
 
 export function createWeapon(owner: WeaponOwner, type: WeaponType, deps: WeaponFactoryDeps): Weapon {
@@ -39,6 +41,7 @@ export function createWeapon(owner: WeaponOwner, type: WeaponType, deps: WeaponF
     onShotFired: deps.onShotFired,
     onSupportScore: deps.onSupportScore,
     onDamageFloat: deps.onDamageFloat,
+    onHealthNet: (target, remaining, delta) => deps.healthNet?.emit(target, remaining, delta),
   };
   if (type === 'railgun') return new RailgunWeapon(owner, wdeps);
   if (type === 'flamethrower') return new FlamethrowerWeapon(owner, wdeps);

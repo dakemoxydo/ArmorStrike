@@ -136,4 +136,29 @@ describe('cannon tank-hit damage pipeline (C2)', () => {
     expect(target.health).toBe(84);
     expect(onTankDamaged).toHaveBeenCalledTimes(1);
   });
+
+  it('friendly fire: same-team hull is not shoved', () => {
+    const owner = makeTank({ id: 1, teamId: 'alpha' });
+    const ally = makeTank({ id: 2, teamId: 'alpha', health: 100 });
+    const ds = createDamageSystem({ damageBlock: () => null } as any, {
+      onTankDamaged: vi.fn(),
+      onBlockDestroyed: vi.fn(),
+    });
+    applyHit(ds, ally, 0, owner, new THREE.Vector3(0, 0, 1), 4, vi.fn(), new THREE.Vector3());
+    expect(ally.knockback.length()).toBe(0);
+    expect(ally.health).toBe(100);
+  });
+
+  it('spawn invuln: knockback is gated with HP', () => {
+    const owner = makeTank({ id: 1 });
+    const target = makeTank({ id: 2, health: 100, invulnT: 2 });
+    const ds = createDamageSystem({ damageBlock: () => null } as any, {
+      onTankDamaged: vi.fn(),
+      onBlockDestroyed: vi.fn(),
+      onDamageIgnored: vi.fn(),
+    });
+    applyHit(ds, target, 40, owner, new THREE.Vector3(0, 0, 1), 4, vi.fn(), new THREE.Vector3());
+    expect(target.health).toBe(100);
+    expect(target.knockback.length()).toBe(0);
+  });
 });

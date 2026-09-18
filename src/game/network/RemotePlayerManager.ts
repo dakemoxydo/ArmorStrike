@@ -7,7 +7,14 @@ import { Nameplate } from '../nameplate';
 import { createTankEntity, createWeapon, type WeaponFactoryDeps } from '../PlayerFactory';
 import type { TankEntity } from '../Tank';
 import type { TeamId } from '../match/matchTypes';
-import type { TankDamagePacket, TankTransformPacket, WeaponFirePacket } from './types';
+import { applyRespawnCombat, restoreRespawnVisuals } from '../match/respawn';
+import type { TankTransformPacket, WeaponFirePacket } from './types';
+import {
+  parseHullId,
+  parseTeamId,
+  parseTurretId,
+  shortestAngleDelta,
+} from './replication';
 
 interface RemotePeer {
   userId: string;
@@ -24,6 +31,11 @@ interface RemotePeer {
 export class RemotePlayerManager {
   private peers = new Map<string, RemotePeer>();
   private pendingSpawns = new Set<string>();
+  private fireTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+  private pendingFire = new Map<string, WeaponFirePacket>();
+  private pendingTransform = new Map<string, TankTransformPacket>();
+  /** Presentation-only wreck when a transform reports death without a damage packet. */
+  onSilentDeath: ((tank: TankEntity) => void) | null = null;
 
   constructor(
     private scene: THREE.Scene,
@@ -68,6 +80,8 @@ export class RemotePlayerManager {
       });
 
       tank.teamId = team;
+      tank.isRemote = true;
+      tank.networkId = userId;
       tank.kills = 0;
       tank.deaths = 0;
 
@@ -98,6 +112,18 @@ export class RemotePlayerManager {
       };
 
       this.peers.set(userId, peer);
+
+      const queuedTf = this.pendingTransform.get(userId);
+      if (queuedTf) {
+        this.pendingTransform.delete(userId);
+        this.applyTransform(peer, queuedTf);
+      }
+      const queuedFire = this.pendingFire.get(userId);
+      if (queuedFire) {
+        this.pendingFire.delete(userId);
+        this.handleFire(queuedFire);
+      }
+
       return tank;
     } catch (err) {
       console.error('[RemotePlayerManager] Failed to spawn peer:', err);
@@ -109,46 +135,91 @@ export class RemotePlayerManager {
 
   handleTransform(packet: TankTransformPacket) {
     const peer = this.peers.get(packet.userId);
-    if (!peer) return;
+    if (!peer) {
+      this.pendingTransform.set(packet.userId, packet);
+      void this.spawnPeer(
+        packet.userId,
+        packet.username || 'Боец',
+        parseHullId(packet.hullId),
+        parseTurretId(packet.turretId),
+        parseTeamId(packet.team),
+      );
+      return;
+    }
+    this.applyTransform(peer, packet);
+  }
 
-    peer.targetPos.set(packet.x, 0, packet.z);
+  private applyTransform(peer: RemotePeer, packet: TankTransformPacket) {
+    const y = packet.y ?? 0;
+    peer.targetPos.set(packet.x, y, packet.z);
     peer.targetYaw = packet.yaw;
     peer.targetAimYaw = packet.aimYaw;
     peer.targetPitch = packet.barrelPitch;
     peer.targetSpeed = packet.speed;
     peer.tank.boosting = packet.boosting;
     peer.lastPacketTime = performance.now();
+
+    const tank = peer.tank;
+    if (packet.kills !== undefined) tank.kills = packet.kills;
+    if (packet.deaths !== undefined) tank.deaths = packet.deaths;
+    if (packet.team !== undefined) tank.teamId = parseTeamId(packet.team, tank.teamId);
+    if (packet.invulnT !== undefined) tank.invulnT = packet.invulnT;
+
+    const alive = packet.alive;
+    if (alive === false && tank.alive) {
+      this.onSilentDeath?.(tank);
+    } else if (alive === true && !tank.alive) {
+      applyRespawnCombat(tank, packet.invulnT ?? 0);
+      restoreRespawnVisuals(tank);
+      tank.position.set(packet.x, y, packet.z);
+      tank.yaw = packet.yaw;
+      tank.aimYaw = packet.aimYaw;
+      tank.barrelPitch = packet.barrelPitch;
+      tank.weapon?.onRespawn?.();
+    } else if (packet.health !== undefined && tank.alive) {
+      tank.health = packet.health;
+    }
   }
 
   handleFire(packet: WeaponFirePacket) {
     const peer = this.peers.get(packet.userId);
-    if (!peer || !peer.tank.alive || !peer.tank.weapon) return;
+    if (!peer || !peer.tank.weapon) {
+      this.pendingFire.set(packet.userId, packet);
+      return;
+    }
 
-    // Direct fire trigger
+    const prev = this.fireTimeouts.get(packet.userId);
+    if (prev) {
+      clearTimeout(prev);
+      this.fireTimeouts.delete(packet.userId);
+    }
+
+    if (packet.firing === false) {
+      peer.tank.weapon.setFire(false);
+      return;
+    }
+
+    if (!peer.tank.alive) return;
+
     peer.tank.aimYaw = packet.dir ? Math.atan2(packet.dir[0], packet.dir[2]) : peer.tank.aimYaw;
     peer.tank.barrelPitch = packet.barrelPitch;
     peer.tank.weapon.setFire(true);
 
-    // Auto-release trigger on next tick for discrete shot weapons
     if (peer.tank.turretId !== 'flamethrower' && peer.tank.turretId !== 'isida') {
-      setTimeout(() => {
+      const id = setTimeout(() => {
+        this.fireTimeouts.delete(packet.userId);
         peer.tank.weapon?.setFire(false);
       }, 50);
-    }
-  }
-
-  handleDamage(packet: TankDamagePacket) {
-    const peer = this.peers.get(packet.targetUserId);
-    if (!peer) return;
-
-    peer.tank.combat.health = packet.remainingHealth;
-    if (packet.isKill && peer.tank.alive) {
-      peer.tank.combat.health = 0;
-      peer.tank.alive = false;
+      this.fireTimeouts.set(packet.userId, id);
     }
   }
 
   removePeer(userId: string) {
+    const to = this.fireTimeouts.get(userId);
+    if (to) {
+      clearTimeout(to);
+      this.fireTimeouts.delete(userId);
+    }
     const peer = this.peers.get(userId);
     if (!peer) return;
 
@@ -190,18 +261,11 @@ export class RemotePlayerManager {
       t.visual.group.position.copy(t.position);
 
       // Yaw angular interpolation
-      t.yaw += this.diffAngle(peer.targetYaw, t.yaw) * lerpFactor;
-      t.aimYaw += this.diffAngle(peer.targetAimYaw, t.aimYaw) * lerpFactor;
+      t.yaw += shortestAngleDelta(peer.targetYaw, t.yaw) * lerpFactor;
+      t.aimYaw += shortestAngleDelta(peer.targetAimYaw, t.aimYaw) * lerpFactor;
       t.barrelPitch += (peer.targetPitch - t.barrelPitch) * lerpFactor;
       t.speed = peer.targetSpeed;
     }
-  }
-
-  private diffAngle(target: number, current: number): number {
-    let diff = (target - current) % (Math.PI * 2);
-    if (diff < -Math.PI) diff += Math.PI * 2;
-    if (diff > Math.PI) diff -= Math.PI * 2;
-    return diff;
   }
 
   clear() {
@@ -210,5 +274,11 @@ export class RemotePlayerManager {
     }
     this.peers.clear();
     this.pendingSpawns.clear();
+    this.pendingFire.clear();
+    this.pendingTransform.clear();
+  }
+
+  tankByNetworkId(userId: string): TankEntity | null {
+    return this.peers.get(userId)?.tank ?? null;
   }
 }

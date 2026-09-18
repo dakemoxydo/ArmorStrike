@@ -27,6 +27,10 @@ export class TankEntity implements TankLike, WeaponOwner {
   id = nextTankId++;
   name: string;
   isPlayer: boolean;
+  /** Network peer — pose comes from interpolation, not local motion/aim. */
+  isRemote = false;
+  /** Stable id on the wire (auth/guest id or `bot:N`). Null offline. */
+  networkId: string | null = null;
   params: TankParams;
   visual: TankVisual;
 

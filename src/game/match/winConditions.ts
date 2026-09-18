@@ -14,6 +14,8 @@ export interface WinEvalInput {
   personals: PersonalStanding[];
   teamKills: { alpha: number; bravo: number };
   teamScore: { alpha: number; bravo: number };
+  /** Local player's team. Defaults to alpha (offline roster). */
+  playerTeam?: TeamId;
 }
 
 export interface WinEvalResult {
@@ -48,6 +50,11 @@ function teamLead(
   return { team: null, tied: true };
 }
 
+function localPlayerWon(winnerTeam: TeamId, playerTeam: TeamId | undefined, draw: boolean): boolean {
+  if (draw || !winnerTeam) return false;
+  return winnerTeam === (playerTeam ?? 'alpha');
+}
+
 /**
  * Returns null if match continues.
  * Score win (threshold) checked first; time limit uses current leader.
@@ -55,6 +62,7 @@ function teamLead(
 export function evaluateMatchEnd(input: WinEvalInput): WinEvalResult | null {
   const { config, matchTimeSec, personals, teamKills, teamScore } = input;
   const mode: MatchModeId = config.mode;
+  const playerTeam = input.playerTeam ?? 'alpha';
 
   if (mode === 'deathmatch') {
     // C7: «кто пересёк порог» определяется максимумом килов, а не порядком
@@ -91,7 +99,7 @@ export function evaluateMatchEnd(input: WinEvalInput): WinEvalResult | null {
         reason: 'score',
         winnerName: null,
         winnerTeam: draw ? null : team,
-        playerWon: !draw && team === 'alpha',
+        playerWon: localPlayerWon(team, playerTeam, draw),
       };
     }
     if (matchTimeSec >= config.timeLimitSec) {
@@ -100,7 +108,7 @@ export function evaluateMatchEnd(input: WinEvalInput): WinEvalResult | null {
         reason: 'time',
         winnerName: null,
         winnerTeam: tied ? null : team,
-        playerWon: !tied && team === 'alpha',
+        playerWon: localPlayerWon(team, playerTeam, tied),
       };
     }
     return null;
@@ -114,7 +122,7 @@ export function evaluateMatchEnd(input: WinEvalInput): WinEvalResult | null {
       reason: 'score',
       winnerName: null,
       winnerTeam: draw ? null : team,
-      playerWon: !draw && team === 'alpha',
+      playerWon: localPlayerWon(team, playerTeam, draw),
     };
   }
   if (matchTimeSec >= config.timeLimitSec) {
@@ -127,14 +135,14 @@ export function evaluateMatchEnd(input: WinEvalInput): WinEvalResult | null {
         reason: 'time',
         winnerName: null,
         winnerTeam: kb.tied ? null : kb.team,
-        playerWon: !kb.tied && kb.team === 'alpha',
+        playerWon: localPlayerWon(kb.team, playerTeam, kb.tied),
       };
     }
     return {
       reason: 'time',
       winnerName: null,
       winnerTeam: team,
-      playerWon: team === 'alpha',
+      playerWon: localPlayerWon(team, playerTeam, false),
     };
   }
   return null;

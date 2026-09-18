@@ -7,7 +7,7 @@ import type { PlayerController } from '../PlayerController';
 import type { RunState } from '../RunState';
 import type { TeamId } from './matchTypes';
 import { isEnemy } from './teams';
-import { applyRespawnCombat, canRespawn } from './respawn';
+import { applyRespawnCombat, canRespawn, restoreRespawnVisuals } from './respawn';
 import { pickRespawnPoint } from './spawnPoints';
 import { respawnPoolFor } from './rosterSpawn';
 
@@ -29,6 +29,7 @@ export class RespawnController {
   update(_dt: number, tanks: TankEntity[], respawnDelaySec: number, spawnInvulnSec: number) {
     const claimed = new Set<number>();
     for (const t of tanks) {
+      if (t.isRemote) continue;
       if (canRespawn(t, respawnDelaySec)) {
         this.respawnTank(t, tanks, spawnInvulnSec, claimed);
       }
@@ -64,7 +65,7 @@ export class RespawnController {
     tank.barrelPitch = 0;
     tank.pitchLocked = false;
     tank.knockback.set(0, 0, 0);
-    restoreDeathVisuals(tank);
+    restoreRespawnVisuals(tank);
 
     if (tank.isPlayer) {
       this.hooks.setDeathT(-1);
@@ -76,14 +77,4 @@ export class RespawnController {
   }
 }
 
-/** Undo death animation greying / hide ring. */
-function restoreDeathVisuals(tank: TankEntity) {
-  const { bodyMats, bodyBaseColors } = tank.visual;
-  for (let i = 0; i < bodyMats.length; i++) {
-    // Возврат к базе материала, а не к белому (иначе теряется accent).
-    bodyMats[i].color.setHex(bodyBaseColors[i] ?? 0xffffff);
-    bodyMats[i].emissive.setScalar(0);
-  }
-  tank.visual.ring.visible = true;
-  tank.visual.barrelGroup.rotation.x = 0;
-}
+

@@ -137,4 +137,32 @@ describe('RunState', () => {
     expect(r.quests[0].current).toBe(0);
     expect(r.quests[0].claimed).toBe(false);
   });
+
+  it('getNetworkId is stable for a guest session and prefers userId', () => {
+    const r = new RunState();
+    const a = r.getNetworkId();
+    const b = r.getNetworkId();
+    expect(a).toBe(b);
+    expect(a.startsWith('usr_')).toBe(true);
+    r.userId = 'auth-uuid';
+    expect(r.getNetworkId()).toBe('auth-uuid');
+  });
+
+  it('resetToGuest clears account inventory from local storage', () => {
+    const r = new RunState();
+    r.userId = 'u1';
+    r.isGuest = false;
+    r.username = 'Ace';
+    r.credits = 900;
+    r.unlockedHulls = ['mammoth'];
+    r.unlockedTurrets = ['gauss'];
+    r.starterPackClaimed = true;
+    r.resetToGuest();
+    expect(r.isGuest).toBe(true);
+    expect(r.userId).toBeNull();
+    expect(r.username).toBe('Гость');
+    expect(r.credits).toBe(0);
+    expect(r.unlockedHulls).toEqual([]);
+    expect(r.starterPackClaimed).toBe(false);
+  });
 });

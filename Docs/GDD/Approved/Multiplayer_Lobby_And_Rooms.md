@@ -72,10 +72,16 @@
 - Presence: непрерывное отслеживание подключенных игроков (`presenceState`) и обнаружение отключений (`player_left`).
 
 ### 3.2 Сетевые пакеты
-- `tank_transform`: позиция `(x, z)`, углы `yaw`, `aimYaw`, `barrelPitch`, скорость `speed`, нитро-буст `boosting` (частота 20 Гц).
-- `weapon_fire`: выстрел орудия (`turretId`, координаты `origin`, вектор направления `dir`, наклон `barrelPitch`).
-- `tank_damage`: урон и факт уничтожения танка (`targetUserId`, `attackerUserId`, `damage`, `remainingHealth`, `isKill`).
-- `match_sync`: синхронизация таймера матча, очков команд и статуса баз CP.
+- `tank_transform`: поза `(x, y, z)`, углы, скорость, буст, снимок HP/alive/invuln/kills, loadout (20 Гц).
+- `weapon_fire`: фронт спуска (`firing`) + `turretId`, `origin`, 3D-`dir`, `barrelPitch`.
+- `tank_damage`: снимок HP (`remainingHealth`, `isKill`, опционально `kind: 'heal'`).
+- `match_sync`: время, очки команд, зоны CP, флаг конца матча (`ended` / winner) — только от хоста.
+- `peer_despawn`: хост убрал бота, уступившего слот живому игроку.
+- `block_destroy`: разрушаемое укрытие снято (авторитет стрелка).
+
+### 3.4 Авторитет
+- Поза — владелец танка. Бой — стрелок (удалённое оружие только VFX). Матч и боты — хост.
+- Клиенты не симулируют ботов и не заканчивают матч локально (`MatchRuntime.replication = 'client'`).
 
 ### 3.3 Менеджер удалённых игроков (`RemotePlayerManager`)
 - Управляет жизненным циклом удалённых танков (`TankEntity`) в `sim.tanks`.
@@ -91,6 +97,8 @@
 |-----------|------|
 | Сервис сети и RPC | `src/game/network/multiplayerService.ts` |
 | Типы комнат и пакетов | `src/game/network/types.ts` |
+| Хелперы авторитета | `src/game/network/replication.ts` |
+| Сессия комнаты | `src/game/network/NetworkSession.ts` |
 | Интерполяция и удалённые танки | `src/game/network/RemotePlayerManager.ts` |
 | Стадия симуляции тика | `src/game/engine/stages/NetworkSyncStage.ts` |
 | Браузер серверов UI | `src/components/multiplayer/ServerBrowserModal.tsx` |

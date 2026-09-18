@@ -17,13 +17,15 @@ export class TargetHighlightStage implements SimSystem {
 
   private readonly hl = new AimHighlighter<TankEntity>();
   private shown: TankEntity | null = null;
+  private shownTarget: TankEntity | null = null;
   private elapsed = 0;
   /** Точка прицела залоченной цели (центр корпуса) — переиспользуется, ноль аллокаций. */
   private readonly _aimPoint = new THREE.Vector3();
 
   constructor(private arena: Arena) {}
 
-  update(ctx: FrameContext): void {
+  /** Pitch lock before TankSystem so this frame's shot uses current barrelPitch. */
+  resolveAim(ctx: FrameContext): void {
     const { dt, player } = ctx;
     this.elapsed += dt;
 
@@ -31,11 +33,8 @@ export class TargetHighlightStage implements SimSystem {
     if (player.alive) {
       target = this.hl.update(dt, ctx.tanks, player, this.cone(player), this.arena.colliders);
     } else {
-      // Сбрасываем удержание: иначе после респауна «оживает» старая цель.
       this.hl.reset();
     }
-    // Вертикальная автонаводка игрока: та же залоченная цель (AimHighlighter с
-    // гистерезисом holdSec) задаёт вход тангажа. Без цели — ствол к горизонту.
     if (target) {
       this._aimPoint.set(
         target.position.x,
@@ -46,7 +45,17 @@ export class TargetHighlightStage implements SimSystem {
     } else {
       player.clearPitchAim();
     }
-    this.apply(target);
+    this.shownTarget = target;
+  }
+
+  /** Outline after physics — uses the entity resolved in resolveAim (same object). */
+  syncOutline(): void {
+    this.apply(this.shownTarget);
+  }
+
+  update(ctx: FrameContext): void {
+    this.resolveAim(ctx);
+    this.syncOutline();
   }
 
   private cone(p: TankEntity): AimCone {
@@ -78,5 +87,32 @@ export class TargetHighlightStage implements SimSystem {
     if (this.shown) setTankOutline(this.shown.visual.group, false);
     this.hl.reset();
     this.shown = null;
+    this.shownTarget = null;
+  }
+}
+
+/** Early tick: set player pitchLocked before TankSystem / WeaponFire. */
+export class PlayerAimStage implements SimSystem {
+  readonly name = 'playerAim';
+
+  constructor(private highlight: TargetHighlightStage) {}
+
+  update(ctx: FrameContext): void {
+    this.highlight.resolveAim(ctx);
+  }
+
+  onRosterCleared(): void {
+    this.highlight.onRosterCleared();
+  }
+}
+
+/** Late tick: outline on post-physics poses. */
+export class TargetOutlineStage implements SimSystem {
+  readonly name = 'targetOutline';
+
+  constructor(private highlight: TargetHighlightStage) {}
+
+  update(_ctx: FrameContext): void {
+    this.highlight.syncOutline();
   }
 }

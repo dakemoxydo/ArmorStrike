@@ -26,9 +26,9 @@ function makeShot(): Shot {
   };
 }
 
-function makeOwner(isPlayer = true): TankLike {
+function makeOwner(isPlayer = true, id = 1): TankLike {
   return {
-    id: 1,
+    id,
     name: 'T',
     isPlayer,
     health: 100,
@@ -59,7 +59,7 @@ describe('ProjectileBehavior (cannon pool only)', () => {
 
   it('cannon onHitTank даёт knockback и эффекты', () => {
     const s = makeShot();
-    const target = makeOwner(false);
+    const target = makeOwner(false, 2);
     const hitPos = new THREE.Vector3(1, 1, 1);
     const dir = new THREE.Vector3(0, 0, 1);
     const effects = {

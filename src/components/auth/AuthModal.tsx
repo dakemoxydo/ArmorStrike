@@ -170,7 +170,7 @@ export default function AuthModal({
       }
 
       setSuccessMsg(
-        `Ссылка для сброса пароля отправлена на почту ${res.email ?? ''}. Проверьте входящие (и спам).`,
+        'Если аккаунт существует, ссылка для сброса пароля отправлена на почту. Проверьте входящие (и спам).',
       );
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Неизвестная ошибка');

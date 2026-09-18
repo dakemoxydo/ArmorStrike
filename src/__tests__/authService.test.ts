@@ -130,7 +130,7 @@ describe('AuthService', () => {
     } as never);
 
     const res = await AuthService.signIn('UnknownTanker', 'password123');
-    expect(res.error).toContain('не найден');
+    expect(res.error).toContain('Неверный логин или пароль');
     expect(supabase.auth.signInWithPassword).not.toHaveBeenCalled();
   });
 
@@ -147,7 +147,7 @@ describe('AuthService', () => {
 
     const res = await AuthService.sendPasswordReset('MyCommander');
     expect(res.success).toBe(true);
-    expect(res.email).toBe('user@armorstrike.io');
+    expect(res.email).toBeUndefined();
     expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalled();
   });
 });

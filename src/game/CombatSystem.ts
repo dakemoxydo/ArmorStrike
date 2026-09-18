@@ -12,6 +12,8 @@ import { COLORS } from '../core/constants';
 import { createDamageSystem } from '../core/DamageSystem';
 import type { TankEntity } from './Tank';
 import type { MatchRuntime } from './match/MatchRuntime';
+import type { TankDamagePacket } from './network/types';
+import { ownsCombatSource } from './network/replication';
 import { KillStreakTracker } from './KillStreakTracker';
 import { FLOAT_HEIGHT, FLOAT_JITTER } from './damageFloats';
 import type { DamageFloatKind, DamageFloatQueue } from './damageFloats';
@@ -30,6 +32,11 @@ export interface CombatDeps {
   onKillPunch?: (byPlayer: boolean) => void;
   /** Очередь всплывающих чисел HUD (п.1). Без неё канал просто выключен. */
   floats?: DamageFloatQueue;
+  /** Shooter-authority: emit a tank_damage packet after local HP mutation. */
+  onNetworkDamage?: (packet: TankDamagePacket) => void;
+  onNetworkBlock?: (blockId: number) => void;
+  getLocalNetworkId?: () => string | null;
+  isNetworkHost?: () => boolean;
 }
 
 /**
@@ -49,6 +56,8 @@ export class CombatSystem {
   private playerBest = 0;
   /** ms-таймстемп последнего «ИММУНИТЕТ»-cue (частота, см. IMMUNITY_CUE_MS). */
   private lastImmunityCue = 0;
+  /** True while applying a tank_damage snapshot — do not re-broadcast. */
+  private replicating = false;
 
   constructor(private deps: CombatDeps) {
     this.damageSystem = createDamageSystem(deps.arena, {
@@ -76,6 +85,18 @@ export class CombatSystem {
   /** Устанавливает колбэк hit-stop/slow-mo (вызывается из bootstrap после создания GameLoop). */
   setOnKillPunch(fn: (byPlayer: boolean) => void) {
     this.deps.onKillPunch = fn;
+  }
+
+  setNetworkBridge(bridge: {
+    onNetworkDamage?: (packet: TankDamagePacket) => void;
+    onNetworkBlock?: (blockId: number) => void;
+    getLocalNetworkId?: () => string | null;
+    isNetworkHost?: () => boolean;
+  } | null) {
+    this.deps.onNetworkDamage = bridge?.onNetworkDamage;
+    this.deps.onNetworkBlock = bridge?.onNetworkBlock;
+    this.deps.getLocalNetworkId = bridge?.getLocalNetworkId;
+    this.deps.isNetworkHost = bridge?.isNetworkHost;
   }
 
   /** Обновляет время матча для streak tracker. */
@@ -128,6 +149,117 @@ export class CombatSystem {
     }
 
     if (!target.alive) this.onTankDestroyed(target, owner);
+
+    this.emitNetworkDamage(target, owner, dmg, !target.alive);
+  }
+
+  /**
+   * Incoming tank_damage from the shooter. Does not re-roll resist/crit.
+   * The attacking client already simulated the hit; we apply the snapshot.
+   */
+  applyReplicatedHit(
+    target: TankEntity,
+    attacker: TankEntity | null,
+    packet: TankDamagePacket,
+  ) {
+    if (attacker && ownsCombatSource(
+      attacker,
+      this.deps.getLocalNetworkId?.() ?? '',
+      this.deps.isNetworkHost?.() ?? false,
+    )) {
+      // We already applied this hit locally as the shooter.
+      return;
+    }
+
+    this.replicating = true;
+    try {
+      this.applyReplicatedHitInner(target, attacker, packet);
+    } finally {
+      this.replicating = false;
+    }
+  }
+
+  private applyReplicatedHitInner(
+    target: TankEntity,
+    attacker: TankEntity | null,
+    packet: TankDamagePacket,
+  ) {
+    if (packet.kind === 'heal' || packet.remainingHealth > target.health) {
+      if (!target.alive) return;
+      target.health = Math.min(target.maxHealth, packet.remainingHealth);
+      target.fx.healFlash = 1;
+      return;
+    }
+
+    if (packet.kx || packet.kz) {
+      target.knockback.x += packet.kx ?? 0;
+      target.knockback.z += packet.kz ?? 0;
+    }
+
+    if (packet.isKill || packet.remainingHealth <= 0) {
+      if (!target.alive) {
+        target.health = 0;
+        return;
+      }
+      const dealt = Math.max(packet.damage, target.health);
+      target.takeDamage(dealt, attacker?.id ?? -1);
+      this.onTankDamaged(target, packet.damage || dealt, attacker ?? target);
+      return;
+    }
+
+    if (!target.alive) return;
+    const dealt = Math.max(0, target.health - packet.remainingHealth);
+    target.health = packet.remainingHealth;
+    target.timeSinceDamaged = 0;
+    target.fx.hitFlash = 1;
+    if (dealt > 0) this.onTankDamaged(target, dealt, attacker ?? target);
+  }
+
+  /** Presentation-only wreck when a transform says a peer died (lost kill packet). */
+  playDeathPresentation(target: TankEntity) {
+    if (target.alive) {
+      this.replicating = true;
+      try {
+        target.takeDamage(Math.max(target.health, 1), target.lastAttackerId);
+      } finally {
+        this.replicating = false;
+      }
+    }
+    const p = target.position.clone().setY(1.4);
+    this.deps.effects.explosion(p, target.isPlayer ? COLORS.player : 0xff7a3d, 1.9);
+    this.deps.effects.debris(p, 0xffa050, 26);
+    if (target.isPlayer) this.deps.audio.explosion();
+    else this.deps.audio.explosion(target.position);
+    this.deps.effects.spawnWreck(
+      target.position.clone(),
+      target.yaw,
+      target.isPlayer ? COLORS.player : 0xff7a3d,
+    );
+  }
+
+  private emitNetworkDamage(
+    target: TankLike,
+    owner: TankLike,
+    dmg: number,
+    isKill: boolean,
+  ) {
+    if (this.replicating) return;
+    const emit = this.deps.onNetworkDamage;
+    if (!emit) return;
+    const localId = this.deps.getLocalNetworkId?.() ?? '';
+    const isHost = this.deps.isNetworkHost?.() ?? false;
+    if (!ownsCombatSource(owner, localId, isHost)) return;
+    const targetId = target.networkId;
+    const attackerId = owner.networkId;
+    if (!targetId || !attackerId) return;
+    emit({
+      targetUserId: targetId,
+      attackerUserId: attackerId,
+      damage: dmg,
+      remainingHealth: target.health,
+      isKill,
+      kind: 'damage',
+    });
   }
 
   /**
@@ -199,9 +331,25 @@ export class CombatSystem {
     }
   }
 
-  onBlockDestroyed = (pos: THREE.Vector3, size: number) => {
+  applyReplicatedBlock(blockId: number) {
+    if (this.replicating) return;
+    this.replicating = true;
+    try {
+      const pos = this.deps.arena.forceDestroyBlock(blockId);
+      if (pos) {
+        this.deps.effects.explosion(pos, 0xffb02e, 1.4);
+        this.deps.effects.debris(pos, 0x6b7688, 18);
+        this.deps.audio.explosion(pos);
+      }
+    } finally {
+      this.replicating = false;
+    }
+  }
+
+  onBlockDestroyed = (pos: THREE.Vector3, size: number, blockId?: number) => {
     this.deps.effects.explosion(pos, 0xffb02e, size);
     this.deps.effects.debris(pos, 0x6b7688, 18);
     this.deps.audio.explosion(pos);
+    if (!this.replicating && blockId != null) this.deps.onNetworkBlock?.(blockId);
   };
 }

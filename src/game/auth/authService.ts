@@ -123,7 +123,7 @@ export class AuthService {
         );
 
         if (rpcErr || !resolvedEmail) {
-          return { error: 'Пользователь с таким именем не найден' };
+          return { error: 'Неверный логин или пароль' };
         }
         email = resolvedEmail as string;
       }
@@ -177,7 +177,8 @@ export class AuthService {
         );
 
         if (rpcErr || !resolvedEmail) {
-          return { error: 'Пользователь с таким именем не найден' };
+          // Don't enumerate accounts — same success path as a real send.
+          return { success: true };
         }
         email = resolvedEmail as string;
       }
@@ -195,7 +196,7 @@ export class AuthService {
         return { error: error.message };
       }
 
-      return { success: true, email };
+      return { success: true };
     } catch (e) {
       return { error: e instanceof Error ? e.message : 'Ошибка при отправке ссылки' };
     }

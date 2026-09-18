@@ -126,13 +126,26 @@ export class Arena {
     b.hp -= dmg;
     b.flash = 1;
     if (b.hp <= 0) {
-      b.collider.active = false;
-      this.group.remove(b.group);
-      disposeObject3D(b.group);
-      this.blocks.delete(id);
+      this.removeBlock(b, id);
       return 'destroyed';
     }
     return 'hit';
+  }
+
+  /** Network replica: drop a destructible without applying HP (already gone on the shooter). */
+  forceDestroyBlock(id: number): THREE.Vector3 | null {
+    const b = this.blocks.get(id);
+    if (!b) return null;
+    const pos = b.group.position.clone();
+    this.removeBlock(b, id);
+    return pos;
+  }
+
+  private removeBlock(b: BlockInfo, id: number) {
+    b.collider.active = false;
+    this.group.remove(b.group);
+    disposeObject3D(b.group);
+    this.blocks.delete(id);
   }
 
   update(dt: number, elapsed: number) {

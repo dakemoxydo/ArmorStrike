@@ -52,6 +52,7 @@ describe('CloudSaveService', () => {
 
     CloudSaveService.applyProfileToRunState(profile, run);
 
+    expect(run.userId).toBe('usr_77');
     expect(run.username).toBe('IronGeneral');
     expect(run.isGuest).toBe(false);
     expect(run.credits).toBe(2400);

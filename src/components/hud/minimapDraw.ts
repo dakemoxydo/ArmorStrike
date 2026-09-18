@@ -138,7 +138,8 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
   const k = S / MAP_SIZE;
   const scale = S / (MAP_HALF * 2);
   const toX = (x: number) => (x + MAP_HALF) * scale;
-  const toY = (z: number) => (z + MAP_HALF) * scale;
+  // +Z is north. Canvas Y grows down, so flip: north is toward the N label at the top.
+  const toY = (z: number) => (MAP_HALF - z) * scale;
 
   const statics = game.getMinimapStatic();
   const key = staticLayerKey(statics);
@@ -212,13 +213,10 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
     ctx.lineWidth = 1.2 * k;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    // World forward for yaw θ is (sin θ, cos θ); toY(z) grows downward, so the
-    // canvas vector is (sin, +cos) — same mapping as the hull triangle via
-    // rotate(π − yaw). The old −cos mirrored the barrel line across the E-W
-    // axis (it pointed backwards for any north/south aim).
-    ctx.lineTo(Math.sin(d.turret) * 7 * k, Math.cos(d.turret) * 7 * k);
+    // World forward (sin θ, cos θ) in XZ; +Z is −canvasY after toY flip.
+    ctx.lineTo(Math.sin(d.turret) * 7 * k, -Math.cos(d.turret) * 7 * k);
     ctx.stroke();
-    ctx.rotate(Math.PI - d.yaw);
+    ctx.rotate(d.yaw);
     ctx.fillStyle = fill;
     ctx.shadowColor = fill;
     ctx.shadowBlur = 6 * k;

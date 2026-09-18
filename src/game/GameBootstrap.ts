@@ -117,6 +117,7 @@ function buildDerivedSystems(
     damageSystem: combat.damageSystem,
     projectiles,
     onShotFired: () => emitEvent({ type: 'shotFired' }),
+    healthNet: { emit: () => undefined },
     // «Изида»: очки поддержки (лечение союзников) — в личный счёт забега,
     // симметрично очкам за фраги в MatchRuntime (run.score — косметика/XP, не teamScore).
     onSupportScore: (points: number) => {
@@ -166,7 +167,7 @@ function registerWindowHandlers(
     // Auto-pause on tab hide, gated by death cam (BUGFIX-C1)
     if (
       document.hidden &&
-      shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT)
+      shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT, sim.networked)
     ) {
       sim.run.paused = true;
       // rAF в скрытой вкладке стоит — GameLoop не успеет заморозить аудио сам
@@ -182,7 +183,7 @@ function registerWindowHandlers(
 
   input.onLockLost = () => {
     // Root fix C1: intentional lock release on death must NOT pause.
-    if (shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT)) {
+    if (shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT, sim.networked)) {
       sim.run.paused = true;
       sim.input.enabled = false;
       emitEvent({ type: 'pauseChanged', value: true });
@@ -301,6 +302,7 @@ export async function bootstrapGame(canvas: HTMLCanvasElement): Promise<GameCont
   // при 7 ботах это постоянные 40-мс замирания всей симуляции и камеры.
   combat.setOnKillPunch((byPlayer) => {
     if (!byPlayer) return;
+    if (sim.networked) return;
     gameLoop.timeScale.hitStop(0.04);
     gameLoop.timeScale.killSlowMo(0.5, 0.45);
   });

@@ -36,6 +36,8 @@ export class RunState {
   isGuest = true;
   /** Идентификатор пользователя Supabase (если авторизован). */
   userId: string | null = null;
+  /** Стабильный id гостя на сессию вкладки (мультиплеер join/leave/presence). */
+  private sessionId: string | null = null;
   /** Статус синхронизации с облаком. */
   syncStatus: 'idle' | 'saving' | 'synced' | 'error' = 'idle';
   /** Слушатель смены статуса синхронизации для UI */
@@ -255,5 +257,30 @@ export class RunState {
     this.score = 0;
     this.kills = 0;
     this.matchTime = 0;
+  }
+
+  /** Id для сети: аккаунт или стабильный гостевой usr_… на сессию. */
+  getNetworkId(): string {
+    if (this.userId) return this.userId;
+    if (!this.sessionId) {
+      this.sessionId = 'usr_' + Math.random().toString(36).slice(2, 10);
+    }
+    return this.sessionId;
+  }
+
+  /** Выход из аккаунта: не оставлять облачный инвентарь гостю. */
+  resetToGuest() {
+    this.userId = null;
+    this.username = 'Гость';
+    this.isGuest = true;
+    this.credits = 0;
+    this.unlockedHulls = [];
+    this.unlockedTurrets = [];
+    this.starterPackClaimed = false;
+    this.currentHull = 'hunter';
+    this.currentTurret = 'railgun';
+    this.quests = createInitialQuests();
+    this.setSyncStatus('idle');
+    this.save();
   }
 }
