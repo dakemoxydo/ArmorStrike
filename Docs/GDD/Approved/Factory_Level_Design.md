@@ -76,11 +76,11 @@ Accent: аварийный амбер `#ffb02e` (плюс holo-бирюза `#2e
 
 ## Per-map atmosphere (RenderWorld)
 
-Factory рендерится в **натриевой смога-ночи** — отличимый от city холодной ночи пресет.
+Factory рендерится в режиме **Comic Industrial Sunset** — насыщенный янтарно-медный закат с глубокими графичными тенями литейных цехов под стилизованным солнцем (см. [[Stylized_Art_Direction]]).
 
-- **Пресет:** `FACTORY` в `src/game/atmospherePresets.ts` (`ATMOSPHERES = { factory: FACTORY, city: NIGHT, village: DUSK }`).
-- **Ключевые поля:** background `0x0d0b08`, fog `0x1d1810` (near 108 / far 400), exposure **0.95**, hemi sky `0xc0a077` / ground `0x14100a`, sun `0xffd0a0` (int 1.65) `[128, 150, 44]`, rim `0xff8c30` (int 0.52), тёплые sky-uniforms (horizon `[0.26, 0.19, 0.11]`).
-- **Отличие от city:** тёплый hemi/sun/rim против холодного cyan; `f.fogNear < c.fogNear` (108 < 130) — ближе смога. Запинено в `atmospherePresets.test.ts`.
+- **Пресет:** `COMIC_FACTORY` в `src/game/atmospherePresets.ts` (`ATMOSPHERES = { factory: COMIC_FACTORY, city: COMIC_CITY, village: COMIC_VILLAGE }`).
+- **Ключевые поля:** background `0x382216`, fog `0x523522` (near 130 / far 500), exposure **1.18**, hemi sky `0xffc892` / ground `0x2c1e14` (int 0.62), sun `0xffa84d` (int 2.6) `[135, 140, 50]`, rim `0xff7b22` (int 0.65), тёплые графичные sky-uniforms (horizon `[0.98, 0.60, 0.28]`).
+- **Отличие от city:** тёплый медный hemi/sun/rim против чистого полуденного лазурного неба Города; `f.fogNear < c.fogNear` (130 < 150) — более плотная закатная атмосфера. Запинено в `atmospherePresets.test.ts`.
 - **Применение:** `RenderWorld.applyAtmosphere(mapId)` из `buildArena(arena, effects, mapId, renderWorld)`.
 
 ## Animated nodes (ArenaEffects)

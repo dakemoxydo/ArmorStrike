@@ -12,14 +12,12 @@ Accent: gold `#c8a24a`.
 
 ## Per-map atmosphere (RenderWorld)
 
-Village рендерится в **тёплом закатном свете**, а City/Factory — в прежней холодной/натриевой ночи (нулевой регресс). Пресеты атмосферы выбираются по `MapId` и применяются при каждой сборке арены.
+Village рендерится в режиме **Comic Pastoral Daylight** — свежий солнечный день с золотистыми лучами и чистым сочным освещением (см. [[Stylized_Art_Direction]]). Пресеты атмосферы выбираются по `MapId` и применяются при каждой сборке арены.
 
-- **Пресеты:** `src/game/atmospherePresets.ts` (`getAtmosphere`, `ATMOSPHERES`). `factory` = `FACTORY`, `city` = `NIGHT`, `village` = `DUSK`.
+- **Пресеты:** `src/game/atmospherePresets.ts` (`getAtmosphere`, `ATMOSPHERES`). `factory` = `COMIC_FACTORY`, `city` = `COMIC_CITY`, `village` = `COMIC_VILLAGE`.
 - **Поля пресета:** background, fog (color/near/far), exposure, hemi (sky/ground/intensity), sun (color/intensity/position), rim (color/intensity), sky uniforms (zenith/horizon/cloud/sunDir/sunDisc/sunGlow).
-- **Village DUSK:** sun `[185,78,118]` (ниже → длинные тени), fog `#6b4a34`, rim `#ff9a4d`, exposure `1.0`, sky horizon `#f58c4d`-подобный тёплый.
+- **Village COMIC_VILLAGE:** sun `[160, 150, 90]` (int 2.5), fog `#78a8be` (near 140 / far 520), rim `#ffc466` (int 0.60), exposure `1.20`, сочный лазурно-золотой небосвод.
 - **Применение:** `RenderWorld.applyAtmosphere(mapId)` вызывается из `buildArena(arena, effects, mapId, renderWorld)`; `Arena.setRenderWorld(renderWorld)` пробрасывает ссылку из `GameBootstrap`. Правило C3 — без циклических импортов.
-
-> **Тонкость альбедо:** DUSK даёт sun 2.0 при exposure 1.0 — светлые albedo выбиваются в белый под ACES. Пластырь/крыши деревни держим в среднем тоне (`PLASTER_TONES`/`ROOF_TONES` в `villageMap.ts`).
 
 ## Textures (village-native)
 
