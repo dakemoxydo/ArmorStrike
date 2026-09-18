@@ -110,6 +110,13 @@ export class GameLoop {
       colliders: sim.arena.colliders, effects: sim.effects,
     });
 
+    // Обновляем позицию слушателя для пространственного аудио (G1):
+    if (sim.player && sim.player.alive) {
+      sim.audio.setListener(sim.player.position.x, sim.player.position.z, sim.input.look.yaw);
+    } else {
+      sim.audio.setListener(cameraRig.camPos.x, cameraRig.camPos.z, sim.input.look.yaw);
+    }
+
     if (sim.run.paused || sim.run.mode === 'over') sim.audio.setEngine(0);
     // Пауза замораживает и аудио-таймлайн: гул/тики заряда рельсы иначе
     // доигрывали под затемнением (rAF идёт, шаг симуляции — нет). Идемпотентно.

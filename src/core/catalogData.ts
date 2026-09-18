@@ -60,6 +60,8 @@ export const WEAPON_TUNING = {
     knockback: 1.2,
     particleCount: 160,
     spawnRate: 40,
+    /** Тактильная микро-вибрация при струе пламени (игрок). */
+    fireShakePlayer: 0.008,
     /** Крит: частые тики копят медленно и с низким потолком (иначе DoT критовал бы всегда). */
     crit: { step: 0.02, max: 0.12, multiplier: 1.5 },
   },
@@ -76,6 +78,13 @@ export const WEAPON_TUNING = {
     botKnockback: 2.0,
     splashRadius: 5.0,
     splashDmg: 12,
+    /** Тряска камеры игрока при выстреле автопушки (F1). */
+    fireShakePlayer: 0.16,
+    /** Тряска камеры игрока при выстреле бота поблизости (F1). */
+    fireShakeBot: 0.04,
+    fireShakeBotRange: 30,
+    /** Короткий упругий кик FOV при залпе автопушки (градусы). */
+    fireFovPunch: 1.2,
     /** Крит: скорострельная автопушка копит за очередь, потолок — 30%. */
     crit: { step: 0.06, max: 0.3, multiplier: 1.5 },
   },
@@ -122,6 +131,8 @@ export const WEAPON_TUNING = {
     drainIdle: 12,
     rechargeRate: 24,
     knockback: 0,
+    /** Микро-отдача при тике нано-луча (игрок). */
+    fireShakePlayer: 0.014,
     /** Частицы потока нанороботов вдоль луча (InstancedMesh). */
     flowCount: 48,
     /** Края дуг по режимам (ядро всегда белое, как у рельсы). */

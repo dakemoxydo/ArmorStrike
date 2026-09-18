@@ -116,6 +116,7 @@ export class BoostStage implements SimSystem {
       rearPoint(_bv, p.position.x, p.position.z, p.yaw, BOOST_JET_OFFSET, BOOST_JET_HEIGHT);
       _bd.set(Math.sin(boostBack), 0.05, Math.cos(boostBack)).normalize();
       this.effects.boostJet(_bv, _bd, COLORS.player);
+      this.effects.addShake(0.012);
     }
   }
 }

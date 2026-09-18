@@ -26,6 +26,8 @@ export interface AudioPort {
    * "complete" behind the scrim.
    */
   setPaused(paused: boolean): void;
+  /** Позиция слушателя (игрок/камера) для пространственного аудио. */
+  setListener(x: number, z: number, yaw: number): void;
 
   chargeRailgun(duration?: number): RailgunChargeHandle;
   /** Live pitch boost for that charge voice (0..1 charge progress). */
@@ -37,8 +39,8 @@ export interface AudioPort {
   startFlameLoop(): void;
   stopFlameLoop(): void;
 
-  shoot(weaponType?: WeaponType): void;
-  explosion(): void;
+  shoot(weaponType?: WeaponType, pos?: { x: number; z: number }): void;
+  explosion(pos?: { x: number; z: number }): void;
   hitEnemy(): void;
   hitPlayer(): void;
   /** Акцент критического попадания (поверх hitEnemy): звонкий верх + треск. */

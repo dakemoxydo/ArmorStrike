@@ -30,6 +30,7 @@
 | `drainIdle` | 12 ед/с | зажатый спуск без цели — дуга «в холостую» |
 | `rechargeRate` | 24 ед/с | regen при погасшем луче × `reloadSpeedMul` |
 | `knockback` | 0 | луч не сдувает с прицела |
+| `fireShakePlayer` | 0.014 | микро-отдача в камеру при тиках нано-луча |
 | `flowCount` | 48 | инстансы потока нанороботов |
 | `colorAttack` | `0xff2d6b` | coral-magenta край дуги/потока в атаке |
 | `colorHeal` | `0x39e6a8` | mint в ремонте |

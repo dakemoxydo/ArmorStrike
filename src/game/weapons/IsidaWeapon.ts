@@ -203,6 +203,12 @@ export class IsidaWeapon implements Weapon {
       this.target = null;
       return;
     }
+    if (this.owner.isPlayer) {
+      this.deps.effects.addShake(tune.fireShakePlayer);
+      this.deps.audio.shoot?.('isida');
+    } else {
+      this.deps.audio.shoot?.('isida', this.owner.position);
+    }
     if (this.targetMode === 'attack') this.tickAttack(t);
     else this.tickHeal(t);
   }

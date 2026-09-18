@@ -36,7 +36,7 @@ function makeTank(isPlayer = true, alive = true): TankEntity {
 function makeDeps(): WeaponDeps {
   return {
     scene: new THREE.Scene(),
-    effects: { muzzle: vi.fn(), addShake: vi.fn(), impact: vi.fn() } as any,
+    effects: { muzzle: vi.fn(), addShake: vi.fn(), impact: vi.fn(), addFovPunch: vi.fn() } as any,
     audio: { shoot: vi.fn(), reload: vi.fn() } as any,
     damageSystem: {} as any,
     projectiles: { fire: vi.fn(() => true) } as any,
@@ -125,5 +125,53 @@ describe('CannonWeapon — инкапсулированная перезаряд
     player.fireTimer = 0;
     w.setFire(true);
     expect(deps.onShotFired).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('CannonWeapon — отдача, FOV-панч и пространственный звук (F1, G1)', () => {
+  it('выстрел игрока даёт fireShakePlayer, fireFovPunch и локальный звук без позиции', () => {
+    const player = makeTank(true);
+    const deps = makeDeps();
+    const w = new CannonWeapon(player, deps);
+    player.fireTimer = 0;
+    w.setFire(true);
+
+    expect(deps.effects.addShake).toHaveBeenCalledWith(WEAPON_TUNING.cannon.fireShakePlayer);
+    expect(deps.effects.addFovPunch).toHaveBeenCalledWith(WEAPON_TUNING.cannon.fireFovPunch);
+    expect(deps.audio.shoot).toHaveBeenCalledWith('cannon');
+  });
+
+  it('выстрел бота рядом с игроком (< 30 м) даёт fireShakeBot и пространственную позицию', () => {
+    const bot = makeTank(false);
+    bot.position.set(10, 0, 10);
+    const player = makeTank(true);
+    player.position.set(0, 0, 0);
+
+    const deps = makeDeps();
+    const w = new CannonWeapon(bot, deps);
+    w.update(0.1, { tanks: [bot, player], colliders: [] });
+
+    bot.fireTimer = 0;
+    w.setFire(true);
+
+    expect(deps.effects.addShake).toHaveBeenCalledWith(WEAPON_TUNING.cannon.fireShakeBot);
+    expect(deps.audio.shoot).toHaveBeenCalledWith('cannon', bot.position);
+  });
+
+  it('выстрел бота далеко от игрока (> 30 м) не сотрясает камеру игрока', () => {
+    const bot = makeTank(false);
+    bot.position.set(60, 0, 60);
+    const player = makeTank(true);
+    player.position.set(0, 0, 0);
+
+    const deps = makeDeps();
+    const w = new CannonWeapon(bot, deps);
+    w.update(0.1, { tanks: [bot, player], colliders: [] });
+
+    bot.fireTimer = 0;
+    w.setFire(true);
+
+    expect(deps.effects.addShake).not.toHaveBeenCalled();
+    expect(deps.audio.shoot).toHaveBeenCalledWith('cannon', bot.position);
   });
 });

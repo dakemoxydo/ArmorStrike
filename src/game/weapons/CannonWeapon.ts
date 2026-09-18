@@ -3,7 +3,7 @@
 // Теперь это обычное оружие с единым интерфейсом Weapon.
 import * as THREE from 'three';
 import { WEAPON_TUNING } from '../../core/catalog';
-import type { Weapon, WeaponContext, WeaponDeps, WeaponOwner, WeaponAmmoState } from './types';
+import type { Weapon, WeaponContext, WeaponDeps, WeaponOwner, WeaponAmmoState, CombatPeer } from './types';
 import { fillAmmoState } from './types';
 import { fillMuzzleAndAim } from './muzzle';
 import { ownerReloadMul } from './reloadMul';
@@ -14,6 +14,7 @@ const tmpDir = new THREE.Vector3();
 export class CannonWeapon implements Weapon {
   readonly owner: WeaponOwner;
   private deps: WeaponDeps;
+  private lastTanks?: readonly CombatPeer[];
 
   // Состояние магазина — инкапсулировано в оружии (ранее жило в TankEntity).
   private ammo: number;
@@ -52,11 +53,32 @@ export class CannonWeapon implements Weapon {
     t.onFired(recoil);
     this.ammo = Math.max(0, this.ammo - 1);
     this.deps.effects.muzzle(muzzle, 0xffcc44);
-    if (t.isPlayer) this.deps.effects.addShake(0.08);
-    this.deps.audio.shoot('cannon');
+    if (t.isPlayer) {
+      this.deps.effects.addShake(WEAPON_TUNING.cannon.fireShakePlayer);
+      this.deps.effects.addFovPunch?.(WEAPON_TUNING.cannon.fireFovPunch);
+      this.deps.audio.shoot('cannon');
+    } else {
+      if (this.playerNear(WEAPON_TUNING.cannon.fireShakeBotRange)) {
+        this.deps.effects.addShake(WEAPON_TUNING.cannon.fireShakeBot);
+      }
+      this.deps.audio.shoot('cannon', t.position);
+    }
     // HUD hit-pulse — только для игрока; автоперезарядка — для всех (боты иначе «глухнут» после магазина)
     if (t.isPlayer) this.deps.onShotFired?.();
     if (this.ammo === 0) this.startFullReload();
+  }
+
+  private playerNear(maxRange: number): boolean {
+    if (!this.lastTanks) return false;
+    const r2 = maxRange * maxRange;
+    for (const other of this.lastTanks) {
+      if (other.isPlayer && other.alive) {
+        const dx = other.position.x - this.owner.position.x;
+        const dz = other.position.z - this.owner.position.z;
+        return dx * dx + dz * dz <= r2;
+      }
+    }
+    return false;
   }
 
   private canFire(): boolean {
@@ -91,8 +113,8 @@ export class CannonWeapon implements Weapon {
     if (this.owner.alive && this.ammo < this.magazine) this.startFullReload();
   }
 
-  update(_dt: number, _ctx: WeaponContext): void {
-    // Пушка мгновенно спавнит снаряд; вся симуляция — в ProjectileManager.
+  update(_dt: number, ctx: WeaponContext): void {
+    this.lastTanks = ctx.tanks;
   }
 
   getAmmoState(out?: WeaponAmmoState): WeaponAmmoState {

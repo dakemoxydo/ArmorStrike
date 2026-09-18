@@ -151,7 +151,11 @@ export class CombatSystem {
     const p = target.position.clone().setY(1.4);
     this.deps.effects.explosion(p, target.isPlayer ? COLORS.player : 0xff7a3d, 1.9);
     this.deps.effects.debris(p, 0xffa050, 26);
-    this.deps.audio.explosion();
+    if (target.isPlayer) {
+      this.deps.audio.explosion();
+    } else {
+      this.deps.audio.explosion(target.position);
+    }
 
     // Горящие обломки на месте гибели
     this.deps.effects.spawnWreck(target.position.clone(), target.yaw, target.isPlayer ? COLORS.player : 0xff7a3d);
@@ -198,6 +202,6 @@ export class CombatSystem {
   onBlockDestroyed = (pos: THREE.Vector3, size: number) => {
     this.deps.effects.explosion(pos, 0xffb02e, size);
     this.deps.effects.debris(pos, 0x6b7688, 18);
-    this.deps.audio.explosion();
+    this.deps.audio.explosion(pos);
   };
 }

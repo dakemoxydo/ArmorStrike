@@ -86,6 +86,9 @@ export class FlamethrowerWeapon implements Weapon {
   /** Overlap-check урона (throttling). Мерцание дульного света — в пуле. */
   private updateOverlapAndLight(dt: number, ctx: WeaponContext) {
     if (this.isFiring) {
+      if (this.owner.isPlayer) {
+        this.deps.effects.addShake(WEAPON_TUNING.flamethrower.fireShakePlayer);
+      }
       this.tickTimer += dt;
       if (this.tickTimer >= WEAPON_TUNING.flamethrower.tickRate) {
         this.tickTimer -= WEAPON_TUNING.flamethrower.tickRate;

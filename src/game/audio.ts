@@ -54,12 +54,17 @@ export class AudioFX implements AudioPort {
   private engineOn = false;
   /** Persisted across sessions via localStorage (BACKLOG G2). */
   muted = loadMuted();
-  /**
-   * Game-pause mirror. When true the WebAudio clock is suspended (charge hum
-   * freezes instead of running out behind the scrim) and railgun charge ticks
-   * are skipped. Set via setPaused() — AudioFX never reads RunState.
-   */
   private paused = false;
+  /** Позиция и ориентация слушателя (игрок/камера) для пространственного 3D-звука (G1). */
+  private listenerPos = { x: 0, z: 0, yaw: 0 };
+  private hasListener = false;
+
+  setListener(x: number, z: number, yaw: number) {
+    this.listenerPos.x = x;
+    this.listenerPos.z = z;
+    this.listenerPos.yaw = yaw;
+    this.hasListener = true;
+  }
 
   ensure() {
     if (!this.ctx) {
@@ -139,7 +144,7 @@ export class AudioFX implements AudioPort {
     g.exponentialRampToValueAtTime(0.0001, t0 + attack + decay);
   }
 
-  private noise(t0: number, dur: number, filterType: BiquadFilterType, f0: number, f1: number, peak: number) {
+  private noise(t0: number, dur: number, filterType: BiquadFilterType, f0: number, f1: number, peak: number, dest?: AudioNode) {
     if (!this.ctx || !this.master || !this.noiseBuf) return;
     const src = this.ctx.createBufferSource();
     src.buffer = this.noiseBuf;
@@ -150,12 +155,12 @@ export class AudioFX implements AudioPort {
     flt.frequency.exponentialRampToValueAtTime(Math.max(f1, 20), t0 + dur);
     const g = this.ctx.createGain();
     this.env(g, t0, peak, 0.005, dur);
-    src.connect(flt).connect(g).connect(this.master);
+    src.connect(flt).connect(g).connect(dest ?? this.master);
     src.start(t0);
     src.stop(t0 + dur + 0.1);
   }
 
-  private osc(type: OscillatorType, t0: number, dur: number, f0: number, f1: number, peak: number) {
+  private osc(type: OscillatorType, t0: number, dur: number, f0: number, f1: number, peak: number, dest?: AudioNode) {
     if (!this.ctx || !this.master) return;
     const o = this.ctx.createOscillator();
     o.type = type;
@@ -163,9 +168,64 @@ export class AudioFX implements AudioPort {
     o.frequency.exponentialRampToValueAtTime(Math.max(f1, 20), t0 + dur);
     const g = this.ctx.createGain();
     this.env(g, t0, peak, 0.004, dur);
-    o.connect(g).connect(this.master);
+    o.connect(g).connect(dest ?? this.master);
     o.start(t0);
     o.stop(t0 + dur + 0.1);
+  }
+
+  /**
+   * Вычисляет пространственную шину (spatial bus) для звука в мировых координатах (G1):
+   * - Затухание громкости с расстоянием (квадратичное падение от 8 м до 90 м, отсечка свыше 90 м)
+   * - Стерео-панорамирование через StereoPannerNode относительно курса слушателя (lookYaw)
+   * - Заднее приглушение (head shadow / lowpass filter 3800 Гц), если источник за спиной
+   * - Если pos не указан (выстрел игрока, UI) — возвращает master-шину без задержек и затухания
+   */
+  private getSpatialBus(pos?: { x: number; z: number }): AudioNode | null {
+    if (!this.ctx || !this.master) return null;
+    if (!pos || !this.hasListener) return this.master;
+
+    const dx = pos.x - this.listenerPos.x;
+    const dz = pos.z - this.listenerPos.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > 90) return null; // Отсечка звуков свыше 90 м
+
+    const normDist = Math.max(0, (dist - 8) / (90 - 8));
+    let volume = Math.max(0, (1 - normDist) * (1 - normDist));
+    if (volume < 0.005) return null;
+
+    const yaw = this.listenerPos.yaw;
+    const cosYaw = Math.cos(yaw);
+    const sinYaw = Math.sin(yaw);
+    const relX = dx * cosYaw - dz * sinYaw;
+    const relZ = dx * sinYaw + dz * cosYaw;
+    const pan = Math.max(-1, Math.min(1, relX / Math.max(dist, 1)));
+
+    const isBehind = relZ < -2;
+    if (isBehind) {
+      volume *= 0.82;
+    }
+
+    const busGain = this.ctx.createGain();
+    busGain.gain.value = volume;
+    let lastNode: AudioNode = busGain;
+
+    if (isBehind) {
+      const rearFilter = this.ctx.createBiquadFilter();
+      rearFilter.type = 'lowpass';
+      rearFilter.frequency.value = 3800;
+      lastNode.connect(rearFilter);
+      lastNode = rearFilter;
+    }
+
+    if (typeof this.ctx.createStereoPanner === 'function') {
+      const panner = this.ctx.createStereoPanner();
+      panner.pan.value = pan;
+      lastNode.connect(panner);
+      lastNode = panner;
+    }
+
+    lastNode.connect(this.master);
+    return busGain;
   }
 
   /** Rising charge hum + accelerating ticks. Cancel with stopChargeRailgun(handle). */
@@ -340,41 +400,57 @@ export class AudioFX implements AudioPort {
     setTimeout(() => { try { src.stop(); } catch { /* already stopped */ } }, 100);
   }
 
-  shoot(weaponType: WeaponType = 'railgun') {
+  shoot(weaponType: WeaponType = 'railgun', pos?: { x: number; z: number }) {
     if (!this.ctx) return;
+    const dest = this.getSpatialBus(pos);
+    if (!dest) return;
     const t = this.ctx.currentTime;
+
     if (weaponType === 'flamethrower') {
-      this.noise(t, 0.12, 'bandpass', 1200, 400, 0.28);
+      this.noise(t, 0.12, 'bandpass', 1200, 400, 0.28, dest);
+      this.osc('sawtooth', t, 0.08, 180, 50, 0.18, dest);
     } else if (weaponType === 'cannon') {
-      this.osc('square', t, 0.14, 220, 35, 0.45);
-      this.noise(t, 0.18, 'lowpass', 1400, 120, 0.5);
+      // Sub-bass thump (тяжёлый калибр Смоки)
+      this.osc('sine', t, 0.20, 65, 24, 0.65, dest);
+      // Механический толчок каморы
+      this.osc('square', t, 0.14, 220, 35, 0.45, dest);
+      // Взрывное расширение газов
+      this.noise(t, 0.18, 'lowpass', 1400, 120, 0.5, dest);
     } else if (weaponType === 'gauss') {
       // Gauss discharge: heavy electromagnetic crack, supersonic slug sonic-boom
-      this.osc('sine', t, 0.35, 72, 16, 1.0); // Sub-bass pressure
-      this.osc('sawtooth', t, 0.18, 380, 42, 0.75); // Magnetic acceleration thump
-      this.osc('triangle', t, 0.09, 1800, 160, 0.65); // High metallic rip
-      this.noise(t, 0.055, 'highpass', 5800, 1400, 0.95); // Ionized air crack
-      this.noise(t + 0.02, 0.28, 'bandpass', 1100, 320, 0.35); // Shockwave dissipation
+      this.osc('sine', t, 0.35, 72, 16, 1.0, dest); // Sub-bass pressure
+      this.osc('sawtooth', t, 0.18, 380, 42, 0.75, dest); // Magnetic acceleration thump
+      this.osc('triangle', t, 0.09, 1800, 160, 0.65, dest); // High metallic rip
+      this.noise(t, 0.055, 'highpass', 5800, 1400, 0.95, dest); // Ionized air crack
+      this.noise(t + 0.02, 0.28, 'bandpass', 1100, 320, 0.35, dest); // Shockwave dissipation
+    } else if (weaponType === 'isida') {
+      // Isida nano-beam discharge: futuristic high-frequency plasma sizzle + harmonic pulse
+      this.osc('sawtooth', t, 0.09, 920, 420, 0.26, dest);
+      this.osc('triangle', t, 0.07, 1600, 780, 0.18, dest);
+      this.osc('sine', t, 0.08, 160, 55, 0.32, dest);
+      this.noise(t, 0.07, 'bandpass', 2900, 1100, 0.24, dest);
     } else {
       // Railgun snap: cinematic layered crack & sub-bass thump.
       // Layer 1: Sub-bass boom (56 -> 20 Hz, solid chest impact)
-      this.osc('sine', t, 0.28, 56, 20, 0.95);
+      this.osc('sine', t, 0.28, 56, 20, 0.95, dest);
       // Layer 2: Mechanical slug punch / magnetic kick
-      this.osc('square', t, 0.14, 180, 28, 0.6);
+      this.osc('square', t, 0.14, 180, 28, 0.6, dest);
       // Layer 3: High supersonic transient crack (air rip)
-      this.noise(t, 0.045, 'highpass', 4500, 1100, 0.85);
-      this.osc('sawtooth', t, 0.06, 2600, 380, 0.45);
+      this.noise(t, 0.045, 'highpass', 4500, 1100, 0.85, dest);
+      this.osc('sawtooth', t, 0.06, 2600, 380, 0.45, dest);
       // Layer 4: Plasma sizzle & acoustic dissipation tail
-      this.noise(t + 0.015, 0.32, 'bandpass', 1600, 420, 0.28);
-      this.osc('sine', t + 0.02, 0.22, 680, 180, 0.16);
+      this.noise(t + 0.015, 0.32, 'bandpass', 1600, 420, 0.28, dest);
+      this.osc('sine', t + 0.02, 0.22, 680, 180, 0.16, dest);
     }
   }
 
-  explosion() {
+  explosion(pos?: { x: number; z: number }) {
     if (!this.ctx) return;
+    const dest = this.getSpatialBus(pos);
+    if (!dest) return;
     const t = this.ctx.currentTime;
-    this.noise(t, 0.7, 'lowpass', 950, 70, 0.9);
-    this.osc('sine', t, 0.45, 62, 26, 0.8);
+    this.noise(t, 0.7, 'lowpass', 950, 70, 0.9, dest);
+    this.osc('sine', t, 0.45, 62, 26, 0.8, dest);
   }
 
   hitEnemy() {

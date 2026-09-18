@@ -22,6 +22,10 @@
 | `botKnockback` | 2.0 | self-recoil у ботов (слабее, чтобы не «стоять на куске»; J12) |
 | `splashRadius` | 5.0 | радиус splash |
 | `splashDmg` | 12 | базовый splash @ центр |
+| `fireShakePlayer` | 0.16 | сотрясение камеры игрока при собственном выстреле (F1) |
+| `fireShakeBot` | 0.04 | сотрясение камеры игрока при выстреле бота поблизости (F1) |
+| `fireShakeBotRange` | 30 | радиус дистанции от бота до игрока для передачи сотрясения |
+| `fireFovPunch` | 1.2° | мгновенный упругий скачок FOV при выстреле автопушки |
 
 `turretSpeed`: 8.0 (`TURRETS.cannon`).
 
@@ -44,10 +48,11 @@ setFire(true) ──canFire──► fire() ──ammo--
 ## Выстрел
 
 1. `fillMuzzleAndAim` → позиция/направление.
-2. `owner.onFired(recoil)` — recoil + `fireTimer = shotCooldown`.
+2. `owner.onFired(recoil)` — recoil шасси + `fireTimer = shotCooldown`.
 3. `projectiles.fire(owner, muzzle, dir, damage, 'cannon', range)`.
-4. VFX muzzle, shake 0.08, audio `shoot('cannon')`.
-5. При `ammo === 0` — `startFullReload()`.
+4. VFX muzzle, shake `fireShakePlayer` (0.16) + `fireFovPunch` (1.2°). Для ботов — shake `fireShakeBot` (0.04) при дистанции ≤ 30 м.
+5. Пространственный 3D-звук `audio.shoot('cannon', pos)`: саб-басовый kick 65→24 Гц, механический щелчок, затухание по дистанции и стерео-панорамирование.
+6. При `ammo === 0` — `startFullReload()`.
 
 ## Урон на попадании
 
