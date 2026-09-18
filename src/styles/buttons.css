@@ -15,8 +15,8 @@
   will-change: transform;
   -webkit-tap-highlight-color: transparent;
 }
-.btn-game:hover { transform: translateY(-3px) scale(1.045); }
-.btn-game:active { transform: translateY(1px) scale(0.945); transition-duration: 0.06s; }
+.btn-game:hover { transform: translateY(-2px) scale(1.03); }
+.btn-game:active { transform: translateY(2px) scale(0.98); transition-duration: 0.06s; }
 /* Отключённая кнопка (U13): раньше состояния не было вовсе — «В БОЙ» в гараже
    до готовности выглядел нажимаемым. Гасим и движение, и блик. */
 .btn-game:disabled,
@@ -55,20 +55,30 @@
 }
 
 .btn-primary {
-  color: #03222a;
-  background: linear-gradient(135deg, #3cf5d0, #22b8ff 55%, #3cf5d0);
+  color: #041c22;
+  background: linear-gradient(135deg, #4efcd8, #22d3ee 55%, #38ef7d);
   background-size: 220% 220%;
   box-shadow:
-    0 0 var(--glow-r-md) rgba(var(--glow), 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 -3px 0 rgba(0, 30, 40, 0.22);
+    inset 0 0 0 2px #0b0e14,
+    0 4px 0 #0b0e14,
+    inset 0 2px 0 rgba(255, 255, 255, 0.75),
+    0 0 var(--glow-r-md) rgba(var(--glow), 0.38);
   animation: gradient-drift 5s ease infinite;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 .btn-primary:hover {
   box-shadow:
-    0 0 var(--glow-r-lg) rgba(var(--glow), 0.68),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    inset 0 0 0 2px #0b0e14,
+    0 6px 0 #0b0e14,
+    inset 0 2px 0 rgba(255, 255, 255, 0.85),
+    0 0 var(--glow-r-lg) rgba(var(--glow), 0.68);
   filter: brightness(1.08);
+}
+.btn-primary:active {
+  box-shadow:
+    inset 0 0 0 2px #0b0e14,
+    0 1px 0 #0b0e14,
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 @keyframes gradient-drift {
   0%, 100% { background-position: 0% 50%; }
@@ -76,24 +86,48 @@
 }
 
 .btn-ghost {
-  color: #a9f0e8;
-  background: linear-gradient(135deg, rgba(18, 34, 46, 0.88), rgba(7, 15, 26, 0.85));
-  box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.26), 0 0 var(--glow-r-md) rgba(0, 0, 0, 0.45);
+  color: #d6fff6;
+  background: linear-gradient(135deg, rgba(16, 28, 40, 0.94), rgba(9, 17, 26, 0.96));
+  box-shadow:
+    inset 0 0 0 2px #0b0e14,
+    0 4px 0 #0b0e14,
+    inset 0 1px 0 rgba(var(--glow), 0.45);
 }
 .btn-ghost:hover {
   color: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.6), 0 0 var(--glow-r-md) rgba(var(--glow), 0.32);
-  background: linear-gradient(135deg, rgba(24, 46, 60, 0.92), rgba(10, 22, 34, 0.88));
+  box-shadow:
+    inset 0 0 0 2px #0b0e14,
+    0 6px 0 #0b0e14,
+    inset 0 1px 0 rgba(var(--glow), 0.85),
+    0 0 var(--glow-r-md) rgba(var(--glow), 0.32);
+  background: linear-gradient(135deg, rgba(22, 38, 52, 0.96), rgba(12, 23, 34, 0.98));
+}
+.btn-ghost:active {
+  box-shadow:
+    inset 0 0 0 2px #0b0e14,
+    0 1px 0 #0b0e14;
 }
 
 .btn-danger {
-  color: #ffd9d2;
-  background: linear-gradient(135deg, rgba(64, 18, 14, 0.9), rgba(32, 8, 10, 0.88));
-  box-shadow: inset 0 0 0 1px rgba(255, 90, 70, 0.32), 0 0 var(--glow-r-md) rgba(0, 0, 0, 0.45);
+  color: #fff0ed;
+  background: linear-gradient(135deg, rgba(92, 24, 18, 0.94), rgba(48, 12, 14, 0.96));
+  box-shadow:
+    inset 0 0 0 2px #0b0e14,
+    0 4px 0 #0b0e14,
+    inset 0 1px 0 rgba(255, 110, 90, 0.55);
 }
 .btn-danger:hover {
   color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(255, 90, 70, 0.65), 0 0 var(--glow-r-md) rgba(255, 70, 50, 0.35);
+  box-shadow:
+    inset 0 0 0 2px #0b0e14,
+    0 6px 0 #0b0e14,
+    inset 0 1px 0 rgba(255, 120, 100, 0.9),
+    0 0 var(--glow-r-md) rgba(255, 70, 50, 0.35);
+}
+.btn-danger:active {
+  box-shadow:
+    inset 0 0 0 2px #0b0e14,
+    0 1px 0 #0b0e14;
 }
 
 .btn-game .bicon { transition: transform 0.3s cubic-bezier(0.34, 2, 0.64, 1); }

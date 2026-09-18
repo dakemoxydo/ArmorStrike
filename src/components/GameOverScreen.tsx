@@ -102,7 +102,7 @@ export default function GameOverScreen({
         </p>
         <h2
           id="gameover-title"
-          className={`anim-up font-display text-3xl tracking-wider md:text-5xl ${titleColor}`}
+          className={`anim-up font-display text-4xl tracking-wider md:text-6xl title-glitch ${titleColor}`}
           style={{ '--d': '0.15s' } as React.CSSProperties}
         >
           {headline}

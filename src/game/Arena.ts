@@ -11,6 +11,7 @@ import { DEFAULT_MAP_ID } from './maps/mapCatalog';
 import { invalidateSolidColliderCache } from './engine/solidColliderCache';
 import { isShared } from './resources/sharedResources';
 import type { RenderWorld } from './RenderWorld';
+import { applyCelShading } from './shaders/celShading';
 
 export type { BlockInfo } from './arena/types';
 
@@ -83,7 +84,12 @@ export class Arena {
         if (!(o instanceof THREE.Mesh)) return;
         o.userData.colliderId = col.id;
         const ms = Array.isArray(o.material) ? o.material : [o.material];
-        for (const m of ms) if (m instanceof THREE.MeshStandardMaterial) mats.push(m);
+        for (const m of ms) {
+          if (m instanceof THREE.MeshStandardMaterial) {
+            applyCelShading(m);
+            mats.push(m);
+          }
+        }
       });
       this.blocks.set(col.id, {
         id: col.id, group: meshWrap, collider: col,
@@ -91,13 +97,22 @@ export class Arena {
       });
     } else {
       meshWrap.traverse((o) => {
-        if (o instanceof THREE.Mesh) o.userData.colliderId = undefined;
+        if (o instanceof THREE.Mesh) {
+          o.userData.colliderId = undefined;
+          const ms = Array.isArray(o.material) ? o.material : [o.material];
+          for (const m of ms) {
+            if (m instanceof THREE.MeshStandardMaterial) applyCelShading(m);
+          }
+        }
       });
     }
     return col;
   }
 
   box(w: number, h: number, d: number, mat: THREE.Material, cy?: number): THREE.Mesh {
+    if (mat instanceof THREE.MeshStandardMaterial) {
+      applyCelShading(mat);
+    }
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
     m.position.y = cy ?? h / 2;
     m.castShadow = true;

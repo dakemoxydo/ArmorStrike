@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+import { applyCelShading } from './shaders/celShading';
 import {
   cityGroundTexture,
   factoryGroundTexture,
@@ -74,6 +76,20 @@ export function buildArena(
       buildFactoryContent(ctx);
       break;
   }
+
+  // Toon / Comics style: применение 3-ступенчатого Cel-Shading ко всем
+  // PBR-материалам геометрии арены (стены, здания, контейнеры, дома),
+  // гармонизируя всё окружение со стилизованной техникой.
+  arena.group.traverse((obj) => {
+    if (obj instanceof THREE.Mesh || obj instanceof THREE.InstancedMesh) {
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      for (const m of mats) {
+        if (m instanceof THREE.MeshStandardMaterial) {
+          applyCelShading(m);
+        }
+      }
+    }
+  });
 }
 
 function makeContext(arena: Arena, effects: ArenaEffects): ArenaBuildContext {

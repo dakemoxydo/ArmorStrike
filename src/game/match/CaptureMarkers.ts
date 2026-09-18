@@ -16,27 +16,45 @@ function ownerColor(owner: CaptureOwner, contested: boolean, progress: number): 
   return COL_NEUTRAL;
 }
 
+function drawLetterBadge(c: CanvasRenderingContext2D, letter: string, color: number) {
+  c.clearRect(0, 0, 128, 128);
+
+  // Внешний чернильный контур комиксного бейджа (Toon Ink Circle)
+  c.fillStyle = '#0b0e14';
+  c.beginPath();
+  c.arc(64, 64, 56, 0, Math.PI * 2);
+  c.fill();
+
+  // Внутренний цветной фон (Alpha / Bravo / Neutral / Contested)
+  const r = (color >> 16) & 255;
+  const g = (color >> 8) & 255;
+  const b = color & 255;
+  c.fillStyle = `rgba(${r},${g},${b},0.92)`;
+  c.beginPath();
+  c.arc(64, 64, 48, 0, Math.PI * 2);
+  c.fill();
+
+  // Чернильная разделительная рамка
+  c.strokeStyle = '#0b0e14';
+  c.lineWidth = 4;
+  c.stroke();
+
+  // Буква точки (A, B, C) жирным комиксным гротеском с чернильным дропом
+  c.font = '900 68px "Russo One", sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillStyle = '#0b0e14';
+  c.fillText(letter, 64, 71);
+  c.fillStyle = '#ffffff';
+  c.fillText(letter, 64, 67);
+}
+
 function makeLetterSprite(letter: string, color: number): THREE.Sprite {
   const cv = document.createElement('canvas');
   cv.width = 128;
   cv.height = 128;
   const c = cv.getContext('2d')!;
-  c.clearRect(0, 0, 128, 128);
-  c.fillStyle = 'rgba(6,12,18,0.55)';
-  c.beginPath();
-  c.arc(64, 64, 52, 0, Math.PI * 2);
-  c.fill();
-  const r = (color >> 16) & 255;
-  const g = (color >> 8) & 255;
-  const b = color & 255;
-  c.strokeStyle = `rgba(${r},${g},${b},0.9)`;
-  c.lineWidth = 6;
-  c.stroke();
-  c.fillStyle = '#eaf6ff';
-  c.font = 'bold 72px sans-serif';
-  c.textAlign = 'center';
-  c.textBaseline = 'middle';
-  c.fillText(letter, 64, 68);
+  drawLetterBadge(c, letter, color);
 
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -140,22 +158,7 @@ export class CaptureMarkers {
         const map = mat.map as THREE.CanvasTexture;
         const cv = map.image as HTMLCanvasElement;
         const c = cv.getContext('2d')!;
-        c.clearRect(0, 0, 128, 128);
-        c.fillStyle = 'rgba(6,12,18,0.55)';
-        c.beginPath();
-        c.arc(64, 64, 52, 0, Math.PI * 2);
-        c.fill();
-        const r = (letterCol >> 16) & 255;
-        const g = (letterCol >> 8) & 255;
-        const b = letterCol & 255;
-        c.strokeStyle = `rgba(${r},${g},${b},0.9)`;
-        c.lineWidth = 6;
-        c.stroke();
-        c.fillStyle = '#eaf6ff';
-        c.font = 'bold 72px sans-serif';
-        c.textAlign = 'center';
-        c.textBaseline = 'middle';
-        c.fillText(z.id, 64, 68);
+        drawLetterBadge(c, z.id, letterCol);
         map.needsUpdate = true;
       }
     }

@@ -116,4 +116,25 @@ describe('Comic / Cel-Shaded Art Direction', () => {
       expect(track).toBeInstanceOf(THREE.CanvasTexture);
     });
   });
+
+  describe('arena cel shading & comic UI integration', () => {
+    it('applies cel-shading customProgramCacheKey to arena meshes', () => {
+      const mat = applyCelShading(new THREE.MeshStandardMaterial({ color: 0x90a8c0 }));
+      expect(mat.customProgramCacheKey()).toBe('cel-shaded-std-v1');
+    });
+
+    it('defines comic ink border and 3D offset shadow in variables and buttons', async () => {
+      const { readFileSync } = await import('node:fs');
+      const { resolve } = await import('node:path');
+      const vars = readFileSync(resolve(__dirname, '../styles/variables.css'), 'utf8');
+      const buttons = readFileSync(resolve(__dirname, '../styles/buttons.css'), 'utf8');
+      const hud = readFileSync(resolve(__dirname, '../styles/hud.css'), 'utf8');
+
+      expect(vars).toMatch(/--panel-line:\s*#0b0e14/);
+      expect(vars).toMatch(/--panel-shadow:\s*0 5px 0 #0b0e14/);
+      expect(buttons).toMatch(/box-shadow:[\s\S]*?inset 0 0 0 2px #0b0e14/);
+      expect(hud).toMatch(/\.frag-plus[\s\S]*?text-shadow:[\s\S]*?-3px -3px 0 #0b0e14/);
+      expect(hud).toMatch(/\.streak-label[\s\S]*?text-shadow:[\s\S]*?-3px -3px 0 #0b0e14/);
+    });
+  });
 });

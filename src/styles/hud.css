@@ -9,11 +9,11 @@
    (9 + 9 = 18 > 12) и скобку не срезает clip-path родителя. */
 .hud-panel {
   position: relative;
-  background-color: rgba(6, 13, 22, 0.78);
+  background-color: rgba(7, 13, 21, 0.94);
   background-image:
     linear-gradient(135deg, var(--panel-bg-top), var(--panel-bg-bottom)),
     repeating-linear-gradient(45deg, var(--panel-hatch) 0 2px, transparent 2px 7px);
-  border: 1px solid var(--panel-line);
+  border: 2px solid var(--panel-line);
   backdrop-filter: blur(6px);
   clip-path: polygon(
     var(--panel-cut) 0,
@@ -25,7 +25,7 @@
   );
   box-shadow:
     var(--panel-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
     inset 0 0 var(--glow-r-md) rgba(var(--glow), 0.05);
 }
 
@@ -115,12 +115,10 @@
 .hp-shell {
   position: relative;
   height: 20px;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.25)),
-    var(--bar-track);
+  background: #0b0e14;
   clip-path: polygon(var(--bar-cut) 0, 100% 0, calc(100% - var(--bar-cut)) 100%, 0 100%);
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow: 0 3px 0 #0b0e14, inset 0 0 0 2px #0b0e14;
 }
 /* Ghost bar — показывает недавний урон (белая полоса за основным fill) */
 .hp-ghost {
@@ -187,12 +185,10 @@
 .boost-shell {
   position: relative;
   height: 10px;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.2)),
-    var(--bar-track);
+  background: #0b0e14;
   clip-path: polygon(var(--bar-cut) 0, 100% 0, calc(100% - var(--bar-cut)) 100%, 0 100%);
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 0 #0b0e14, inset 0 0 0 1.5px #0b0e14;
 }
 .boost-fill {
   height: 100%;
@@ -654,9 +650,13 @@
   position: relative;
   width: 44px; height: 44px;
   transform: translate(-50%, -50%);
-  /* Тёмный ореол: без него прицел пропадает на светлом небе, песке и на
-     пересвеченной вспышкой броне. Два слоя — резкая кромка + мягкая тень. */
-  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 var(--glow-r-xs) rgba(0, 0, 0, 0.75));
+  /* Тёмный чернильный ореол: резкая кромка + мягкая тень для контраста на ярких сценах */
+  filter:
+    drop-shadow(-1px -1px 0 #000)
+    drop-shadow(1px -1px 0 #000)
+    drop-shadow(-1px 1px 0 #000)
+    drop-shadow(1px 1px 0 #000)
+    drop-shadow(0 0 var(--glow-r-xs) rgba(0, 0, 0, 0.85));
   /* static reticle — motion only on shot-pulse (M5) */
 }
 .cross-core .ch-dot {
@@ -1066,16 +1066,27 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(220, 38, 38, 0.88);
-  border: 2px solid #ff4d4d;
-  box-shadow: 0 0 var(--glow-r-lg) rgba(239, 68, 68, 0.85);
-  padding: 0.45rem 1rem;
+  background: #dc2626;
+  border: 2.5px solid #0b0e14;
+  box-shadow:
+    0 4px 0 #0b0e14,
+    0 0 var(--glow-r-lg) rgba(239, 68, 68, 0.85);
+  padding: 0.45rem 1.15rem;
   clip-path: polygon(var(--control-cut) 0, 100% 0, 100% calc(100% - var(--control-cut)), calc(100% - var(--control-cut)) 100%, 0 100%, 0 var(--control-cut));
   font-family: 'Russo One', sans-serif;
   font-size: 0.95rem;
   font-weight: 800;
   letter-spacing: var(--track-wide);
   color: #fff;
+  text-shadow:
+    -2px -2px 0 #0b0e14,
+    2px -2px 0 #0b0e14,
+    -2px 2px 0 #0b0e14,
+    2px 2px 0 #0b0e14,
+    0 2px 0 #0b0e14,
+    0 -2px 0 #0b0e14,
+    -2px 0 0 #0b0e14,
+    2px 0 0 #0b0e14;
   text-transform: uppercase;
 }
 .incoming-lock-icon {
@@ -1115,28 +1126,51 @@
   pointer-events: none;
 }
 .frag-popup {
-  animation: frag-pop 1.15s ease-out forwards;
+  animation: frag-pop 1.15s cubic-bezier(0.22, 0.85, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 .frag-plus {
   display: block;
   font-family: 'Russo One', sans-serif;
-  font-size: 2.2rem;
+  font-size: 2.5rem;
+  font-style: italic;
   letter-spacing: var(--track-wide);
-  color: #6ef2c8;
-  text-shadow: 0 0 var(--glow-r-md) rgba(46, 230, 192, 0.9);
+  color: #38ef7d;
+  text-shadow:
+    -3px -3px 0 #0b0e14,
+    3px -3px 0 #0b0e14,
+    -3px 3px 0 #0b0e14,
+    3px 3px 0 #0b0e14,
+    0 3px 0 #0b0e14,
+    0 -3px 0 #0b0e14,
+    -3px 0 0 #0b0e14,
+    3px 0 0 #0b0e14,
+    0 0 var(--glow-r-md) rgba(56, 239, 125, 0.85);
 }
 .frag-victim {
   display: block;
   margin-top: 2px;
-  font-size: 0.72rem;
+  font-family: 'Russo One', sans-serif;
+  font-size: 0.85rem;
+  font-style: italic;
   letter-spacing: var(--track-hero);
-  color: rgba(255, 120, 110, 0.9);
+  color: #ff6b6b;
+  text-shadow:
+    -2px -2px 0 #0b0e14,
+    2px -2px 0 #0b0e14,
+    -2px 2px 0 #0b0e14,
+    2px 2px 0 #0b0e14,
+    0 2px 0 #0b0e14,
+    0 -2px 0 #0b0e14,
+    -2px 0 0 #0b0e14,
+    2px 0 0 #0b0e14;
 }
 @keyframes frag-pop {
-  0% { opacity: 0; transform: scale(1.4); }
-  15% { opacity: 1; transform: scale(1); }
-  75% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-26px); }
+  0% { opacity: 0; transform: scale(0.65) skewX(-7deg); }
+  16% { opacity: 1; transform: scale(1.28) skewX(-7deg); }
+  35% { opacity: 1; transform: scale(1) skewX(-7deg); }
+  75% { opacity: 1; transform: scale(1) skewX(-7deg); }
+  100% { opacity: 0; transform: translateY(-30px) scale(0.92) skewX(-7deg); }
 }
 
 /* --- табло счёта --- */
@@ -1283,30 +1317,55 @@
 
 /* --- kill streak banner (позиция — в .toast-lane) --- */
 .streak-banner {
-  animation: streak-pop 1.4s ease-out forwards;
+  animation: streak-pop 1.4s cubic-bezier(0.22, 0.85, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 .streak-label {
   display: block;
   font-family: 'Russo One', sans-serif;
-  font-size: 2.8rem;
+  font-size: 3rem;
+  font-style: italic;
   letter-spacing: var(--track-wide);
-  color: #ffd24a;
-  text-shadow: 0 0 var(--glow-r-md) rgba(255, 180, 60, 0.9), 0 0 var(--glow-r-lg) rgba(255, 120, 40, 0.5);
+  color: #ffcc00;
+  text-shadow:
+    -3px -3px 0 #0b0e14,
+    3px -3px 0 #0b0e14,
+    -3px 3px 0 #0b0e14,
+    3px 3px 0 #0b0e14,
+    0 3px 0 #0b0e14,
+    0 -3px 0 #0b0e14,
+    -3px 0 0 #0b0e14,
+    3px 0 0 #0b0e14,
+    0 0 var(--glow-r-md) rgba(255, 204, 0, 0.85);
 }
 .streak-count {
-  display: block;
+  display: inline-block;
   margin-top: 4px;
+  padding: 2px 14px;
+  background: #ff4d3d;
+  clip-path: polygon(var(--control-cut) 0, 100% 0, 100% calc(100% - var(--control-cut)), calc(100% - var(--control-cut)) 100%, 0 100%, 0 var(--control-cut));
   font-family: 'Russo One', sans-serif;
   font-size: 1.4rem;
+  font-style: italic;
   letter-spacing: var(--track-hero);
-  color: #ff8a5a;
-  text-shadow: 0 0 var(--glow-r-md) rgba(255, 120, 60, 0.8);
+  color: #ffffff;
+  text-shadow:
+    -2px -2px 0 #0b0e14,
+    2px -2px 0 #0b0e14,
+    -2px 2px 0 #0b0e14,
+    2px 2px 0 #0b0e14,
+    0 2px 0 #0b0e14,
+    0 -2px 0 #0b0e14,
+    -2px 0 0 #0b0e14,
+    2px 0 0 #0b0e14;
+  box-shadow: 0 4px 0 #0b0e14;
 }
 @keyframes streak-pop {
-  0% { opacity: 0; transform: scale(1.6); }
-  12% { opacity: 1; transform: scale(1); }
-  70% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-30px) scale(0.95); }
+  0% { opacity: 0; transform: scale(0.65) skewX(-7deg); }
+  14% { opacity: 1; transform: scale(1.3) skewX(-7deg); }
+  32% { opacity: 1; transform: scale(1) skewX(-7deg); }
+  72% { opacity: 1; transform: scale(1) skewX(-7deg); }
+  100% { opacity: 0; transform: translateY(-34px) scale(0.92) skewX(-7deg); }
 }
 
 /* low HP number chrome (M4) */
