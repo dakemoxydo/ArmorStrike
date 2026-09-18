@@ -17,7 +17,7 @@ export default function HudRadar({ mapRef, enemiesAlive }: HudRadarProps) {
       <span className="panel-inset" aria-hidden />
       <div className="mb-2 flex items-center justify-between px-1">
         <span className="hud-label flex items-center gap-1.5"><Radio size={12} aria-hidden /> РАДАР</span>
-        <span className="hud-label is-plain text-cyan-300/90">БОЙ</span>
+        <span className="hud-label is-plain text-amber-400">БОЙ</span>
       </div>
       <div className="minimap-frame">
         {/* role="img" висит на самом канвасе, а не на панели: иначе скринридер

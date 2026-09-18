@@ -77,8 +77,8 @@ export default function HudWeapon({
           ? ' is-empty'
           : '';
   const iconClass = isIsida
-    ? 'text-emerald-300'
-    : isFlame ? 'text-orange-300' : 'text-cyan-200';
+    ? 'text-emerald-400'
+    : isFlame ? 'text-orange-400' : 'text-amber-300';
 
   return (
     <div className="anim-up absolute bottom-[var(--hud-inset)] right-[var(--hud-inset)]" style={{ '--d': '0.3s' } as React.CSSProperties}>

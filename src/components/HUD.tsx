@@ -180,7 +180,7 @@ export default function HUD({ game, active, crosshair, damageNumbers, onToggleMu
                   </div>
                   <div className="team-score-line mt-0.5">
                     <span className="team-alpha">ALPHA {teamLeft}</span>
-                    <span className="team-score-sep">—</span>
+                    <span className="team-score-sep">:</span>
                     <span className="team-bravo">{teamRight} BRAVO</span>
                   </div>
                   {/* «Перетяжка» Alpha ↔ Bravo: ширина сторон — доля от суммы. */}

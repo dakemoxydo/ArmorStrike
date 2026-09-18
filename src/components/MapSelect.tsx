@@ -123,7 +123,7 @@ export default function MapSelect({
           style={{ '--d': '0.28s' } as React.CSSProperties}
         >
           <p className="prep-hint">
-            ← → смена карты · Enter — в бой · Esc — назад
+            ← → смена карты · Enter: в бой · Esc: назад
           </p>
           <button
             type="button"

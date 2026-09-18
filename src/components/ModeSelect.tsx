@@ -158,7 +158,7 @@ export default function ModeSelect({
 
         <div className="anim-up mt-8 flex flex-wrap items-center justify-between gap-4" style={{ '--d': '0.28s' } as React.CSSProperties}>
           <p className="prep-hint">
-            ← → смена режима · Enter — далее · Esc — назад
+            ← → смена режима · Enter: далее · Esc: назад
           </p>
           <button
             type="button"
@@ -169,7 +169,7 @@ export default function ModeSelect({
             data-autofocus
           >
             <Play size={18} className="bicon" aria-hidden />
-            <span>ДАЛЕЕ — КАРТА</span>
+            <span>ДАЛЕЕ · КАРТА</span>
           </button>
         </div>
       </div>

@@ -120,7 +120,7 @@ export default function GameOverScreen({
             aria-label={`Alpha ${teamLeft}, Bravo ${teamRight}`}
           >
             <span className="team-alpha">ALPHA {teamLeft}</span>
-            <span className="team-score-sep">—</span>
+            <span className="team-score-sep">:</span>
             <span className="team-bravo">{teamRight} BRAVO</span>
           </div>
         )}
@@ -133,7 +133,7 @@ export default function GameOverScreen({
         <div className="anim-up mt-8 grid grid-cols-2 gap-3 sm:grid-cols-5" style={{ '--d': '0.38s' } as React.CSSProperties}>
           <StatCard icon={<Trophy size={16} />} label="СЧЁТ XP" value={score} accent="text-amber-300" />
           <StatCard icon={<Skull size={16} />} label="ФРАГИ" value={kills} accent="text-red-300" />
-          <StatCard icon={<Target size={16} />} label="СМЕРТИ" value={deaths} accent="text-cyan-300" />
+          <StatCard icon={<Target size={16} />} label="СМЕРТИ" value={deaths} accent="text-slate-300" />
           <StatCard icon={<Flame size={16} />} label="ЛУЧШАЯ СЕРИЯ" value={bestStreak} accent="text-orange-300" />
           {/* K/D — на том же StatCard, а не отдельной разметкой: раньше он был
               единственной карточкой, собранной руками (S5). */}

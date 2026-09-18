@@ -1,15 +1,15 @@
 :root {
-  /* Core palette — ArmorStrike tactical HUD */
-  --glow: 46, 230, 192;
-  --glow-hex: #2ee6c0;
-  --accent: #2ee6c0;
-  --accent-soft: #7ef0d8;
+  /* Core palette — ArmorStrike Comic / Toon */
+  --glow: 245, 158, 11;
+  --glow-hex: #f59e0b;
+  --accent: #f59e0b;
+  --accent-soft: #fbbf24;
   --warn: #ffd24a;
   --warn-soft: #ffd27a;
-  --danger: #ff4d3d;
+  --danger: #ef4444;
   --bg-root: #04060b;
-  --text-muted: rgba(255, 255, 255, 0.62);
-  --text-faint: rgba(255, 255, 255, 0.55);
+  --text-muted: rgba(255, 255, 255, 0.72);
+  --text-faint: rgba(255, 255, 255, 0.58);
 
   /* Единый инсет HUD: все четыре панели (радар, лента, виталс, оружие)
      отступают от края экрана на одно и то же значение. Раньше жили четыре
@@ -34,14 +34,14 @@
      срезанный угол + чернильный контур + угловые акцентные скобки + верхний рейл.
      Всё рисуется псевдоэлементами и background-слоями без лишних DOM-узлов. */
   --panel-cut: 12px;
-  --panel-bg-top: rgba(13, 20, 29, 0.94);
-  --panel-bg-bottom: rgba(7, 12, 19, 0.97);
+  --panel-bg-top: rgba(18, 26, 38, 0.95);
+  --panel-bg-bottom: rgba(11, 16, 25, 0.98);
   --panel-line: #0b0e14;
   --panel-line-soft: rgba(11, 14, 20, 0.85);
-  --panel-bracket: rgba(var(--glow), 0.75);
-  --panel-hatch: rgba(255, 255, 255, 0.024);
-  --panel-rail: rgba(var(--glow), 0.65);
-  --panel-shadow: 0 5px 0 #0b0e14, 0 12px 32px rgba(0, 0, 0, 0.65);
+  --panel-bracket: rgba(var(--glow), 0.18);
+  --panel-hatch: rgba(255, 255, 255, 0.015);
+  --panel-rail: rgba(255, 255, 255, 0.12);
+  --panel-shadow: 0 5px 0 #0b0e14, 0 12px 28px rgba(0, 0, 0, 0.55);
 
   /* --- Геометрия (U19) ----------------------------------------------------
      Семь срезов (2/3/5/6/8/10/12) сведены к трём ступеням + круг. Скругление
@@ -58,21 +58,21 @@
      оттенок задаётся локально через `--glow-rgb` (`--glow-rgb: 255, 77, 61`),
      и тот же радиус подставляется как есть. */
   --glow-rgb: var(--glow);
-  --glow-r-xs: 6px;
-  --glow-r-sm: 12px;
-  --glow-r-md: 22px;
-  --glow-r-lg: 44px;
-  --glow-sm: 0 0 var(--glow-r-sm) rgba(var(--glow-rgb), 0.35);
-  --glow-md: 0 0 var(--glow-r-md) rgba(var(--glow-rgb), 0.5);
-  --glow-lg: 0 0 var(--glow-r-lg) rgba(var(--glow-rgb), 0.65);
+  --glow-r-xs: 2px;
+  --glow-r-sm: 4px;
+  --glow-r-md: 6px;
+  --glow-r-lg: 10px;
+  --glow-sm: 0 1px 0 rgba(255, 255, 255, 0.18);
+  --glow-md: 0 2px 0 #0b0e14;
+  --glow-lg: 0 4px 0 #0b0e14;
 
   /* --- Скримы оверлеев (U15) ---------------------------------------------
      Четыре поверхности, четыре константы. Больше размытых слоёв не заводить:
      `backdrop-filter` стоит кадров, см. Standard_UI_Input.md §8. */
-  --scrim-hud: rgba(4, 6, 11, 0.55);
-  --scrim-menu: rgba(4, 6, 11, 0.94);
-  --scrim-pause: rgba(3, 7, 12, 0.94);
-  --scrim-over: rgba(4, 6, 11, 0.85);
+  --scrim-hud: rgba(4, 6, 11, 0.45);
+  --scrim-menu: rgba(5, 9, 15, 0.94);
+  --scrim-pause: rgba(4, 7, 13, 0.94);
+  --scrim-over: rgba(5, 9, 15, 0.88);
 
   /* --- Движение ----------------------------------------------------------
      Одна кривая на роль вместо локальных `cubic-bezier` в каждом правиле. */
@@ -82,11 +82,11 @@
   --ease-enter: 0.65s cubic-bezier(0.22, 1, 0.36, 1);
 
   /* --- Teams -------------------------------------------------------------- */
-  --team-alpha: #6eb8ff;
-  --team-alpha-rgb: 59, 158, 255;
-  --team-bravo: #ff8a7a;
-  --team-bravo-rgb: 255, 77, 61;
+  --team-alpha: #38bdf8;
+  --team-alpha-rgb: 56, 189, 248;
+  --team-bravo: #f87171;
+  --team-bravo-rgb: 248, 113, 113;
 
   /* --- Bar chrome --------------------------------------------------------- */
-  --bar-track: rgba(255, 255, 255, 0.07);
+  --bar-track: rgba(255, 255, 255, 0.06);
 }
