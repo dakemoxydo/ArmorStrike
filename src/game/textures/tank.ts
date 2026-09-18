@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { cachedTexture, makeCanvas, toTexture, noise } from './shared';
+import { cachedTexture, makeCanvas, toTexture } from './shared';
 
 /** Shared track map — high-detail Tanki Online style tread pattern (1 link per 512px tile). */
 export function trackTexture(): THREE.CanvasTexture {
@@ -176,29 +176,115 @@ export function trackTexture(): THREE.CanvasTexture {
     // Lower chevron pair
     drawChevronBar(310, 380);
 
-    // 8. Surface steel noise / micro-grit
-    noise(ctx, S, 4000, 0.04);
+    // 8. Crisp edge contrast (clean comic tracks without dirty grit noise)
     return toTexture(c, 1);
   });
 }
 
-/** Camo is keyed by its palette; same hull skin rebuilds reuse one texture. */
+/** Camo is keyed by its palette; crisp comic panel layout with ink seams and rivets. */
 export function camoTexture(base: string, dark: string, light: string): THREE.CanvasTexture {
   return cachedTexture(`camo:${base}:${dark}:${light}`, () => {
     const S = 256;
     const { c, ctx } = makeCanvas(S);
+
+    // 1. Clean, vibrant base coat
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, S, S);
-    for (let i = 0; i < 26; i++) {
-      ctx.fillStyle = Math.random() > 0.5 ? dark : light;
-      ctx.globalAlpha = 0.5 + Math.random() * 0.3;
+
+    // 2. Bold geometric comic camouflage panels
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.moveTo(0, 40);
+    ctx.lineTo(90, 0);
+    ctx.lineTo(160, 50);
+    ctx.lineTo(80, 120);
+    ctx.lineTo(0, 90);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(140, 160);
+    ctx.lineTo(256, 110);
+    ctx.lineTo(256, 210);
+    ctx.lineTo(190, 256);
+    ctx.lineTo(110, 230);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = light;
+    ctx.beginPath();
+    ctx.moveTo(180, 0);
+    ctx.lineTo(256, 0);
+    ctx.lineTo(256, 70);
+    ctx.lineTo(150, 60);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(0, 160);
+    ctx.lineTo(80, 180);
+    ctx.lineTo(60, 256);
+    ctx.lineTo(0, 256);
+    ctx.closePath();
+    ctx.fill();
+
+    // 3. Crisp comic ink panel seams
+    ctx.strokeStyle = '#10141a';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'square';
+    ctx.beginPath();
+    ctx.moveTo(0, 128);
+    ctx.lineTo(256, 128);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(128, 0);
+    ctx.lineTo(128, 256);
+    ctx.stroke();
+
+    // 4. Subtle inner plate highlight along panel borders (comic cell edge)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(2, 2);
+    ctx.lineTo(126, 2);
+    ctx.lineTo(126, 126);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(130, 130);
+    ctx.lineTo(254, 130);
+    ctx.lineTo(254, 254);
+    ctx.stroke();
+
+    // 5. Stylized comic corner rivets
+    const drawRivet = (x: number, y: number) => {
+      ctx.fillStyle = '#0a0d12';
       ctx.beginPath();
-      const x = Math.random() * S, y = Math.random() * S;
-      ctx.ellipse(x, y, 16 + Math.random() * 40, 10 + Math.random() * 26, Math.random() * Math.PI, 0, Math.PI * 2);
+      ctx.arc(x, y + 1, 4, 0, Math.PI * 2);
       ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    noise(ctx, S, 1400, 0.07);
+
+      ctx.fillStyle = '#4a5568';
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x - 1, y - 1, 1, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    drawRivet(16, 16);
+    drawRivet(112, 16);
+    drawRivet(16, 112);
+    drawRivet(112, 112);
+
+    drawRivet(144, 144);
+    drawRivet(240, 144);
+    drawRivet(144, 240);
+    drawRivet(240, 240);
+
     return toTexture(c, 1);
   });
 }

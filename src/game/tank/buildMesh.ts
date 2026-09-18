@@ -4,6 +4,7 @@ import type { TankStyle } from '../../core/types';
 import type { TankVisual } from './types';
 import { TankFactory } from './TankFactory';
 import { markShared } from '../resources/sharedResources';
+import { attachComicInkOutline } from './comicInkOutline';
 
 /**
  * Купол респавн-неуязвимости (п.15). Геометрия не зависит от корпуса/башни →
@@ -74,8 +75,11 @@ export async function buildTankMesh(
   shield.visible = false;
   group.add(shield);
 
+  // Комиксный чернильный контур (Borderlands/Cel-Shaded стиль)
+  attachComicInkOutline(group);
+
   group.traverse((o) => {
-    if (o instanceof THREE.Mesh && o !== ring && o !== shield) {
+    if (o instanceof THREE.Mesh && o !== ring && o !== shield && o.name !== 'comicInkMesh') {
       o.castShadow = true;
       o.receiveShadow = true;
     }

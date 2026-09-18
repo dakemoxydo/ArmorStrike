@@ -1,7 +1,7 @@
-// ===== Пресеты атмосферы по картам: небо / туман / солнце / hemisphere / rim / экспозиция =====
-// city = legacy cold night (нулевой визуальный регресс);
-// factory = натриевая смога-ночь (промзона: амбер-дымка, оранжевый rim);
-// village = тёплый golden-hour dusk.
+// ===== Пресеты атмосферы по картам (Стилизованный Low-Poly / Cel-Shaded / Комикс): =====
+// city = Comic Metropolis Noon (яркий лазурный полдень, контрастное солнце, чистые тени);
+// factory = Comic Industrial Sunset (графичный янтарный закат, тёплая медь, глубокие тени);
+// village = Comic Pastoral Daylight (свежий солнечный день, сочное золотое освещение).
 import type { MapId } from './maps/mapCatalog';
 
 export interface AtmospherePreset {
@@ -26,51 +26,46 @@ export interface AtmospherePreset {
   skySunGlow: [number, number, number];
 }
 
-const NIGHT: AtmospherePreset = {
-  background: 0x060a12,
-  fogColor: 0x0a0f18, fogNear: 130, fogFar: 440,
-  exposure: 0.92,
-  hemiSky: 0x8fb9d8, hemiGround: 0x0a0e14, hemiIntensity: 0.42,
-  sunColor: 0xffe6c0, sunIntensity: 1.8, sunPosition: [116, 156, 64],
-  rimColor: 0x2ee6c0, rimIntensity: 0.4,
-  skyZenith: [0.03, 0.05, 0.09], skyHorizon: [0.10, 0.17, 0.26], skyCloud: [0.16, 0.22, 0.30],
-  skySunDir: [0.5, 0.6, 0.4],
-  skySunDisc: [1.0, 0.85, 0.6], skySunGlow: [0.5, 0.6, 0.8],
+const COMIC_CITY: AtmospherePreset = {
+  background: 0x4a8ebb,
+  fogColor: 0x6aaed6, fogNear: 150, fogFar: 550,
+  exposure: 1.15,
+  hemiSky: 0xbee0f8, hemiGround: 0x324456, hemiIntensity: 0.65,
+  sunColor: 0xfff4d6, sunIntensity: 2.4, sunPosition: [120, 180, 70],
+  rimColor: 0x60c8ff, rimIntensity: 0.55,
+  skyZenith: [0.18, 0.45, 0.85], skyHorizon: [0.65, 0.82, 0.96], skyCloud: [0.95, 0.98, 1.0],
+  skySunDir: [0.48, 0.72, 0.35],
+  skySunDisc: [1.0, 0.96, 0.85], skySunGlow: [0.8, 0.9, 1.0],
 };
 
-const DUSK: AtmospherePreset = {
-  background: 0x2a1c16,
-  fogColor: 0x6b4a34, fogNear: 118, fogFar: 460,
-  exposure: 1.0,
-  hemiSky: 0xffd9a8, hemiGround: 0x2a1c10, hemiIntensity: 0.52,
-  sunColor: 0xffb066, sunIntensity: 2.0, sunPosition: [185, 78, 118],
-  rimColor: 0xff9a4d, rimIntensity: 0.65,
-  skyZenith: [0.20, 0.15, 0.27], skyHorizon: [0.96, 0.55, 0.30], skyCloud: [0.82, 0.48, 0.38],
-  skySunDir: [0.75, 0.22, 0.48],
-  skySunDisc: [1.0, 0.78, 0.46], skySunGlow: [1.0, 0.55, 0.28],
+const COMIC_FACTORY: AtmospherePreset = {
+  background: 0x382216,
+  fogColor: 0x523522, fogNear: 130, fogFar: 500,
+  exposure: 1.18,
+  hemiSky: 0xffc892, hemiGround: 0x2c1e14, hemiIntensity: 0.62,
+  sunColor: 0xffa84d, sunIntensity: 2.6, sunPosition: [135, 140, 50],
+  rimColor: 0xff7b22, rimIntensity: 0.65,
+  skyZenith: [0.28, 0.22, 0.38], skyHorizon: [0.98, 0.60, 0.28], skyCloud: [0.95, 0.52, 0.35],
+  skySunDir: [0.55, 0.55, 0.35],
+  skySunDisc: [1.0, 0.85, 0.50], skySunGlow: [1.0, 0.60, 0.30],
 };
 
-/**
- * Промзона: та же ночь, но воздух «сварен» — плотнее туман, тёплая натриевая
- * дымка и оранжевый rim. Отличает Завод от холодного неона Города с первого
- * взгляда, не трогая ни один пресет City/Village.
- */
-const FACTORY: AtmospherePreset = {
-  background: 0x0d0b08,
-  fogColor: 0x1d1810, fogNear: 108, fogFar: 400,
-  exposure: 0.95,
-  hemiSky: 0xc0a077, hemiGround: 0x14100a, hemiIntensity: 0.5,
-  sunColor: 0xffd0a0, sunIntensity: 1.65, sunPosition: [128, 150, 44],
-  rimColor: 0xff8c30, rimIntensity: 0.52,
-  skyZenith: [0.05, 0.045, 0.035], skyHorizon: [0.26, 0.19, 0.11], skyCloud: [0.22, 0.17, 0.12],
-  skySunDir: [0.52, 0.6, 0.32],
-  skySunDisc: [1.0, 0.82, 0.55], skySunGlow: [0.85, 0.58, 0.3],
+const COMIC_VILLAGE: AtmospherePreset = {
+  background: 0x5288a8,
+  fogColor: 0x78a8be, fogNear: 140, fogFar: 520,
+  exposure: 1.20,
+  hemiSky: 0xd2ecf9, hemiGround: 0x3a4828, hemiIntensity: 0.68,
+  sunColor: 0xfff0c8, sunIntensity: 2.5, sunPosition: [160, 150, 90],
+  rimColor: 0xffc466, rimIntensity: 0.60,
+  skyZenith: [0.22, 0.48, 0.82], skyHorizon: [0.72, 0.86, 0.94], skyCloud: [0.96, 0.98, 1.0],
+  skySunDir: [0.65, 0.60, 0.42],
+  skySunDisc: [1.0, 0.94, 0.80], skySunGlow: [0.9, 0.85, 0.7],
 };
 
 export const ATMOSPHERES: Record<MapId, AtmospherePreset> = {
-  factory: FACTORY,
-  city: NIGHT,
-  village: DUSK,
+  factory: COMIC_FACTORY,
+  city: COMIC_CITY,
+  village: COMIC_VILLAGE,
 };
 
 export function getAtmosphere(mapId: MapId): AtmospherePreset {

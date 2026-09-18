@@ -42,6 +42,7 @@
 | [[Economy_Currency_And_Quests]] | Экономика (Кредиты CR), боевые выплаты, система квестов и покупка контейнеров | `matchRewards`, `questCatalog`, `RunState`, `QuestsModal` |
 | [[Cloud_Profiles_And_Auth]] | Профили игроков, Supabase Auth (username/email), гостевой режим и облачные сохранения | `RunState`, `AuthService`, `CloudSaveService`, `AuthModal`, `UserBadge` |
 | [[Multiplayer_Lobby_And_Rooms]] | Сетевой мультиплеер, браузер серверов, создание комнат, быстрая игра и репликация танков | `multiplayerService`, `RemotePlayerManager`, `NetworkSyncStage`, `ServerBrowserModal` |
+| [[Stylized_Art_Direction]] | Стилизованный Low-Poly / Cel-Shaded / Комикс арт-дирекшен: ступенчатый шейдинг, чернильная обводка, сочные текстуры, дневное солнце | `celShading.ts`, `comicInkOutline.ts`, `atmospherePresets.ts`, `textures/tank.ts` |
 
 **Removed-механики** (wave-era, удалены в P0) — надгробные доки в `../Archive/`: [[../Archive/Wave_System|Wave_System]], [[../Archive/Wave_Buffs|Wave_Buffs]]. Approved = только реализованное; история — в git.
 
@@ -61,6 +62,7 @@
 - [[../../Architecture/Standard_Resources|Standard Resources]] — memoized-фабрики текстур, `markShared`-владение, dispose
 - [[../../Architecture/Graphics_Presets_Matrix|Graphics Presets Matrix]] — матрица low/med/high: pixel ratio, тени, bloom, частицы
 - [[../../Architecture/Standard_Multiplayer|Standard Multiplayer]] — сетевая синхронизация, Supabase Realtime, Presence, RemotePlayerManager, интерполяция, RPC-комнаты
+- [[../../Architecture/Standard_Cel_Shaded_Rendering|Standard Cel-Shaded Rendering]] — комиксный конвейер: ступенчатое освещение, чернильный контур силуэтов, дневные атмосферы
 
 ## Жанр и петля
 
@@ -92,3 +94,5 @@
 | УВН башни и состояние тангажа ствола | `src/core/catalogData.ts` (`TURRETS`), `src/game/tank/components.ts` |
 | Сетевой сервис, комнаты и пакеты | `src/game/network/multiplayerService.ts`, `src/game/network/types.ts` |
 | Удалённые игроки и сетевая интерполяция | `src/game/network/RemotePlayerManager.ts`, `src/game/engine/stages/NetworkSyncStage.ts` |
+| Cel-Shading и чернильный контур силуэтов | `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts` |
+| Пресеты дневной комиксной атмосферы | `src/game/atmospherePresets.ts` |

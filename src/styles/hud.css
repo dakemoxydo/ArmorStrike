@@ -944,65 +944,97 @@
   top: 0;
   opacity: 0;
   font-family: 'Russo One', sans-serif;
-  font-size: 15px;
+  font-weight: 900;
+  font-style: italic;
+  font-size: 16px;
   line-height: 1;
   white-space: nowrap;
-  color: #eef6ff;
+  color: #ffffff;
   text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.9),
-    0 0 var(--glow-r-xs) rgba(0, 0, 0, 0.65);
+    -2px -2px 0 #0b0e14,
+    2px -2px 0 #0b0e14,
+    -2px 2px 0 #0b0e14,
+    2px 2px 0 #0b0e14,
+    0 2px 0 #0b0e14,
+    0 -2px 0 #0b0e14,
+    -2px 0 0 #0b0e14,
+    2px 0 0 #0b0e14,
+    0 3px 6px rgba(0, 0, 0, 0.9);
   will-change: transform, opacity;
 }
 .dmg-float.is-live {
   animation: dmg-float-rise 0.95s cubic-bezier(0.22, 0.85, 0.3, 1) forwards;
 }
 /* Мелкие тики (огнемёт/дуга) — меньше и живёт короче, чтобы не сливаться в кашу. */
-.dmg-float.is-small { font-size: 12px; color: rgba(238, 246, 255, 0.88); }
+.dmg-float.is-small { font-size: 13px; color: #f0f4fc; }
 .dmg-float.is-small.is-live { animation-duration: 0.62s; }
-/* Крит — оранжевый и крупнее обычного числа. */
+/* Крит — яркий огненно-жёлтый и крупнее обычного числа. */
 .dmg-float.is-crit {
-  font-size: 21px;
-  color: #ffab2e;
+  font-size: 24px;
+  color: #ffcc00;
   text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.9),
-    0 0 var(--glow-r-sm) rgba(255, 171, 46, 0.75);
+    -2px -2px 0 #0b0e14,
+    2px -2px 0 #0b0e14,
+    -2px 2px 0 #0b0e14,
+    2px 2px 0 #0b0e14,
+    0 2px 0 #0b0e14,
+    0 -2px 0 #0b0e14,
+    -2px 0 0 #0b0e14,
+    2px 0 0 #0b0e14,
+    0 0 var(--glow-r-sm) rgba(255, 204, 0, 0.85);
 }
-/* Добивающий — красный: число совпадает по цвету с хитмаркером убийства. */
+/* Добивающий — сочный красный: число совпадает по цвету с хитмаркером убийства. */
 .dmg-float.is-kill {
-  font-size: 23px;
-  color: var(--danger, #ff4d3d);
+  font-size: 26px;
+  color: #ff2d3c;
   text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.9),
-    0 0 var(--glow-r-sm) rgba(255, 77, 61, 0.8);
+    -2px -2px 0 #0b0e14,
+    2px -2px 0 #0b0e14,
+    -2px 2px 0 #0b0e14,
+    2px 2px 0 #0b0e14,
+    0 2px 0 #0b0e14,
+    0 -2px 0 #0b0e14,
+    -2px 0 0 #0b0e14,
+    2px 0 0 #0b0e14,
+    0 0 var(--glow-r-sm) rgba(255, 45, 60, 0.9);
 }
-/* Лечение — зелёное со знаком «+», крит лечения — голубое (как в Tanki). */
+/* Лечение — неоново-салатовое со знаком «+», крит лечения — сочный циан. */
 .dmg-float.is-heal {
-  color: #4fe08a;
+  color: #38ef7d;
   text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.9),
-    0 0 var(--glow-r-xs) rgba(79, 224, 138, 0.6);
+    -2px -2px 0 #0b0e14,
+    2px -2px 0 #0b0e14,
+    -2px 2px 0 #0b0e14,
+    2px 2px 0 #0b0e14,
+    0 0 var(--glow-r-xs) rgba(56, 239, 125, 0.7);
 }
 .dmg-float.is-crit-heal {
-  font-size: 21px;
-  color: #58b6ff;
+  font-size: 24px;
+  color: #00f2fe;
   text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.9),
-    0 0 var(--glow-r-sm) rgba(88, 182, 255, 0.7);
+    -2px -2px 0 #0b0e14,
+    2px -2px 0 #0b0e14,
+    -2px 2px 0 #0b0e14,
+    2px 2px 0 #0b0e14,
+    0 0 var(--glow-r-sm) rgba(0, 242, 254, 0.85);
 }
 /* Попадание в респавн-щит (п.15): вместо числа — слово-маркер. */
 .dmg-float.is-immunity {
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: var(--track-wide);
-  color: #8fffe8;
+  color: #5eead4;
   text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.9),
-    0 0 var(--glow-r-xs) rgba(46, 230, 192, 0.7);
+    -2px -2px 0 #0b0e14,
+    2px -2px 0 #0b0e14,
+    -2px 2px 0 #0b0e14,
+    2px 2px 0 #0b0e14,
+    0 0 var(--glow-r-xs) rgba(94, 234, 212, 0.8);
 }
 @keyframes dmg-float-rise {
-  0% { transform: translate(-50%, -50%) scale(0.72); opacity: 0; }
-  16% { transform: translate(-50%, -66%) scale(1.12); opacity: 1; }
-  38% { transform: translate(-50%, -84%) scale(1); opacity: 1; }
-  100% { transform: translate(-50%, -165%) scale(0.94); opacity: 0; }
+  0% { transform: translate(-50%, -40%) scale(0.65) skewX(-7deg); opacity: 0; }
+  16% { transform: translate(-50%, -68%) scale(1.25) skewX(-7deg); opacity: 1; }
+  36% { transform: translate(-50%, -84%) scale(1) skewX(-7deg); opacity: 1; }
+  100% { transform: translate(-50%, -170%) scale(0.92) skewX(-7deg); opacity: 0; }
 }
 /* Под prefers-reduced-motion: без подъёма и «пружинки» — только проявление. */
 @keyframes dmg-float-still {

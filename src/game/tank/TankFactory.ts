@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { HullId, TurretId } from '../../core/catalog';
 import type { TankStyle } from '../../core/types';
 import { camoTexture, trackTexture } from '../textures';
+import { applyCelShading } from '../shaders/celShading';
 import { buildHull } from './hull';
 import { buildTurret as buildTurretProcedural } from './turret';
 import { HULL_CONFIG, TURRET_CONFIG, HULL_TURRET_Y, MODELS_ENABLED } from './TankConfig';
@@ -41,32 +42,32 @@ function createStyleMaterials(style: TankStyle): {
   trackMat: THREE.MeshStandardMaterial;
 } {
   const bodyMats: THREE.MeshStandardMaterial[] = [];
-  const bodyMat = new THREE.MeshStandardMaterial({
+  const bodyMat = applyCelShading(new THREE.MeshStandardMaterial({
     map: camoTexture(style.body, style.dark, style.light),
     roughness: 0.5,
     metalness: 0.45,
     emissive: 0x000000,
-  });
+  }));
   bodyMats.push(bodyMat);
 
-  const turretMat = bodyMat.clone();
+  const turretMat = applyCelShading(bodyMat.clone());
   turretMat.map = camoTexture(style.light, style.body, style.dark);
   bodyMats.push(turretMat);
 
-  const metalMat = new THREE.MeshStandardMaterial({
+  const metalMat = applyCelShading(new THREE.MeshStandardMaterial({
     color: style.accent,
     roughness: 0.35,
     metalness: 0.75,
-  });
+  }));
   bodyMats.push(metalMat);
 
   // Recessed detail (grilles, louvers, rubber, inner track well). Stays dark on
   // every style, so it reads as shadow between the accent parts.
-  const darkMat = new THREE.MeshStandardMaterial({
+  const darkMat = applyCelShading(new THREE.MeshStandardMaterial({
     color: 0x161a20,
     roughness: 0.85,
     metalness: 0.35,
-  });
+  }));
   bodyMats.push(darkMat);
 
   const lampMat = new THREE.MeshBasicMaterial({ color: style.glow });
@@ -84,17 +85,17 @@ function createStyleMaterials(style: TankStyle): {
   trackRightTex.wrapT = THREE.RepeatWrapping;
   trackRightTex.needsUpdate = true;
 
-  const trackLeftMat = new THREE.MeshStandardMaterial({
+  const trackLeftMat = applyCelShading(new THREE.MeshStandardMaterial({
     map: trackLeftTex,
     roughness: 0.85,
     metalness: 0.35,
-  });
+  }));
 
-  const trackRightMat = new THREE.MeshStandardMaterial({
+  const trackRightMat = applyCelShading(new THREE.MeshStandardMaterial({
     map: trackRightTex,
     roughness: 0.85,
     metalness: 0.35,
-  });
+  }));
 
   return {
     bodyMats,
