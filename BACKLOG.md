@@ -1,10 +1,11 @@
 # ArmorStrike — Backlog
 
 Пул задач: открытые + по одной строке на каждую закрытую. Длинные отчёты здесь
-не хранятся — детали закрытых итераций в git-истории и `Docs/`. Категории A–K:
+не хранятся — детали закрытых итераций в git-истории и `Docs/`. Категории A–L:
 - [A] Bugs & Stability · [B] Performance · [C] Core Gameplay · [D] Enemy AI
 - [E] Rendering & Beauty · [F] Physics & Feel · [G] Audio · [H] UI / UX / HUD
 - [I] Levels & Content · [J] Code Quality · [K] Accessibility & Polish
+- [L] Infrastructure, Backend & Cloud
 
 Новая задача — буква + номер; закрытая остаётся одной строкой «[x] что — итог/ссылка».
 
@@ -128,3 +129,10 @@
 - [ ] K3: Decide desktop-only vs touch controls (2026-09-09 audit: zero touch handling in src — `PlayerController` is WASD+mouse only). Either add touch controls or record «desktop-only» in GDD + README.
 - [x] K5: aria-hidden — фикс 2026-09-15: все декоративные иконки (GameOverScreen Wrench, MainMenu Play/Shuffle, MapSelect Play, HudFeed VolumeX/Volume2) скрыты; aria-label-див скорборда получил `role="img"`; контракт §7 расширен пинами в `uiUxPresentation.test.ts` (глобальный инвариант «bicon ⇒ aria-hidden» + точечные).
 - [x] K6: CountUp — фикс 2026-09-15: `prefers-reduced-motion: reduce` → сразу финальное число (как миникарта/CSS); source-пин в `uiUxPresentation.test.ts`.
+
+## [L] INFRASTRUCTURE, BACKEND & CLOUD
+- [x] L1: Деплой на Vercel (CI/CD ветки main, Vite SPA) + подключение Supabase (Postgres, Auth, RLS, project tukylkqpvzltzqrnfutc) + локальные Agent Skills и MCP-мост Antigravity.
+- [ ] L2: Облачные профили игроков (Supabase Auth, таблица `profiles`, синхронизация прогресса с `RunState`).
+- [ ] L3: Глобальная таблица лидеров (таблица `leaderboard`, авто-запись рекордов из `GameOverScreen`, лидерборд в UI).
+- [ ] L4: Сетевой реалтайм мультиплеер (архитектура комнат/сокетов, лобби, синхронизация танков).
+

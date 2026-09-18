@@ -23,7 +23,8 @@
 
 **ArmorStrike** — 3D tank arena (classic match modes + bots) на WebGL.
 
-**Stack:** React 19 · TypeScript · Three.js · Vite · Tailwind 4 · Vitest.
+**Stack:** React 19 · TypeScript · Three.js · Vite · Tailwind 4 · Vitest.  
+**Hosting & BaaS:** Vercel (production SPA CI/CD) · Supabase (PostgreSQL + Auth + RLS + MCP).
 
 ## Layering
 
@@ -154,10 +155,12 @@ Weapons/combat depend on ports, not concrete `Effects`/`AudioFX`/`Arena` (testab
 UI-контракт: [Standard UI & Input](Standard_UI_Input.md).  
 Match rules: [Standard Match](Standard_Match.md).
 
-### 6. Run state
+### 6. Run state & Persistence
 
-`RunState`: mode, pause, score, kills, matchTime, loadout.  
-Persistence: `localStorage` keys `as2_loadout`, `as2_quality`.
+`RunState`: mode, pause, score, kills, matchTime, loadout, credits, starter crates, quests.  
+Persistence layers:
+- **Client-side (активный):** `localStorage` (ключи `as2_loadout`, `as2_quality`, `as2_credits`, `as2_muted`, `as2_crosshair`, `as2_dmg_num`).
+- **Cloud BaaS (подключён):** Supabase PostgreSQL (`project_ref=tukylkqpvzltzqrnfutc`, EU Frankfurt) для синхронизации аккаунтов, профилей и лидербордов.
 
 ### 7. Match modes (not app modes)
 
@@ -202,12 +205,12 @@ Use `grep`/`read` to trace call sites before structural refactors.
 - Vitest in `src/__tests__/`.
 - Commands: `npm test`, `npm run typecheck`, `npm run lint`.
 
-## Non-goals (current build)
+## Roadmap & Infrastructure boundaries
 
-- Multiplayer / netcode  
-- Separate armor DR formula (HP-only “armor”)  
-- Inventory / currency meta  
-- Projectile pool for railgun/flame  
+- Мультиплеер в реальном времени (в текущем билде локальный матч с ботами; сетевой код запланирован на базе сокетов/комнат).
+- Облачные сохранения и аккаунты (инфраструктура Supabase подключена, синхронизация локального `RunState` запланирована).
+- HP-only «броня» (без отдельной сложной формулы DR).
+- Пул снарядов для рельсы/огнемёта (оставлены лучевой свип и сектор частиц).
 
 ## Related GDD
 

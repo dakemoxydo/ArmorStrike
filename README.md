@@ -20,6 +20,14 @@ Windows: double-click `start.bat` to launch the game in your browser. If the dev
 
 **Deploy note:** `dist/index.html` is self-contained for app code, but self-hosted fonts live under `dist/fonts/`. Serve the whole `dist/` folder (not only the HTML file). No runtime requests leave the origin (fully offline-capable). Tank hulls render procedurally; the GLB pipeline is disabled (`MODELS_ENABLED = false` in `src/game/tank/TankConfig.ts`).
 
+### Deployment & Cloud Infrastructure
+
+- **Frontend Hosting & CI/CD:** [Vercel](https://vercel.com) — автоматический деплой при пуше в `main`. Framework Preset: `Vite`, Output: `dist`.
+- **Database & Cloud Backend:** [Supabase](https://supabase.com) (PostgreSQL, Auth, Row-Level Security, project `tukylkqpvzltzqrnfutc`, регион EU Frankfurt). Готово к подключению облачных профилей, таблицы лидеров и мультиплеерных комнат.
+- **Agent Tooling & Protocols:**
+  - Supabase MCP Server (`mcp_config.json`, remote SSE эндпоинт Supabase Management API).
+  - Supabase Agent Skills (`supabase` и `supabase-postgres-best-practices` в `.agents/skills/`).
+
 **Subpath deploys** (e.g. `https://example.com/game/`) need no code changes — pass the base at build time:
 
 ```bash

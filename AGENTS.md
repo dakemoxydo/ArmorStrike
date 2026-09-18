@@ -24,6 +24,11 @@ When starting a task or feature implementation session:
 - `npm run census` — draw-call census (`scripts/draw-call-census.ts`).
 - `npm run map-plan [mapId]` — map plan report: collider density, zones, spawn points (`scripts/map-plan.ts` → `screenshots/<mapId>-plan.html`).
 - `npm run preview:models` — procedural hull/turret previews via headless CPU render (`scripts/hull-preview.ts` → `screenshots/hull-preview/*.png`).
+- **Cloud & Agent Integrations:**
+  - **Vercel:** авто-деплой веб-клиента при пуше в `main` (Vite SPA, папка `dist/`).
+  - **Supabase:** PostgreSQL + Auth + RLS (`tukylkqpvzltzqrnfutc`, EU Frankfurt).
+  - **Supabase MCP Server:** удалённый протокол инструментов MCP в `mcp_config.json`.
+  - **Supabase Agent Skills:** локальные скиллы агента в `.agents/skills/` (`supabase`, `supabase-postgres-best-practices`).
 
 ### Environment & Server Guards
 - **Dev-server host:** `vite.config.ts` pins `server.host = '127.0.0.1'`. Windows resolves `localhost` to IPv6 `::1` only (breaking browser loopback). Do not remove `127.0.0.1`.
@@ -82,6 +87,8 @@ NEVER invent content not in code.
 - Language: GDD/Architecture docs in **Russian**; identifiers, APIs, commit messages in **English**; user-facing UI strings in **Russian** (the game is localized). Code comments: Russian is the established convention in `src/` — keep new comments consistent with their file; do not mass-translate. Respond in the user's language.
 
 ## 7. Stack
-
+ 
 - React 19 + Three.js + собственная 2D-физика (AABB-коллайдеры, `src/game/engine/physics.ts` — без внешнего физического движка), Vite, TypeScript, Tailwind CSS 4, Vitest, ESLint.
 - Node `^20.19.0 || >=22.12.0`. Extras: lucide-react.
+- Хостинг / Деплой: Vercel (production SPA).
+- Облачный бэкенд: Supabase (PostgreSQL, Auth, RLS, Storage, Realtime, MCP-мост).
