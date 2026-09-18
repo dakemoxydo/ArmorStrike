@@ -15,6 +15,7 @@ screenshots/
 
 # Agent / IDE local configs (machine-specific paths)
 .agents/
+skills-lock.json
 .workbuddy-ai/
 .kilocode/
 .qwen/
