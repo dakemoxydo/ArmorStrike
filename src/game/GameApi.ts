@@ -13,6 +13,8 @@ import type {
   MinimapStatic,
 } from './types';
 
+import type { QuestProgress } from './economy/questCatalog';
+
 /**
  * Контракт, на который опираются React-компоненты и хуки.
  * Concrete `Game` реализует этот интерфейс; UI не импортирует класс и не видит `sim`.
@@ -22,6 +24,16 @@ export interface GameApi {
   readonly currentTurret: TurretId;
   readonly currentMapId: MapId;
   readonly currentMatchMode: MatchModeId;
+  readonly unlockedHulls: readonly HullId[];
+  readonly unlockedTurrets: readonly TurretId[];
+  readonly starterPackClaimed: boolean;
+  readonly credits: number;
+  readonly quests: readonly QuestProgress[];
+
+  claimStarterPack(hullId: HullId, turretId: TurretId): Promise<void>;
+  claimQuest(questId: string): number;
+  purchaseCrate(type: 'hull' | 'turret', chosenId?: HullId | TurretId): boolean;
+  purchaseDirectUnlock(id: HullId | TurretId): boolean;
 
   addListener(fn: (e: GameEvent) => void): void;
   removeListener(fn: (e: GameEvent) => void): void;

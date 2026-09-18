@@ -27,6 +27,11 @@ export class GarageBinding {
 
   async setSelection(hullId: HullId, turretId: TurretId) {
     const { sim, previewController, emit } = this.d;
+    if (sim.run.starterPackClaimed) {
+      if (!sim.run.isHullUnlocked(hullId) || !sim.run.isTurretUnlocked(turretId)) {
+        throw new Error(`Cannot select locked loadout: ${hullId}, ${turretId}`);
+      }
+    }
     const seq = ++this.seq;
     // Rebuild the preview FIRST, commit only on success: `run.currentHull` /
     // `currentTurret` (and the persisted loadout) must never point at a hull
@@ -40,6 +45,14 @@ export class GarageBinding {
     sim.run.currentTurret = turretId;
     sim.audio.click();
     sim.run.save();
+    emit({ type: 'garageChanged' });
+  }
+
+  async claimStarterPack(hullId: HullId, turretId: TurretId) {
+    const { sim, previewController, emit } = this.d;
+    sim.run.claimStarterPack(hullId, turretId);
+    await previewController.rebuild(hullId, turretId);
+    sim.audio.click();
     emit({ type: 'garageChanged' });
   }
 }

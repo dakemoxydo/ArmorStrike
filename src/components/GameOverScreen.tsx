@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { ArrowLeft, Clock3, Flame, Layers, RefreshCcw, Skull, Target, Trophy, Users, Wrench } from 'lucide-react';
+import { ArrowLeft, Clock3, Coins, Flame, Layers, RefreshCcw, Skull, Target, Trophy, Users, Wrench } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { MatchEndReason, MatchModeId, TeamId } from '../game/types';
+import type { MatchRewards } from '../game/economy/matchRewards';
 import {
   formatKd,
   formatMatchClock,
@@ -23,6 +24,8 @@ interface GameOverScreenProps {
   matchTimeSec: number;
   teamKills: { alpha: number; bravo: number };
   teamScore: { alpha: number; bravo: number };
+  rewards?: MatchRewards;
+  onQuests?: () => void;
   /** Same mode + last map, skip ModeSelect. */
   onRematch: () => void;
   /** Open ModeSelect (change mode / map). */
@@ -58,7 +61,7 @@ function CountUp({ value, duration = 1300 }: { value: number; duration?: number 
 
 export default function GameOverScreen({
   score, kills, deaths, bestStreak, playerWon, winnerName, winnerTeam, reason, mode,
-  matchTimeSec, teamKills, teamScore,
+  matchTimeSec, teamKills, teamScore, rewards, onQuests,
   onRematch, onChangeMode, onGarage, onMenu,
 }: GameOverScreenProps) {
   const trapRef = useFocusTrap(true);
@@ -137,6 +140,50 @@ export default function GameOverScreen({
           <StatCard icon={<Layers size={16} />} label="K/D" value={formatKd(kills, deaths)} accent="text-emerald-300" />
         </div>
 
+        {rewards && (
+          <div
+            className="anim-up mt-6 w-full max-w-xl hud-panel p-4 bg-amber-500/10 border border-amber-500/30 text-left"
+            style={{ '--d': '0.42s' } as React.CSSProperties}
+          >
+            <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-2">
+              <div className="flex items-center gap-2">
+                <Coins size={18} className="text-amber-400" aria-hidden />
+                <span className="font-display text-sm tracking-wider text-amber-200">НАГРАДА ЗА БОЙ</span>
+              </div>
+              <div className="font-display text-xl text-amber-300">
+                +{rewards.total} <span className="text-xs text-amber-400/80">CR</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px]">
+              <div className="cut-chip bg-black/30 p-2 border border-white/10 text-center">
+                <div className="text-white/60">Участие</div>
+                <div className="font-display text-amber-300 mt-0.5">+{rewards.base}</div>
+              </div>
+              <div className="cut-chip bg-black/30 p-2 border border-white/10 text-center">
+                <div className="text-white/60">Фраги ({kills})</div>
+                <div className="font-display text-amber-300 mt-0.5">+{rewards.kills}</div>
+              </div>
+              <div className="cut-chip bg-black/30 p-2 border border-white/10 text-center">
+                <div className="text-white/60">Счёт XP</div>
+                <div className="font-display text-amber-300 mt-0.5">+{rewards.score}</div>
+              </div>
+              <div className="cut-chip bg-black/30 p-2 border border-white/10 text-center">
+                <div className="text-white/60">
+                  {playerWon ? 'Победа' : 'Исход'}
+                </div>
+                <div className="font-display text-amber-300 mt-0.5">
+                  +{rewards.win}
+                </div>
+              </div>
+              <div className="cut-chip bg-black/30 p-2 border border-white/10 text-center">
+                <div className="text-white/60">Серия ({bestStreak})</div>
+                <div className="font-display text-amber-300 mt-0.5">+{rewards.streak}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <button type="button" onClick={onRematch} className="btn-game btn-primary px-10 py-4 text-base">
             <RefreshCcw size={19} className="bicon-spin" aria-hidden />
@@ -146,6 +193,12 @@ export default function GameOverScreen({
             <Layers size={17} className="bicon" aria-hidden />
             <span>РЕЖИМ / КАРТА</span>
           </button>
+          {onQuests && (
+            <button type="button" onClick={onQuests} className="btn-game btn-ghost px-7 py-3.5 text-sm">
+              <Trophy size={17} className="bicon text-amber-400" aria-hidden />
+              <span>ЗАДАЧИ</span>
+            </button>
+          )}
           <button type="button" onClick={onGarage} className="btn-game btn-ghost px-7 py-3.5 text-sm">
             <Wrench size={17} className="bicon" aria-hidden />
             <span>ГАРАЖ</span>

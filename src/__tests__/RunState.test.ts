@@ -60,4 +60,81 @@ describe('RunState', () => {
     expect(r.currentHull).toBe('hunter');
     expect(r.currentTurret).toBe('railgun');
   });
+
+  it('новый профиль стартует с нераспакованным комплектом и пустым инвентарём', () => {
+    const r = new RunState();
+    expect(r.starterPackClaimed).toBe(false);
+    expect(r.unlockedHulls).toEqual([]);
+    expect(r.unlockedTurrets).toEqual([]);
+    expect(r.isHullUnlocked('viking')).toBe(false);
+    expect(r.isTurretUnlocked('cannon')).toBe(false);
+  });
+
+  it('claimStarterPack открывает выбранные детали, устанавливает loadout и сохраняет', () => {
+    const r = new RunState();
+    r.claimStarterPack('viking', 'cannon');
+
+    expect(r.starterPackClaimed).toBe(true);
+    expect(r.currentHull).toBe('viking');
+    expect(r.currentTurret).toBe('cannon');
+    expect(r.unlockedHulls).toEqual(['viking']);
+    expect(r.unlockedTurrets).toEqual(['cannon']);
+    expect(r.isHullUnlocked('viking')).toBe(true);
+    expect(r.isHullUnlocked('hunter')).toBe(false);
+    expect(r.isTurretUnlocked('cannon')).toBe(true);
+    expect(r.isTurretUnlocked('railgun')).toBe(false);
+
+    // Восстановление при новой загрузке
+    const loaded = new RunState();
+    expect(loaded.starterPackClaimed).toBe(true);
+    expect(loaded.currentHull).toBe('viking');
+    expect(loaded.currentTurret).toBe('cannon');
+    expect(loaded.isHullUnlocked('viking')).toBe(true);
+    expect(loaded.isTurretUnlocked('cannon')).toBe(true);
+  });
+
+  it('claimStarterPack отклоняет невалидные id', () => {
+    const r = new RunState();
+    expect(() => {
+      // @ts-expect-error test invalid hull id
+      r.claimStarterPack('invalid_hull', 'cannon');
+    }).toThrow(/Invalid starter pack/);
+  });
+
+  it('управляет балансом кредитов и защищает от списания в минус', () => {
+    const r = new RunState();
+    expect(r.credits).toBe(0);
+
+    r.addCredits(500);
+    expect(r.credits).toBe(500);
+
+    // Успешная покупка
+    const ok = r.spendCredits(300);
+    expect(ok).toBe(true);
+    expect(r.credits).toBe(200);
+
+    // Недостаточно средств
+    const fail = r.spendCredits(300);
+    expect(fail).toBe(false);
+    expect(r.credits).toBe(200);
+
+    // Проверка сохранения баланса
+    const loaded = new RunState();
+    expect(loaded.credits).toBe(200);
+  });
+
+  it('claimQuest начисляет награду и ротирует задачу', () => {
+    const r = new RunState();
+    // Берём первый квест и искусственно завершаем его
+    const firstQuest = r.quests[0];
+    firstQuest.current = firstQuest.target;
+
+    const reward = r.claimQuest(firstQuest.id);
+    expect(reward).toBeGreaterThan(0);
+    expect(r.credits).toBe(reward);
+
+    // Слот заменился на новый квест с нулевым прогрессом
+    expect(r.quests[0].current).toBe(0);
+    expect(r.quests[0].claimed).toBe(false);
+  });
 });

@@ -1,27 +1,38 @@
 // ===== ГАРАЖ: сборка танка из корпуса и башни с 3D предпросмотром =====
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowLeft, HardDrive, MoveUp,
-  Play, Shield, Target,
+  ArrowLeft, Coins, HardDrive, Lock, MoveUp,
+  PackageOpen, Play, Shield, Target, Trophy,
 } from 'lucide-react';
 import { HULLS, TURRETS, WEAPON_TUNING } from '../core/catalog';
-import type { HullId, TurretId } from '../core/catalog';
+import type { HullDef, HullId, TurretDef, TurretId } from '../core/catalog';
 import type { GameApi } from '../game/GameApi';
 import type { GameEvent } from '../game/types';
 import HullCard from './HullCard';
 import TurretCard from './TurretCard';
+import CrateOpeningModal from './CrateOpeningModal';
+import DirectUnlockModal from './DirectUnlockModal';
 
 interface GarageProps {
   game: GameApi | null;
   onStart: () => void;
   onBack: () => void;
+  onQuests?: () => void;
+  claimableQuestsCount?: number;
 }
 
-export default function Garage({ game, onStart, onBack }: GarageProps) {
+export default function Garage({
+  game, onStart, onBack, onQuests, claimableQuestsCount = 0,
+}: GarageProps) {
   const [activeTab, setActiveTab] = useState<'hulls' | 'turrets'>('hulls');
   /** Local selection mirrors GameApi so UI re-renders without remounting the grid. */
   const [selectedHullId, setSelectedHullId] = useState<HullId>(() => game?.currentHull ?? 'hunter');
   const [selectedTurretId, setSelectedTurretId] = useState<TurretId>(() => game?.currentTurret ?? 'railgun');
+  const [unlockedHulls, setUnlockedHulls] = useState<readonly HullId[]>(() => game?.unlockedHulls ?? []);
+  const [unlockedTurrets, setUnlockedTurrets] = useState<readonly TurretId[]>(() => game?.unlockedTurrets ?? []);
+  const [credits, setCredits] = useState<number>(() => game?.credits ?? 0);
+  const [directUnlockItems, setDirectUnlockItems] = useState<{ items: readonly (HullDef | TurretDef)[]; isHull: boolean } | null>(null);
+  const [crateModalData, setCrateModalData] = useState<{ type: 'hull' | 'turret'; options: readonly (HullId | TurretId)[] } | null>(null);
   /** Peek-осмотр: док скрыт, пока игрок вращает танк (drag). */
   const [peeking, setPeeking] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -31,6 +42,9 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
     if (!game) return;
     setSelectedHullId(game.currentHull);
     setSelectedTurretId(game.currentTurret);
+    setUnlockedHulls(game.unlockedHulls ?? []);
+    setUnlockedTurrets(game.unlockedTurrets ?? []);
+    setCredits(game.credits ?? 0);
   }, [game]);
 
   // Peek: GarageInput включает осмотр на drag и выключает на pointerup.
@@ -43,6 +57,9 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
       if (e.type === 'garageChanged') {
         setSelectedHullId(game.currentHull);
         setSelectedTurretId(game.currentTurret);
+        setUnlockedHulls(game.unlockedHulls ?? []);
+        setUnlockedTurrets(game.unlockedTurrets ?? []);
+        setCredits(game.credits ?? 0);
       }
     };
     game.addListener(onEvent);
@@ -102,6 +119,7 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
 
   const selectHull = (id: HullId) => {
     if (!game) return;
+    if (unlockedHulls.length > 0 && !unlockedHulls.includes(id)) return;
     setSelectedHullId(id);
     // Revert the optimistic pick when the preview rebuild fails — the
     // committed loadout stayed at the previous hull (see GarageBinding).
@@ -112,10 +130,67 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
 
   const selectTurret = (id: TurretId) => {
     if (!game) return;
+    if (unlockedTurrets.length > 0 && !unlockedTurrets.includes(id)) return;
     setSelectedTurretId(id);
     game.setGarageSelection(selectedHullId, id).catch(() => {
       setSelectedTurretId((cur) => (cur === id ? game.currentTurret : cur));
     });
+  };
+
+  const lockedHulls = Object.keys(HULLS).filter((h) => !unlockedHulls.includes(h as HullId)) as HullId[];
+  const lockedTurrets = Object.keys(TURRETS).filter((t) => !unlockedTurrets.includes(t as TurretId)) as TurretId[];
+  const hasLockedItems = activeTab === 'hulls' ? lockedHulls.length > 0 : lockedTurrets.length > 0;
+
+  const openCrate = () => {
+    if (!game || credits < 600 || !hasLockedItems) return;
+    const pool = activeTab === 'hulls' ? lockedHulls : lockedTurrets;
+    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    const candidates = shuffled.slice(0, 3);
+    setCrateModalData({
+      type: activeTab === 'hulls' ? 'hull' : 'turret',
+      options: candidates,
+    });
+  };
+
+  const handleCratePick = (pickedId: HullId | TurretId) => {
+    if (!game || !crateModalData) return;
+    const success = game.purchaseCrate(crateModalData.type, pickedId);
+    if (success) {
+      if (crateModalData.type === 'hull') {
+        setSelectedHullId(pickedId as HullId);
+        game.setGarageSelection(pickedId as HullId, selectedTurretId).catch(() => {});
+      } else {
+        setSelectedTurretId(pickedId as TurretId);
+        game.setGarageSelection(selectedHullId, pickedId as TurretId).catch(() => {});
+      }
+      setCrateModalData(null);
+    }
+  };
+
+  const openDirectUnlock = () => {
+    if (!game || !hasLockedItems) return;
+    const pool = (activeTab === 'hulls' ? lockedHulls : lockedTurrets).map((id) =>
+      activeTab === 'hulls' ? HULLS[id as HullId] : TURRETS[id as TurretId],
+    );
+    setDirectUnlockItems({
+      items: pool,
+      isHull: activeTab === 'hulls',
+    });
+  };
+
+  const handleConfirmDirectUnlock = (item: HullDef | TurretDef) => {
+    if (!game) return;
+    const success = game.purchaseDirectUnlock(item.id);
+    if (success) {
+      if (activeTab === 'hulls') {
+        setSelectedHullId(item.id as HullId);
+        game.setGarageSelection(item.id as HullId, selectedTurretId).catch(() => {});
+      } else {
+        setSelectedTurretId(item.id as TurretId);
+        game.setGarageSelection(selectedHullId, item.id as TurretId).catch(() => {});
+      }
+      setDirectUnlockItems(null);
+    }
   };
 
   const currHull = HULLS[selectedHullId];
@@ -167,6 +242,55 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
             <Target size={14} aria-hidden /> БАШНЯ
           </button>
         </div>
+
+        <div className="flex items-center justify-end gap-2 anim-right" style={{ '--d': '0.05s' } as React.CSSProperties}>
+          <button
+            type="button"
+            onClick={openCrate}
+            disabled={!hasLockedItems || credits < 600}
+            className="btn-game btn-ghost px-3 py-2 text-xs flex items-center gap-1.5 disabled:opacity-50"
+            title={!hasLockedItems ? 'Все предметы получены' : credits < 600 ? 'Недостаточно CR (600 CR)' : 'Открыть кейс'}
+          >
+            <PackageOpen size={14} className="text-cyan-400" aria-hidden />
+            <span>КЕЙС</span>
+            <span className="text-amber-300 font-display text-[11px]">600 CR</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={openDirectUnlock}
+            disabled={!hasLockedItems || credits < 1200}
+            className="btn-game btn-ghost px-3 py-2 text-xs flex items-center gap-1.5 disabled:opacity-50"
+            title={!hasLockedItems ? 'Все предметы получены' : credits < 1200 ? 'Недостаточно CR (1200 CR)' : 'Выбрать и разблокировать'}
+          >
+            <Lock size={14} className="text-amber-400" aria-hidden />
+            <span>ВЫКУП</span>
+            <span className="text-amber-300 font-display text-[11px]">1200 CR</span>
+          </button>
+
+          {onQuests && (
+            <button
+              type="button"
+              onClick={onQuests}
+              className="btn-game btn-ghost px-3 py-2 text-xs flex items-center gap-1.5"
+              aria-label="Боевые задачи"
+            >
+              <Trophy size={14} className="text-amber-400" aria-hidden />
+              <span>ЗАДАЧИ</span>
+              {claimableQuestsCount > 0 && (
+                <span className="cut-chip bg-emerald-500 text-slate-950 font-bold px-1.5 py-0.5 text-[9px]">
+                  +{claimableQuestsCount}
+                </span>
+              )}
+            </button>
+          )}
+
+          <div className="hud-panel flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 border border-amber-500/20">
+            <Coins size={14} className="text-amber-400" aria-hidden />
+            <span className="font-display text-sm text-amber-300">{credits}</span>
+            <span className="text-[10px] tracking-wider text-amber-400/80">CR</span>
+          </div>
+        </div>
       </div>
 
       {!ready && (
@@ -205,6 +329,7 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
                     key={h.id}
                     hull={h}
                     isSelected={h.id === selectedHullId}
+                    isLocked={unlockedHulls.length > 0 && !unlockedHulls.includes(h.id)}
                     delay={`${0.15 + i * 0.09}s`}
                     onSelect={selectHull}
                     disabled={!ready}
@@ -215,6 +340,7 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
                     key={t.id}
                     turret={t}
                     isSelected={t.id === selectedTurretId}
+                    isLocked={unlockedTurrets.length > 0 && !unlockedTurrets.includes(t.id)}
                     delay={`${0.15 + i * 0.09}s`}
                     onSelect={selectTurret}
                     disabled={!ready}
@@ -313,6 +439,26 @@ export default function Garage({ game, onStart, onBack }: GarageProps) {
           </div>
         </div>
       </div>
+
+      {crateModalData && (
+        <CrateOpeningModal
+          type={crateModalData.type}
+          options={crateModalData.options}
+          credits={credits}
+          onPick={handleCratePick}
+          onClose={() => setCrateModalData(null)}
+        />
+      )}
+
+      {directUnlockItems && (
+        <DirectUnlockModal
+          items={directUnlockItems.items}
+          isHull={directUnlockItems.isHull}
+          playerCredits={credits}
+          onConfirm={handleConfirmDirectUnlock}
+          onClose={() => setDirectUnlockItems(null)}
+        />
+      )}
     </div>
   );
 }

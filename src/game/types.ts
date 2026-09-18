@@ -3,6 +3,7 @@ import type { TurretId } from '../core/catalog';
 import type { MatchModeId, TeamId, MatchEndReason } from './match/matchTypes';
 import type { BeamMode } from './weapons/types';
 import type { DamageFloatKind } from './damageFloats';
+import type { MatchRewards } from './economy/matchRewards';
 
 export type GameMode = 'menu' | 'garage' | 'playing' | 'over';
 export type { MatchModeId, TeamId, MatchEndReason };
@@ -118,6 +119,7 @@ export type GameEvent =
       matchTimeSec: number;
       teamKills: { alpha: number; bravo: number };
       teamScore: { alpha: number; bravo: number };
+      rewards?: MatchRewards;
     }
   | { type: 'pauseChanged'; value: boolean }
   | { type: 'modeChanged'; mode: GameMode }

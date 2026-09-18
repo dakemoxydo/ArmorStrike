@@ -1,34 +1,43 @@
-import { Check, Target, Zap } from 'lucide-react';
+import { Check, Lock, Target, Zap } from 'lucide-react';
 import type { TurretId, TurretDef } from '../core/catalog';
 import { getWeaponMeta } from '../core/WeaponCatalog';
 
 interface TurretCardProps {
   turret: TurretDef;
   isSelected: boolean;
+  isLocked?: boolean;
   delay: string;
   onSelect: (id: TurretId) => void;
   disabled?: boolean;
 }
 
-export default function TurretCard({ turret, isSelected, delay, onSelect, disabled }: TurretCardProps) {
+export default function TurretCard({ turret, isSelected, isLocked, delay, onSelect, disabled }: TurretCardProps) {
   const weaponLabel = getWeaponMeta(turret.weaponType).kind;
   return (
     <button
       type="button"
       onClick={() => onSelect(turret.id)}
-      disabled={disabled}
+      disabled={disabled || isLocked}
       aria-pressed={isSelected}
-      title={turret.desc}
-      className={`hud-panel garage-card anim-up p-3${isSelected ? ' is-selected turret-selected' : ''}`}
+      aria-disabled={isLocked}
+      title={isLocked ? `${turret.name} (Заблокировано)` : turret.desc}
+      className={`hud-panel garage-card anim-up p-3${isSelected ? ' is-selected turret-selected' : ''}${isLocked ? ' is-locked opacity-50 cursor-not-allowed' : ''}`}
       style={{ '--d': delay } as React.CSSProperties}
     >
       <div className="flex items-center justify-between mb-2">
         <span className="font-display text-lg tracking-wide text-white">{turret.name}</span>
         {isSelected && <Check size={18} className="g-check text-amber-300" aria-hidden />}
+        {isLocked && <Lock size={16} className="text-white/50" aria-hidden />}
       </div>
-      <div className="card-badge cut-chip px-2 py-0.5 mb-2 text-[10px] tracking-wider uppercase bg-amber-500/20 text-amber-200 border border-amber-500/40">
-        {turret.badge}
-      </div>
+      {isLocked ? (
+        <div className="card-badge cut-chip px-2 py-0.5 mb-2 text-[10px] tracking-wider uppercase bg-white/5 text-white/50 border border-white/10 flex items-center gap-1">
+          <Lock size={10} aria-hidden /> ЗАКРЫТО
+        </div>
+      ) : (
+        <div className="card-badge cut-chip px-2 py-0.5 mb-2 text-[10px] tracking-wider uppercase bg-amber-500/20 text-amber-200 border border-amber-500/40">
+          {turret.badge}
+        </div>
+      )}
       {/* Компактная карточка: без описания — паспорт справа несёт факты,
           флейвор доступен в тултипе; 1fr-ряд выше держит бары на одной линии. */}
       <div className="space-y-2 text-[10px]">

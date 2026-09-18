@@ -4,6 +4,7 @@ import type { GameApi } from './game/GameApi';
 import type { HudSnapshot } from './game/types';
 import type { GameMode } from './game/types';
 import { HULLS, TURRETS } from './core/catalog';
+import type { HullId, TurretId } from './core/catalog';
 import HUD from './components/HUD';
 import Garage from './components/Garage';
 import PauseMenu from './components/PauseMenu';
@@ -12,9 +13,12 @@ import GameOverScreen from './components/GameOverScreen';
 import BootError from './components/BootError';
 import MapSelect from './components/MapSelect';
 import ModeSelect from './components/ModeSelect';
+import StarterPackModal from './components/StarterPackModal';
+import QuestsModal from './components/QuestsModal';
 import type { MapId } from './game/maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './game/maps/mapCatalog';
 import type { MatchModeId } from './game/types';
+import type { MatchRewards } from './game/economy/matchRewards';
 import { isInteractiveKeyboardTarget } from './ui/keyboardTarget';
 import { loadMuted } from './game/audio';
 import {
@@ -44,7 +48,10 @@ export default function App() {
     matchTimeSec: 0,
     teamKills: { alpha: 0, bravo: 0 },
     teamScore: { alpha: 0, bravo: 0 },
+    rewards: undefined as MatchRewards | undefined,
   });
+  const [questsOpen, setQuestsOpen] = useState(false);
+  const [, setEconomyVersion] = useState(0);
   const [modeSelectOpen, setModeSelectOpen] = useState(false);
   const [mapSelectOpen, setMapSelectOpen] = useState(false);
   const [lastMapId, setLastMapId] = useState<MapId>(DEFAULT_MAP_ID);
@@ -58,6 +65,8 @@ export default function App() {
   const [roundLoading, setRoundLoading] = useState(false);
   /** Видимая ошибка старта раунда (M13b): раньше был только console.error. */
   const [roundError, setRoundError] = useState<string | null>(null);
+  /** Стартовый пак новобранца: распакован ли (иначе открывается StarterPackModal). */
+  const [starterClaimed, setStarterClaimed] = useState(true);
 
   // Boot: Game.create awaits async tank mesh / systems; listeners are safe pre/post ready.
   useEffect(() => {
@@ -110,11 +119,17 @@ export default function App() {
               matchTimeSec: e.matchTimeSec,
               teamKills: e.teamKills,
               teamScore: e.teamScore,
+              rewards: e.rewards,
             });
             setPaused(false);
           }
           if (e.type === 'pauseChanged') setPaused(e.value);
+          if (e.type === 'garageChanged') {
+            setStarterClaimed(instance.starterPackClaimed);
+            setEconomyVersion((v) => v + 1);
+          }
         });
+        setStarterClaimed(instance.starterPackClaimed);
         setGame(g);
       } catch (err) {
         if (cancelled) return;
@@ -284,12 +299,20 @@ export default function App() {
     game.togglePause();
   };
 
+  const handleClaimStarterPack = useCallback((hullId: HullId, turretId: TurretId) => {
+    if (!game) return;
+    game.claimStarterPack(hullId, turretId).then(() => {
+      setStarterClaimed(true);
+    });
+  }, [game]);
+
   if (bootError) {
     return <BootError message={bootError.message} detail={bootError.detail} />;
   }
 
   const currHull = HULLS[game?.currentHull ?? 'hunter'];
   const currTurret = TURRETS[game?.currentTurret ?? 'railgun'];
+  const claimableQuestsCount = game?.quests.filter((q) => q.current >= q.target && !q.claimed).length ?? 0;
   // Во время загрузки раунда режим ещё прежний — прячем меню под оверлей.
   const hideChrome = mapSelectOpen || modeSelectOpen || roundLoading;
 
@@ -336,16 +359,25 @@ export default function App() {
       )}
 
       {uiMode === 'garage' && !hideChrome && (
-        <Garage game={game} onStart={openModeSelect} onBack={goMenu} />
+        <Garage
+          game={game}
+          onStart={openModeSelect}
+          onBack={goMenu}
+          onQuests={() => setQuestsOpen(true)}
+          claimableQuestsCount={claimableQuestsCount}
+        />
       )}
 
       {uiMode === 'menu' && !hideChrome && (
         <MainMenu
           hull={currHull}
           turret={currTurret}
+          credits={game?.credits ?? 0}
+          claimableQuestsCount={claimableQuestsCount}
           onStart={openModeSelect}
           onQuickGame={quickGame}
           onGarage={goGarage}
+          onQuests={() => setQuestsOpen(true)}
         />
       )}
 
@@ -363,6 +395,8 @@ export default function App() {
           matchTimeSec={finalStats.matchTimeSec}
           teamKills={finalStats.teamKills}
           teamScore={finalStats.teamScore}
+          rewards={finalStats.rewards}
+          onQuests={() => setQuestsOpen(true)}
           onRematch={rematch}
           onChangeMode={openModeSelect}
           onGarage={goGarage}
@@ -384,6 +418,14 @@ export default function App() {
           onConfirm={confirmMap}
           onCancel={cancelMapSelect}
         />
+      )}
+
+      {game && !starterClaimed && (
+        <StarterPackModal onComplete={handleClaimStarterPack} />
+      )}
+
+      {questsOpen && (
+        <QuestsModal game={game} onClose={() => setQuestsOpen(false)} />
       )}
 
       {roundError && !roundLoading && (

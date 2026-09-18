@@ -28,12 +28,20 @@ vi.stubGlobal(
  */
 
 function fakeGame(
-  initial: { hull?: HullId; turret?: TurretId; failSelection?: boolean } = {},
+  initial: {
+    hull?: HullId;
+    turret?: TurretId;
+    unlockedHulls?: HullId[];
+    unlockedTurrets?: TurretId[];
+    failSelection?: boolean;
+  } = {},
 ) {
   const calls: Array<[HullId, TurretId]> = [];
   const game = {
     currentHull: initial.hull ?? 'hunter',
     currentTurret: initial.turret ?? 'railgun',
+    unlockedHulls: initial.unlockedHulls ?? [],
+    unlockedTurrets: initial.unlockedTurrets ?? [],
     setGarageSelection: (h: HullId, t: TurretId) => {
       calls.push([h, t]);
       // GameApi contract: resolves after the preview rebuild commits; rejects
@@ -51,7 +59,13 @@ function fakeGame(
   return { game, calls };
 }
 
-function setup(initial?: { hull?: HullId; turret?: TurretId; failSelection?: boolean }) {
+function setup(initial?: {
+  hull?: HullId;
+  turret?: TurretId;
+  unlockedHulls?: HullId[];
+  unlockedTurrets?: TurretId[];
+  failSelection?: boolean;
+}) {
   const { game, calls } = fakeGame(initial);
   const onStart = vi.fn();
   const onBack = vi.fn();
@@ -204,3 +218,24 @@ describe('Garage — header actions', () => {
     expect(onStart).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Garage — locked inventory items', () => {
+  it('marks non-unlocked hulls as locked and disabled, and ignores clicks', async () => {
+    const { calls, user } = setup({
+      hull: 'hunter',
+      turret: 'railgun',
+      unlockedHulls: ['hunter'],
+      unlockedTurrets: ['railgun'],
+    });
+
+    const mammoth = hullCard(/Мамонт/);
+    expect(mammoth).toBeDisabled();
+    expect(mammoth).toHaveAttribute('aria-disabled', 'true');
+    expect(mammoth).toHaveTextContent('ЗАКРЫТО');
+
+    await user.click(mammoth);
+    expect(calls).toEqual([]);
+    expect(pressedCards()[0]).toHaveTextContent('Хантер');
+  });
+});
+

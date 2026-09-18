@@ -15,6 +15,7 @@ import { buildSimulationStages, type SimSystem, type FrameContext, type ScalarCe
 import { applyGameOverInputState } from '../deathLifecycle';
 import { MatchRuntime } from '../match/MatchRuntime';
 import type { MatchResult } from '../match/matchTypes';
+import { calculateMatchRewards } from '../economy/matchRewards';
 
 export class GameSimulation {
   player: TankEntity | null = null;
@@ -115,6 +116,23 @@ export class GameSimulation {
     this.input.enabled = st.inputEnabled;
     this.input.releaseLock();
     this.stepEmit({ type: 'modeChanged', mode: 'over' });
+
+    const isDraw = !result.playerWon && !result.winnerName && !result.winnerTeam;
+    const rewards = calculateMatchRewards({
+      kills: result.playerKills,
+      score: result.playerScore,
+      playerWon: result.playerWon,
+      isDraw,
+      bestStreak: result.playerBestStreak,
+    });
+    this.run.addCredits(rewards.total);
+    this.run.advanceQuests({
+      kills: result.playerKills,
+      playerWon: result.playerWon,
+      mode: result.mode,
+      bestStreak: result.playerBestStreak,
+    });
+
     this.stepEmit({
       type: 'gameOver',
       score: result.playerScore,
@@ -129,6 +147,7 @@ export class GameSimulation {
       matchTimeSec: result.matchTimeSec,
       teamKills: result.teamKills,
       teamScore: result.teamScore,
+      rewards,
     });
   }
 

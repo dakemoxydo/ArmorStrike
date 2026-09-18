@@ -1,4 +1,4 @@
-import { Check, Gauge, Shield } from 'lucide-react';
+import { Check, Gauge, Lock, Shield } from 'lucide-react';
 import { HULLS } from '../core/catalog';
 import type { HullId, HullDef } from '../core/catalog';
 
@@ -10,29 +10,38 @@ const MAX_HULL_SPEED = Math.max(...Object.values(HULLS).map((h) => h.speed));
 interface HullCardProps {
   hull: HullDef;
   isSelected: boolean;
+  isLocked?: boolean;
   delay: string;
   onSelect: (id: HullId) => void;
   disabled?: boolean;
 }
 
-export default function HullCard({ hull, isSelected, delay, onSelect, disabled }: HullCardProps) {
+export default function HullCard({ hull, isSelected, isLocked, delay, onSelect, disabled }: HullCardProps) {
   return (
     <button
       type="button"
       onClick={() => onSelect(hull.id)}
-      disabled={disabled}
+      disabled={disabled || isLocked}
       aria-pressed={isSelected}
-      title={hull.desc}
-      className={`hud-panel garage-card anim-up p-3${isSelected ? ' is-selected hull-selected' : ''}`}
+      aria-disabled={isLocked}
+      title={isLocked ? `${hull.name} (Заблокировано)` : hull.desc}
+      className={`hud-panel garage-card anim-up p-3${isSelected ? ' is-selected hull-selected' : ''}${isLocked ? ' is-locked opacity-50 cursor-not-allowed' : ''}`}
       style={{ '--d': delay } as React.CSSProperties}
     >
       <div className="flex items-center justify-between mb-2">
         <span className="font-display text-lg tracking-wide text-white">{hull.name}</span>
         {isSelected && <Check size={18} className="g-check text-cyan-300" aria-hidden />}
+        {isLocked && <Lock size={16} className="text-white/50" aria-hidden />}
       </div>
-      <div className="card-badge cut-chip px-2 py-0.5 mb-2 text-[10px] tracking-wider uppercase bg-cyan-500/20 text-cyan-200 border border-cyan-500/40">
-        {hull.badge}
-      </div>
+      {isLocked ? (
+        <div className="card-badge cut-chip px-2 py-0.5 mb-2 text-[10px] tracking-wider uppercase bg-white/5 text-white/50 border border-white/10 flex items-center gap-1">
+          <Lock size={10} aria-hidden /> ЗАКРЫТО
+        </div>
+      ) : (
+        <div className="card-badge cut-chip px-2 py-0.5 mb-2 text-[10px] tracking-wider uppercase bg-cyan-500/20 text-cyan-200 border border-cyan-500/40">
+          {hull.badge}
+        </div>
+      )}
       {/* Компактная карточка: без описания — паспорт справа несёт факты,
           флейвор доступен в тултипе; 1fr-ряд выше держит бары на одной линии. */}
       <div className="space-y-2 text-[10px]">

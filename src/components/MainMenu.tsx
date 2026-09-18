@@ -1,21 +1,53 @@
 import {
-  Flame, Gamepad2, MousePointer2, Play, RotateCw, Shield, Shuffle, Target, Wrench, Zap,
+  Coins, Flame, Gamepad2, MousePointer2, Play, RotateCw, Shield, Shuffle, Target, Trophy, Wrench, Zap,
 } from 'lucide-react';
 import type { HullDef, TurretDef } from '../core/catalog';
 
 interface MainMenuProps {
   hull: HullDef;
   turret: TurretDef;
+  credits?: number;
+  claimableQuestsCount?: number;
   onStart: () => void;
   onQuickGame: () => void;
   onGarage: () => void;
+  onQuests?: () => void;
 }
 
-export default function MainMenu({ hull, turret, onStart, onQuickGame, onGarage }: MainMenuProps) {
+export default function MainMenu({
+  hull, turret, credits = 0, claimableQuestsCount = 0,
+  onStart, onQuickGame, onGarage, onQuests,
+}: MainMenuProps) {
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-between p-8 md:p-14 bg-gradient-to-r from-[#04060bf2] via-[#04060ba8] to-transparent">
       <div className="menu-stripes pointer-events-none absolute inset-x-0 top-0 h-2" />
       <div className="menu-stripes pointer-events-none absolute inset-x-0 bottom-0 h-2" />
+
+      {/* Top right currency & quests bar */}
+      <div className="absolute top-6 right-8 md:right-14 z-20 flex items-center gap-3">
+        {onQuests && (
+          <button
+            type="button"
+            onClick={onQuests}
+            className="btn-game btn-ghost px-4 py-2 text-xs flex items-center gap-2"
+            aria-label="Боевые задачи"
+          >
+            <Trophy size={15} className="text-amber-400" aria-hidden />
+            <span>ЗАДАЧИ</span>
+            {claimableQuestsCount > 0 && (
+              <span className="cut-chip bg-emerald-500 text-slate-950 font-bold px-1.5 py-0.5 text-[9px]">
+                +{claimableQuestsCount}
+              </span>
+            )}
+          </button>
+        )}
+
+        <div className="hud-panel flex items-center gap-2 px-3.5 py-2 bg-amber-500/10 border border-amber-500/20">
+          <Coins size={15} className="text-amber-400" aria-hidden />
+          <span className="font-display text-sm text-amber-300">{credits}</span>
+          <span className="text-[10px] tracking-wider text-amber-400/80">CR</span>
+        </div>
+      </div>
 
       <div className="relative z-10 flex max-w-xl flex-col items-start text-left">
         <div className="anim-left flex items-center gap-3 text-[11px] tracking-hero text-cyan-300/70" style={{ '--d': '0.05s' } as React.CSSProperties}>

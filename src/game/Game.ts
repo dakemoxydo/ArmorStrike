@@ -1,5 +1,4 @@
-// ===== Ядро игры: координатор подсистем, рендер-цикл, гараж, камера =====
-import type { HullId, TurretId } from '../core/catalog';
+import { HULLS, TURRETS, type HullId, type TurretId } from '../core/catalog';
 import type { TankVisual } from './Tank';
 import { bootstrapGame, type GameContext } from './GameBootstrap';
 import { QualityController } from './QualityController';
@@ -20,6 +19,8 @@ import type { GameSimulation } from './engine/GameSimulation';
 import type { GameApi } from './GameApi';
 import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './maps/mapCatalog';
+import { ECONOMY_PRICES } from './economy/matchRewards';
+import type { QuestProgress } from './economy/questCatalog';
 
 export class Game implements GameApi {
   /** Local event bus — safe to use before async bootstrap finishes. */
@@ -114,8 +115,76 @@ export class Game implements GameApi {
   get currentTurret() { return this.requireSim().run.currentTurret; }
   get currentMapId(): MapId { return this.requireSim().arena.mapId; }
   get currentMatchMode(): MatchModeId { return this.requireModes().matchMode; }
+  get unlockedHulls(): readonly HullId[] { return this.requireSim().run.unlockedHulls; }
+  get unlockedTurrets(): readonly TurretId[] { return this.requireSim().run.unlockedTurrets; }
+  get starterPackClaimed(): boolean { return this.requireSim().run.starterPackClaimed; }
+  get credits(): number { return this.requireSim().run.credits; }
+  get quests(): readonly QuestProgress[] { return this.requireSim().run.quests; }
   get previewVisual(): TankVisual | null {
     return this.ctx?.previewController.previewVisual ?? null;
+  }
+
+  claimStarterPack(hullId: HullId, turretId: TurretId): Promise<void> {
+    return this.requireGarage().claimStarterPack(hullId, turretId);
+  }
+
+  claimQuest(questId: string): number {
+    const sim = this.requireSim();
+    const reward = sim.run.claimQuest(questId);
+    if (reward > 0) {
+      sim.audio.click();
+      this.ctx?.emitEvent({ type: 'garageChanged' });
+    }
+    return reward;
+  }
+
+  purchaseCrate(type: 'hull' | 'turret', chosenId?: HullId | TurretId): boolean {
+    const sim = this.requireSim();
+    const cost = ECONOMY_PRICES.crate;
+    if (sim.run.credits < cost) return false;
+
+    if (chosenId) {
+      let unlocked = false;
+      if (type === 'hull' && Object.prototype.hasOwnProperty.call(HULLS, chosenId)) {
+        unlocked = sim.run.unlockHull(chosenId as HullId);
+      } else if (type === 'turret' && Object.prototype.hasOwnProperty.call(TURRETS, chosenId)) {
+        unlocked = sim.run.unlockTurret(chosenId as TurretId);
+      }
+      if (unlocked) {
+        sim.run.spendCredits(cost);
+        sim.audio.click();
+        this.ctx?.emitEvent({ type: 'garageChanged' });
+        return true;
+      }
+      return false;
+    }
+
+    if (sim.run.spendCredits(cost)) {
+      sim.audio.click();
+      this.ctx?.emitEvent({ type: 'garageChanged' });
+      return true;
+    }
+    return false;
+  }
+
+  purchaseDirectUnlock(id: HullId | TurretId): boolean {
+    const sim = this.requireSim();
+    const cost = ECONOMY_PRICES.directUnlock;
+    if (sim.run.credits < cost) return false;
+
+    let unlocked = false;
+    if (Object.prototype.hasOwnProperty.call(HULLS, id)) {
+      unlocked = sim.run.unlockHull(id as HullId);
+    } else if (Object.prototype.hasOwnProperty.call(TURRETS, id)) {
+      unlocked = sim.run.unlockTurret(id as TurretId);
+    }
+    if (unlocked) {
+      sim.run.spendCredits(cost);
+      sim.audio.click();
+      this.ctx?.emitEvent({ type: 'garageChanged' });
+      return true;
+    }
+    return false;
   }
 
   setGarageSelection(hullId: HullId, turretId: TurretId): Promise<void> {
