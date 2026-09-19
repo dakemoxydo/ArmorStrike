@@ -107,7 +107,7 @@ createWeapon(owner, type, deps)  →  Railgun | Flamethrower | Cannon
 ## 3.3 Cel-Shaded стилизация и чернильный контур
 
 Все танки собираются в стилизованном комиксном конвейере (подробнее — [[Standard_Cel_Shaded_Rendering]]):
-1. **Ступенчатое освещение:** `TankFactory.createStyleMaterials` декорирует все стандартные материалы (`bodyMat`, `turretMat`, `metalMat`, `darkMat`, `trackLeftMat`, `trackRightMat`) через `applyCelShading()`, квантуя диффузную составляющую на 3 дискретных уровня.
+1. **Ступенчатое освещение:** `TankFactory.createStyleMaterials` декорирует все стандартные материалы (`bodyMat`, `turretMat`, `metalMat`, `darkMat`, `trackLeftMat`, `trackRightMat`) через `applyCelShading()`, квантуя диффузную составляющую в мягкий 4-ступенчатый cel-конвейер со сглаживанием порогов.
 2. **Чернильный силуэт:** `buildTankMesh` в `buildMesh.ts` автоматически монтирует на геометрию танка постоянный Inverted-Hull контур через `attachComicInkOutline(group)`. Он следует за башней и подвеской, не конфликтуя с боевой подсветкой цели (`modelOutline.ts`).
 
 ## 4. Sim systems (ISP)

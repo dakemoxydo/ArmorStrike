@@ -9,8 +9,9 @@
 // - Zero extra draw calls or full-screen post-processing passes.
 import type * as THREE from 'three';
 
-const CEL_STEPS = 3.0;
-const CEL_MIN_SHADOW = 0.3; // Prevent complete pitch-black crushing in direct shadows
+const CEL_STEPS = 4.0;
+const CEL_MIN_SHADOW = 0.32; // Prevent complete pitch-black crushing in direct shadows
+const CEL_BLEND = 0.68;      // Ratio of stylized quantization to continuous diffuse (0 = full PBR, 1 = hard bands)
 
 const CEL_SHADED_FLAG = '__armorstrike_cel_shaded__';
 
@@ -19,15 +20,23 @@ const CEL_QUANTIZATION_GLSL = `
 {
   float _cel_dLum = length(reflectedLight.directDiffuse);
   if (_cel_dLum > 0.0005) {
-    float _cel_stepped = floor(_cel_dLum * ${CEL_STEPS.toFixed(1)} + 0.45) / ${CEL_STEPS.toFixed(1)};
-    _cel_stepped = max(_cel_stepped, ${CEL_MIN_SHADOW.toFixed(2)});
-    reflectedLight.directDiffuse *= (_cel_stepped / _cel_dLum);
+    float _cel_raw = _cel_dLum;
+    float _cel_val = _cel_raw * ${CEL_STEPS.toFixed(1)};
+    float _cel_f = floor(_cel_val);
+    float _cel_frac = fract(_cel_val);
+    // Smooth micro-ramp across cel thresholds to eliminate jagged pixel aliasing
+    float _cel_smooth = _cel_f + smoothstep(0.25, 0.75, _cel_frac);
+    float _cel_stepped = max(_cel_smooth / ${CEL_STEPS.toFixed(1)}, ${CEL_MIN_SHADOW.toFixed(2)});
+    // Balanced blend: stylized comic bands + natural diffuse gradient
+    // Softens harsh banding while preserving distinct illustrated light zones
+    float _cel_final = mix(_cel_raw, _cel_stepped, ${CEL_BLEND.toFixed(2)});
+    reflectedLight.directDiffuse *= (_cel_final / _cel_dLum);
   }
 
-  // Comic Cel-shading specular cut
+  // Comic Cel-shading specular cut with anti-aliased rolloff
   float _cel_sLum = length(reflectedLight.directSpecular);
   if (_cel_sLum > 0.0005) {
-    float _cel_specCut = step(0.16, _cel_sLum);
+    float _cel_specCut = smoothstep(0.10, 0.22, _cel_sLum);
     reflectedLight.directSpecular *= (_cel_specCut / _cel_sLum);
   }
 }

@@ -7,10 +7,10 @@ import { markShared } from '../resources/sharedResources';
 
 export const COMIC_INK_KEY = 'comicInkOutline';
 
-const INK_COLOR = 0x12151c; // Deep charcoal-black ink
-const INK_WIDTH = 0.024;    // Meters in model space (~1% of hull width)
-const WIDTH_REF_DIST = 40.0;
-const WIDTH_DIST_MIX = 0.45;
+const INK_COLOR = 0x181c26; // Deep slate graphite (softened from harsh jet-black)
+const INK_WIDTH = 0.012;    // Refined hairline contour (~0.5% of hull width, down from 0.024)
+const WIDTH_REF_DIST = 45.0;
+const WIDTH_DIST_MIX = 0.38;
 
 let inkMaterial: THREE.MeshBasicMaterial | null = null;
 

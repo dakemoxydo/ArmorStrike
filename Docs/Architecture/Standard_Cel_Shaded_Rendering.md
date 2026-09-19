@@ -27,18 +27,23 @@
 ```glsl
 #include <lights_physical_fragment>
 
-// Квантование диффузной освещенности на 3 дискретных уровня
+// Мягкое ступенчатое квантование диффузной освещенности (4 градации со сглаживанием порогов)
 float _cel_dLum = length(reflectedLight.directDiffuse);
 if (_cel_dLum > 0.0005) {
-  float _cel_stepped = floor(_cel_dLum * 3.0 + 0.45) / 3.0;
-  _cel_stepped = max(_cel_stepped, 0.30); // защита от проваливания теней в черное
-  reflectedLight.directDiffuse *= (_cel_stepped / _cel_dLum);
+  float _cel_raw = _cel_dLum;
+  float _cel_val = _cel_raw * 4.0;
+  float _cel_f = floor(_cel_val);
+  float _cel_frac = fract(_cel_val);
+  float _cel_smooth = _cel_f + smoothstep(0.25, 0.75, _cel_frac);
+  float _cel_stepped = max(_cel_smooth / 4.0, 0.32); // защита от зачернения теней
+  float _cel_final = mix(_cel_raw, _cel_stepped, 0.68); // 68% комикс-ступени, 32% мягкий объем
+  reflectedLight.directDiffuse *= (_cel_final / _cel_dLum);
 }
 
-// Графичный ступенчатый блик
+// Стилизованный блик с антиалиасингом границы
 float _cel_sLum = length(reflectedLight.directSpecular);
 if (_cel_sLum > 0.0005) {
-  float _cel_specCut = step(0.16, _cel_sLum);
+  float _cel_specCut = smoothstep(0.10, 0.22, _cel_sLum);
   reflectedLight.directSpecular *= (_cel_specCut / _cel_sLum);
 }
 ```
@@ -66,9 +71,9 @@ if (_cel_sLum > 0.0005) {
 1. Для каждой твёрдой детали корпуса, башни и ствола создаётся дочерний меш с той же геометрией и материалом `side: THREE.BackSide`.
 2. Материал контура (`comicInk`) выталкивает вершины наружу вдоль нормали с экранной компенсацией дистанции:
    $$\Delta \mathbf{v} = \mathbf{n} \cdot \left[ w \cdot \text{mix}\left(1.0, \frac{\|\mathbf{p}_{\text{cam}}\|}{d_{\text{ref}}}, k_{\text{mix}}\right) \right]$$
-   - Базовая толщина: $w = 0.024$ м.
-   - Опорная дистанция: $d_{\text{ref}} = 40.0$ м.
-   - Коэффициент сглаживания: $k_{\text{mix}} = 0.45$.
+   - Базовая толщина: $w = 0.012$ м (аккуратный технический hairline контур).
+   - Опорная дистанция: $d_{\text{ref}} = 45.0$ м.
+   - Коэффициент сглаживания: $k_{\text{mix}} = 0.38$.
 3. Меши контура являются прямыми детьми деталей — они автоматически наследуют вращение башни, тангаж орудия и динамику подвески без покадровых вычислений матриц в JS.
 4. Контур рендерится в opaque-очереди (`renderOrder: (src.renderOrder || 0) - 1`) и не конфликтует со stencil-системой целеуказания `modelOutline.ts`.
 

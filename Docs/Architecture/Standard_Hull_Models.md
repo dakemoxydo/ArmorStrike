@@ -43,7 +43,7 @@ FX-тинт (hit flash, затемнение по HP, посмертное за�
 Разделение гусениц на `trackLeft` и `trackRight` даёт независимую дифференциальную
 анимацию перемотки при поворотах и развороте на месте.
 
-Все слоты `MeshStandardMaterial` декорируются через `applyCelShading` (3 градации освещения), а готовый корпус получает чернильный силуэт `attachComicInkOutline` ([[Standard_Cel_Shaded_Rendering]]).
+Все слоты `MeshStandardMaterial` декорируются через `applyCelShading` (мягкое ступенчатое cel-квантование освещения), а готовый корпус получает чернильный силуэт `attachComicInkOutline` ([[Standard_Cel_Shaded_Rendering]]).
 
 ## 3. Владение ресурсами
 
