@@ -27,7 +27,7 @@ create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_username text;
@@ -99,7 +99,7 @@ grant select on public.room_players to anon, authenticated;
 
 -- Hash any leftover plaintext passwords (bcrypt hashes start with $2).
 update public.rooms
-set password_hash = crypt(password_hash, gen_salt('bf'))
+set password_hash = extensions.crypt(password_hash, extensions.gen_salt('bf'))
 where password_hash is not null
   and password_hash <> ''
   and password_hash not like '$2%';
@@ -120,7 +120,7 @@ create or replace function public.create_room(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_host text;
@@ -200,7 +200,7 @@ create or replace function public.join_room_with_password(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_room public.rooms;
@@ -282,6 +282,9 @@ begin
 end;
 $$;
 
+revoke all on function public.join_room_with_password(uuid, text, text, text, text, text) from public;
+grant execute on function public.join_room_with_password(uuid, text, text, text, text, text) to anon, authenticated;
+
 -- 5. leave_room: logged-in callers can only leave as themselves.
 create or replace function public.leave_room(
   p_room_id uuid,
@@ -290,7 +293,7 @@ create or replace function public.leave_room(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_user text;
@@ -329,12 +332,15 @@ begin
 end;
 $$;
 
+revoke all on function public.leave_room(uuid, text) from public;
+grant execute on function public.leave_room(uuid, text) to anon, authenticated;
+
 -- 6. heartbeat: authenticated users must be in the room.
 create or replace function public.heartbeat_room(p_room_id uuid)
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_uid uuid;
@@ -354,3 +360,6 @@ begin
   where id = p_room_id;
 end;
 $$;
+
+revoke all on function public.heartbeat_room(uuid) from public;
+grant execute on function public.heartbeat_room(uuid) to anon, authenticated;
