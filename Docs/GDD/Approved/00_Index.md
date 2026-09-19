@@ -99,3 +99,4 @@
 | Комиксный свет (Linear, без IBL/bloom) | `src/game/RenderWorld.ts` |
 | Земля карт без перлина | `src/game/textures/ground.ts` |
 | Неймплейты (срез, fade) | `src/game/nameplate.ts`, `src/game/engine/systems/NameplateSystem.ts` |
+| Игровое лобби, звания и настройки | `src/components/MainMenu.tsx`, `src/components/auth/MilitaryPassBadge.tsx`, `src/game/economy/playerRank.ts`, `src/components/SettingsModal.tsx` |

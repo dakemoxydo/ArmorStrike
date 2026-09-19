@@ -1,9 +1,15 @@
 import {
-  Coins, Flame, Gamepad2, Globe, MousePointer2, Play, RotateCw, Shield, Shuffle, Target, Trophy, Wrench, Zap,
+  ChevronsRight,
+  Globe,
+  Play,
+  Settings,
+  Shuffle,
+  Trophy,
+  Wrench,
 } from 'lucide-react';
 import type { HullDef, TurretDef } from '../core/catalog';
 import type { GameApi } from '../game/GameApi';
-import UserBadge from './auth/UserBadge';
+import MilitaryPassBadge from './auth/MilitaryPassBadge';
 
 interface MainMenuProps {
   hull: HullDef;
@@ -16,56 +22,43 @@ interface MainMenuProps {
   onServerBrowser?: () => void;
   onGarage: () => void;
   onQuests?: () => void;
+  onSettings?: () => void;
   onOpenAuth?: () => void;
 }
 
 export default function MainMenu({
-  hull, turret, credits = 0, claimableQuestsCount = 0,
-  game, onStart, onQuickGame, onServerBrowser, onGarage, onQuests, onOpenAuth,
+  hull,
+  turret,
+  credits = 0,
+  claimableQuestsCount = 0,
+  game,
+  onStart,
+  onQuickGame,
+  onServerBrowser,
+  onGarage,
+  onQuests,
+  onSettings,
+  onOpenAuth,
 }: MainMenuProps) {
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-between p-8 md:p-14 bg-gradient-to-r from-[#04060bf2] via-[#04060ba8] to-transparent">
-      <div className="menu-stripes pointer-events-none absolute inset-x-0 top-0 h-2" />
-      <div className="menu-stripes pointer-events-none absolute inset-x-0 bottom-0 h-2" />
+    <div className="absolute inset-0 z-40 flex flex-col justify-between p-6 md:p-10 pointer-events-none select-none">
+      {/* Декоративные полосы сверху и снизу */}
+      <div className="menu-stripes absolute inset-x-0 top-0 h-2" aria-hidden />
+      <div className="menu-stripes absolute inset-x-0 bottom-0 h-2" aria-hidden />
 
-      {/* Top right currency & quests bar */}
-      <div className="absolute top-6 right-8 md:right-14 z-20 flex items-center gap-3">
-        {onOpenAuth && (
-          <UserBadge game={game ?? null} onOpenAuth={onOpenAuth} />
-        )}
+      {/* Верхний ряд: Логотип слева, Живой угол статуса (HUD Header) справа */}
+      <header className="relative z-10 flex flex-col sm:flex-row items-start justify-between gap-4 w-full">
+        {/* Логотип ARMOR STRIKE */}
+        <div className="pointer-events-auto flex flex-col items-start">
+          <div className="anim-left flex items-center gap-2 text-[10px] tracking-widest text-amber-400 font-mono">
+            <span className="h-1.5 w-1.5 bg-amber-400 cut-chip animate-pulse" aria-hidden />
+            <span>ARMOR STRIKE // ИГРОВОЕ ЛОББИ</span>
+          </div>
 
-        {onQuests && (
-          <button
-            type="button"
-            onClick={onQuests}
-            className="btn-game btn-ghost px-4 py-2 text-xs flex items-center gap-2"
-            aria-label="Боевые задачи"
+          <h1
+            className="anim-left title-glitch font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-none tracking-wider text-white"
+            style={{ '--d': '0.1s' } as React.CSSProperties}
           >
-            <Trophy size={15} className="text-amber-400" aria-hidden />
-            <span>ЗАДАЧИ</span>
-            {claimableQuestsCount > 0 && (
-              <span className="cut-chip bg-emerald-500 text-slate-950 font-bold px-1.5 py-0.5 text-[9px]">
-                +{claimableQuestsCount}
-              </span>
-            )}
-          </button>
-        )}
-
-        <div className="hud-panel flex items-center gap-2 px-3.5 py-2 bg-amber-500/10 border border-amber-500/20">
-          <Coins size={15} className="text-amber-400" aria-hidden />
-          <span className="font-display text-sm text-amber-300">{credits}</span>
-          <span className="text-[10px] tracking-wider text-amber-400/80">CR</span>
-        </div>
-      </div>
-
-      <div className="relative z-10 flex max-w-xl flex-col items-start text-left">
-        <div className="anim-left flex items-center gap-3 text-[11px] tracking-hero text-amber-400/90" style={{ '--d': '0.05s' } as React.CSSProperties}>
-          <span className="h-px w-10 bg-amber-400/50" />
-          3D ТАНКОВЫЙ СИМУЛЯТОР
-        </div>
-
-        <div className="anim-left" style={{ '--d': '0.15s' } as React.CSSProperties}>
-          <h1 className="title-glitch font-display text-5xl leading-none tracking-wider md:text-7xl">
             ARMOR
             <span className="block bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-400 bg-clip-text text-transparent">
               STRIKE
@@ -73,95 +66,153 @@ export default function MainMenu({
           </h1>
         </div>
 
-        <p className="anim-left mt-4 max-w-lg text-xs leading-relaxed text-white/70 md:text-sm" style={{ '--d': '0.28s' } as React.CSSProperties}>
-          Разрушаемые укрытия, матчи DM / TDM с ботами и сборка бронетехники.
-          Соедини корпус и орудие в Гараже - выбери режим - и выходи в бой.
-        </p>
+        {/* Живой угол статуса: армейский жетон / пропуск */}
+        <div
+          className="pointer-events-auto anim-down self-end sm:self-auto"
+          style={{ '--d': '0.15s' } as React.CSSProperties}
+        >
+          <MilitaryPassBadge
+            game={game ?? null}
+            credits={credits}
+            onOpenAuth={onOpenAuth ?? (() => {})}
+          />
+        </div>
+      </header>
 
-        {/* S1: главное действие — сразу под лидом. Рядом — быстрый сетевой вход и серверы. */}
-        <div className="anim-left mt-8" style={{ '--d': '0.4s' } as React.CSSProperties}>
-          <div className="flex flex-wrap items-center gap-3">
-            <button type="button" onClick={onStart} className="btn-game btn-primary px-10 py-4 text-lg" aria-label="Начать игру: выбор режима и карты">
+      {/* Нижняя / левая зона: Вертикальный командный стек (Game Lobby Stack) */}
+      <nav
+        className="pointer-events-auto relative z-10 flex flex-col gap-2.5 w-full max-w-[320px] md:max-w-[360px] mt-auto"
+        aria-label="Главное меню игры"
+      >
+        {/* 1. ДОМИНИРУЮЩАЯ КНОПКА «В БОЙ!» (Big Play Button) */}
+        <div className="anim-left flex flex-col gap-1.5" style={{ '--d': '0.25s' } as React.CSSProperties}>
+          <button
+            type="button"
+            onClick={onStart}
+            className="btn-game btn-big-battle w-full py-4 md:py-5 px-6 text-left flex items-center justify-between"
+            aria-label="В бой: начать игру"
+          >
+            <div className="flex items-center gap-3">
               <Play size={22} className="bicon" aria-hidden />
-              <span>ИГРАТЬ</span>
-            </button>
-            <button
-              type="button"
-              onClick={onQuickGame}
-              className="btn-game btn-ghost px-6 py-4 text-base text-amber-300 border-amber-500/30 hover:bg-amber-500/10"
-              aria-label="Быстрая игра: мгновенный вход на любой открытый сервер"
-            >
-              <Shuffle size={18} className="bicon" aria-hidden />
-              <span>БЫСТРАЯ ИГРА</span>
-            </button>
-            {onServerBrowser && (
-              <button
-                type="button"
-                onClick={onServerBrowser}
-                className="btn-game btn-ghost px-6 py-4 text-base border-slate-700 text-white/90 hover:bg-white/5"
-                aria-label="Список серверов и комнат мультиплеера"
-              >
-                <Globe size={18} className="bicon" aria-hidden />
-                <span>СЕРВЕРЫ</span>
-              </button>
-            )}
-          </div>
-          <p className="mt-2.5 text-[11px] tracking-wider text-white/50">
-            БЫСТРАЯ ИГРА: вход на открытый сервер без пароля · автозаполнение ботами
-          </p>
+              <div className="flex flex-col items-start leading-none">
+                <span className="font-display font-black tracking-widest text-slate-950 text-2xl md:text-3xl">
+                  В БОЙ!
+                </span>
+                <span className="text-[10px] font-mono tracking-wider text-slate-900/80 mt-1 font-bold">
+                  ВЫБОР РЕЖИМА И КАРТЫ
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="key-chip bg-slate-900/20 text-slate-950 border-slate-900/40 text-[9px]">
+                ENTER
+              </span>
+              <ChevronsRight size={24} className="pulse-chevron text-slate-950 stroke-[3]" aria-hidden />
+            </div>
+          </button>
+
+          {/* Быстрый старт на открытый сервер */}
+          <button
+            type="button"
+            onClick={onQuickGame}
+            className="btn-game btn-ghost w-full py-2 px-3 text-xs tracking-wider flex items-center justify-center gap-2 text-amber-300 border-amber-500/30 hover:bg-amber-500/10"
+            aria-label="Быстрая игра: мгновенный вход в открытый бой"
+          >
+            <Shuffle size={18} className="bicon" aria-hidden />
+            <span>БЫСТРАЯ ИГРА (МГНОВЕННЫЙ БОЙ)</span>
+          </button>
         </div>
 
-        {/* Сборка сжата до одной строки-чипа: вторичный вход, а не блок-препятствие.
-            Побочно снимает коллизию двух подписей (U1) — их просто больше нет. */}
+        {/* 2. ГАРАЖ */}
         <button
           type="button"
           onClick={onGarage}
-          className="anim-left hud-panel build-chip mt-5 flex w-full max-w-md items-center gap-3 px-4 py-2.5 text-left"
-          style={{ '--d': '0.52s' } as React.CSSProperties}
-          aria-label={`Сборка: ${hull.name} и ${turret.name}. Открыть гараж`}
+          className="anim-left lobby-nav-btn build-chip group"
+          style={{ '--d': '0.35s' } as React.CSSProperties}
+          aria-label={`Гараж: сборка ${hull.name} и ${turret.name}`}
         >
-          <Shield size={16} className="shrink-0 text-sky-400" aria-hidden />
-          <span className="font-display text-sm text-sky-200">{hull.name}</span>
-          <span className="text-white/45" aria-hidden>+</span>
-          <Zap size={16} className="shrink-0 text-amber-400" aria-hidden />
-          <span className="font-display text-sm text-amber-200">{turret.name}</span>
-          <span className="ml-auto flex items-center gap-1 text-[11px] tracking-wider text-white/70">
-            <Wrench size={13} aria-hidden /> ГАРАЖ
+          <Wrench size={18} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-sm tracking-wider text-white">ГАРАЖ</div>
+            <div className="text-[10px] text-amber-300/80 tracking-wider font-mono truncate">
+              {hull.name} + {turret.name}
+            </div>
+          </div>
+          <span className="text-[10px] text-white/50 tracking-wider font-mono uppercase">
+            НАСТРОИТЬ
           </span>
         </button>
 
-        <div className="anim-left mt-8 grid w-full max-w-md grid-cols-2 gap-2 text-left" style={{ '--d': '0.64s' } as React.CSSProperties}>
-          <ControlCard icon={<Gamepad2 size={16} aria-hidden />} k="WASD" label="Корпус" />
-          <ControlCard icon={<MousePointer2 size={16} aria-hidden />} k="МЫШЬ" label="Башня" />
-          <ControlCard icon={<Target size={16} aria-hidden />} k="ЛКМ" label="Огонь" />
-          <ControlCard icon={<RotateCw size={16} aria-hidden />} k="ESC" label="Пауза" />
-        </div>
-      </div>
+        {/* 3. СПИСОК СЕРВЕРОВ */}
+        {onServerBrowser && (
+          <button
+            type="button"
+            onClick={onServerBrowser}
+            className="anim-left lobby-nav-btn group"
+            style={{ '--d': '0.45s' } as React.CSSProperties}
+            aria-label="Список серверов и комнат мультиплеера"
+          >
+            <Globe size={18} className="text-sky-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-sm tracking-wider text-white">СПИСОК СЕРВЕРОВ</div>
+              <div className="text-[10px] text-sky-300/70 tracking-wider font-mono">
+                МУЛЬТИПЛЕЕР И КОМНАТЫ
+              </div>
+            </div>
+            <span className="text-[10px] text-emerald-400 tracking-wider font-mono font-bold">
+              ОНЛАЙН
+            </span>
+          </button>
+        )}
 
-      <div className="pointer-events-none z-10 hidden flex-col items-end justify-center lg:flex">
-        <div className="anim-up hud-panel max-w-xs bg-black/40 p-3 text-right" style={{ '--d': '0.7s' } as React.CSSProperties}>
-          <div className="hud-label mb-1 flex items-center justify-end gap-1.5 text-amber-400">
-            <Flame size={12} aria-hidden /> 3D ПРЕДПРОСМОТР
-          </div>
-          <p className="text-[11px] leading-relaxed tracking-widest text-white/70">
-            Модель рендерится в реальном времени.
-            Смена корпуса или башни в Гараже мгновенно обновляет модель.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+        {/* 4. ЗАДАЧИ */}
+        {onQuests && (
+          <button
+            type="button"
+            onClick={onQuests}
+            className="anim-left lobby-nav-btn group"
+            style={{ '--d': '0.55s' } as React.CSSProperties}
+            aria-label="Боевые задачи и награды"
+          >
+            <Trophy size={18} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-sm tracking-wider text-white">ЗАДАЧИ</div>
+              <div className="text-[10px] text-amber-300/70 tracking-wider font-mono">
+                БОЕВЫЕ ВЫПЛАТЫ И КВЕСТЫ
+              </div>
+            </div>
+            {claimableQuestsCount > 0 ? (
+              <span className="cut-chip bg-emerald-500 text-slate-950 font-bold px-2 py-0.5 text-[10px]">
+                +{claimableQuestsCount}
+              </span>
+            ) : (
+              <span className="text-[10px] text-white/50 tracking-wider font-mono">
+                3 СЛОТА
+              </span>
+            )}
+          </button>
+        )}
 
-function ControlCard({ icon, k, label }: { icon: React.ReactNode; k: string; label: string }) {
-  return (
-    <div className="hud-panel flex items-center gap-2.5 bg-black/40 px-3 py-2">
-      <span className="text-amber-400" aria-hidden>{icon}</span>
-      <div className="min-w-0">
-        {/* Тот же чип клавиши, что в боевой подсказке (S1). */}
-        <span className="key-chip">{k}</span>
-        <div className="mt-1 text-[11px] text-white/70">{label}</div>
-      </div>
+        {/* 5. НАСТРОЙКИ */}
+        {onSettings && (
+          <button
+            type="button"
+            onClick={onSettings}
+            className="anim-left lobby-nav-btn group"
+            style={{ '--d': '0.65s' } as React.CSSProperties}
+            aria-label="Настройки звука, графики и управления"
+          >
+            <Settings size={18} className="text-slate-300 group-hover:rotate-45 transition-transform shrink-0" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-sm tracking-wider text-white">НАСТРОЙКИ</div>
+              <div className="text-[10px] text-white/50 tracking-wider font-mono">
+                ЗВУК, ГРАФИКА, МЫШЬ
+              </div>
+            </div>
+          </button>
+        )}
+      </nav>
     </div>
   );
 }

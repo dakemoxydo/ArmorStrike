@@ -571,9 +571,9 @@ describe('UI polish invariants (state matrix, §3.5)', () => {
 describe('UI polish invariants (layout per scenario, S1–S5)', () => {
   it('S1: the menu CTA comes before the build chip, and keys are one primitive', () => {
     const menu = readSrc('src/components/MainMenu.tsx');
-    // Главное действие — сразу под лидом; сборка сжата до строки-чипа ниже.
-    expect(menu.indexOf('ИГРАТЬ')).toBeGreaterThan(-1);
-    expect(menu.indexOf('ИГРАТЬ')).toBeLessThan(menu.indexOf('build-chip'));
+    // Главное действие — «В БОЙ!»; сборка сжата до строки-чипа ниже («ГАРАЖ»).
+    expect(menu.indexOf('В БОЙ')).toBeGreaterThan(-1);
+    expect(menu.indexOf('В БОЙ')).toBeLessThan(menu.indexOf('build-chip'));
     expect(menu).toMatch(/build-chip/);
     // Клавиша — общий примитив: чип определён один раз, в base.css.
     expect(style('base.css')).toMatch(/\.key-chip\s*\{/);

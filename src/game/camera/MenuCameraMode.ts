@@ -12,14 +12,14 @@ export class MenuCameraMode implements CameraMode {
 
   update(dt: number, p: CameraUpdateParams, rig: CameraRig): void {
     rig.menuAngle += dt * 0.3;
-    const r = 17;
+    const r = 16;
     this.tmpV.set(
       Math.sin(rig.menuAngle) * r,
-      PREVIEW_POS.y + 3.2 + Math.sin(p.elapsed * 0.4) * 0.6,
+      PREVIEW_POS.y + 2.8 + Math.sin(p.elapsed * 0.4) * 0.5,
       Math.cos(rig.menuAngle) * r,
     );
     rig.camPos.lerp(this.tmpV, 1 - Math.exp(-3 * dt));
-    rig.camLook.lerp(this.tmpV2.set(PREVIEW_POS.x + 6, PREVIEW_POS.y + 1.2, PREVIEW_POS.z), 1 - Math.exp(-5 * dt));
+    rig.camLook.lerp(this.tmpV2.set(PREVIEW_POS.x, PREVIEW_POS.y + 0.9, PREVIEW_POS.z), 1 - Math.exp(-5 * dt));
 
     if (p.previewVisual) {
       p.previewVisual.group.rotation.y = rig.menuAngle * 0.35;

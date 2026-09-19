@@ -15,6 +15,7 @@ import MapSelect from './components/MapSelect';
 import ModeSelect from './components/ModeSelect';
 import StarterPackModal from './components/StarterPackModal';
 import QuestsModal from './components/QuestsModal';
+import SettingsModal from './components/SettingsModal';
 import AuthModal, { type AuthTab } from './components/auth/AuthModal';
 import { AuthService } from './game/auth/authService';
 import type { MapId } from './game/maps/mapCatalog';
@@ -76,6 +77,8 @@ export default function App() {
   const [authModalInitialTab, setAuthModalInitialTab] = useState<AuthTab>('login');
   /** Модальное окно списка серверов мультиплеера */
   const [serverBrowserOpen, setServerBrowserOpen] = useState(false);
+  /** Модальное окно настроек игры из лобби */
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Boot: Game.create awaits async tank mesh / systems; listeners are safe pre/post ready.
   useEffect(() => {
@@ -558,6 +561,7 @@ export default function App() {
           onServerBrowser={() => setServerBrowserOpen(true)}
           onGarage={goGarage}
           onQuests={() => setQuestsOpen(true)}
+          onSettings={() => setSettingsOpen(true)}
           onOpenAuth={() => {
             setAuthModalInitialTab('login');
             setAuthModalOpen(true);
@@ -627,6 +631,19 @@ export default function App() {
           onCreateRoom={handleCreateRoom}
           onQuickMatch={handleQuickMatch}
           onClose={() => setServerBrowserOpen(false)}
+        />
+      )}
+
+      {settingsOpen && (
+        <SettingsModal
+          game={game}
+          muted={muted}
+          onToggleMute={toggleMute}
+          crosshair={crosshair}
+          onCrosshair={changeCrosshair}
+          damageNumbers={damageNumbers}
+          onDamageNumbers={changeDamageNumbers}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
 
