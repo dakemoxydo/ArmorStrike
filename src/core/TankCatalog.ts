@@ -27,7 +27,7 @@ const METAL_DARK = 0x2b2f36;
  * Стиль окраски игрока.
  *
  * @param faction Цвет фракции (Alpha/Bravo) в командных режимах. Без него
- * (FFA, предпросмотр гаража) корпус — оливково-янтарный камуфляж, не циан.
+ * (FFA, предпросмотр гаража) корпус — сочный изумрудно-мятный камуфляж с белыми полосами.
  */
 export function buildPlayerStyle(faction?: Color): TankStyle {
   const paint = faction
@@ -38,10 +38,10 @@ export function buildPlayerStyle(faction?: Color): TankStyle {
         dark: '#16202a',
         light: `#${faction.clone().multiplyScalar(0.92).getHexString()}`,
       }
-    : { body: '#6b7a32', dark: '#2c2618', light: '#d4c070' };
+    : { body: '#2fae8f', dark: '#144e40', light: '#ffffff' };
   return {
     ...paint,
-    // Кольцо/лампа/антенна — янтарный «это я», совпадает с UI-акцентом.
+    // Кольцо/лампа/антенна — яркий сочный маркер «это я».
     glow: COLORS.player,
     // Личная краска переехала на акценты башни (п.21).
     accent: mixHex(METAL_DARK, COLORS.player, 0.45),

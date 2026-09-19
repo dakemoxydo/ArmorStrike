@@ -27,39 +27,39 @@ export interface AtmospherePreset {
 }
 
 const COMIC_CITY: AtmospherePreset = {
-  background: 0x4a8ebb,
-  fogColor: 0x6aaed6, fogNear: 150, fogFar: 550,
+  background: 0x3a7ea8,
+  fogColor: 0x5a9ec6, fogNear: 160, fogFar: 560,
   exposure: 1.15,
-  hemiSky: 0xbee0f8, hemiGround: 0x324456, hemiIntensity: 0.65,
-  sunColor: 0xfff4d6, sunIntensity: 2.4, sunPosition: [120, 180, 70],
-  rimColor: 0x60c8ff, rimIntensity: 0.55,
-  skyZenith: [0.18, 0.45, 0.85], skyHorizon: [0.65, 0.82, 0.96], skyCloud: [0.95, 0.98, 1.0],
+  hemiSky: 0xc5e4ff, hemiGround: 0x28323e, hemiIntensity: 0.65,
+  sunColor: 0xffffff, sunIntensity: 2.5, sunPosition: [120, 180, 70],
+  rimColor: 0x70c5ff, rimIntensity: 0.55,
+  skyZenith: [0.14, 0.42, 0.88], skyHorizon: [0.62, 0.80, 0.96], skyCloud: [1.0, 1.0, 1.0],
   skySunDir: [0.48, 0.72, 0.35],
-  skySunDisc: [1.0, 0.96, 0.85], skySunGlow: [0.8, 0.9, 1.0],
+  skySunDisc: [1.0, 1.0, 0.96], skySunGlow: [0.8, 0.9, 1.0],
 };
 
 const COMIC_FACTORY: AtmospherePreset = {
-  background: 0x382216,
-  fogColor: 0x523522, fogNear: 130, fogFar: 500,
-  exposure: 1.18,
-  hemiSky: 0xffc892, hemiGround: 0x2c1e14, hemiIntensity: 0.62,
-  sunColor: 0xffa84d, sunIntensity: 2.6, sunPosition: [135, 140, 50],
-  rimColor: 0xff7b22, rimIntensity: 0.65,
-  skyZenith: [0.28, 0.22, 0.38], skyHorizon: [0.98, 0.60, 0.28], skyCloud: [0.95, 0.52, 0.35],
-  skySunDir: [0.55, 0.55, 0.35],
-  skySunDisc: [1.0, 0.85, 0.50], skySunGlow: [1.0, 0.60, 0.30],
+  background: 0x323c4a,
+  fogColor: 0x445263, fogNear: 140, fogFar: 520,
+  exposure: 1.15,
+  hemiSky: 0xa8c8e8, hemiGround: 0x242a32, hemiIntensity: 0.65,
+  sunColor: 0xffffff, sunIntensity: 2.5, sunPosition: [135, 150, 55],
+  rimColor: 0x78b0f0, rimIntensity: 0.60,
+  skyZenith: [0.15, 0.40, 0.80], skyHorizon: [0.60, 0.76, 0.92], skyCloud: [1.0, 1.0, 1.0],
+  skySunDir: [0.55, 0.60, 0.35],
+  skySunDisc: [1.0, 1.0, 1.0], skySunGlow: [0.75, 0.88, 1.0],
 };
 
 const COMIC_VILLAGE: AtmospherePreset = {
-  background: 0x5288a8,
-  fogColor: 0x78a8be, fogNear: 140, fogFar: 520,
-  exposure: 1.20,
-  hemiSky: 0xd2ecf9, hemiGround: 0x3a4828, hemiIntensity: 0.68,
-  sunColor: 0xfff0c8, sunIntensity: 2.5, sunPosition: [160, 150, 90],
-  rimColor: 0xffc466, rimIntensity: 0.60,
-  skyZenith: [0.22, 0.48, 0.82], skyHorizon: [0.72, 0.86, 0.94], skyCloud: [0.96, 0.98, 1.0],
-  skySunDir: [0.65, 0.60, 0.42],
-  skySunDisc: [1.0, 0.94, 0.80], skySunGlow: [0.9, 0.85, 0.7],
+  background: 0x4a88b8,
+  fogColor: 0x6aa6d0, fogNear: 150, fogFar: 550,
+  exposure: 1.18,
+  hemiSky: 0xbfe0f8, hemiGround: 0x284a1e, hemiIntensity: 0.70,
+  sunColor: 0xfffdf4, sunIntensity: 2.55, sunPosition: [150, 160, 85],
+  rimColor: 0xd6f0ff, rimIntensity: 0.55,
+  skyZenith: [0.12, 0.45, 0.90], skyHorizon: [0.68, 0.86, 0.98], skyCloud: [1.0, 1.0, 1.0],
+  skySunDir: [0.62, 0.65, 0.40],
+  skySunDisc: [1.0, 1.0, 0.95], skySunGlow: [0.85, 0.92, 1.0],
 };
 
 export const ATMOSPHERES: Record<MapId, AtmospherePreset> = {

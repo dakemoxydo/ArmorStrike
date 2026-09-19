@@ -11,21 +11,21 @@ describe('atmospherePresets', () => {
 
   it('city = Comic Metropolis Noon (яркий лазурный полдень)', () => {
     const c = getAtmosphere('city');
-    expect(c.background).toBe(0x4a8ebb);
-    expect(c.rimColor).toBe(0x60c8ff);
+    expect(c.background).toBe(0x3a7ea8);
+    expect(c.rimColor).toBe(0x70c5ff);
     expect(c.exposure).toBe(1.15);
   });
 
-  it('factory = Comic Industrial Sunset (графичный янтарный закат), отличима от city', () => {
+  it('factory = Comic Industrial Daylight (контрастный индустриальный день), отличима от city', () => {
     const f = getAtmosphere('factory');
     const c = getAtmosphere('city');
     expect(f).not.toEqual(c);
-    expect(f.background).toBe(0x382216);
-    expect(f.rimColor).toBe(0xff7b22);
-    // закатная дымка плотнее чистого полуденного воздуха города
+    expect(f.background).toBe(0x323c4a);
+    expect(f.rimColor).toBe(0x78b0f0);
+    // атмосферная дымка завода плотнее чистого полуденного воздуха города
     expect(f.fogNear).toBeLessThan(c.fogNear);
     expect(f.hemiSky).not.toBe(c.hemiSky);
-    expect(f.sunColor).not.toBe(c.sunColor);
+    expect(f.rimColor).not.toBe(c.rimColor);
   });
 
   it('village = Comic Pastoral Daylight (свежий солнечный день)', () => {
@@ -50,8 +50,8 @@ describe('atmospherePresets', () => {
   });
 
   it('exposure values match documented tuning', () => {
-    expect(getAtmosphere('factory').exposure).toBe(1.18);
+    expect(getAtmosphere('factory').exposure).toBe(1.15);
     expect(getAtmosphere('city').exposure).toBe(1.15);
-    expect(getAtmosphere('village').exposure).toBe(1.20);
+    expect(getAtmosphere('village').exposure).toBe(1.18);
   });
 });

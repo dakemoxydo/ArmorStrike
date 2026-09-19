@@ -79,8 +79,8 @@ Accent: аварийный амбер `#ffb02e` (holo-маяк над CP-B то�
 Factory рендерится в режиме **Comic Industrial Sunset** — насыщенный янтарно-медный закат с глубокими графичными тенями литейных цехов под стилизованным солнцем (см. [[Stylized_Art_Direction]]).
 
 - **Пресет:** `COMIC_FACTORY` в `src/game/atmospherePresets.ts` (`ATMOSPHERES = { factory: COMIC_FACTORY, city: COMIC_CITY, village: COMIC_VILLAGE }`).
-- **Ключевые поля:** background `0x382216`, fog `0x523522` (near 130 / far 500), exposure **1.18**, hemi sky `0xffc892` / ground `0x2c1e14` (int 0.62), sun `0xffa84d` (int 2.6) `[135, 140, 50]`, rim `0xff7b22` (int 0.65), тёплые графичные sky-uniforms (horizon `[0.98, 0.60, 0.28]`).
-- **Отличие от city:** тёплый медный hemi/sun/rim против чистого полуденного лазурного неба Города; `f.fogNear < c.fogNear` (130 < 150) — более плотная закатная атмосфера. Запинено в `atmospherePresets.test.ts`.
+- **Ключевые поля:** background `0x323c4a`, fog `0x445263` (near 140 / far 520), exposure **1.15**, hemi sky `0xa8c8e8` / ground `0x242a32` (int 0.65), sun `0xffffff` (int 2.5) `[135, 150, 55]`, rim `0x78b0f0` (int 0.60), чистый дневной sky-uniforms без паразитной желтизны.
+- **Отличие от city:** более плотная атмосферная дымка завода `f.fogNear < c.fogNear` (140 < 160) и прохладная индустриальная полусфера. Запинено в `atmospherePresets.test.ts`.
 - **Применение:** `RenderWorld.applyAtmosphere(mapId)` из `buildArena(arena, effects, mapId, renderWorld)`.
 
 ## Animated nodes (ArenaEffects)

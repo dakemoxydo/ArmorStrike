@@ -211,13 +211,13 @@ function car(
   }, 80);
 }
 
-function planter(ctx: ArenaBuildContext, x: number, z: number, bushColor = 0x2a5a30) {
+function planter(ctx: ArenaBuildContext, x: number, z: number, bushColor = 0x2e7d32) {
   ctx.addColliderBlock(x, z, 3.0, 3.0, 1.35, true, () => {
     const g = new THREE.Group();
-    g.add(ctx.box(3.0, 0.95, 3.0, concrete(0x555e6a)));
+    g.add(ctx.box(3.0, 0.95, 3.0, concrete(0x718096)));
     const bush = new THREE.Mesh(
-      new THREE.SphereGeometry(1.0, 8, 6),
-      new THREE.MeshStandardMaterial({ color: bushColor, roughness: 0.95 }),
+      new THREE.SphereGeometry(1.05, 8, 6),
+      new THREE.MeshStandardMaterial({ color: bushColor, roughness: 0.92 }),
     );
     bush.position.y = 1.5;
     g.add(bush);
@@ -809,6 +809,21 @@ function buildCityStreetProps(ctx: ArenaBuildContext) {
   ctx.group.add(tlBoxes);
   ctx.group.add(tlLensGreen);
   ctx.group.add(tlLensDark);
+
+  // ── зелёные насаждения мегаполиса: клумбы с сочными кустарниками ──────────
+  const planterSpots: [number, number][] = [
+    // Углы центральной площади (r ~28м от центра, вне 9м зоны CP-A)
+    [20, 20], [-20, 20], [20, -20], [-20, -20],
+    // Тротуары главных авеню (вне 6м центрального коридора, вне спавнов)
+    [17, 36], [-17, 36], [17, -36], [-17, -36],
+    [36, 17], [-36, 17], [36, -17], [-36, -17],
+    // Вторичные проспекты
+    [52, 28], [-52, 28], [52, -28], [-52, -28],
+    [28, 52], [-28, 52], [28, -52], [-28, -52],
+  ];
+  for (const [px, pz] of planterSpots) {
+    planter(ctx, px, pz, 0x2e7d32);
+  }
 }
 
 // ── city ramps (not shared factory positions) ──────────────────────────────

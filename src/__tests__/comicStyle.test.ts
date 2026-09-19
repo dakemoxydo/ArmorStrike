@@ -158,15 +158,15 @@ describe('Comic / Cel-Shaded Art Direction', () => {
       expect(mat.customProgramCacheKey()).toBe('cel-shaded-std-v1');
     });
 
-    it('player identity is amber, not mint cyan', async () => {
+    it('player identity is saturated mint cyan with white accents', async () => {
       const { readFileSync } = await import('node:fs');
       const { resolve } = await import('node:path');
       const constants = readFileSync(resolve(__dirname, '../core/constants.ts'), 'utf8');
       const catalog = readFileSync(resolve(__dirname, '../core/TankCatalog.ts'), 'utf8');
-      expect(constants).toMatch(/player:\s*0xf59e0b/);
-      expect(constants).not.toMatch(/player:\s*0x2ee6c0/);
-      expect(catalog).toContain('#6b7a32');
-      expect(catalog).not.toContain('#2fae8f');
+      expect(constants).toMatch(/player:\s*0x2ee6c0/);
+      expect(constants).toMatch(/playerAccent:\s*0xffffff/);
+      expect(catalog).toContain('#2fae8f');
+      expect(catalog).toContain('#ffffff');
     });
 
     it('ground textures have no Perlin noise() and RenderWorld has no IBL/ACES/bloom', async () => {

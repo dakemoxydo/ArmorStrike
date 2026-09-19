@@ -31,6 +31,7 @@ export function buildFactoryContent(ctx: ArenaBuildContext) {
   buildCentralCrane(ctx);
   buildOuterRing(ctx);
   buildFactoryRamps(ctx);
+  buildFactoryVegetation(ctx);
   buildFactoryAtmosphere(ctx);
 }
 
@@ -1101,17 +1102,60 @@ function buildFactoryRamps(ctx: ArenaBuildContext) {
   addRamp(-100, -26, -Math.PI / 2);
 }
 
-// ── atmosphere (smog dome + drifting dust) ────────────────────────────────
+// ── vegetation (hardy industrial weeds & wild grass) ───────────────────────
+
+function buildFactoryVegetation(ctx: ArenaBuildContext) {
+  const tuftGeo = new THREE.ConeGeometry(0.45, 1.2, 5);
+  tuftGeo.translate(0, 0.6, 0);
+  const tuftMat = new THREE.MeshStandardMaterial({
+    color: 0x388e3c, roughness: 0.92, metalness: 0.0,
+  });
+  // Позиции дикорастущей травы вдоль ж/д путей, складов и внешнего периметра
+  const spots: [number, number, number?][] = [
+    // Вдоль ж/д тупика (SE)
+    [86, -122], [96, -122], [108, -122], [120, -122], [132, -122],
+    [90, -104], [102, -104], [116, -104], [128, -104],
+    // Углы складских зон и внешний периметр
+    [-132, -132], [-138, -120], [-130, -140],
+    [132, 132], [138, 120], [130, 140],
+    [-132, 132], [-138, 120], [-130, 140],
+    [132, -132], [138, -120], [130, -140],
+    // Внешняя зона сборки
+    [-128, -50], [-134, -65], [-126, -30], [-136, -36],
+    // Внешний край терминала контейнеров
+    [126, 32], [136, 44], [128, 62], [134, 76],
+  ];
+  const inst = new THREE.InstancedMesh(tuftGeo, tuftMat, spots.length);
+  inst.receiveShadow = true;
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+  const greens = [0x2e7d32, 0x388e3c, 0x43a047, 0x1e5622];
+  spots.forEach(([x, z, s0], i) => {
+    const s = s0 ?? (0.8 + Math.random() * 0.6);
+    dummy.position.set(x + (Math.random() - 0.5) * 1.5, 0, z + (Math.random() - 0.5) * 1.5);
+    dummy.rotation.y = Math.random() * Math.PI;
+    dummy.scale.set(s, s * 1.2, s);
+    dummy.updateMatrix();
+    inst.setMatrixAt(i, dummy.matrix);
+    color.setHex(greens[i % greens.length]);
+    inst.setColorAt(i, color);
+  });
+  inst.instanceMatrix.needsUpdate = true;
+  if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+  ctx.group.add(inst);
+}
+
+// ── atmosphere (clean industrial sky dome + white dust motes) ──────────────
 
 function buildFactoryAtmosphere(ctx: ArenaBuildContext) {
   const domeGeo = new THREE.CylinderGeometry(ctx.half + 6, ctx.half + 6, 78, 48, 1, true);
   const domeMat = new THREE.MeshBasicMaterial({
     map: hexTexture(),
     transparent: true,
-    opacity: 0.04,
+    opacity: 0.025,
     side: THREE.BackSide,
     depthWrite: false,
-    color: 0xd08a3a,
+    color: 0x475569,
     blending: THREE.AdditiveBlending,
   });
   const dome = new THREE.Mesh(domeGeo, domeMat);
@@ -1129,10 +1173,10 @@ function buildFactoryAtmosphere(ctx: ArenaBuildContext) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const mat = new THREE.PointsMaterial({
-    color: 0xd8b070,
+    color: 0xffffff,
     size: 0.16,
     transparent: true,
-    opacity: 0.4,
+    opacity: 0.35,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });

@@ -894,9 +894,9 @@ function buildVillagePond(ctx: ArenaBuildContext) {
 function buildVillageTrees(ctx: ArenaBuildContext) {
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3420, roughness: 0.9, metalness: 0 });
   const leafMats = [
-    new THREE.MeshStandardMaterial({ color: 0x3a6b2e, roughness: 0.95, metalness: 0 }),
-    new THREE.MeshStandardMaterial({ color: 0x4a7a34, roughness: 0.95, metalness: 0 }),
-    new THREE.MeshStandardMaterial({ color: 0x2e5a26, roughness: 0.95, metalness: 0 }),
+    new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.92, metalness: 0 }),
+    new THREE.MeshStandardMaterial({ color: 0x388e3c, roughness: 0.92, metalness: 0 }),
+    new THREE.MeshStandardMaterial({ color: 0x1b5e20, roughness: 0.95, metalness: 0 }),
   ];
   // Kept off the fire lanes, the square, the spawn aprons and the capture clearings.
   const spots: [number, number, number?][] = [
@@ -1290,19 +1290,21 @@ function buildVillageFireflies(ctx: ArenaBuildContext) {
   });
 }
 
-// ── foliage: instanced grass/wheat tufts (non-LOS, производительно) ──────
+// ── foliage: instanced grass/wheat tufts + wildflowers (non-LOS, сочная зелень) ──
 
 function buildVillageFoliage(ctx: ArenaBuildContext) {
   const tuftGeo = new THREE.ConeGeometry(0.5, 1.4, 5);
   tuftGeo.translate(0, 0.7, 0);
   const tuftMat = new THREE.MeshStandardMaterial({
-    color: 0x7a8a3a, roughness: 0.95, metalness: 0.0,
+    color: 0x388e3c, roughness: 0.92, metalness: 0.0,
   });
-  const COUNT = 420;
+  const COUNT = 480;
   const inst = new THREE.InstancedMesh(tuftGeo, tuftMat, COUNT);
   inst.receiveShadow = true;
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
+  const naturalGreens = [0x2e7d32, 0x388e3c, 0x43a047, 0x16a34a, 0x4caf50];
+  const wildflowers = [0xffffff, 0x3b82f6, 0xef4444, 0xfde047, 0xffffff];
   let placed = 0;
   let guard = 0;
   while (placed < COUNT && guard < COUNT * 30) {
@@ -1320,8 +1322,16 @@ function buildVillageFoliage(ctx: ArenaBuildContext) {
     dummy.scale.set(s, s * (0.9 + Math.random() * 0.5), s);
     dummy.updateMatrix();
     inst.setMatrixAt(placed, dummy.matrix);
-    color.setHex(wheat ? 0xc0a04a : [0x6a7a34, 0x7a8a3a, 0x5a6e2e][placed % 3]);
-    color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.06);
+    if (wheat) {
+      color.setHex(0xfacc15);
+    } else if (placed % 6 === 0) {
+      // яркие полевые цветы (ромашки, васильки, маки, лютики)
+      color.setHex(wildflowers[(placed / 6) % wildflowers.length]);
+    } else {
+      // сочные оттенки природной травы
+      color.setHex(naturalGreens[placed % naturalGreens.length]);
+    }
+    color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.05);
     inst.setColorAt(placed, color);
     placed++;
   }
@@ -1331,17 +1341,17 @@ function buildVillageFoliage(ctx: ArenaBuildContext) {
   ctx.group.add(inst);
 }
 
-// ── atmosphere (warm dusk dust) ────────────────────────────────────────────
+// ── atmosphere (fresh clean daylight air) ──────────────────────────────────
 
 function buildVillageAtmosphere(ctx: ArenaBuildContext) {
   const domeGeo = new THREE.CylinderGeometry(ctx.half + 6, ctx.half + 6, 76, 48, 1, true);
   const domeMat = new THREE.MeshBasicMaterial({
     map: duskGlowTexture(),
     transparent: true,
-    opacity: 0.035,
+    opacity: 0.02,
     side: THREE.BackSide,
     depthWrite: false,
-    color: GOLD,
+    color: 0x90caf9,
     blending: THREE.AdditiveBlending,
   });
   const dome = new THREE.Mesh(domeGeo, domeMat);
@@ -1359,10 +1369,10 @@ function buildVillageAtmosphere(ctx: ArenaBuildContext) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const mat = new THREE.PointsMaterial({
-    color: 0xd4c090,
-    size: 0.2,
+    color: 0xffffff,
+    size: 0.18,
     transparent: true,
-    opacity: 0.4,
+    opacity: 0.35,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
