@@ -231,7 +231,6 @@ export class GaussWeapon implements Weapon {
         }
         const target = this.lockedTarget;
         if (!target || !target.alive) {
-          this.needsTriggerRelease = true;
           this.cancelLock();
           break;
         }
@@ -271,7 +270,6 @@ export class GaussWeapon implements Weapon {
         }
 
         if (dist > range || dot < hysteresisCos || !losOk || switchedTarget) {
-          this.needsTriggerRelease = true;
           this.cancelLock();
           break;
         }
@@ -322,6 +320,7 @@ export class GaussWeapon implements Weapon {
     tmpTargetPos.set(target.position.x, target.position.y + 0.8, target.position.z);
 
     const dx = tmpTargetPos.x - tmpMuzzle.x;
+    const dy = tmpTargetPos.y - tmpMuzzle.y;
     const dz = tmpTargetPos.z - tmpMuzzle.z;
     const dist = Math.hypot(dx, dz);
     if (colliders && dist > 0.001) {
@@ -334,11 +333,12 @@ export class GaussWeapon implements Weapon {
         dist,
         colliders as Collider[],
         tmpMuzzle.y,
+        dy * inv,
       );
       if (blocker && blocker.dist < dist - 0.05) {
         tmpTargetPos.set(
           tmpMuzzle.x + dx * inv * blocker.dist,
-          tmpMuzzle.y,
+          tmpMuzzle.y + dy * inv * blocker.dist,
           tmpMuzzle.z + dz * inv * blocker.dist,
         );
         this.deps.effects.impact(tmpTargetPos, 0xc084fc);

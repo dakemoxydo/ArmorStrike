@@ -175,14 +175,18 @@ export class GameLoop {
     pl.aimDir(this._aimDir);
     const wt = pl.params.weaponType;
     const range = pl.params.range ?? WEAPON_TUNING[wt ?? 'cannon'].range;
-    const dist = reticleImpactDistance(
+    const lenXZ = Math.hypot(this._aimDir.x, this._aimDir.z);
+    const dirYRatio = lenXZ > 0.0001 ? this._aimDir.y / lenXZ : 0;
+    const distXZ = reticleImpactDistance(
       this._muzzleW.x, this._muzzleW.z, this._muzzleW.y,
       this._aimDir.x, this._aimDir.z,
       range, sim.arena.colliders, sim.tanks, pl.id,
       // Рельса и Гаусс сканируют/пробивают препятствия для прицела
       wt === 'railgun' || wt === 'gauss',
+      dirYRatio,
     );
-    this._impactP.copy(this._muzzleW).addScaledVector(this._aimDir, dist);
+    const dist3D = lenXZ > 0.0001 ? distXZ / lenXZ : distXZ;
+    this._impactP.copy(this._muzzleW).addScaledVector(this._aimDir, dist3D);
 
     const cam = cameraRig.camera;
     cam.updateMatrixWorld();

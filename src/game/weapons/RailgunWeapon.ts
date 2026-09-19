@@ -376,6 +376,8 @@ export class RailgunWeapon implements Weapon {
       if (ownerTeam !== null && targetTeam !== null && ownerTeam === targetTeam) continue;
       t.visual.group.updateMatrixWorld(true);
       t.visual.group.traverse((o) => {
+        if (!('isMesh' in o && (o as THREE.Mesh).isMesh)) return;
+        if (o === t.visual.ring || o === t.visual.shield || o.name === 'comicInkMesh') return;
         this._targetArr.push(o);
         this._tankMap.set(o, t);
       });
@@ -390,10 +392,10 @@ export class RailgunWeapon implements Weapon {
     range: number,
   ): { dist: number; id: number; point: THREE.Vector3 } | null {
     const hit = nearestShotBlockerDist(
-      tmpMuzzle.x, tmpMuzzle.z, tmpDir.x, tmpDir.z, range, colliders, tmpMuzzle.y,
+      tmpMuzzle.x, tmpMuzzle.z, tmpDir.x, tmpDir.z, range, colliders, tmpMuzzle.y, tmpDir.y,
     );
     if (!hit) return null;
-    // Impact FX at the actual beam height (horizontal ray), not an absolute world Y.
+    // Impact FX at the actual beam height (accounting for pitch), not an absolute world Y.
     // Keeps impact/debris aligned with the visible beam regardless of wall height.
     const point = this._tmpPoint.copy(tmpMuzzle).addScaledVector(tmpDir, hit.dist);
     return { dist: hit.dist, id: hit.id, point };

@@ -18,6 +18,7 @@
 | Прицел / башня | Мышь (pointer lock) | `CameraLookState` → `aimYaw` |
 | Огонь | ЛКМ или Space | `wantsFire` → `weapon.setFire` |
 | Перезарядка | R | `weapon.requestReload()` |
+| Центрирование башни | C | Сброс направления башни по курсу корпуса (`tank.yaw`) |
 | Табло | Tab (удержание) | `scoreHeld` → HUD |
 | Пауза | Esc | UI / `RunState.paused` |
 | Mute | M | `AudioFX` |
@@ -52,11 +53,13 @@
   (тот же `AimHighlighter`-захват, что наклоняет ствол) → класс `.is-locked`
   (красный + смыкание засечек) вешает `useGameHud` без ре-рендера ([[Vertical_Auto_Aim]]).
 
-## Pointer Lock
+## Pointer Lock и настройки мыши
 
 - Включение: клик по canvas в бою (`requestLock`).
-- Потеря lock: `onLockLost` → auto-pause **только** если бой активен (см. [[Game_Lifecycle]] / `shouldAutoPauseOnInterrupt`).
+- Отказ в захвате (`pointerlockerror`): при асинхронном респауне или срабатывании Esc-cooldown браузер может отклонить `requestPointerLock()`. Игра не ставит ошибочную паузу, ожидая клика игрока в бою.
+- Потеря lock: `onLockLost` → auto-pause **только** если бой активен и захват действительно удерживался ранее (см. [[Game_Lifecycle]] / `shouldAutoPauseOnInterrupt`). Введена защита от гонки Esc в Firefox (`lastAutoPauseTime`), исключающая мгновенный unpause.
 - На death cam и intermission lock отпускается намеренно — пауза **не** ставится.
+- **Чувствительность и инверсия:** В меню паузы доступны множитель чувствительности мыши (0.2x–3.0x, шаг 0.2x, default 1.0x) и инверсия вертикальной оси прицела Y (`as2_mouse_sens`, `as2_invert_y` в `localStorage`).
 
 ## Классы и файлы
 

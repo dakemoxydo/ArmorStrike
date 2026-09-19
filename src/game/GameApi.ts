@@ -57,6 +57,7 @@ export interface GameApi {
   toggleMute(): boolean;
   getQuality(): QualityLevel;
   cycleQuality(): QualityLevel;
+  setMouseSettings(settings: Partial<import('../ui/mouseSettings').MouseSettings>): void;
 
   /**
    * Select the garage loadout. Resolves after the 3D preview is rebuilt and

@@ -63,11 +63,15 @@ export function reticleImpactDistance(
   tanks: readonly ReticleTank[],
   selfId: number,
   pierceTanks = false,
+  dirY = 0,
 ): number {
+  const lenXZ = Math.hypot(dirX, dirZ);
+  const ndx = lenXZ > 0.0001 ? dirX / lenXZ : dirX;
+  const ndz = lenXZ > 0.0001 ? dirZ / lenXZ : dirZ;
   const safeRange = Number.isFinite(range) ? range : 1000;
   let d = safeRange;
   const wall = nearestShotBlockerDist(
-    muzzleX, muzzleZ, dirX, dirZ, d, colliders as Collider[], muzzleY,
+    muzzleX, muzzleZ, ndx, ndz, d, colliders as Collider[], muzzleY, dirY,
   );
   if (wall && wall.dist < d) d = wall.dist;
   if (pierceTanks) return d;
@@ -75,7 +79,7 @@ export function reticleImpactDistance(
   for (const t of tanks) {
     if (!t.alive || t.id === selfId) continue;
     const entry = rayCircleEntry(
-      muzzleX, muzzleZ, dirX, dirZ, d, t.position.x, t.position.z, t.radius + pad,
+      muzzleX, muzzleZ, ndx, ndz, d, t.position.x, t.position.z, t.radius + pad,
     );
     if (entry >= 0 && entry < d) d = entry;
   }

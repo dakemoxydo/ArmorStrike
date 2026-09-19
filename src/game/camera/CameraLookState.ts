@@ -12,11 +12,23 @@ export const PITCH_MAX = 0.85;
 export class CameraLookState {
   yaw = 0;
   pitch = DEFAULT_CAM_PITCH;
+  sensitivity = 1.0;
+  invertY = false;
 
   /** Применить delta мыши (pointer-lock movementX/Y). */
   applyPointerDelta(dx: number, dy: number): void {
-    this.yaw -= dx * AIM_SENS_X;
-    this.pitch = THREE.MathUtils.clamp(this.pitch + dy * AIM_SENS_Y, PITCH_MIN, PITCH_MAX);
+    this.yaw -= dx * AIM_SENS_X * this.sensitivity;
+    const dySigned = this.invertY ? -dy : dy;
+    this.pitch = THREE.MathUtils.clamp(this.pitch + dySigned * AIM_SENS_Y * this.sensitivity, PITCH_MIN, PITCH_MAX);
+  }
+
+  setMouseSettings(settings: { sensitivity?: number; invertY?: boolean }): void {
+    if (settings.sensitivity !== undefined && Number.isFinite(settings.sensitivity)) {
+      this.sensitivity = settings.sensitivity;
+    }
+    if (settings.invertY !== undefined) {
+      this.invertY = settings.invertY;
+    }
   }
 
   /** Сброс на старт матча / спавн. */

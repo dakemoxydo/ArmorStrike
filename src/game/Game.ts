@@ -260,6 +260,10 @@ export class Game implements GameApi {
   cycleQuality(): QualityLevel { return this.requireQuality().cycleQuality(); }
   setQuality(level: QualityLevel): QualityLevel { return this.requireQuality().setQuality(level); }
 
+  setMouseSettings(settings: Partial<import('../ui/mouseSettings').MouseSettings>): void {
+    this.requireSim().input.setMouseSettings(settings);
+  }
+
   getHud(): HudSnapshot {
     if (!this.hud) throw new Error('Game not ready yet — use Game.create()');
     return this.hud;
@@ -337,6 +341,7 @@ export class Game implements GameApi {
       localTeam: team ?? null,
       service: mp,
       remotes: remotePlayers,
+      emitEvent: ctx.emitEvent,
     });
     session.bootstrapRoster();
 

@@ -81,7 +81,11 @@ export interface WeaponOwner extends TankLike {
  * Flame: position/alive/TankLike; Railgun hitscan: visual.group.
  */
 export interface CombatPeer extends TankLike {
-  visual: { group: THREE.Object3D };
+  visual: {
+    group: THREE.Object3D;
+    ring?: THREE.Object3D;
+    shield?: THREE.Object3D;
+  };
 }
 
 /** Контекст кадра, доступный оружию при обновлении (без concrete Arena — нет цикла). */

@@ -1,13 +1,17 @@
 // ===== МЕНЮ ПАУЗЫ: продолжить, рестарт, гараж, выход, звук, качество, прицел =====
 import { useState } from 'react';
 import {
-  ArrowLeft, Clock3, Hash, Home, Monitor, Pause, Play, RefreshCcw,
+  ArrowLeft, ArrowUpDown, Clock3, Hash, Home, Monitor, Pause, Play, RefreshCcw,
   Skull, Trophy, Volume2, VolumeX, Wrench,
 } from 'lucide-react';
 import { HULLS, TURRETS } from '../core/catalog';
 import type { GameApi } from '../game/GameApi';
 import { QUALITY_PRESETS, type QualityLevel } from '../game/graphicsQuality';
 import { CROSSHAIR_STYLES, type CrosshairStyle } from '../ui/crosshairStyle';
+import {
+  loadMouseSettings, saveMouseSettings,
+  MIN_MOUSE_SENSITIVITY, MAX_MOUSE_SENSITIVITY, MOUSE_SENSITIVITY_STEP,
+} from '../ui/mouseSettings';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface PauseMenuProps {
@@ -36,10 +40,25 @@ export default function PauseMenu({
   const mm = String(Math.floor(stats.timeSec / 60)).padStart(2, '0');
   const ss = String(Math.floor(stats.timeSec % 60)).padStart(2, '0');
   const [quality, setQuality] = useState<QualityLevel>(() => game.getQuality());
+  const [mouseSettings, setMouseSettingsState] = useState(() => loadMouseSettings());
   const trapRef = useFocusTrap(true);
 
   const cycleQuality = () => {
     setQuality(game.cycleQuality());
+  };
+
+  const updateSens = (delta: number) => {
+    const next = Math.min(MAX_MOUSE_SENSITIVITY, Math.max(MIN_MOUSE_SENSITIVITY, Math.round((mouseSettings.sensitivity + delta) * 10) / 10));
+    saveMouseSettings({ sensitivity: next });
+    game.setMouseSettings({ sensitivity: next });
+    setMouseSettingsState((prev) => ({ ...prev, sensitivity: next }));
+  };
+
+  const toggleInvertY = () => {
+    const next = !mouseSettings.invertY;
+    saveMouseSettings({ invertY: next });
+    game.setMouseSettings({ invertY: next });
+    setMouseSettingsState((prev) => ({ ...prev, invertY: next }));
   };
 
   return (
@@ -146,6 +165,45 @@ export default function PauseMenu({
                   <span className="ch-pick-label">{style.label}</span>
                 </button>
               ))}
+            </div>
+            {/* Настройки мыши: чувствительность и инверсия оси Y */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="hud-panel flex items-center justify-between px-3 py-1.5 text-[11px] tracking-wider">
+                <span className="text-white/60">МЫШЬ:</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => updateSens(-MOUSE_SENSITIVITY_STEP)}
+                    disabled={mouseSettings.sensitivity <= MIN_MOUSE_SENSITIVITY}
+                    aria-label="Уменьшить чувствительность мыши"
+                    className="btn-game btn-ghost h-6 w-6 p-0 text-xs font-bold disabled:opacity-30"
+                  >
+                    -
+                  </button>
+                  <span className="font-display w-9 text-center text-amber-300">
+                    {mouseSettings.sensitivity.toFixed(1)}x
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => updateSens(MOUSE_SENSITIVITY_STEP)}
+                    disabled={mouseSettings.sensitivity >= MAX_MOUSE_SENSITIVITY}
+                    aria-label="Увеличить чувствительность мыши"
+                    className="btn-game btn-ghost h-6 w-6 p-0 text-xs font-bold disabled:opacity-30"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={toggleInvertY}
+                aria-pressed={mouseSettings.invertY}
+                className="btn-game btn-ghost px-3 py-2 text-[11px] tracking-wider"
+                title="Инвертировать вертикальную ось прицела (Y)"
+              >
+                <ArrowUpDown size={13} className="bicon" aria-hidden />
+                <span>ИНВЕРТ Y: {mouseSettings.invertY ? 'ВКЛ' : 'ВЫКЛ'}</span>
+              </button>
             </div>
             {/* Числа урона/лечения (п.1). Настройка только презентационная:
                 расчёт урона её не видит, отключается для «чистого» боя. */}

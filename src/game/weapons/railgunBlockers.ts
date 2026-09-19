@@ -27,6 +27,7 @@ export function nearestShotBlockerDist(
   range: number,
   colliders: Collider[],
   originY = 1.6,
+  dirY = 0,
 ): ShotBlockerHit | null {
   const safeRange = Number.isFinite(range) ? range : 10000;
   const endX = originX + dirX * safeRange;
@@ -35,13 +36,16 @@ export function nearestShotBlockerDist(
   let bestId = -1;
   for (const c of colliders) {
     if (!c.active || !c.blocksShots) continue;
-    if (originY > c.height + SHOT_BLOCKER_HEIGHT_EPS) continue;
     // Дуло внутри footprint коллайдера (танк вжался в стену/угол): вход в slab
     // остался ЗА началом луча, а segmentHitT для такого случая всегда даёт 0 —
     // выстрел умирал на нулевой дистанции и пилил собственный блок. Не блокер.
     if (pointInCollider(originX, originZ, c)) continue;
     const t = segmentHitT(originX, originZ, endX, endZ, c);
     if (t >= 0 && t < bestT) {
+      // 3D-высота луча в точке столкновения с препятствием с учётом УВН:
+      const hitDist = t * safeRange;
+      const hitY = originY + dirY * hitDist;
+      if (hitY > c.height + SHOT_BLOCKER_HEIGHT_EPS) continue;
       bestT = t;
       bestId = c.id;
     }

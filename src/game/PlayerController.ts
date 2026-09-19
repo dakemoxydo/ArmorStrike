@@ -4,14 +4,24 @@
 // экрана, а проекция точки остановки реальной линии выстрела (aimReticle).
 import type { ControllableTank } from './tank/simPorts';
 import { CameraLookState } from './camera/CameraLookState';
+import { loadMouseSettings, type MouseSettings } from '../ui/mouseSettings';
 
 export class PlayerController {
   wantsFire = false;
   reloadRequested = false;
+  centerRequested = false;
   scoreHeld = false;
 
   /** Направление взгляда камеры (абсолютный мировой yaw) — задаёт и прицел. */
   readonly look = new CameraLookState();
+
+  constructor() {
+    this.look.setMouseSettings(loadMouseSettings());
+  }
+
+  setMouseSettings(settings: Partial<MouseSettings>): void {
+    this.look.setMouseSettings(settings);
+  }
 
   /** Активно только в режиме боя. */
   enabled = false;
@@ -31,6 +41,7 @@ export class PlayerController {
     this.keys.add(e.code);
     if (e.code === 'Space') this.wantsFire = true;
     if (e.code === 'KeyR') this.reloadRequested = true;
+    if (e.code === 'KeyC') this.centerRequested = true;
     if (e.code === 'Tab') { this.scoreHeld = true; e.preventDefault(); }
     this.swallow(e);
   };
@@ -64,24 +75,26 @@ export class PlayerController {
     this.keys.clear();
     this.wantsFire = false;
     this.reloadRequested = false;
+    this.centerRequested = false;
     // Tab never sees keyup when the window loses focus mid-hold — without
     // this the scoreboard overlay stayed stuck open after refocusing.
     this.scoreHeld = false;
   };
   private onContext = (e: Event) => e.preventDefault();
   private onLockError = () => {
-    // H8: отказ браузера (Esc-cooldown, запрос вне user gesture) больше не
-    // проглатывается: тот же путь, что у потери локa — shouldAutoPauseOnInterrupt
-    // сам решит, возвращать ли в паузу (смерть/меню не паузятся).
-    this.onLockLost?.();
+    // Отказ браузера (Esc-cooldown или запрос вне user gesture, например при асинхронном респауне):
+    // не переводим в авто-паузу — игрок захватит курсор первым же кликом по canvas в onMouseDown.
+    this.locked = false;
   };
   private onLockChange = () => {
+    const wasLocked = this.locked;
     this.locked = document.pointerLockElement === this.dom;
-    if (!this.locked && this.enabled) this.onLockLost?.();
+    // Авто-пауза только при реальной потере ранее удерживаемого захвата
+    if (wasLocked && !this.locked && this.enabled) this.onLockLost?.();
   };
 
   private swallow(e: KeyboardEvent) {
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Tab'].includes(e.code)) {
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyC', 'Tab'].includes(e.code)) {
       e.preventDefault();
     }
   }
@@ -130,6 +143,7 @@ export class PlayerController {
     this.keys.clear();
     this.wantsFire = false;
     this.reloadRequested = false;
+    this.centerRequested = false;
     this.scoreHeld = false;
   }
 
@@ -139,6 +153,11 @@ export class PlayerController {
     tank.throttle = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) + (k.has('KeyS') || k.has('ArrowDown') ? -1 : 0);
     tank.steer = (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0) + (k.has('KeyD') || k.has('ArrowRight') ? -1 : 0);
     tank.boosting = k.has('ShiftLeft') || k.has('ShiftRight');
+
+    if (this.centerRequested) {
+      if (typeof tank.yaw === 'number') this.look.yaw = tank.yaw;
+      this.centerRequested = false;
+    }
 
     // Башня целится туда же, куда смотрит камера (как в game1)
     tank.aimYaw = this.look.yaw;

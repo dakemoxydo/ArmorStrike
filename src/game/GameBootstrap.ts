@@ -186,6 +186,7 @@ function registerWindowHandlers(
     if (shouldAutoPauseOnInterrupt(sim.run.mode, sim.run.paused, sim.deathT, sim.networked)) {
       sim.run.paused = true;
       sim.input.enabled = false;
+      sim.lastAutoPauseTime = performance.now();
       emitEvent({ type: 'pauseChanged', value: true });
     }
   };

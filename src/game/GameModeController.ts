@@ -191,6 +191,14 @@ export class GameModeController {
   togglePause() {
     const { sim, emit } = this.d;
     if (sim.run.mode !== 'playing' || sim.deathT >= 0) return;
+
+    // Защита от гонки Esc в Firefox: при нажатии Esc браузер сначала сбрасывает pointer lock
+    // (onLockLost переводит в paused = true), а затем шлёт keydown 'Escape'.
+    // Без этой защиты togglePause мгновенно снимал только что выставленную паузу.
+    if (sim.run.paused && performance.now() - sim.lastAutoPauseTime < 300) {
+      return;
+    }
+
     sim.run.paused = !sim.run.paused;
     // Pause owns the keyboard too: Space/Tab must drive the PauseMenu, not
     // the combat controller (mirrors the auto-pause paths in GameBootstrap).

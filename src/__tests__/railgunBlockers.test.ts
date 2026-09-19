@@ -94,4 +94,22 @@ describe('nearestShotBlockerDist (M9)', () => {
     expect(hit).not.toBeNull();
     expect(hit!.dist).toBeGreaterThan(1000);
   });
+
+  it('вертикальный наклон вверх (УВН) перелетает препятствие', () => {
+    // originY = 1.0, стена высотой 1.5 на z=20.
+    // При dirY = 0 луч заблокирован (1.0 < 1.5).
+    // При dirY = 0.05 луч на z=19 поднимается до 1.0 + 0.05*19 = 1.95 > 1.5 + 0.3 — пролетает!
+    const wall = colliderFromCenter(0, 20, 10, 2, 1.5, 'wall');
+    expect(nearestShotBlockerDist(0, 0, 0, 1, 120, [wall], 1.0, 0)).not.toBeNull();
+    expect(nearestShotBlockerDist(0, 0, 0, 1, 120, [wall], 1.0, 0.05)).toBeNull();
+  });
+
+  it('вертикальный наклон вниз попадает в препятствие ниже дула', () => {
+    // originY = 2.5, стена высотой 1.2 на z=20.
+    // При горизонтальном огне (dirY = 0) пролетает выше (2.5 > 1.2 + 0.3).
+    // При огне вниз (dirY = -0.08) на z=19 высота опускается до 0.98 <= 1.2 — блокируется!
+    const wall = colliderFromCenter(0, 20, 10, 2, 1.2, 'wall');
+    expect(nearestShotBlockerDist(0, 0, 0, 1, 120, [wall], 2.5, 0)).toBeNull();
+    expect(nearestShotBlockerDist(0, 0, 0, 1, 120, [wall], 2.5, -0.08)).not.toBeNull();
+  });
 });

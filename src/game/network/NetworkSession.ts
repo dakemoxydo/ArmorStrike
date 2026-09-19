@@ -35,18 +35,18 @@ import {
   parseTurretId,
 } from './replication';
 import type { HullId, TurretId } from '../../core/catalog';
+import type { GameEvent } from '../types';
 import type * as THREE from 'three';
 
 export class NetworkSession {
-  readonly service: MultiplayerService;
-  readonly remotes: RemotePlayerManager;
-  readonly isHost: boolean;
-  readonly localId: string;
-  readonly room: RoomData;
-
-  private readonly syncInterval = 0.05;
-  private readonly matchInterval = 0.25;
+  private service: MultiplayerService;
+  private remotes: RemotePlayerManager;
+  private isHost: boolean;
+  private localId: string;
+  private room: RoomData;
   private syncTimer = 0;
+  private readonly syncInterval = 0.05;
+  private readonly matchInterval = 0.5;
   private matchTimer = 0;
   private localWasFiring = false;
   private readonly botWasFiring = new Map<string, boolean>();
@@ -65,6 +65,7 @@ export class NetworkSession {
       localTeam: TeamId;
       service: MultiplayerService;
       remotes: RemotePlayerManager;
+      emitEvent?: (e: GameEvent) => void;
     },
   ) {
     this.service = deps.service;
@@ -319,6 +320,19 @@ export class NetworkSession {
       }
     }
     humanIds.add(this.localId);
+
+    // Удаляем фантомные танки игроков, покинувших Presence (без ожидания 15 сек таймаута)
+    for (const peer of this.remotes.getPeers()) {
+      if (!peer.userId.startsWith('bot:') && !humanIds.has(peer.userId)) {
+        this.remotes.removePeer(peer.userId);
+      }
+    }
+
+    // Если хост покинул комнату — уведомляем клиентов о разрыве соединения с хостом
+    if (!this.isHost && this.room.host_id && !humanIds.has(this.room.host_id)) {
+      this.deps.emitEvent?.({ type: 'hostDisconnected' });
+    }
+
     if (this.isHost) void this.reconcileBots(humanIds.size);
   }
 

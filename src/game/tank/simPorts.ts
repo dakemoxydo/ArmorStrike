@@ -121,6 +121,7 @@ export interface ControllableTank {
   steer: number;
   boosting: boolean;
   aimYaw: number;
+  yaw?: number;
   weapon?: Weapon;
 }
 

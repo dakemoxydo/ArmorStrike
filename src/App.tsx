@@ -137,6 +137,12 @@ export default function App() {
             setStarterClaimed(instance.starterPackClaimed);
             setEconomyVersion((v) => v + 1);
           }
+          if (e.type === 'hostDisconnected') {
+            void instance.leaveMultiplayer();
+            instance.setMode('menu');
+            setRoundError('Хост покинул игру. Сервер остановлен.');
+            setPaused(false);
+          }
         });
         setStarterClaimed(instance.starterPackClaimed);
         setGame(g);
@@ -191,6 +197,17 @@ export default function App() {
       }
     })();
   }, [game]);
+
+  // Автоматическое скрытие ошибки запуска/сервера через 4 секунды
+  useEffect(() => {
+    if (!roundError) return;
+    const timer = setTimeout(() => setRoundError(null), 4000);
+    return () => clearTimeout(timer);
+  }, [roundError]);
+
+  const isTouchOnly = typeof window !== 'undefined'
+    && 'ontouchstart' in window
+    && !window.matchMedia('(pointer: fine)').matches;
 
   /** Flow: ModeSelect → MapSelect → startRound. */
   const openModeSelect = useCallback(() => {
@@ -611,6 +628,15 @@ export default function App() {
           onQuickMatch={handleQuickMatch}
           onClose={() => setServerBrowserOpen(false)}
         />
+      )}
+
+      {isTouchOnly && uiMode === 'menu' && !hideChrome && (
+        <div
+          className="absolute inset-x-0 top-3 z-50 mx-auto w-fit max-w-[min(26rem,calc(100vw-2rem))] px-4 py-2 text-center text-xs tracking-wider text-amber-300 hud-panel"
+          role="status"
+        >
+          Внимание: игра рассчитана на ПК (клавиатура и мышь). Сенсорное управление не поддерживается.
+        </div>
       )}
 
       {roundError && !roundLoading && (

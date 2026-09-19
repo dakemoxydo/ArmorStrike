@@ -34,6 +34,8 @@ export class GameSimulation {
   /** Internal cells projected into FrameContext by reference. */
   private readonly deathCell: ScalarCell<number> = { value: -1 };
   private readonly prevReloadingCell: ScalarCell<boolean> = { value: false };
+  /** Timestamp of the last auto-pause triggered by pointer lock loss or tab blur. */
+  lastAutoPauseTime = 0;
 
   /** Public API for bootstrap / mode controller (same field names as before). */
   get deathT(): number { return this.deathCell.value; }
