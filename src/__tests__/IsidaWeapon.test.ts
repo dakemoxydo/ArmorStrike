@@ -79,8 +79,16 @@ function makeTarget(id: number, x: number, z: number, over: PeerOpts = {}): Comb
     fx: over.fx,
     visual: { group: new THREE.Group() },
   };
-  // Как реальный танк: takeDamage снимает HP (DamageSystem полагается на это).
-  p.takeDamage = vi.fn((d: number) => { p.health -= d; });
+  // Как реальный танк (TankEntity.takeDamage): урон клампится в 0 со смертью —
+  // иначе избыток добивающего тика уходил бы в минус и ломал учёт «снятых HP».
+  p.takeDamage = vi.fn((d: number) => {
+    if (!p.alive || d <= 0) return;
+    p.health -= d;
+    if (p.health <= 0) {
+      p.health = 0;
+      p.alive = false;
+    }
+  });
   return p as CombatPeer;
 }
 
@@ -178,7 +186,7 @@ describe('IsidaWeapon — атака: захват, тики, вампиризм
     weapon.dispose();
   });
 
-  it('тики: кратно тиковому урону; вампиризм 40% возвращается стрелку', () => {
+  it('тики: кратно тиковому урону; вампиризм 35% возвращается стрелку', () => {
     const { deps, hooks } = makeDeps();
     const owner = makeOwner();
     owner.health = 30;
@@ -200,14 +208,33 @@ describe('IsidaWeapon — атака: захват, тики, вампиризм
     const owner = makeOwner();
     owner.health = 50;
     const weapon = new IsidaWeapon(owner, deps);
-    // 1 HP цели против тикового TICK_DMG: возмётся ровно 1 HP → возврат 1×vampirism,
-    // сколько бы тиков ни прошло (после смерти dealt=0, mock живичен намеренно).
+    // 1 HP цели против тикового TICK_DMG: снимутся ровно 1 HP → возврат 1×vampirism.
+    // Кап — ПОСЛЕ DamageSystem (полный dmg в applyHit, возврат от снятых HP).
     const enemy = makeTarget(2, 0, 10, { health: 1, maxHealth: 1 });
     const c = ctx([enemy]);
     weapon.setFire(true);
     run(weapon, c, 8);
     expect(enemy.health).toBe(0);
+    expect(enemy.alive).toBe(false);
     expect(owner.health).toBeCloseTo(50 + 1 * tune.vampirism, 6);
+    weapon.dispose();
+  });
+
+  it('C8-пин: кап после резистов — избыток сверх остатка HP не лечит', () => {
+    const { deps } = makeDeps();
+    const owner = makeOwner();
+    (owner.params as any).damageType = 'nano';
+    owner.health = 50;
+    const weapon = new IsidaWeapon(owner, deps);
+    // Цель 5 HP с поглощением nano 0.5: тик 11 → dealt 5.5, снимутся 5 HP.
+    // Возврат обязан быть 5×vampirism, а не 11× и не 5.5× (до-кап давал меньше).
+    const enemy = makeTarget(2, 0, 10, { health: 5, maxHealth: 100 });
+    (enemy as any).damageResist = { nano: 0.5 };
+    const c = ctx([enemy]);
+    weapon.setFire(true);
+    run(weapon, c, 8);
+    expect(enemy.health).toBe(0);
+    expect(owner.health).toBeCloseTo(50 + 5 * tune.vampirism, 6);
     weapon.dispose();
   });
 

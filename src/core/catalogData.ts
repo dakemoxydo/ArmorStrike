@@ -76,6 +76,10 @@ export const WEAPON_TUNING = {
     knockback: 2.8,
     /** J12: самоотдача у ботов слабее (не «стоять на куске»); было хардкодом 4. */
     botKnockback: 2.0,
+    /** Прямой knockback попадания снаряда (было хардкодом 4.0 в ProjectileBehavior). */
+    directKnockback: 4.0,
+    /** База splash-knockback @ центр (было хардкодом 2.5×falloff в Projectile.doSplash). */
+    splashKnockback: 2.5,
     splashRadius: 5.0,
     splashDmg: 12,
     /** Тряска камеры игрока при выстреле автопушки (F1). */

@@ -38,7 +38,8 @@ const cannon: ProjectileBehavior = {
     ctx.effects.impact(hitPos, 0xffcc44);
   },
   onHitTank(_, target, hitPos, dir, ctx, owner) {
-    applyHit(ctx.damageSystem, target, 0, owner ?? target, dir, 4.0,
+    // Прямой knockback — из WEAPON_TUNING.cannon (единый источник, см. Weapon_Cannon.md).
+    applyHit(ctx.damageSystem, target, 0, owner ?? target, dir, WEAPON_TUNING.cannon.directKnockback,
       (p) => {
         ctx.effects.explosion(p, 0xffb020, 1.3);
         ctx.effects.impact(p, 0xffcc44);

@@ -20,6 +20,8 @@
 | `range` | 75 | max range снаряда |
 | `knockback` | 2.8 | recoil владельца (игрок) |
 | `botKnockback` | 2.0 | self-recoil у ботов (слабее, чтобы не «стоять на куске»; J12) |
+| `directKnockback` | 4.0 | knockback прямого попадания по цели (`ProjectileBehavior.cannon.onHitTank`; было хардкодом) |
+| `splashKnockback` | 2.5 | база splash-knockback @ центр, масштабируется falloff (`Projectile.doSplash`: `splashKnockback × falloff`; было хардкодом) |
 | `splashRadius` | 5.0 | радиус splash |
 | `splashDmg` | 12 | базовый splash @ центр |
 | `fireShakePlayer` | 0.16 | сотрясение камеры игрока при собственном выстреле (F1) |
@@ -58,7 +60,7 @@ setFire(true) ──canFire──► fire() ──ammo--
 
 - **Прямой:** `ProjectileManager` → `onTankHit(target, s.damage, owner)` → `DamageSystem.applyDamage`.
 - **Splash:** `splashDmg = round(damage * (16/32))`, falloff линейный (см. [[Damage_System]]).
-- `ProjectileBehavior.cannon.onHitTank` вызывает `applyHit` с **0** damage (только knockback/VFX), чтобы не двойнить HP.
+- `ProjectileBehavior.cannon.onHitTank` вызывает `applyHit` с **0** damage (только knockback `directKnockback` 4.0 / VFX), чтобы не двойнить HP.
 
 ## Скорость снаряда
 

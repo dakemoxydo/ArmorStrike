@@ -188,4 +188,32 @@ describe('CombatSystem.applyReplicatedHit', () => {
     expect(local.alive).toBe(false);
     expect(local.health).toBe(0);
   });
+
+  it('реплицированная смерть без атакующего не растит playerBestStreak', () => {
+    // attacker == null → onTankDamaged идёт с owner === victim: kill-кредит
+    // ограничен isEnemy в MatchRuntime, а streak здесь обязан молчать —
+    // иначе собственная смерть игрока засчиталась бы ему как серия.
+    const { combat } = makeCombat();
+    const local = tank({ id: 1, networkId: 'local', isPlayer: true, health: 10 });
+    expect(combat.playerBestStreak).toBe(0);
+    combat.applyReplicatedHit(local, null, {
+      targetUserId: 'local',
+      attackerUserId: 'local',
+      damage: 40,
+      remainingHealth: 0,
+      isKill: true,
+    });
+    expect(local.alive).toBe(false);
+    expect(combat.playerBestStreak).toBe(0);
+  });
+
+  it('реплицированный килл игрока по врагу серию растит (контроль гарда)', () => {
+    // Прямой вызов хука (минуя shooter-authority early-return): настоящий фраг
+    // с attacker.id !== victim.id обязан регистрировать streak как раньше.
+    const { combat } = makeCombat();
+    const local = tank({ id: 1, networkId: 'local', isPlayer: true, health: 100 });
+    const enemy = tank({ id: 2, networkId: 'peer', isRemote: true, health: 0, alive: false });
+    combat.onTankDamaged(enemy, 40, local);
+    expect(combat.playerBestStreak).toBe(1);
+  });
 });

@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
@@ -121,5 +123,18 @@ describe('useFocusTrap', () => {
     fireEvent.keyDown(btn('last'), { key: 'Enter' });
 
     expect(btn('last')).toHaveFocus();
+  });
+
+  it('pause and game-over mark their primary CTA with data-autofocus (H7)', () => {
+    // Как ModeSelect/MapSelect: ловушка стартует с «ПРОДОЛЖИТЬ БОЙ»/«РЕВАНШ»,
+    // а не с первого ghost-фокуса. Пин источником — рендер этих экранов
+    // требует живого GameApi/WebGL.
+    const root = resolve(__dirname, '../..');
+    const pause = readFileSync(resolve(root, 'src/components/PauseMenu.tsx'), 'utf8');
+    const over = readFileSync(resolve(root, 'src/components/GameOverScreen.tsx'), 'utf8');
+    expect(pause).toMatch(/data-autofocus/);
+    expect(over).toMatch(/data-autofocus/);
+    expect(pause).toMatch(/data-autofocus[^>]*onClick=\{onResume\}|onClick=\{onResume\}[^>]*data-autofocus|data-autofocus[\s\S]{0,80}ПРОДОЛЖИТЬ БОЙ/);
+    expect(over).toMatch(/data-autofocus[\s\S]{0,120}onRematch|onRematch[\s\S]{0,120}data-autofocus|data-autofocus[\s\S]{0,80}РЕВАНШ/);
   });
 });

@@ -398,4 +398,41 @@ describe('GaussWeapon — снайперский захват цели и авт
     expect(weapon.state).toBe('IDLE');
     expect(weapon.currentTarget).toBeNull();
   });
+
+  it('J10-гейт: аркадный выстрел бота трясёт камеру игрока в радиусе 45 м', () => {
+    // Стрелок — бот, игрок — сбоку (вне lock-конуса, но внутри shake-радиуса):
+    // аркада обязана дотянуться до камеры так же, как снайперский залп.
+    const owner = makeTank(1, false);
+    owner.position.set(0, 0, 0);
+    const playerSide = makeTarget(2, 40, 0);
+    playerSide.isPlayer = true;
+    playerSide.alive = true;
+    const deps = makeDeps();
+    const weapon = new GaussWeapon(owner, deps);
+
+    weapon.setFire(true);
+    weapon.update(0.016, { tanks: [playerSide], colliders: [] });
+
+    // Цели в конусе нет → мгновенная аркада навскидку.
+    expect(weapon.state).toBe('COOLDOWN');
+    expect(deps.effects.addShake).toHaveBeenCalledWith(
+      WEAPON_TUNING.gauss.fireShakeBot * 0.4,
+    );
+  });
+
+  it('аркада не трясёт камеру далекого игрока (за 45 м — тишина)', () => {
+    const owner = makeTank(1, false);
+    owner.position.set(0, 0, 0);
+    const playerFar = makeTarget(2, 60, 0);
+    playerFar.isPlayer = true;
+    playerFar.alive = true;
+    const deps = makeDeps();
+    const weapon = new GaussWeapon(owner, deps);
+
+    weapon.setFire(true);
+    weapon.update(0.016, { tanks: [playerFar], colliders: [] });
+
+    expect(weapon.state).toBe('COOLDOWN');
+    expect(deps.effects.addShake).not.toHaveBeenCalled();
+  });
 });

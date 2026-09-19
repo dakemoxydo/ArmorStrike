@@ -1,11 +1,11 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import type { GameApi } from '../game/GameApi';
-import type { GameEvent, HudSnapshot, MinimapDynamic } from '../game/types';
+import type { GameEvent, HudSnapshot, MinimapDynamic, ScoreRow, CaptureHudPoint } from '../game/types';
 import { drawMinimap } from '../components/hud/minimapDraw';
 import type { FeedEntry } from '../components/hud/HudFeed';
 import { WEAPONS } from '../core/WeaponCatalog';
 import { isLowHealth, liveRegionKey, liveRegionText } from '../ui/hudPresentation';
-import { hudNeedsRender } from '../ui/hudRenderGate';
+import { hudNeedsRender, hpBucket } from '../ui/hudRenderGate';
 import { createDamageFloatLayer, type DamageFloatLayer } from '../ui/damageFloatLayer';
 
 const _defaultWeapon = WEAPONS.railgun;
@@ -49,6 +49,40 @@ const TOAST_MS = {
   frag: 1300,
   streak: 1500,
 } as const;
+
+/** Сравнение строк табло по отображаемому содержимому (бакеты гейта):
+ * hp — через hudRenderGate.hpBucket, остальное — exact. Спасает от клона
+ * каждый кадр при открытом Tab: микродрейф hpFrac ниже 1% не виден
+ * (табло рисует Math.round(frac*100)), а exact-сравнение его ловило. */
+function sameScoreRowsBucket(a: readonly ScoreRow[], b: readonly ScoreRow[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.name !== y.name || x.kills !== y.kills || x.deaths !== y.deaths ||
+      hpBucket(x.hpFrac) !== hpBucket(y.hpFrac) || x.alive !== y.alive || x.isPlayer !== y.isPlayer ||
+      x.teamId !== y.teamId || x.hull !== y.hull || x.weaponName !== y.weaponName
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Точки захвата: прогресс рисуется шагом 10% (как captureStripKey гейта),
+ * exact-сравнение float клонировало полосу каждый кадр. */
+function sameCapturePointsBucket(a: readonly CaptureHudPoint[], b: readonly CaptureHudPoint[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (x.id !== y.id || x.owner !== y.owner || Math.floor(x.progress * 10) !== Math.floor(y.progress * 10) || x.contested !== y.contested) {
+      return false;
+    }
+  }
+  return true;
+}
 
 export function useGameHud(game: GameApi | null, active: boolean, showDamageNumbers = true) {
   const [, force] = useReducer((x: number) => x + 1, 0);
@@ -304,13 +338,25 @@ export function useGameHud(game: GameApi | null, active: boolean, showDamageNumb
       // Гейт ре-рендера живёт в ui/hudRenderGate: по умолчанию сравниваются ВСЕ
       // поля снапшота, исключения — ref-painted/непрерывные/квантованные каналы.
       // Новое поле в HudSnapshot подхватывается автоматически.
-      if (hudNeedsRender(c, s)) force();
+      const needRender = hudNeedsRender(c, s);
+      // scoreboard/capturePoints — ссылочные поля HudModel (переиспользуемые
+      // scratch-массивы): клонируем только при смене отображаемого содержимого
+      // (бакеты гейта hpBucket/floor(progress*10)), иначе каждый кадр при
+      // открытом Tab аллоцировал 13 объектов × 60 (табло) + точки захвата.
+      if (!sameScoreRowsBucket(c.scoreboard, s.scoreboard)) {
+        c.scoreboard = s.scoreboard.map((r) => ({ ...r }));
+      }
+      if (!sameCapturePointsBucket(c.capturePoints, s.capturePoints)) {
+        c.capturePoints = s.capturePoints.map((p) => ({ ...p }));
+      }
+      if (needRender) force();
+      // Примитивы и ссылки на немутабельные массивы — одним assign, но
+      // переиспользуемые scratch HudModel не должны алиасить снимок кадра.
+      const keptBoard = c.scoreboard;
+      const keptPoints = c.capturePoints;
       Object.assign(c, s);
-      // HudModel переиспользует scratch-массивы для scoreboard и capturePoints;
-      // неглубокое клонирование строк/точек сохраняет снимок кадра в c,
-      // позволяя hudNeedsRender честно сравнивать кадры по содержимому.
-      c.scoreboard = s.scoreboard.map((r) => ({ ...r }));
-      c.capturePoints = s.capturePoints.map((p) => ({ ...p }));
+      c.scoreboard = keptBoard;
+      c.capturePoints = keptPoints;
     };
     game.setHudCallback(onHud);
     return () => game.setHudCallback(null);

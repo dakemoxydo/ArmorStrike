@@ -8,6 +8,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import { createDamageSystem } from '../core/DamageSystem';
+import { WEAPON_TUNING } from '../core/catalog';
 import { applyHit, applySplashHit } from '../game/engine/applyHit';
 import type { TankLike } from '../core/types';
 
@@ -71,7 +72,7 @@ function resolveCannonDirectHit(
   const dir = new THREE.Vector3(0, 0, 1);
   const effect = vi.fn();
   // knockback/VFX path with dmg=0 (shipped ProjectileBehavior)
-  applyHit(damageSystem, target, 0, owner, dir, 4.0, effect, hitPos);
+  applyHit(damageSystem, target, 0, owner, dir, WEAPON_TUNING.cannon.directKnockback, effect, hitPos);
   // real damage path (must be applyDamage, not hook-only)
   onTankHit(target, shotDamage, owner);
 }
@@ -98,7 +99,7 @@ describe('cannon tank-hit damage pipeline (C2)', () => {
       resistMul: 1,
       dealt: 32,
     });
-    expect(target.knockback.z).toBeCloseTo(4, 5);
+    expect(target.knockback.z).toBeCloseTo(WEAPON_TUNING.cannon.directKnockback, 5);
   });
 
   it('buggy wiring: hook-only onTankHit leaves HP unchanged (root-cause document)', () => {
@@ -131,7 +132,7 @@ describe('cannon tank-hit damage pipeline (C2)', () => {
 
     // Shipped doSplash composition after C2
     onTankHitFixed(ds, target, splashDmg, owner);
-    applySplashHit(ds, target, 0, owner, center, 2.5, vi.fn());
+    applySplashHit(ds, target, 0, owner, center, WEAPON_TUNING.cannon.splashKnockback, vi.fn());
 
     expect(target.health).toBe(84);
     expect(onTankDamaged).toHaveBeenCalledTimes(1);
@@ -144,7 +145,7 @@ describe('cannon tank-hit damage pipeline (C2)', () => {
       onTankDamaged: vi.fn(),
       onBlockDestroyed: vi.fn(),
     });
-    applyHit(ds, ally, 0, owner, new THREE.Vector3(0, 0, 1), 4, vi.fn(), new THREE.Vector3());
+    applyHit(ds, ally, 0, owner, new THREE.Vector3(0, 0, 1), WEAPON_TUNING.cannon.directKnockback, vi.fn(), new THREE.Vector3());
     expect(ally.knockback.length()).toBe(0);
     expect(ally.health).toBe(100);
   });
@@ -157,7 +158,7 @@ describe('cannon tank-hit damage pipeline (C2)', () => {
       onBlockDestroyed: vi.fn(),
       onDamageIgnored: vi.fn(),
     });
-    applyHit(ds, target, 40, owner, new THREE.Vector3(0, 0, 1), 4, vi.fn(), new THREE.Vector3());
+    applyHit(ds, target, 40, owner, new THREE.Vector3(0, 0, 1), WEAPON_TUNING.cannon.directKnockback, vi.fn(), new THREE.Vector3());
     expect(target.health).toBe(100);
     expect(target.knockback.length()).toBe(0);
   });

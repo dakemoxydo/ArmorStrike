@@ -265,6 +265,9 @@ export default function App() {
   /** Сетевая игра: мгновенный подбор матча (быстрая игра) */
   const handleQuickMatch = useCallback(async () => {
     if (!game) return;
+    // MP-токен (как runStartRound H5): двойной клик «БЫСТРАЯ ИГРА» не гасит
+    // чужой ЗАГРУЗКА — stale-вызов не трогает флаг и не пишет ошибку.
+    const token = ++startToken.current;
     setRoundLoading(true);
     setRoundError(null);
     try {
@@ -284,19 +287,26 @@ export default function App() {
         setLastMatchMode(res.room.mode);
         await game.startMultiplayerRound(res.room, res.isHost, res.team);
       } else {
-        setRoundError(res.error || 'Не удалось найти свободный сервер');
+        if (token === startToken.current) {
+          setRoundError(res.error || 'Не удалось найти свободный сервер');
+        }
       }
     } catch (err) {
       console.error('[ArmorStrike] quickMatch failed:', err);
-      setRoundError('Ошибка поиска сетевой игры');
+      if (token === startToken.current) {
+        setRoundError('Ошибка поиска сетевой игры');
+      }
     } finally {
-      setRoundLoading(false);
+      if (token === startToken.current) {
+        setRoundLoading(false);
+      }
     }
   }, [game]);
 
   /** Подключение к выбранному серверу */
   const handleJoinRoom = useCallback(async (roomId: string, password?: string) => {
     if (!game) return;
+    const token = ++startToken.current;
     setRoundLoading(true);
     setRoundError(null);
     try {
@@ -316,19 +326,26 @@ export default function App() {
         setLastMatchMode(res.room.mode);
         await game.startMultiplayerRound(res.room, false, res.team);
       } else {
-        setRoundError(res.error || 'Ошибка входа на сервер');
+        if (token === startToken.current) {
+          setRoundError(res.error || 'Ошибка входа на сервер');
+        }
       }
     } catch (err) {
       console.error('[ArmorStrike] joinRoom failed:', err);
-      setRoundError('Не удалось подключиться к серверу');
+      if (token === startToken.current) {
+        setRoundError('Не удалось подключиться к серверу');
+      }
     } finally {
-      setRoundLoading(false);
+      if (token === startToken.current) {
+        setRoundLoading(false);
+      }
     }
   }, [game]);
 
   /** Создание сервера */
   const handleCreateRoom = useCallback(async (opts: CreateRoomOptions) => {
     if (!game) return;
+    const token = ++startToken.current;
     setRoundLoading(true);
     setRoundError(null);
     try {
@@ -349,13 +366,19 @@ export default function App() {
         const isTeam = opts.mode === 'team_deathmatch' || opts.mode === 'capture_point';
         await game.startMultiplayerRound(res.room, true, isTeam ? 'alpha' : null);
       } else {
-        setRoundError(res.error || 'Ошибка создания сервера');
+        if (token === startToken.current) {
+          setRoundError(res.error || 'Ошибка создания сервера');
+        }
       }
     } catch (err) {
       console.error('[ArmorStrike] createRoom failed:', err);
-      setRoundError('Не удалось создать игровой сервер');
+      if (token === startToken.current) {
+        setRoundError('Не удалось создать игровой сервер');
+      }
     } finally {
-      setRoundLoading(false);
+      if (token === startToken.current) {
+        setRoundLoading(false);
+      }
     }
   }, [game]);
 

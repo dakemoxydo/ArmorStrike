@@ -86,7 +86,7 @@ IDLE ─────────────────────────
 
 ## Логика пробития (`executeFiring`)
 
-1. Raycast far = `range` (`Infinity`, безопасно ограничен 10000 для физики/raycaster) по мешам танков + арене.
+1. Raycast far = `range` (`Infinity` → игровой фолбэк `RAY_RANGE_FALLBACK = 1000` в `RailgunWeapon`: вся арена 300×300 накрыта с запасом; поиск блокеров `nearestShotBlockerDist` маппит не-конечный range в свой физический safeRange `10000`) по мешам танков + арене.
 2. Сортировка попаданий по дистанции.
 3. Для каждой цели-танка:
 
@@ -98,7 +98,7 @@ currentDamage *= 0.65
 ```
 
 4. Стена / destructible block **останавливает** луч (M18: `beamFx.setLength(wall.dist)` укорачивает единый mesh дуги; раньше двигался только impact-light и луч визуально проходил сквозь стену). Блоку — `damageBlock` с текущим `currentDamage`, но только если `round(currentDamage) > 0` (после N пробитий остаток может округлиться в 0 — FX показывается, урон нет).
-5. `nearestShotBlockerDist` учитывает гео-блокеры; порог высоты вынесен в константу `SHOT_BLOCKER_HEIGHT_EPS = 0.3`. Коллайдер, в footprint которого попало само дуло (танк вжался в стену/угол), блокером **не** считается: вход в slab остался за началом луча, а `segmentHitT` для origin внутри AABB всегда отвечает `0` — без скипа выстрел умирал в нулевой дистанции и пилил собственный блок.
+5. `nearestShotBlockerDist` учитывает гео-блокеры; порог высоты вынесен в константу `SHOT_HEIGHT_EPS` (единая со снарядом пушки, `src/game/engine/physics.ts`). Коллайдер, в footprint которого попало само дуло (танк вжался в стену/угол), блокером **не** считается: вход в slab остался за началом луча, а `segmentHitT` для origin внутри AABB всегда отвечает `0` — без скипа выстрел умирал в нулевой дистанции и пилил собственный блок.
 6. HUD-прицел ставится на **термин** луча (стена/дальность), а не на первого
    танка на линии: цели луч не останавливает — `pierceTanks` в
    `reticleImpactDistance` (см. [[Player_Controls]] §«Логика прицела»).
@@ -270,5 +270,5 @@ muzzle/impact-свет из `LightRig` и весь FSM не изменились
 | `RailgunChargeBalls` (M21 contact balls, shared sphere geo) | `src/game/weapons/railgunChargeBalls.ts` |
 | `BeamSweep` / `BeamSweepEvent` (бегущий фронт, pure) | `src/game/weapons/railgunBeamSweep.ts` |
 | `RailgunBeamFx` + `BEAM_ARC` (дуга, +`setLength`, ref-count shared geo) | `src/game/weapons/RailgunBeamFx.ts` |
-| `nearestShotBlockerDist` / `SHOT_BLOCKER_HEIGHT_EPS` | `src/game/weapons/railgunBlockers.ts` |
+| `nearestShotBlockerDist` / `SHOT_HEIGHT_EPS` (`SHOT_BLOCKER_HEIGHT_EPS` — алиас) | `src/game/weapons/railgunBlockers.ts` |
 | `applyRailgun*Fx` | `src/game/weapons/railgunChargeFx.ts` |

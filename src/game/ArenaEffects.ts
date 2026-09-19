@@ -4,6 +4,9 @@ import { loadQuality, type QualityLevel } from './graphicsQuality';
 
 interface SmokeSprite { s: THREE.Sprite; life: number; maxLife: number; vx: number }
 
+// Переиспользуемый оффсет спавна дыма (конвенция TankFxSystem tmp/static — без аллокаций на спавн).
+const tmpSmokeOffset = new THREE.Vector3();
+
 /** Живой узел арены: callback(dt, elapsed) каждый кадр. Generic-механизм анимации. */
 export type AnimNodeFn = (dt: number, elapsed: number) => void;
 
@@ -38,6 +41,8 @@ export class ArenaEffects {
   private smokePool: SmokeSprite[] = [];
   private smokeT = 0;
   private smokeTex: THREE.Texture;
+  /** Round-robin cursor for O(1) free-slot lookup (конвенция SmokeSystem.ts:25). */
+  private smokeCursor = 0;
 
   constructor(private group: THREE.Group) {
     this.smokeTex = smokeTexture();
@@ -61,6 +66,7 @@ export class ArenaEffects {
     this.smokeEmitters.length = 0;
     this.animNodes.length = 0;
     this.smokeT = 0;
+    this.smokeCursor = 0;
     for (const slot of this.smokePool) {
       this.group.remove(slot.s);
       // Material only — map is shared via smokeTexture().
@@ -70,7 +76,19 @@ export class ArenaEffects {
   }
 
   private spawnStackSmoke(p: THREE.Vector3) {
-    let slot = this.smokePool.find((s) => s.life <= 0);
+    // Low-тир: пул уполовинен (22 вместо 44) — пресет не разгружался вообще.
+    const cap = this.qualitySource() === 'low' ? 22 : 44;
+    // Round-robin от курсора (конвенция SmokeSystem.acquire): вместо O(44) .find().
+    let slot: SmokeSprite | undefined;
+    const n = this.smokePool.length;
+    for (let i = 0; i < n; i++) {
+      const idx = (this.smokeCursor + i) % n;
+      if (this.smokePool[idx].life <= 0) {
+        slot = this.smokePool[idx];
+        this.smokeCursor = (idx + 1) % n;
+        break;
+      }
+    }
     if (!slot) {
       const mat = new THREE.SpriteMaterial({
         map: this.smokeTex, transparent: true, depthWrite: false,
@@ -80,17 +98,20 @@ export class ArenaEffects {
       this.group.add(s);
       slot = { s, life: 0, maxLife: 1, vx: 0 };
       this.smokePool.push(slot);
-      if (this.smokePool.length > 44) {
+      if (this.smokePool.length > cap) {
         // Evict the oldest slot: remove from scene AND dispose its material
         // (the map is the shared smokeTexture — material.dispose() does not free it).
-        const old = this.smokePool.shift()!;
-        this.group.remove(old.s);
-        old.s.material.dispose();
+        // shift() здесь всегда определён (только что push), проверка — вместо `!`.
+        const old = this.smokePool.shift();
+        if (old) {
+          this.group.remove(old.s);
+          old.s.material.dispose();
+        }
       }
     }
     slot.life = slot.maxLife = 3.2 + Math.random() * 1.6;
     slot.vx = (Math.random() - 0.5) * 0.6;
-    slot.s.position.copy(p).add(new THREE.Vector3((Math.random() - 0.5) * 0.8, 0, (Math.random() - 0.5) * 0.8));
+    slot.s.position.copy(p).add(tmpSmokeOffset.set((Math.random() - 0.5) * 0.8, 0, (Math.random() - 0.5) * 0.8));
     slot.s.scale.setScalar(2 + Math.random() * 1.5);
     (slot.s.material as THREE.SpriteMaterial).rotation = Math.random() * Math.PI * 2;
   }
@@ -137,9 +158,14 @@ export class ArenaEffects {
 
     this.smokeT -= dt;
     if (this.smokeT <= 0 && this.smokeEmitters.length > 0) {
-      this.smokeT = 0.13;
+      // Low Vargas: вдвое реже (0.26 вместо 0.13) — вместе с капом 22 даёт ~4x разгрузку.
+      this.smokeT = quality === 'low' ? 0.26 : 0.13;
       const e = this.smokeEmitters[Math.floor(Math.random() * this.smokeEmitters.length)];
-      this.spawnStackSmoke(e);
+      // На low пропускаем каждый второй спавн полностью, а не только реже:
+      // чётные тики — пауза, нечётные — спавн.
+      if (quality !== 'low' || Math.random() < 0.5) {
+        this.spawnStackSmoke(e);
+      }
     }
     for (const s of this.smokePool) {
       if (s.life <= 0) continue;

@@ -8,9 +8,9 @@
 
 | Role | Условие | Persona (aggro / lead) | aimError × | cover HP |
 |------|---------|------------------------|------------|----------|
-| `elite` | wave≥3, index 0 (match: `BOT_NORMAL.roleWave=1` → **не** спавнится) | 0.88 / 1.05 | 0.65 | 0.50 |
-| `sniper` | turret=railgun | 0.22 / 1.15 | 0.5 | 0.40 |
-| `assault` | turret=flamethrower | 0.95 / 0.65 | 1.15 | 0.35 |
+| `elite` | match-эра: не спавнится (`BOT_NORMAL.roleWave=1`) | 0.88 / 1.05 | 0.65 | 0.50 |
+| `sniper` | turret=railgun/gauss | 0.22 / 1.15 | 0.5 | 0.40 |
+| `assault` | turret=flamethrower/isida | 0.95 / 0.65 | 1.15 | 0.35 |
 | `standard` | cannon | random-ish | 1.0 | 0.35 |
 
 Match combat scales: `BOT_NORMAL` in `matchConfig.ts` (fixed Normal difficulty).  

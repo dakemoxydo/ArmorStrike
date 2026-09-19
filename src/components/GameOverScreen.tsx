@@ -131,13 +131,13 @@ export default function GameOverScreen({
         )}
 
         <div className="anim-up mt-8 grid grid-cols-2 gap-3 sm:grid-cols-5" style={{ '--d': '0.38s' } as React.CSSProperties}>
-          <StatCard icon={<Trophy size={16} />} label="СЧЁТ XP" value={score} accent="text-amber-300" />
-          <StatCard icon={<Skull size={16} />} label="ФРАГИ" value={kills} accent="text-red-300" />
-          <StatCard icon={<Target size={16} />} label="СМЕРТИ" value={deaths} accent="text-slate-300" />
-          <StatCard icon={<Flame size={16} />} label="ЛУЧШАЯ СЕРИЯ" value={bestStreak} accent="text-orange-300" />
-          {/* K/D — на том же StatCard, а не отдельной разметкой: раньше он был
+          <StatCard icon={<Trophy size={16} aria-hidden />} label="СЧЁТ" value={score} accent="text-amber-300" />
+          <StatCard icon={<Skull size={16} aria-hidden />} label="ФРАГИ" value={kills} accent="text-red-300" />
+          <StatCard icon={<Target size={16} aria-hidden />} label="СМЕРТИ" value={deaths} accent="text-slate-300" />
+          <StatCard icon={<Flame size={16} aria-hidden />} label="ЛУЧШАЯ СЕРИЯ" value={bestStreak} accent="text-orange-300" />
+          {/* К/Д — на том же StatCard, а не отдельной разметкой: раньше он был
               единственной карточкой, собранной руками (S5). */}
-          <StatCard icon={<Layers size={16} />} label="K/D" value={formatKd(kills, deaths)} accent="text-emerald-300" />
+          <StatCard icon={<Layers size={16} aria-hidden />} label="К/Д" value={formatKd(kills, deaths)} accent="text-emerald-300" />
         </div>
 
         {rewards && (
@@ -165,7 +165,7 @@ export default function GameOverScreen({
                 <div className="font-display text-amber-300 mt-0.5">+{rewards.kills}</div>
               </div>
               <div className="cut-chip bg-black/30 p-2 border border-white/10 text-center">
-                <div className="text-white/60">Счёт XP</div>
+                <div className="text-white/60">Счёт</div>
                 <div className="font-display text-amber-300 mt-0.5">+{rewards.score}</div>
               </div>
               <div className="cut-chip bg-black/30 p-2 border border-white/10 text-center">
@@ -185,7 +185,7 @@ export default function GameOverScreen({
         )}
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <button type="button" onClick={onRematch} className="btn-game btn-primary px-10 py-4 text-base">
+          <button type="button" data-autofocus onClick={onRematch} className="btn-game btn-primary px-10 py-4 text-base">
             <RefreshCcw size={19} className="bicon-spin" aria-hidden />
             <span>РЕВАНШ</span>
           </button>
@@ -220,7 +220,7 @@ function StatCard({
 }: {
   icon: React.ReactNode;
   label: string;
-  /** Число анимируется счётчиком; строка (K/D) выводится как есть. */
+  /** Число анимируется счётчиком; строка (К/Д) выводится как есть. */
   value: number | string;
   accent: string;
 }) {

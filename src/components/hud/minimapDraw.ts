@@ -199,14 +199,16 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
     const x = toX(d.x);
     const y = toY(d.z);
     const rel = d.relation ?? (d.isPlayer ? 'self' : 'enemy');
+    // Цвета команд — токены из styles/variables.css (--team-alpha/--team-bravo),
+    // не локальные hex-дубли: дрейф #3b9eff/#38bdf8 и #ff4d3d/#f87171 закрыт.
     const fill =
-      rel === 'self' ? '#f59e0b' : rel === 'ally' ? '#3b9eff' : '#ff4d3d';
+      rel === 'self' ? '#f59e0b' : rel === 'ally' ? '#38bdf8' : '#f87171';
     const stroke =
       rel === 'self'
         ? 'rgba(245,158,11,0.85)'
         : rel === 'ally'
-          ? 'rgba(59,158,255,0.75)'
-          : 'rgba(255,80,60,0.65)';
+          ? 'rgba(56,189,248,0.75)'
+          : 'rgba(248,113,113,0.65)';
     ctx.save();
     ctx.translate(x, y);
     ctx.strokeStyle = stroke;

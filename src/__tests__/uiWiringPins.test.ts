@@ -25,6 +25,21 @@ describe('H5: startRound token race', () => {
       /if \(token === startToken\.current\) \{\s*setRoundError\(/,
     );
   });
+
+  it('MP flows share the token: double-click quick/join/create cannot kill чужой ЗАГРУЗКА', () => {
+    // handleQuickMatch / handleJoinRoom / handleCreateRoom обязаны брать тот же
+    // монотонный startToken, что и runStartRound H5 (корректность флага
+    // загрузки, не античит): stale MP-вызов не гасит спиннер свежего.
+    const quick = app.match(/handleQuickMatch[\s\S]{0,400}const token = \+\+startToken\.current;/)?.[0];
+    expect(quick, 'handleQuickMatch must take startToken').toBeTruthy();
+    const join = app.match(/handleJoinRoom[\s\S]{0,400}const token = \+\+startToken\.current;/)?.[0];
+    expect(join, 'handleJoinRoom must take startToken').toBeTruthy();
+    const create = app.match(/handleCreateRoom[\s\S]{0,400}const token = \+\+startToken\.current;/)?.[0];
+    expect(create, 'handleCreateRoom must take startToken').toBeTruthy();
+    // Каждый MP-finally гейтится токеном (3 MP-флоу + runStartRound = 4 гейта).
+    const gatedFinally = app.match(/if \(token === startToken\.current\) \{\s*setRoundLoading\(false\);/g) ?? [];
+    expect(gatedFinally.length).toBeGreaterThanOrEqual(4);
+  });
 });
 
 describe('H6: single mute source', () => {

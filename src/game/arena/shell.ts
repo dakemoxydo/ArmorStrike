@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { ARENA } from '../constants';
 import { colliderFromCenter } from '../engine/physics';
 import { signTexture, wallTexture, type SignStyle } from '../textures';
+import { markShared } from '../resources/sharedResources';
 import type { ArenaBuildContext } from './context';
 
 export interface ArenaShellTheme {
@@ -19,6 +20,29 @@ export interface ArenaShellTheme {
   signB: [string, string];
   /** Billboard styling; defaults to the neon `tech` look. */
   signStyle?: SignStyle;
+}
+
+/** Process-shared геометрия ламп периметра: одна на 14 фонарей и на все rebuild'ы. */
+let _lampGeo: THREE.BoxGeometry | null = null;
+function sharedLampGeo(): THREE.BoxGeometry {
+  if (!_lampGeo) _lampGeo = markShared(new THREE.BoxGeometry(0.8, 0.3, 1.6));
+  return _lampGeo;
+}
+
+/**
+ * Локальные shared unit-геометрии shell'а (стены/стрипы/вывески через scale).
+ * markShared → дедуп-dispose (disposeArenaSubtree/disposeObject3D) пропускает.
+ * Живут здесь, а не в skyline.ts, чтобы shell не зависел от чужих хелперов.
+ */
+let _shellBox: THREE.BoxGeometry | null = null;
+let _shellPlane: THREE.PlaneGeometry | null = null;
+function sharedShellBox(): THREE.BoxGeometry {
+  if (!_shellBox) _shellBox = markShared(new THREE.BoxGeometry(1, 1, 1));
+  return _shellBox;
+}
+function sharedShellPlane(): THREE.PlaneGeometry {
+  if (!_shellPlane) _shellPlane = markShared(new THREE.PlaneGeometry(1, 1));
+  return _shellPlane;
 }
 
 /** Perimeter, ground and wall trim shared by every map. */
@@ -55,8 +79,12 @@ export function buildArenaShell(ctx: ArenaBuildContext, theme: ArenaShellTheme) 
     [-(H + ARENA.wallT / 2), 0, ARENA.wallT, L],
     [H + ARENA.wallT / 2, 0, ARENA.wallT, L],
   ];
+  // Стены/стрипы — shared unit-Box + scale (вместо 8 своих BoxGeometry):
+  // размеры те же, коллайдеры не тронуты, dispose скипает shared.
+  const unitBox = sharedShellBox();
   for (const [x, z, w, d] of wallDefs) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, ARENA.wallH, d), wMat);
+    const m = new THREE.Mesh(unitBox, wMat);
+    m.scale.set(w, ARENA.wallH, d);
     m.position.set(x, ARENA.wallH / 2, z);
     m.castShadow = true;
     m.receiveShadow = true;
@@ -81,7 +109,7 @@ export function buildArenaShell(ctx: ArenaBuildContext, theme: ArenaShellTheme) 
         () => ctx.box(1.6, ARENA.wallH + 1, 1.6, pilMat), 0, 'wall');
     }
   }
-  const lampGeo = new THREE.BoxGeometry(0.8, 0.3, 1.6); // B8: одна геометрия на 14 фонарей
+  const lampGeo = sharedLampGeo(); // process-shared, markShared: дедуп-dispose пропускает
   for (let i = -3; i <= 3; i++) {
     const p = i * 18;
     const lamp = new THREE.Mesh(lampGeo, lampMat);
@@ -98,10 +126,8 @@ export function buildArenaShell(ctx: ArenaBuildContext, theme: ArenaShellTheme) 
     opacity: 0.75,
   });
   for (const [x, z, w, d] of wallDefs) {
-    const s = new THREE.Mesh(
-      new THREE.BoxGeometry(w * 0.995, 0.16, Math.max(d * 0.35, 0.45)),
-      stripMat,
-    );
+    const s = new THREE.Mesh(unitBox, stripMat);
+    s.scale.set(w * 0.995, 0.16, Math.max(d * 0.35, 0.45));
     s.position.set(x, ARENA.wallH + 0.14, z);
     ctx.group.add(s);
   }
@@ -116,7 +142,10 @@ export function buildArenaShell(ctx: ArenaBuildContext, theme: ArenaShellTheme) 
     roughness: 0.6,
     metalness: 0.2,
   });
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(44, 11), signMat);
+  // Вывески — shared unit-Plane + scale (вместо 2 своих PlaneGeometry).
+  const unitPlane = sharedShellPlane();
+  const sign = new THREE.Mesh(unitPlane, signMat);
+  sign.scale.set(44, 11, 1);
   sign.position.set(0, ARENA.wallH + 3.5, -(H + ARENA.wallT - 0.2));
   ctx.group.add(sign);
 
@@ -127,7 +156,8 @@ export function buildArenaShell(ctx: ArenaBuildContext, theme: ArenaShellTheme) 
     roughness: 0.6,
     metalness: 0.2,
   });
-  const sign2 = new THREE.Mesh(new THREE.PlaneGeometry(32, 8), sign2Mat);
+  const sign2 = new THREE.Mesh(unitPlane, sign2Mat);
+  sign2.scale.set(32, 8, 1);
   sign2.position.set(-(H + ARENA.wallT - 0.2), ARENA.wallH + 3, 0);
   sign2.rotation.y = Math.PI / 2;
   ctx.group.add(sign2);

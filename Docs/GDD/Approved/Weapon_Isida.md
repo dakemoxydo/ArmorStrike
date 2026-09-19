@@ -87,7 +87,7 @@ mode = beamOn ? (target ? (acquireT > 0 ? 'acquire' : targetMode) : 'idle') : 'n
 if (target.invulnT > 0) return;            // спавн-неуязвимость: ни урона, ни возврата
 dmg = resolveWeaponDamage(owner.params.damage, damagePerSec × tickRate);   // игрок: 11
 applyHit(damageSystem, target, dmg, owner, knockDir, knockback = 0, trailPuff(coral), hitPoint);
-owner.health = min(owner.maxHealth, owner.health + dmg × 0.40);            // cap на maxHealth
+owner.health = min(owner.maxHealth, owner.health + снятыеHP × 0.35);       // cap на maxHealth; снятые HP — после резистов/крита, добивающий тик капается остатком HP
 ```
 
 Вампиризм привязан к **гарантированному тику**: все пять условий молчаливого пропуска
@@ -215,12 +215,13 @@ barrel 1089) — внутри тестовой вилки 600–20000; габа�
 - `src/__tests__/isidaTargeting.test.ts` — чистая геометрия: фракции, конус/дальность/LOS,
   приоритет враг > союзник, `healHpFrac`, max-dot выбор, стики-проверки `isBeamCandidate`.
 - `src/__tests__/IsidaWeapon.test.ts` — FSM по кадрам (0.1 с): acquire 0.3 → attack;
-  тики кратны `TICK_DMG` + вампиризм `dmg × 0.40` с cap; invulnT → ни урона ни возврата;
+  тики кратны `TICK_DMG` + вампиризм `(снятые HP) × 0.35`; добивающий тик капается
+  фактическим остатком HP (пин C8); invulnT → ни урона ни возврата;
   смерть/стена/долечивание срывают лок; три ставки drain + regen с потолком; порог старта
   `> 5`; healing кратно `healPerSec × tickRate`, `healFlash`, floor-carry очков
   `supportPerHp` (и не-игроку не платит); DM не лечит; `onOwnerDeath` / `onRespawn`.
 - `scoring.test.ts` — `addSupportHeal` (floor + carry 5.5+5.5 = 11);
-  `catalog.test.ts` — `TURRETS.isida.damage = round(45 × 0.25)` и инварианты каталога;
+  `catalog.test.ts` — `TURRETS.isida.damage = round(42 × 0.25)` и инварианты каталога;
   `turretGeometry.test.ts` — `railGlowMat` у isida + вилка вершин/атрибутов;
   `uiUxPresentation.test.ts` — гейты HUD (`ammoForcesHudRender`, статусы).
 

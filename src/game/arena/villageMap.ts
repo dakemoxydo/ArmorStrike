@@ -1272,7 +1272,13 @@ function buildVillageFireflies(ctx: ArenaBuildContext) {
   ctx.group.add(pts);
   const attr = geo.attributes.position as THREE.BufferAttribute;
   const base = pos.slice();
+  // 90 точек × setXYZ + needsUpdate каждый кадр — дорого: обновляем через кадр
+  // (~30 Гц; движение time-based, дрейфа нет). Low-гейт не тронут — animNodes
+  // на low и так не крутятся (ArenaEffects.update).
+  let fireflyTick = 0;
   ctx.animNodes.push((_dt, elapsed) => {
+    fireflyTick++;
+    if (fireflyTick % 2 === 0) return;
     for (let i = 0; i < N; i++) {
       const p = seed[i * 2], s = seed[i * 2 + 1];
       attr.setX(i, base[i * 3] + Math.sin(elapsed * s + p) * 1.6);

@@ -16,8 +16,8 @@ export function roleLabel(role: AIRole): string {
 }
 
 /**
- * Назначение роли: элит — первый бот с 3-й волны;
- * оружие задаёт sniper (рельса) / assault (огонь) / standard (пушка).
+ * Назначение роли: оружие задаёт sniper (рельса/гаусс) / assault (огонь/изида)
+ * / standard (пушка). Elite в match-эре не спавнится (см. firePadForRole).
  */
 export function roleForBot(wave: number, index: number, turretId: TurretId): AIRole {
   if (wave >= 3 && index === 0) return 'elite';
@@ -68,7 +68,7 @@ export function coverHpFracForRole(role: AIRole): number {
  *   0.28 → 0.336 с; полная перезарядка магазина не падаётся);
  * - sniper / assault — их `TURRET.shotCooldown = 0` (каденция weapon-internal),
  *   поэтому пад идёт через `reloadSpeedMul = 1/firePad`: заряд+перезарядка
- *   рельсы (1.0→1.35 с / 3.8→5.13 с) и восстановление батареи огнемёта
+ *   рельсы (1.0→1.35 с / 2.6→3.51 с) и восстановление батареи огнемёта
  *   (22→~19.1/с; расход батареи не меняется).
  */
 export function firePadForRole(role: AIRole): number {

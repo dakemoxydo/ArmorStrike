@@ -5,6 +5,16 @@ let nextColliderId = 1;
 
 export type ColliderKind = 'wall' | 'block' | 'ramp';
 
+/**
+ * Единый высотный epsilon выстрела: коллайдер игнорируется лучом/снарядом,
+ * только когда точка выстрела явно выше его верха (`y > height + EPS`).
+ * Канон для `Projectile` (снаряд пролетает над низким парапетом) и
+ * `railgunBlockers.nearestShotBlockerDist` (луч скользит над кромкой) —
+ * раньше жили врозь как `PROJECTILE.radius` (0.18) и `0.3`, давая разный
+ * вердикт «перелёт/блок» на одной и той же стене.
+ */
+export const SHOT_HEIGHT_EPS = 0.3;
+
 export interface Collider {
   id: number;
   minX: number;

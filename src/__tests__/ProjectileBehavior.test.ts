@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { BEHAVIORS } from '../game/engine/ProjectileBehavior';
 import type { Shot } from '../game/engine/Projectile';
 import type { TankLike } from '../core/types';
+import { WEAPON_TUNING } from '../core/catalog';
 
 function makeShot(): Shot {
   return {
@@ -77,7 +78,9 @@ describe('ProjectileBehavior (cannon pool only)', () => {
     }, makeOwner(true));
     expect(effects.explosion).toHaveBeenCalled();
     expect(effects.impact).toHaveBeenCalled();
-    expect(target.knockback.z).toBeCloseTo(4, 5);
+    // Knockback — из WEAPON_TUNING.cannon.directKnockback, не хардкод.
+    expect(WEAPON_TUNING.cannon.directKnockback).toBe(4.0);
+    expect(target.knockback.z).toBeCloseTo(WEAPON_TUNING.cannon.directKnockback, 5);
   });
 
   it('cannon uses a mesh ribbon, not puff trail ticks', () => {

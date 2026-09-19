@@ -84,6 +84,7 @@ export default function HudWeapon({
     <div className="anim-up absolute bottom-[var(--hud-inset)] right-[var(--hud-inset)]" style={{ '--d': '0.3s' } as React.CSSProperties}>
       <div
         className={`hud-panel weapon-panel flex items-center gap-4 p-4${emptyMag ? ' is-empty' : ''}`}
+        role="img"
         aria-label={`Оружие: ${weaponName}`}
       >
         <span className="panel-inset" aria-hidden />

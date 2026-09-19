@@ -127,13 +127,13 @@ export default function DirectUnlockModal({
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 text-center">
               <div className="cut-chip bg-black/30 p-2 border border-white/10">
                 <div className="text-[10px] text-white/60 flex items-center justify-center gap-1">
-                  <Shield size={12} className="text-emerald-400" /> ПРОЧНОСТЬ
+                  <Shield size={12} className="text-emerald-400" aria-hidden /> ПРОЧНОСТЬ
                 </div>
-                <div className="font-display text-base text-emerald-400 mt-0.5">{hull.maxHealth} HP</div>
+                <div className="font-display text-base text-emerald-400 mt-0.5">{hull.maxHealth}</div>
               </div>
               <div className="cut-chip bg-black/30 p-2 border border-white/10">
                 <div className="text-[10px] text-white/60 flex items-center justify-center gap-1">
-                  <Gauge size={12} className="text-amber-400" /> СКОРОСТЬ
+                  <Gauge size={12} className="text-amber-400" aria-hidden /> СКОРОСТЬ
                 </div>
                 <div className="font-display text-base text-amber-300 mt-0.5">{hull.speed} м/с</div>
               </div>
@@ -144,19 +144,19 @@ export default function DirectUnlockModal({
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10 text-center">
               <div className="cut-chip bg-black/30 p-2 border border-white/10">
                 <div className="text-[10px] text-white/60 flex items-center justify-center gap-1">
-                  <Target size={12} className="text-amber-400" /> УРОН
+                  <Target size={12} className="text-amber-400" aria-hidden /> УРОН
                 </div>
                 <div className="font-display text-base text-amber-300 mt-0.5">{turret.damage}</div>
               </div>
               <div className="cut-chip bg-black/30 p-2 border border-white/10">
                 <div className="text-[10px] text-white/60 flex items-center justify-center gap-1">
-                  <Zap size={12} className="text-amber-400" /> МАГАЗИН
+                  <Zap size={12} className="text-amber-400" aria-hidden /> МАГАЗИН
                 </div>
                 <div className="font-display text-base text-amber-300 mt-0.5">{turret.magazine}</div>
               </div>
               <div className="cut-chip bg-black/30 p-2 border border-white/10">
                 <div className="text-[10px] text-white/60 flex items-center justify-center gap-1">
-                  <Sparkles size={12} className="text-emerald-400" /> ПЕРЕЗАРЯДКА
+                  <Sparkles size={12} className="text-emerald-400" aria-hidden /> ПЕРЕЗАРЯДКА
                 </div>
                 <div className="font-display text-base text-emerald-300 mt-0.5">{turret.fullReload}с</div>
               </div>
@@ -169,21 +169,21 @@ export default function DirectUnlockModal({
           <div className="flex items-center gap-1.5 text-white/70">
             <span>Ваш баланс:</span>
             <span className="font-display text-amber-300 flex items-center gap-1">
-              <Coins size={13} /> {playerCredits} CR
+              <Coins size={13} aria-hidden /> {playerCredits} CR
             </span>
           </div>
 
           <div className="flex items-center gap-1.5">
             <span className="text-white/70">Стоимость:</span>
             <span className="font-display text-amber-300 flex items-center gap-1">
-              <Coins size={13} /> {cost} CR
+              <Coins size={13} aria-hidden /> {cost} CR
             </span>
           </div>
         </div>
 
         {!canAfford && (
           <div className="cut-chip flex items-center gap-2 p-3 bg-red-950/40 border border-red-500/30 text-red-200 text-xs">
-            <AlertCircle size={16} className="shrink-0 text-red-400" />
+            <AlertCircle size={16} className="shrink-0 text-red-400" aria-hidden />
             <span>Недостаточно кредитов. Выполняйте боевые задачи и побеждайте в боях.</span>
           </div>
         )}

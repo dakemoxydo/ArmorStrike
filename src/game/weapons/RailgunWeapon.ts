@@ -36,8 +36,13 @@ const tmpSpark = new THREE.Vector3();
 const BEAM_SPARK_COLOR = new THREE.Color(0x8fffe8);
 /** Wall/block terminus impact color (orange = "stopped", distinct from pierce cyan). */
 const WALL_IMPACT_COLOR = 0xffa040;
-/** J12: единый фолбэк длины луча на случай не-конечного range (было 1000/10000 врозь). */
-const RAY_RANGE_FALLBACK = 1000;
+/**
+ * J12: игровой фолбэк длины луча на случай не-конечного range
+ * (`WEAPON_TUNING.railgun.range = Infinity` → 1000 м — вся арена 300×300
+ * накрыта с запасом). Поиск блокеров (`nearestShotBlockerDist`) маппит
+ * не-конечный range в свой физический safeRange 10000 — см. Weapon_Railgun.md.
+ */
+export const RAY_RANGE_FALLBACK = 1000;
 
 /**
  * Beam-side visuals captured at fire time, replayed `tracerDelay` later

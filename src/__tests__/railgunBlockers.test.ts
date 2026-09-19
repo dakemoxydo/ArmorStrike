@@ -3,6 +3,8 @@ import {
   nearestShotBlockerDist,
   SHOT_BLOCKER_HEIGHT_EPS,
 } from '../game/weapons/railgunBlockers';
+import { SHOT_HEIGHT_EPS } from '../game/engine/physics';
+import { RAY_RANGE_FALLBACK } from '../game/weapons/RailgunWeapon';
 import { colliderFromCenter } from '../game/engine/physics';
 
 describe('nearestShotBlockerDist (M9)', () => {
@@ -74,5 +76,22 @@ describe('nearestShotBlockerDist (M9)', () => {
     expect(hit).not.toBeNull();
     expect(hit!.id).toBe(farWall.id);
     expect(hit!.dist).toBeCloseTo(239, 1);
+  });
+
+  it('единый высотный epsilon: блокеры и снаряд делят SHOT_HEIGHT_EPS', () => {
+    // Канон — physics.ts; алиас railgunBlockers — для совместимости импортов.
+    expect(SHOT_HEIGHT_EPS).toBe(0.3);
+    expect(SHOT_BLOCKER_HEIGHT_EPS).toBe(SHOT_HEIGHT_EPS);
+  });
+
+  it('игровой фолбэк луча 1000 м (арена 300×300 накрыта); safeRange блокеров 10000', () => {
+    // RAY_RANGE_FALLBACK — длина луча при Infinity-range; safeRange 10000 живёт
+    // только внутри nearestShotBlockerDist как физическая страховка.
+    expect(RAY_RANGE_FALLBACK).toBe(1000);
+    // Стена за 1000 м видна только через safeRange-маппинг Infinity.
+    const beyond = colliderFromCenter(0, 1500, 10, 2, 7.5, 'wall');
+    const hit = nearestShotBlockerDist(0, 0, 0, 1, Infinity, [beyond]);
+    expect(hit).not.toBeNull();
+    expect(hit!.dist).toBeGreaterThan(1000);
   });
 });

@@ -12,6 +12,8 @@ screenshots/
 .env
 .env.*
 !.env.example
+supabase/.temp/
+
 
 # Agent / IDE local configs (machine-specific paths)
 .agents/

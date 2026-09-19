@@ -1,15 +1,23 @@
 // ===== Тряска камеры: trauma-модель затухания =====
 import * as THREE from 'three';
+import { prefersReducedMotion } from '../../lib/reducedMotion';
 
 export class CameraShake {
   trauma = 0;
 
   add(amount: number) {
+    // Вестибулярный гейт: при prefers-reduced-motion травма не копится.
+    if (prefersReducedMotion()) return;
     this.trauma = Math.min(1, this.trauma + amount);
   }
 
   /** Записывает смещение (x,y,z) и возвращает крен (roll) камеры. */
   getShake(out: THREE.Vector3, elapsed: number): number {
+    // Живой гейт (а не только в add): reduce могли включить при trauma > 0.
+    if (prefersReducedMotion()) {
+      out.set(0, 0, 0);
+      return 0;
+    }
     const t2 = this.trauma * this.trauma;
     const f = 26;
     out.set(

@@ -133,7 +133,7 @@ export default function CrateOpeningModal({
           <div className="flex items-center gap-2 text-xs text-white/60">
             <span>СТОИМОСТЬ ОТКРЫТИЯ:</span>
             <span className="font-display text-amber-300 flex items-center gap-1">
-              <Coins size={14} /> {cost} CR
+              <Coins size={14} aria-hidden /> {cost} CR
             </span>
           </div>
 
@@ -205,9 +205,9 @@ function HullOptionCard({
         <div>
           <div className="flex justify-between text-xs mb-1">
             <span className="text-white/60 flex items-center gap-1.5">
-              <Shield size={13} className="text-emerald-400" /> Прочность
+              <Shield size={13} className="text-emerald-400" aria-hidden /> Прочность
             </span>
-            <span className="font-display text-emerald-400">{hull.maxHealth} HP</span>
+            <span className="font-display text-emerald-400">{hull.maxHealth}</span>
           </div>
           <div className="h-1.5 bg-black/40 cut-chip overflow-hidden border border-white/10">
             <div className="h-full bg-emerald-400" style={{ width: `${hpPct}%` }} />
@@ -217,7 +217,7 @@ function HullOptionCard({
         <div>
           <div className="flex justify-between text-xs mb-1">
             <span className="text-white/60 flex items-center gap-1.5">
-              <Gauge size={13} className="text-amber-400" /> Скорость
+              <Gauge size={13} className="text-amber-400" aria-hidden /> Скорость
             </span>
             <span className="font-display text-amber-300">{hull.speed} м/с</span>
           </div>
@@ -271,19 +271,19 @@ function TurretOptionCard({
       <div className="space-y-2 pt-3 border-t border-white/10">
         <div className="flex justify-between text-xs">
           <span className="text-white/60 flex items-center gap-1.5">
-            <Target size={13} className="text-amber-400" /> Урон
+            <Target size={13} className="text-amber-400" aria-hidden /> Урон
           </span>
           <span className="font-display text-amber-300">{turret.damage}</span>
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-white/60 flex items-center gap-1.5">
-            <Zap size={13} className="text-amber-400" /> Магазин
+            <Zap size={13} className="text-amber-400" aria-hidden /> Магазин
           </span>
           <span className="font-display text-amber-300">{turret.magazine}</span>
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-white/60 flex items-center gap-1.5">
-            <Sparkles size={13} className="text-emerald-400" /> Перезарядка
+            <Sparkles size={13} className="text-emerald-400" aria-hidden /> Перезарядка
           </span>
           <span className="font-display text-emerald-300">{turret.fullReload}с</span>
         </div>

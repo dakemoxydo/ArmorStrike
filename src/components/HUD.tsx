@@ -189,7 +189,7 @@ export default function HUD({ game, active, crosshair, damageNumbers, onToggleMu
                     <i className="sp-bravo" style={{ width: `${100 - alphaShare}%` }} />
                   </div>
                   {cpMode && st.capturePoints.length > 0 && (
-                    <div className="cp-points mt-1.5" aria-label="Точки захвата">
+                    <div className="cp-points mt-1.5" role="img" aria-label="Точки захвата">
                       {st.capturePoints.map((cp) => (
                         <span
                           key={cp.id}
@@ -253,7 +253,7 @@ export default function HUD({ game, active, crosshair, damageNumbers, onToggleMu
           {!st.alive && (
             <div className="death-overlay" aria-hidden>
               <div className="hud-panel death-panel">
-                <Skull size={30} className="death-icon skull-pulse" />
+                <Skull size={30} className="death-icon skull-pulse" aria-hidden />
                 <div className="death-title">УНИЧТОЖЕН</div>
                 <div className="death-sub">
                   Возрождение через <b>{Math.ceil(st.respawnInSec)}</b> с

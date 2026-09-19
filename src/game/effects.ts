@@ -7,6 +7,7 @@ import { CameraShake } from './effects/CameraShake';
 import { AmbientDust } from './effects/AmbientDust';
 import { WreckSystem } from './effects/WreckSystem';
 import { LightRig } from './effects/LightRig';
+import { prefersReducedMotion } from '../lib/reducedMotion';
 import type { EffectsPort } from './ports/EffectsPort';
 
 export class Effects implements EffectsPort {
@@ -50,21 +51,39 @@ export class Effects implements EffectsPort {
   }
   debris(p: THREE.Vector3, color: number, n = 14) { this.particles.debris(p, color, n); }
 
-  addShake(amount: number) { this.shake.add(amount); }
-  getShake(out: THREE.Vector3, elapsed: number): number { return this.shake.getShake(out, elapsed); }
+  addShake(amount: number) {
+    // Вестибулярный гейт (единый prefersReducedMotion): при reduce травма,
+    // FOV-punch и tighten глушатся до 0. Гейт живой — дублируется в геттерах,
+    // чтобы reduce посреди боя с накопленным punch не дёргал камеру.
+    if (prefersReducedMotion()) return;
+    this.shake.add(amount);
+  }
+  getShake(out: THREE.Vector3, elapsed: number): number {
+    if (prefersReducedMotion()) {
+      out.set(0, 0, 0);
+      return 0;
+    }
+    return this.shake.getShake(out, elapsed);
+  }
 
   /** Instant FOV widen (railgun fire punch). */
   addFovPunch(degrees: number) {
+    if (prefersReducedMotion()) return;
     this.fovPunch = Math.min(10, this.fovPunch + degrees);
   }
 
   /** Charge zoom-in amount (0 = none). Cleared on fire / idle. */
   setFovTighten(degrees: number) {
+    if (prefersReducedMotion()) {
+      this.fovTighten = 0;
+      return;
+    }
     this.fovTighten = Math.max(0, degrees);
   }
 
   /** Net FOV bias for camera: +wider / −narrower. */
   getFovBias(): number {
+    if (prefersReducedMotion()) return 0;
     return this.fovPunch - this.fovTighten;
   }
 

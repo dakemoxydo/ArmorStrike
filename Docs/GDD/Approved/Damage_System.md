@@ -2,7 +2,7 @@
 
 **Статус:** Approved  
 **Слой:** Domain (`core/`) + Combat glue (`game/`)  
-**Связано:** [[Health_And_Regen]], [[Weapon_Cannon]], [[Weapon_Railgun]], [[Weapon_Flamethrower]], [[Scoring]]
+**Связано:** [[Health_And_Regen]], [[Weapon_Cannon]], [[Weapon_Railgun]], [[Weapon_Flamethrower]], [[Weapon_Gauss]], [[Weapon_Isida]], [[Scoring]]
 
 ## Принцип
 
@@ -40,6 +40,32 @@ hooks.onTankDamaged(target, dmg, source)
 Гейты self/invuln/FF — **канон здесь**. Beam-оружия (огнемёт, «Изида»)
 проверяют их заранее локально — это защитная дубликация ради пропущенного
 applyHit-вызова на тик, а не второй источник истины (J14).
+
+## Типы урона и сопротивления (Resistances)
+
+Каждое орудие имеет профильный тип урона (`damageType` в `TURRETS`), а корпуса — индивидуальный профиль защиты (`resist` в `HULLS`, `src/core/catalogData.ts`):
+
+| Тип урона (`DamageType`) | Оружие | Особенности |
+|--------------------------|--------|-------------|
+| `ballistic` | Пушка «Смоки» | Осколочно-фугасный снаряд |
+| `kinetic` | Рельсотрон, Пушка «Гаусс» | Тяжёлый высокоточный hitscan-урон |
+| `thermal` | Огнемёт «Firebird» | Тиковый конусный нагрев |
+| `nano` | Нано-дуга «Изида» | Энергетическая дуга, контр-пик сверхтяжёлых корпусов |
+
+Итоговый множитель: `resistMul = clamp(1 - (targetResist[damageType] ?? 0), 0.65, 1.35)`
+(канон — `RESIST_MULTIPLIER_MIN/MAX` в `src/core/damageRolls.ts`). Границы держат
+фактический каталог: максимальная уязвимость −0.35 (Титан vs nano → ×1.35),
+максимальное поглощение +0.35 → ×0.65; запредельные значения каталога
+клампятся как страховка от опечатки, а не как баланс.
+
+## Критический урон (Critical Hits)
+
+Накопительный псевдослучайный крит (`src/core/damageRolls.ts`, тюнинг `crit` в `WEAPON_TUNING`):
+- `step`: прирост шанса за каждое результативное попадание (+0.25 Рельса, +0.3 Гаусс, +0.06 Смоки, +0.03 Изида, +0.02 Огнемёт).
+- `max`: потолок шанса (1.0 Рельса — 4-е попадание подряд гарантированный крит; 1.0 Гаусс; 0.3 Смоки; 0.15 Изида; 0.12 Огнемёт).
+- `multiplier`: множитель урона (1.4× Рельса, 1.35× Гаусс, 1.4× Изида, 1.5× Смоки и Огнемёт).
+- После крита шанс сбрасывается в 0. Крит отображается оранжевым шрифтом урона и отдельным SFX.
+- Лечение «Изиды» критует из того же накопителя башни (`IsidaWeapon.tickHeal` крутит `rollCrit` мимо `DamageSystem`).
 
 ### applyKnockback
 
@@ -90,8 +116,9 @@ dmg     = round(splashDmg * falloff)
 ## Классы
 
 | Символ | Файл |
-|--------|------|
+|-------|------|
 | `createDamageSystem` | `src/core/DamageSystem.ts` |
+| `resistMultiplier`, `rollCrit` | `src/core/damageRolls.ts` |
 | `TankLike`, `DamageSystem` | `src/core/types.ts` |
 | `CombatSystem` | `src/game/CombatSystem.ts` |
 | `applyHit`, `applySplashHit` | `src/game/engine/applyHit.ts` |

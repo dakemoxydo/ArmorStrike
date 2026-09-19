@@ -48,7 +48,7 @@ export default function HullCard({ hull, isSelected, isLocked, delay, onSelect, 
         <div>
           <div className="flex justify-between text-white/70 mb-1">
             <span className="flex items-center gap-1"><Shield size={10} aria-hidden /> БРОНЯ</span>
-            <span className="font-display text-emerald-300">{hull.maxHealth} HP</span>
+            <span className="font-display text-emerald-300">{hull.maxHealth}</span>
           </div>
           <div className="g-bar">
             <i className="g-stat-bar bg-emerald-400" style={{ width: `${(hull.maxHealth / MAX_HULL_HP) * 100}%` }} />

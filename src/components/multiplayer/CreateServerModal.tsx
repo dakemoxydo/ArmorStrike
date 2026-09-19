@@ -13,7 +13,7 @@ interface CreateServerModalProps {
 
 const MODES: { id: MatchModeId; label: string; desc: string }[] = [
   { id: 'deathmatch', label: 'DM (Каждый сам за себя)', desc: 'Все против всех' },
-  { id: 'team_deathmatch', label: 'TDM (Командный бой)', desc: 'Alpha против Bravo' },
+  { id: 'team_deathmatch', label: 'КБ (Командный бой)', desc: 'Alpha против Bravo' },
   { id: 'capture_point', label: 'CP (Захват точек)', desc: 'Борьба за базы A/B/C' },
 ];
 

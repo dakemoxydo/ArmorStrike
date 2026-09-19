@@ -485,7 +485,8 @@ export class GaussWeapon implements Weapon {
       this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakePlayer * 0.4);
       this.deps.effects.addFovPunch(2.0);
       this.deps.onShotFired?.();
-    } else if (this.playerNear(ctx.tanks, 35)) {
+    } else if (this.playerNear(ctx.tanks, 45)) {
+      // J10-гейт: радиус «игрока рядом» 45 м — как у снайперского залпа выше.
       this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakeBot * 0.4);
     }
   }

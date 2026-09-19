@@ -313,8 +313,13 @@ export class CombatSystem {
       });
     }
 
-    // Kill streak tracking (только для игрока)
-    if (byPlayer) {
+    // Kill streak tracking (только для игрока).
+    // Реплицированная смерть без атакующего (attacker == null → сюда приходим
+    // с owner === victim): kill-кредит уже ограничен isEnemy в MatchRuntime,
+    // а streak не регистрируем — иначе собственная смерть игрока (victim
+    // isPlayer) засчитывалась бы ему как фраговая серия. Корректность
+    // презентации, не античит (сеть — out-of-scope по Standard_Multiplayer §6).
+    if (byPlayer && owner && owner.id !== target.id) {
       const streak = this.streakTracker.registerKill(this.matchTime);
       this.playerBest = Math.max(this.playerBest, this.streakTracker.windowCount);
       if (streak) {

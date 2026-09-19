@@ -191,7 +191,7 @@ export class CameraRig {
     const rayLen = Math.sqrt(rayLen2);
     let minT = 1;
     for (const c of colliders) {
-      // F3:避让 только живой видимой геометрии — конвенция остальных
+      // F3: обходим только живую видимую геометрию — конвенция остальных
       // потребителей (физика/LOS/снаряды/ИИ): мусор (active=false),
       // non-LOS фонари/билборды и drivable-'ramp' камера не отъезжают.
       if (!c.active || !c.blocksSight || c.kind === 'ramp' || c.height < 2.5) continue;

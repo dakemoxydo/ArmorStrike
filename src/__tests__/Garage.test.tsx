@@ -164,7 +164,7 @@ describe('Garage — passport reflects the current selection', () => {
   it('shows hull stats and swaps the weapon-specific hint with the turret', async () => {
     const { user } = setup({ hull: 'mammoth', turret: 'railgun' });
 
-    expect(screen.getByText(String(HULLS.mammoth.maxHealth))).toBeInTheDocument(); // mammoth HP
+    expect(screen.getAllByText(String(HULLS.mammoth.maxHealth)).length).toBeGreaterThanOrEqual(1); // mammoth HP
 
     await user.click(turretTab());
     await user.click(turretCard(/Firebird/));

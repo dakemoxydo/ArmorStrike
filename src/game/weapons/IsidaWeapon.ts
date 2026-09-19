@@ -218,6 +218,9 @@ export class IsidaWeapon implements Weapon {
    * пропуска DamageSystem ровно пять (!alive, self, invuln, FF, dmg<=0);
    * первые четыре уже исключены захватом/гейтами, кроме invulnT — его гасим
    * здесь (щит поглощает тик без возврата, луч при этом продолжает жечь).
+   * Кап добивающего тика — ПОСЛЕ DamageSystem: в applyHit уходит полный dmg,
+   * сопротивление/крит считает DamageSystem, а возврат — от снятых HP
+   * (hpBefore − health), так что избыток сверх остатка HP цели не лечит.
    */
   private tickAttack(t: BeamTank): void {
     if (this.owner.isRemote) {
@@ -230,13 +233,9 @@ export class IsidaWeapon implements Weapon {
     const dz = t.position.z - tmpMuzzle.z;
     const dist = Math.hypot(dx, dz) || 1;
     tmpKnock.set(dx / dist, 0, dz / dist);
-    // C8: возврат — от ФАКТИЧЕСкого урона (Weapon_Isida.md §«Вампиризм»): на
-    // добивающем тике избыток (dmg − остаток HP цели) не применяется и не лечит.
-    // Прочие «обнуляющие» условия DamageSystem исключены выше (alive/self/invuln/FF).
-    const dealt = Math.min(dmg, Math.max(0, t.health));
     const hpBefore = t.health;
     applyHit(
-      this.deps.damageSystem, t, dealt, this.owner, tmpKnock, tune.knockback,
+      this.deps.damageSystem, t, dmg, this.owner, tmpKnock, tune.knockback,
       (p) => this.deps.effects.trailPuff(p, ATK_COLOR),
       impactPoint(t, tmpImpact),
     );

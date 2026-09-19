@@ -1,7 +1,16 @@
-// ===== ИИ: избегание препятствий (чистая логика без смены чисел) =====
+// ===== ИИ: избегание препятствий =====
 import { pointInCollider } from './engine/physics';
 import type { Collider } from './engine/physics';
+import { TANK } from './constants';
 import type { AIBody } from './AI';
+
+/**
+ * Клиренс пробы руления до граней коллайдеров (MED-1).
+ * Обязан быть ≥ радиуса корпуса (TANK.radius = 1.8): проба в зазоре
+ * 1.4–1.8 м считалась свободной, но корпус цеплял грань и `resolveCircle`
+ * дёргал бота каждый кадр. Запас +0.4 → 2.2.
+ */
+const OBSTACLE_CLEARANCE = TANK.radius + 0.4;
 
 export interface AvoidState {
   avoidT: number;
@@ -12,7 +21,7 @@ function dirFree(t: AIBody, a: number, colliders: Collider[]): boolean {
   const px = t.position.x + Math.sin(a) * 5;
   const pz = t.position.z + Math.cos(a) * 5;
   for (const c of colliders) {
-    if (c.active && c.kind !== 'ramp' && pointInCollider(px, pz, c, 1.4)) return false;
+    if (c.active && c.kind !== 'ramp' && pointInCollider(px, pz, c, OBSTACLE_CLEARANCE)) return false;
   }
   return true;
 }
@@ -31,7 +40,7 @@ export function computeObstacleAvoidance(
   let blocked = false;
   for (const c of colliders) {
     if (!c.active || c.kind === 'ramp') continue; // M12: ramps not solid for hull/AI
-    if (pointInCollider(probeX, probeZ, c, 1.4)) { blocked = true; break; }
+    if (pointInCollider(probeX, probeZ, c, OBSTACLE_CLEARANCE)) { blocked = true; break; }
   }
   if (state.avoidT > 0) {
     state.avoidT -= dt;

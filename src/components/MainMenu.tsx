@@ -131,17 +131,17 @@ export default function MainMenu({
         </button>
 
         <div className="anim-left mt-8 grid w-full max-w-md grid-cols-2 gap-2 text-left" style={{ '--d': '0.64s' } as React.CSSProperties}>
-          <ControlCard icon={<Gamepad2 size={16} />} k="WASD" label="Корпус" />
-          <ControlCard icon={<MousePointer2 size={16} />} k="МЫШЬ" label="Башня" />
-          <ControlCard icon={<Target size={16} />} k="ЛКМ" label="Огонь" />
-          <ControlCard icon={<RotateCw size={16} />} k="ESC" label="Пауза" />
+          <ControlCard icon={<Gamepad2 size={16} aria-hidden />} k="WASD" label="Корпус" />
+          <ControlCard icon={<MousePointer2 size={16} aria-hidden />} k="МЫШЬ" label="Башня" />
+          <ControlCard icon={<Target size={16} aria-hidden />} k="ЛКМ" label="Огонь" />
+          <ControlCard icon={<RotateCw size={16} aria-hidden />} k="ESC" label="Пауза" />
         </div>
       </div>
 
       <div className="pointer-events-none z-10 hidden flex-col items-end justify-center lg:flex">
         <div className="anim-up hud-panel max-w-xs bg-black/40 p-3 text-right" style={{ '--d': '0.7s' } as React.CSSProperties}>
           <div className="hud-label mb-1 flex items-center justify-end gap-1.5 text-amber-400">
-            <Flame size={12} /> 3D ПРЕДПРОСМОТР
+            <Flame size={12} aria-hidden /> 3D ПРЕДПРОСМОТР
           </div>
           <p className="text-[11px] leading-relaxed tracking-widest text-white/70">
             Модель рендерится в реальном времени.

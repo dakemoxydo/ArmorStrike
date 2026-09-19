@@ -1,5 +1,5 @@
 // ===== M9: pure shot-blocker pick for railgun (collider parity with projectiles) =====
-import { pointInCollider, segmentHitT, type Collider } from '../engine/physics';
+import { SHOT_HEIGHT_EPS, pointInCollider, segmentHitT, type Collider } from '../engine/physics';
 
 export interface ShotBlockerHit {
   dist: number;
@@ -9,9 +9,11 @@ export interface ShotBlockerHit {
 /**
  * Muzzle-height forgiveness: a collider is ignored only when the muzzle is
  * clearly above its top (beam is horizontal, so grazing the very edge of a
- * low wall should still count as blocked). Named constant — was bare `0.3`.
+ * low wall should still count as blocked). Канон — `SHOT_HEIGHT_EPS`
+ * (`physics.ts`), общий со снарядом пушки; алиас ниже — для совместимости
+ * существующих импортов.
  */
-export const SHOT_BLOCKER_HEIGHT_EPS = 0.3;
+export const SHOT_BLOCKER_HEIGHT_EPS = SHOT_HEIGHT_EPS;
 
 /**
  * Nearest active blocksShots collider along a 2D aim segment of length `range`.

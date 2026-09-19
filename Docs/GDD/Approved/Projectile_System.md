@@ -15,6 +15,8 @@
 |------|----------|------------|
 | `range` | 85 | fallback (реальный range задаёт behavior из `WEAPON_TUNING`) |
 | `radius` | 0.18 | hit-test радиус |
+| `directKnockback` / `splashKnockback` | 4.0 / 2.5 | knockback пушки (`WEAPON_TUNING.cannon`; см. [[Weapon_Cannon]]) |
+| `SHOT_HEIGHT_EPS` | 0.3 | единый высотный гейт снаряда и рельсы (`src/game/engine/physics.ts`) |
 
 > `speed` здесь больше **нет**: скорость полёта живёт в
 > `WEAPON_TUNING.<weapon>.speed` (`catalogData`) и применяется behavior'ом в

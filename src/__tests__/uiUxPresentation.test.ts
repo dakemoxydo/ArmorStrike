@@ -296,6 +296,20 @@ describe('UI/UX structural contracts (critical/medium fixes)', () => {
     }
   });
 
+  it('K5: every lucide icon (incl. non-bicon) is aria-hidden or labelled', () => {
+    // Расширение 2026-09-19: инвариант «bicon ⇒ aria-hidden» не ловил иконки
+    // без bicon-класса (HudFeed Zap/Skull, StatCard-глифы, Coins/Shield в
+    // кейсах). Теперь каждый глиф с size={ обязан нести aria-hidden напрямую
+    // (родительский aria-hidden не в счёт — пин ловит сам тег); исключение —
+    // aria-label у информативной иконки (замок «Требуется пароль»).
+    for (const rel of componentFiles()) {
+      const src = readSrc(rel);
+      for (const m of src.matchAll(/<[A-Z][A-Za-z0-9]+\b[^>]*size=\{\d+\}[^>]*\/>/g)) {
+        expect(m[0], `${rel}: ${m[0].slice(0, 80)}`).toMatch(/aria-hidden|aria-label/);
+      }
+    }
+  });
+
   it('K5: no decorative lucide glyph in GameOver/MainMenu/MapSelect/HudFeed lacks aria-hidden', () => {
     // Прямые пины точечных мест из аудита.
     expect(readSrc('src/components/hud/HudFeed.tsx')).toMatch(/<VolumeX size=\{16\} className="bicon" aria-hidden/);
@@ -330,13 +344,35 @@ describe('UI/UX structural contracts (critical/medium fixes)', () => {
     expect(readSrc('src/hooks/useFocusTrap.ts')).toMatch(/\[data-autofocus\]/);
   });
 
-  it('H9: mode/map user-facing copy is Russian (AGENTS §6)', () => {
+  it('H9: mode/map/user-facing copy is Russian (AGENTS §6)', () => {
     const mode = readSrc('src/components/ModeSelect.tsx');
     expect(mode).not.toMatch(/Free-for-all|friendly fire|\bFree\b|· \d+ (kills|team|score) ·|vs 5/);
     expect(readSrc('src/game/maps/mapCatalog.ts')).not.toMatch(/downtown|district/);
     // nameEn на карточках — осознанный двуязычный стиль (решение по H9):
     // кириллическое имя первично, латинская подпись — декор.
     expect(readSrc('src/components/MapSelect.tsx')).toMatch(/nameEn/);
+    // LOW-батч 2026-09-19: единый формат прочности (число, без HP) как в
+    // Garage.tsx:393; RU-метки результатов; С-радар; КБ-аббревиатура; янтарь.
+    for (const rel of [
+      'src/components/HullCard.tsx',
+      'src/components/CrateOpeningModal.tsx',
+      'src/components/StarterPackModal.tsx',
+      'src/components/DirectUnlockModal.tsx',
+      'src/components/Garage.tsx',
+    ]) {
+      expect(readSrc(rel), `${rel} must not suffix HP`).not.toMatch(/\} HP/);
+    }
+    const over = readSrc('src/components/GameOverScreen.tsx');
+    expect(over).not.toMatch(/label="K\/D"/);
+    expect(over).toMatch(/label="К\/Д"/);
+    expect(over).not.toMatch(/СЧЁТ XP|Счёт XP/);
+    expect(over).toMatch(/label="СЧЁТ"/);
+    expect(readSrc('src/components/hud/HudRadar.tsx')).toMatch(/radar-north"[^>]*>С</);
+    expect(readSrc('src/components/hud/HudRadar.tsx')).not.toMatch(/radar-north"[^>]*>N</);
+    expect(readSrc('src/components/multiplayer/CreateServerModal.tsx')).not.toMatch(/TDM \(/);
+    expect(readSrc('src/components/multiplayer/CreateServerModal.tsx')).toMatch(/КБ \(Командный бой\)/);
+    expect(readSrc('src/game/maps/mapCatalog.ts')).not.toMatch(/неон/);
+    expect(readSrc('src/game/maps/mapCatalog.ts')).toMatch(/янтар/);
   });
 });
 
@@ -576,9 +612,9 @@ describe('UI polish invariants (layout per scenario, S1–S5)', () => {
     expect(style('overlays.css')).toMatch(/\.pause-section\s*\{[\s\S]*?border-top:\s*1px solid/);
   });
 
-  it('S5: results render K/D through the shared StatCard', () => {
+  it('S5: results render К/Д through the shared StatCard', () => {
     const over = readSrc('src/components/GameOverScreen.tsx');
-    expect(over).toMatch(/label="K\/D" value=\{formatKd/);
+    expect(over).toMatch(/label="К\/Д" value=\{formatKd/);
     expect((over.match(/<StatCard/g) ?? []).length).toBe(5);
   });
 

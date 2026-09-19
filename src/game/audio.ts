@@ -58,6 +58,24 @@ export class AudioFX implements AudioPort {
   /** Позиция и ориентация слушателя (игрок/камера) для пространственного 3D-звука (G1). */
   private listenerPos = { x: 0, z: 0, yaw: 0 };
   private hasListener = false;
+  /** Кросс-таб синк mute: соседняя вкладка пишет as2_muted — этот инстанс
+   * обязан подхватить флаг, иначе kill-feed иконка (HudModel.muted) врёт. */
+  private storageHandler: ((e: StorageEvent) => void) | null = null;
+
+  constructor() {
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      this.storageHandler = (e: StorageEvent) => {
+        if (e.key !== MUTE_LS_KEY) return;
+        const m = e.newValue === '1';
+        if (this.muted === m) return;
+        this.muted = m;
+        if (this.master && this.ctx) {
+          this.master.gain.setTargetAtTime(m ? 0 : 0.5, this.ctx.currentTime, 0.02);
+        }
+      };
+      window.addEventListener('storage', this.storageHandler);
+    }
+  }
 
   setListener(x: number, z: number, yaw: number) {
     this.listenerPos.x = x;
@@ -117,6 +135,10 @@ export class AudioFX implements AudioPort {
 
   /** Full teardown (L-5): stop voices, clear timers, close the context. */
   dispose() {
+    if (this.storageHandler && typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+      window.removeEventListener('storage', this.storageHandler);
+      this.storageHandler = null;
+    }
     for (const handle of this.liveChargeHandles()) this.stopChargeRailgun(handle, false);
     this.flameUsers = 0; // force-stop the shared flame voice below
     this.stopFlameLoop();

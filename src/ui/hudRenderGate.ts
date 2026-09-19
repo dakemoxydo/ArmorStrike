@@ -15,7 +15,7 @@ import type { CaptureHudPoint, HudSnapshot, ScoreRow } from '../game/types';
 import { ammoForcesHudRender } from './hudPresentation';
 
 /** HP в табло рисуется как `Math.round(frac * 100)` — сравниваем с той же точностью. */
-function hpBucket(frac: number): number {
+export function hpBucket(frac: number): number {
   return Math.round(Math.max(0, Math.min(1, frac)) * 100);
 }
 

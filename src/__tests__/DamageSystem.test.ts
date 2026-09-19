@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import { createDamageSystem } from '../core/DamageSystem';
+import { RESIST_MULTIPLIER_MAX, RESIST_MULTIPLIER_MIN, resistMultiplier } from '../core/damageRolls';
 import type { ArenaLike, TankLike } from '../core/types';
 
 let _tid = 1;
@@ -116,5 +117,28 @@ describe('createDamageSystem', () => {
     expect(target.takeDamage).not.toHaveBeenCalled();
     expect(onTankDamaged).not.toHaveBeenCalled();
     expect(target.health).toBe(100);
+  });
+});
+
+describe('resistMultiplier — границы фактического контракта (Damage_System.md)', () => {
+  it('контракт 0.65/1.35 под макс resist каталога 0.35', () => {
+    expect(RESIST_MULTIPLIER_MIN).toBe(0.65);
+    expect(RESIST_MULTIPLIER_MAX).toBe(1.35);
+  });
+
+  it('границы каталога ложатся ровно на кламп (Титан nano −0.35 → ×1.35)', () => {
+    expect(resistMultiplier({ nano: -0.35 }, 'nano')).toBeCloseTo(1.35, 10);
+    expect(resistMultiplier({ ballistic: 0.35 }, 'ballistic')).toBeCloseTo(0.65, 10);
+  });
+
+  it('запредельные резисты клампятся, а не дают неуязвимость/испарение', () => {
+    expect(resistMultiplier({ kinetic: 0.95 }, 'kinetic')).toBe(0.65);
+    expect(resistMultiplier({ thermal: -0.9 }, 'thermal')).toBe(1.35);
+  });
+
+  it('без типа/таблицы — нейтральная 1 (тестовые танки, будущие источники)', () => {
+    expect(resistMultiplier(undefined, 'nano')).toBe(1);
+    expect(resistMultiplier({ nano: 0.2 }, undefined)).toBe(1);
+    expect(resistMultiplier({}, 'nano')).toBe(1);
   });
 });

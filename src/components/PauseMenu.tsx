@@ -93,7 +93,7 @@ export default function PauseMenu({
           {/* Секция 1 — действия. Primary без enter-анимации: на неё встаёт
               фокус-трап, а `.anim-up` стартует с `opacity: 0` (M1). */}
           <div className="pause-section">
-            <button type="button" onClick={onResume} className="btn-game btn-primary w-full px-8 py-3.5 text-base">
+            <button type="button" data-autofocus onClick={onResume} className="btn-game btn-primary w-full px-8 py-3.5 text-base">
               <Play size={17} className="bicon" aria-hidden />
               <span>ПРОДОЛЖИТЬ БОЙ</span>
             </button>

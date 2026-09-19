@@ -257,6 +257,33 @@ describe('factory layout — ramps and life', () => {
     }
   });
 
+  it('split-флаги: paired по построению — рампы оба false, обратного сплита нет', () => {
+    // Латентный риск: blocksShots/blocksSight читают РАЗНЫЕ потребители
+    // (снаряды/рельса vs LOS/ИИ/камера). Билдеры держат флаги спаренными:
+    // оба true (стены/блоки) или оба false (рампы). Единственный допустимый
+    // сплит — sight:false + shots:true у тонких non-LOS опор (стойки крана,
+    // мачты: пуля вязнет, обзор — нет). Обратный сплит (shots:false +
+    // sight:true — «стреляю сквозь, но не вижу») несогласован с LOS-паритетом
+    // и запрещён. Без смены поведения — только пин.
+    const { colliders } = build();
+    expect(colliders.length).toBeGreaterThan(0);
+    for (const c of colliders) {
+      if (c.kind === 'ramp') {
+        expect([c.blocksShots, c.blocksSight], `ramp ${c.id}`).toEqual([false, false]);
+      } else {
+        expect(
+          !(c.blocksShots === false && c.blocksSight === true),
+          `collider ${c.id} (${c.minX},${c.minZ}): shots pass but sight blocked`,
+        ).toBe(true);
+      }
+    }
+    // Допустимый сплит реально используется (non-LOS опоры), а не мёртв.
+    const thinNonLos = colliders.filter(
+      (c) => c.kind !== 'ramp' && c.blocksShots === true && c.blocksSight === false,
+    );
+    expect(thinNonLos.length).toBeGreaterThan(0);
+  });
+
   it('I6: railSiding проходима — полоса путей не tank-solid', () => {
     // Был 'block' 58×5.4×0.2 с blocksShots:false: resolveCircle флаги не
     // читает → невидимая стена. Теперь 'ramp' (единственный не-solid kind).

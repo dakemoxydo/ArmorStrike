@@ -159,7 +159,7 @@ export default function StarterPackModal({
                             <span className="flex items-center gap-1">
                               <Shield size={12} aria-hidden /> БРОНЯ
                             </span>
-                            <span className="font-display text-emerald-300">{h.maxHealth} HP</span>
+                            <span className="font-display text-emerald-300">{h.maxHealth}</span>
                           </div>
                           <div className="g-bar">
                             <i
@@ -308,7 +308,7 @@ export default function StarterPackModal({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl w-full text-center">
               <div className="cut-chip bg-white/5 p-2.5 border border-white/10">
                 <div className="text-[10px] tracking-widest text-white/50 mb-1">ПРОЧНОСТЬ</div>
-                <div className="font-display text-lg text-emerald-300">{assembledHull.maxHealth} HP</div>
+                <div className="font-display text-lg text-emerald-300">{assembledHull.maxHealth}</div>
               </div>
               <div className="cut-chip bg-white/5 p-2.5 border border-white/10">
                 <div className="text-[10px] tracking-widest text-white/50 mb-1">СКОРОСТЬ</div>

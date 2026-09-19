@@ -31,7 +31,7 @@ export default function HudRadar({ mapRef, enemiesAlive }: HudRadarProps) {
         />
         {/* Кольца дальности и оси — статичный CSS-слой над канвасом. */}
         <span className="radar-grid" aria-hidden />
-        <span className="radar-north" aria-hidden>N</span>
+        <span className="radar-north" aria-hidden>С</span>
         <span className="corner tl" /><span className="corner tr" />
         <span className="corner bl" /><span className="corner br" />
       </div>

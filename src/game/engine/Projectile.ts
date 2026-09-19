@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { PROJECTILE } from '../constants';
 import type { Collider } from './physics';
-import { pointInCollider, segmentHitsCircleT, segmentHitsCollider } from './physics';
+import { SHOT_HEIGHT_EPS, pointInCollider, segmentHitsCircleT, segmentHitsCollider } from './physics';
 import type { EffectsPort } from '../ports/EffectsPort';
 import type { DamageSystem, TankLike } from '../../core/types';
 import type { WeaponType } from '../../core/catalog';
+import { WEAPON_TUNING } from '../../core/catalog';
 import { glowTexture } from '../textures';
 import { BEHAVIORS } from './ProjectileBehavior';
 import { applySplashHit, isFriendlyPair } from './applyHit';
@@ -59,7 +60,7 @@ function doSplash(hitPos: THREE.Vector3, ctx: HitContext, s: Shot, exclude?: Tan
     const dmg = Math.round(s.splashDmg * falloff);
     if (dmg > 0) {
       ctx.onTankHit(t, dmg, s.owner);
-      applySplashHit(ctx.damageSystem, t, 0, s.owner, hitPos, 2.5 * falloff,
+      applySplashHit(ctx.damageSystem, t, 0, s.owner, hitPos, WEAPON_TUNING.cannon.splashKnockback * falloff,
         (p) => ctx.effects.impact(p, 0xffcc44));
     }
   }
@@ -197,7 +198,8 @@ export class ProjectileManager {
 
         for (const c of ctx.colliders) {
           if (!c.active || !c.blocksShots) continue;
-          if (pos.y > c.height + PROJECTILE.radius) continue;
+          // Высотный гейт — единый SHOT_HEIGHT_EPS (канон с railgunBlockers).
+          if (pos.y > c.height + SHOT_HEIGHT_EPS) continue;
           // F5: свип сегментом пред-шаг→шаг, а не только точка после шага.
           // Ловит и «привидельное» прохождение тонкой опоры (0.7 м city), и
           // снаряд, рождённый дулом внутри коллайдера (первый сэмпл i=0 стартует
