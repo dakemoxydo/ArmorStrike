@@ -69,6 +69,41 @@ describe('Comic / Cel-Shaded Art Direction', () => {
       expect(shader.fragmentShader).toContain('_cel_stepped');
       expect(shader.fragmentShader).toContain('_cel_specCut');
     });
+
+    it('is idempotent when applied multiple times and does not duplicate GLSL declarations', () => {
+      const mat = new THREE.MeshStandardMaterial();
+      applyCelShading(mat);
+      applyCelShading(mat);
+      applyCelShading(mat);
+
+      const shader = {
+        uniforms: {},
+        vertexShader: THREE.ShaderLib.standard.vertexShader,
+        fragmentShader: THREE.ShaderLib.standard.fragmentShader,
+      };
+      mat.onBeforeCompile(shader as unknown as Parameters<THREE.MeshStandardMaterial['onBeforeCompile']>[0], null as unknown as THREE.WebGLRenderer);
+      // Run a second time on the same shader object to test runtime protection
+      mat.onBeforeCompile(shader as unknown as Parameters<THREE.MeshStandardMaterial['onBeforeCompile']>[0], null as unknown as THREE.WebGLRenderer);
+
+      const occurrences = (shader.fragmentShader.match(/Comic Cel-shading diffuse quantization/g) || []).length;
+      expect(occurrences).toBe(1);
+    });
+
+    it('handles cloned materials correctly without duplicate declarations', () => {
+      const parent = applyCelShading(new THREE.MeshStandardMaterial());
+      const clone = applyCelShading(parent.clone());
+
+      const shader = {
+        uniforms: {},
+        vertexShader: THREE.ShaderLib.standard.vertexShader,
+        fragmentShader: THREE.ShaderLib.standard.fragmentShader,
+      };
+      clone.onBeforeCompile(shader as unknown as Parameters<THREE.MeshStandardMaterial['onBeforeCompile']>[0], null as unknown as THREE.WebGLRenderer);
+
+      const occurrences = (shader.fragmentShader.match(/Comic Cel-shading diffuse quantization/g) || []).length;
+      expect(occurrences).toBe(1);
+      expect(shader.fragmentShader).toContain('_cel_stepped');
+    });
   });
 
   describe('attachComicInkOutline', () => {
