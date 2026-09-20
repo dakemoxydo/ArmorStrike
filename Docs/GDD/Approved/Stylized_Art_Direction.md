@@ -60,8 +60,8 @@
 - **Индикаторы HUD:** Чёткие чернильные рамки полос HP и нитро, двойная чернильная кайма прицела для максимальной контрастности на ярком солнце.
 
 ### 7. Cel-Shaded окружение арены
-- **Файлы:** `src/game/ArenaBuilder.ts`, `src/game/Arena.ts`, `src/game/match/CaptureMarkers.ts`
-- Все здания, стены, контейнеры, трубы и постройки арены получают `applyCelShading`, объединяя технику и мир в единый 3-уровневый комиксный конвейер.
+- **Файлы:** `src/game/ArenaBuilder.ts`, `src/game/Arena.ts`, `src/game/shaders/celShading.ts` (`applyCelShadingToObject`, `isCelShaded`), `src/game/match/CaptureMarkers.ts`
+- Все здания, стены, контейнеры, трубы и постройки арены получают `applyCelShading`, объединяя технику и мир в единый 4-уровневый комиксный конвейер (`CEL_STEPS = 4.0`). Точечное покрытие (`Arena.box` / `Arena.addColliderBlock`) + страховочный проход `applyCelShadingToObject(arena.group)` в `buildArena` ловят и прямые `new THREE.Mesh` без коллайдера (трубы, фермы крана, опоры эстакады, скайлайн, растительность). Пин — `src/__tests__/arenaCelShading.test.ts` (все 3 карты, включая rebuild).
 - Мировые маркеры точек захвата A/B/C оформлены в виде круглых комиксных бейджей с чернильным контуром толщиной 8px `#0b0e14`, шрифтом `'Russo One'` и объёмной чернильной подложкой.
 
 ### 8. Свет без киношного IBL
@@ -90,6 +90,7 @@
 ## Тесты и инварианты
 
 - `src/__tests__/comicStyle.test.ts` — верификация `applyCelShading`, чернильного контура танков, текстур, применения cel-shading к геометрии уровней, дизайн-токенов чернильного UI, янтаря игрока, земли без `noise()`, LinearToneMapping без IBL/bloom.
+- `src/__tests__/arenaCelShading.test.ts` — пин покрытия: каждый `MeshStandardMaterial` `arena.group` на factory/city/village (включая rebuild) имеет флаг `isCelShaded`.
 - `src/__tests__/nameplate.test.ts` — срез/Russo One, fade 48–110 м от наблюдателя.
 - `src/__tests__/atmospherePresets.test.ts` — пины экспозиции и параметров комиксных атмосфер.
 - `src/__tests__/uiUxPresentation.test.ts` — соблюдение дизайн-токенов свечений, срезов, шрифтовой разрядки и контрастности.

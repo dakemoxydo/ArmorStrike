@@ -7,7 +7,7 @@
 // - DirectionalLight shadows & PCF filtering
 // - Base color / map / roughness / metalness
 // - Zero extra draw calls or full-screen post-processing passes.
-import type * as THREE from 'three';
+import * as THREE from 'three';
 
 const CEL_STEPS = 4.0;
 const CEL_MIN_SHADOW = 0.32; // Prevent complete pitch-black crushing in direct shadows
@@ -82,4 +82,33 @@ export function applyCelShading<T extends THREE.MeshStandardMaterial>(material: 
 
   material.needsUpdate = true;
   return material;
+}
+
+/**
+ * Проверка: материал уже получил cel-патч (флаг идемпотентности).
+ * Используется тестами покрытия арены: все здания обязаны быть в cel-конвейере.
+ */
+export function isCelShaded(material: THREE.Material): boolean {
+  return (material as unknown as Record<string, unknown>)[CEL_SHADED_FLAG] === true;
+}
+
+/**
+ * Применить cel-shading ко всем MeshStandardMaterial под `root`.
+ * Покрывает Mesh и InstancedMesh (наследник Mesh), включая материалы,
+ * созданные напрямую через `new THREE.Mesh` и добавленные в группу
+ * без `Arena.box` / `Arena.addColliderBlock` (трубы, фермы крана,
+ * опоры эстакады, скайлайн, растительность, вода, витражи).
+ * Идемпотентен: повторный проход после rebuild безопасен.
+ */
+export function applyCelShadingToObject(root: THREE.Object3D): void {
+  root.traverse((obj) => {
+    if (obj instanceof THREE.Mesh) {
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      for (const m of mats) {
+        if (m instanceof THREE.MeshStandardMaterial) {
+          applyCelShading(m);
+        }
+      }
+    }
+  });
 }
