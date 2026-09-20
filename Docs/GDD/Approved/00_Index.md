@@ -42,7 +42,7 @@
 | [[Economy_Currency_And_Quests]] | Экономика (Кредиты CR), боевые выплаты, система квестов и покупка контейнеров | `matchRewards`, `questCatalog`, `RunState`, `QuestsModal` |
 | [[Cloud_Profiles_And_Auth]] | Профили игроков, Supabase Auth (username/email), гостевой режим и облачные сохранения | `RunState`, `AuthService`, `CloudSaveService`, `AuthModal`, `UserBadge` |
 | [[Multiplayer_Lobby_And_Rooms]] | Сетевой мультиплеер, браузер серверов, создание комнат, быстрая игра и репликация танков | `multiplayerService`, `NetworkSession`, `RemotePlayerManager`, `NetworkSyncStage`, `ServerBrowserModal` |
-| [[Stylized_Art_Direction]] | Стилизованный Low-Poly / Cel-Shaded / Комикс арт-дирекшен: ступенчатый шейдинг, чернильная обводка танков и геометрии, комиксный UI/HUD, дневное солнце | `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/styles/*.css`, `src/game/ArenaBuilder.ts` |
+| [[Stylized_Art_Direction]] | Стилизованный Low-Poly / Cel-Shaded / Комикс арт-дирекшен: ступенчатый шейдинг, чернильная обводка танков и зданий, комиксный UI/HUD, дневное солнце | `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/arena/buildingInk.ts`, `src/styles/*.css`, `src/game/ArenaBuilder.ts` |
 
 **Removed-механики** (wave-era, удалены в P0) — надгробные доки в `../Archive/`: [[../Archive/Wave_System|Wave_System]], [[../Archive/Wave_Buffs|Wave_Buffs]]. Approved = только реализованное; история — в git.
 
@@ -94,7 +94,7 @@
 | УВН башни и состояние тангажа ствола | `src/core/catalogData.ts` (`TURRETS`), `src/game/tank/components.ts` |
 | Сетевой сервис, комнаты и пакеты | `src/game/network/multiplayerService.ts`, `src/game/network/types.ts` |
 | Удалённые игроки и сетевая интерполяция | `src/game/network/RemotePlayerManager.ts`, `src/game/engine/stages/NetworkSyncStage.ts` |
-| Cel-Shading и чернильный контур силуэтов | `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts` |
+| Cel-Shading и чернильный контур силуэтов | `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/arena/buildingInk.ts` |
 | Пресеты дневной комиксной атмосферы | `src/game/atmospherePresets.ts` |
 | Комиксный свет (Linear, без IBL/bloom) | `src/game/RenderWorld.ts` |
 | Земля карт без перлина | `src/game/textures/ground.ts` |

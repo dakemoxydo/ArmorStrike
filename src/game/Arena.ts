@@ -12,6 +12,7 @@ import { invalidateSolidColliderCache } from './engine/solidColliderCache';
 import { isShared } from './resources/sharedResources';
 import type { RenderWorld } from './RenderWorld';
 import { applyCelShading } from './shaders/celShading';
+import { attachBuildingInkOutline, shouldOutlineBuilding } from './arena/buildingInk';
 
 export type { BlockInfo } from './arena/types';
 
@@ -105,6 +106,12 @@ export class Arena {
           }
         }
       });
+    }
+    // Комикс-ink крупных зданий (Visual_Coherence_Pass п.10): только несущие
+    // wall-корпуса выше порога; мелочь и декор контур не получают (бюджет DC).
+    // Шеллы — дети исходных мешей: удаляются вместе с блоком при разрушении.
+    if (shouldOutlineBuilding(kind, w, d, h)) {
+      attachBuildingInkOutline(meshWrap);
     }
     return col;
   }

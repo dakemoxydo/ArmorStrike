@@ -85,12 +85,20 @@
 - **Файлы:** `src/game/nameplate.ts`, `src/game/engine/systems/NameplateSystem.ts`
 - Срез угла, `Russo One`, 8-dir чернила, HP как HUD. Fade/scale от дистанции до локального игрока: непрозрачны до 48 м, исчезают к 110 м (E2).
 
+### 13. Чернильный контур крупных зданий
+- **Файлы:** `src/game/arena/buildingInk.ts` (`shouldOutlineBuilding`, `attachBuildingInkOutline`), `src/game/Arena.ts` (`addColliderBlock`)
+- Тот же inverted-hull приём, что у танков, но свой shared-материал `buildingInk` шириной `0.06` м (танковый hairline `0.012` м с дистанции не читается) с той же дистанционной компенсацией (`refDist 45.0`, `distMix 0.38`). Ноль render-проходов, активен на всех тирах качества.
+- Селектор: только несущие wall-блоки выше порога (`h ≥ 4` м и `max(w,d) ≥ 8` м или `h ≥ 8` м — цеха, офисы, дома, амбары, часовня, цистерны, трубы, ноги крана). Рампы, контейнеры (`block`), мелочь, InstancedMesh-декор и скайлайн — мимо.
+- До `≤2` шеллов на корпус (крупнейшие массы: тело + крыша), отсев субмешей по AABB (`min ≥ 1.5` м, `max ≥ 5` м — двери/окна/полосы мимо). Шеллы — дети исходных мешей: удаляются вместе с блоком, shared-ресурсы переживают dispose.
+- Бюджет: census factory 545→601 (+10.3%) / village 790→860 (+8.9%) / city 484→532 (+9.9%) — все в лимите +15% (Visual_Coherence_Pass п.10).
+
 ---
 
 ## Тесты и инварианты
 
 - `src/__tests__/comicStyle.test.ts` — верификация `applyCelShading`, чернильного контура танков, текстур, применения cel-shading к геометрии уровней, дизайн-токенов чернильного UI, янтаря игрока, земли без `noise()`, LinearToneMapping без IBL/bloom.
 - `src/__tests__/arenaCelShading.test.ts` — пин покрытия: каждый `MeshStandardMaterial` `arena.group` на factory/city/village (включая rebuild) имеет флаг `isCelShaded`.
+- `src/__tests__/buildingInk.test.ts` — пин outline зданий: селектор `shouldOutlineBuilding`, отсев мелочи/InstancedMesh/Basic, лимит шеллов, идемпотентность, контур на всех 3 картах в бюджете (включая rebuild).
 - `src/__tests__/nameplate.test.ts` — срез/Russo One, fade 48–110 м от наблюдателя.
 - `src/__tests__/atmospherePresets.test.ts` — пины экспозиции и параметров комиксных атмосфер.
 - `src/__tests__/uiUxPresentation.test.ts` — соблюдение дизайн-токенов свечений, срезов, шрифтовой разрядки и контрастности.

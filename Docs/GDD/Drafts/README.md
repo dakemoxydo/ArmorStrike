@@ -10,7 +10,7 @@
 ## Active / trail
 
 - [[New_Turret_Proposals]] — концепты новых башен (Рикошет, Твинс, Изида, Молот, Гром) по мотивам Tanki Online. «Изида» реализована → [[../Approved/Weapon_Isida|Weapon_Isida]].
-- [[Visual_Coherence_Pass]] — подогнать мир/свет/FX/UI-остатки под комикс/cel. Срез 1 shipped (циан, IBL/bloom, земля, трассер Смоки, неймплейты). Открыто: небо, город day/dusk, ink зданий, остовы, подиум гаража.
+- [[Visual_Coherence_Pass]] — подогнать мир/свет/FX/UI-остатки под комикс/cel. Срез 1 shipped (циан, IBL/bloom, земля, трассер Смоки, неймплейты) + ink зданий (2026-09-21). Открыто: небо, город day/dusk, остовы, подиум гаража.
 
 
 ## Ideas backlog
