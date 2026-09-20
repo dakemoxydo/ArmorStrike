@@ -13,6 +13,7 @@ import {
   shouldOutlineBuilding,
   BUILDING_INK_MESH,
   BUILDING_INK_MAX_SHELLS,
+  BUILDING_INK_WIDTH,
 } from '../game/arena/buildingInk';
 import { Arena } from '../game/Arena';
 import type { MapId } from '../game/maps/mapCatalog';
@@ -72,6 +73,13 @@ describe('shouldOutlineBuilding — селектор крупных wall-кор�
     expect(shouldOutlineBuilding('block', 11.4, 4.6, 6.4)).toBe(false); // стек контейнеров
     expect(shouldOutlineBuilding('block', 4.0, 1.9, 1.55)).toBe(false); // машина
     expect(shouldOutlineBuilding('ramp', 58, 5.4, 0.2)).toBe(false); // рампа/пути
+  });
+});
+
+describe('BUILDING_INK_WIDTH — комикс-читаемая толщина', () => {
+  it('в sane-диапазоне: толще танкового hairline, без blob-эффекта', () => {
+    expect(BUILDING_INK_WIDTH).toBeGreaterThan(0.012); // танковый hairline
+    expect(BUILDING_INK_WIDTH).toBeLessThanOrEqual(0.2);
   });
 });
 

@@ -27,8 +27,11 @@ export const BUILDING_INK_MAX_SHELLS = 2;
 const MIN_MASS_SIDE = 1.5;
 const MIN_MASS_SPAN = 5;
 
+/** Ширина контура зданий (м): комикс-читаемая с 50–150 м, без blob-эффекта вблизи. */
+export const BUILDING_INK_WIDTH = 0.10;
+
 const INK_COLOR = 0x181c26; // тот же графит, что у танков
-const INK_WIDTH = 0.06;
+const INK_WIDTH = BUILDING_INK_WIDTH;
 const WIDTH_REF_DIST = 45.0;
 const WIDTH_DIST_MIX = 0.38;
 
