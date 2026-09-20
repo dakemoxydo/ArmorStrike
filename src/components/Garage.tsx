@@ -412,13 +412,13 @@ export default function Garage({
                   </div>
                 )}
                 {currTurret.weaponType === 'gauss' && (
-                  <div className="garage-weapon-tip text-[10px] text-violet-200/70 bg-violet-500/10 border border-violet-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
+                  <div className="garage-weapon-tip text-[10px] text-amber-200/80 bg-amber-500/10 border border-amber-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
                     LOCK-ON · УДЕРЖИВАЙ ПРИЦЕЛ {WEAPON_TUNING.gauss.lockTime.toFixed(2).replace('.', ',')} С · СРЫВ — СБРОС ЗАРЯДА
                   </div>
                 )}
                 {currTurret.weaponType === 'isida' && (
-                  <div className="garage-weapon-tip text-[10px] text-emerald-200/70 bg-emerald-500/10 border border-emerald-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
-                    Нано-дуга · РЕМОНТ СОЮЗНИКОВ · ВАМПИРИЗМ 40%
+                  <div className="garage-weapon-tip text-[10px] text-emerald-200/80 bg-emerald-500/10 border border-emerald-500/20 cut-chip px-2 py-1.5 text-center tracking-wider">
+                    НАНО-ДУГА · РЕМОНТ СОЮЗНИКОВ · ВАМПИРИЗМ 40%
                   </div>
                 )}
               </div>

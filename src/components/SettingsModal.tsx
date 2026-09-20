@@ -103,10 +103,10 @@ export default function SettingsModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-white/50 hover:text-white transition-colors"
+            className="btn-game btn-ghost btn-icon"
             aria-label="Закрыть настройки"
           >
-            <X size={20} aria-hidden />
+            <X size={18} className="bicon" aria-hidden />
           </button>
         </div>
 
@@ -170,7 +170,7 @@ export default function SettingsModal({
                   onClick={() => updateSens(-MOUSE_SENSITIVITY_STEP)}
                   disabled={mouseSettings.sensitivity <= MIN_MOUSE_SENSITIVITY}
                   aria-label="Уменьшить чувствительность"
-                  className="btn-game btn-ghost h-6 w-6 p-0 text-xs font-bold disabled:opacity-30"
+                  className="btn-game btn-ghost cut-chip h-6 w-6 p-0 text-xs font-bold border border-[#0b0e14] shadow-[0_1px_0_#0b0e14] disabled:opacity-30"
                 >
                   -
                 </button>
@@ -182,7 +182,7 @@ export default function SettingsModal({
                   onClick={() => updateSens(MOUSE_SENSITIVITY_STEP)}
                   disabled={mouseSettings.sensitivity >= MAX_MOUSE_SENSITIVITY}
                   aria-label="Увеличить чувствительность"
-                  className="btn-game btn-ghost h-6 w-6 p-0 text-xs font-bold disabled:opacity-30"
+                  className="btn-game btn-ghost cut-chip h-6 w-6 p-0 text-xs font-bold border border-[#0b0e14] shadow-[0_1px_0_#0b0e14] disabled:opacity-30"
                 >
                   +
                 </button>

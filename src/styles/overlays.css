@@ -179,17 +179,27 @@
   cursor: pointer;
   color: rgba(255, 255, 255, 0.6);
   font-family: 'Russo One', sans-serif;
-  background: linear-gradient(135deg, rgba(18, 34, 46, 0.88), rgba(7, 15, 26, 0.85));
-  box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.18);
+  background: linear-gradient(135deg, rgba(24, 34, 49, 0.94), rgba(13, 20, 31, 0.97));
+  border: 1.5px solid #0b0e14;
+  box-shadow: 0 3px 0 #0b0e14;
   clip-path: polygon(var(--control-cut) 0, 100% 0, 100% calc(100% - var(--control-cut)), calc(100% - var(--control-cut)) 100%, 0 100%, 0 var(--control-cut));
-  transition: color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.12s ease;
 }
-.ch-pick:hover { color: #fff; box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.55); }
-.ch-pick:active { transform: translateY(1px); }
+.ch-pick:hover {
+  color: #fff;
+  border-color: #f59e0b;
+  box-shadow: 0 4px 0 #0b0e14, 0 0 var(--glow-r-sm) rgba(var(--glow), 0.25);
+  transform: translateY(-1px);
+}
+.ch-pick:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #0b0e14;
+}
 .ch-pick.is-active {
   color: #fff;
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(7, 15, 26, 0.85));
-  box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.85), 0 0 var(--glow-r-md) rgba(var(--glow), 0.22);
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(14, 21, 33, 0.95));
+  box-shadow: 0 3px 0 #0b0e14, inset 0 0 0 1px #f59e0b;
 }
 .ch-pick-label { font-size: 11px; letter-spacing: var(--track-base); }
 /* — мини-схема: точка общая, засечки бокс-тенями, кольцо псевдоэлементом — */

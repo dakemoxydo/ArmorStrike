@@ -67,7 +67,7 @@ export default function CreateServerModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md anim-fade"
+      className="scrim-over fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade"
       role="dialog"
       aria-modal="true"
       aria-label="Создание игрового сервера"
@@ -81,10 +81,10 @@ export default function CreateServerModal({
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="absolute right-4 top-4 p-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+          className="btn-game btn-ghost btn-icon absolute right-4 top-4 disabled:opacity-50"
           aria-label="Закрыть"
         >
-          <X size={20} aria-hidden />
+          <X size={18} className="bicon" aria-hidden />
         </button>
 
         <div className="flex items-center gap-3 mb-6">
@@ -120,7 +120,7 @@ export default function CreateServerModal({
               maxLength={32}
               onChange={(e) => setName(e.target.value)}
               placeholder="Название сервера..."
-              className="w-full px-3 py-2 bg-black/60 border border-white/20 focus:border-amber-400 focus:outline-none text-sm text-white placeholder-white/50"
+              className="cut-control w-full px-3 py-2 bg-black/60 border-2 border-[#0b0e14] focus:border-amber-400 focus:outline-none text-sm text-white placeholder-white/50 shadow-[0_2px_0_#0b0e14]"
             />
           </div>
 
@@ -137,10 +137,10 @@ export default function CreateServerModal({
                     key={m.id}
                     type="button"
                     onClick={() => setMode(m.id)}
-                    className={`p-3 text-left border transition-all ${
+                    className={`cut-control p-3 text-left border-2 transition-all ${
                       active
-                        ? 'border-amber-400 bg-amber-500/15 text-amber-200'
-                        : 'border-white/10 bg-black/40 text-white/70 hover:border-white/25 hover:bg-black/60'
+                        ? 'border-amber-400 bg-amber-500/20 text-amber-200 shadow-[0_3px_0_#0b0e14] translate-y-[-1px]'
+                        : 'border-[#0b0e14] bg-black/40 text-white/70 hover:border-white/25 hover:bg-black/60 shadow-[0_2px_0_#0b0e14]'
                     }`}
                   >
                     <div className="text-xs font-display tracking-wider font-semibold">{m.label.split(' ')[0]}</div>
@@ -164,10 +164,10 @@ export default function CreateServerModal({
                     key={map.id}
                     type="button"
                     onClick={() => setMapId(map.id)}
-                    className={`p-3 text-center border transition-all ${
+                    className={`cut-control p-3 text-center border-2 transition-all ${
                       active
-                        ? 'border-amber-400 bg-amber-500/15 text-amber-200'
-                        : 'border-white/10 bg-black/40 text-white/70 hover:border-white/25 hover:bg-black/60'
+                        ? 'border-amber-400 bg-amber-500/20 text-amber-200 shadow-[0_3px_0_#0b0e14] translate-y-[-1px]'
+                        : 'border-[#0b0e14] bg-black/40 text-white/70 hover:border-white/25 hover:bg-black/60 shadow-[0_2px_0_#0b0e14]'
                     }`}
                   >
                     <div className="text-xs font-display tracking-wider font-semibold">{map.label}</div>
@@ -190,10 +190,10 @@ export default function CreateServerModal({
                     key={cap}
                     type="button"
                     onClick={() => setMaxPlayers(cap)}
-                    className={`flex-1 py-1.5 border text-xs font-display ${
+                    className={`cut-chip flex-1 py-1.5 border-2 text-xs font-display transition-all ${
                       maxPlayers === cap
-                        ? 'border-amber-400 bg-amber-500/20 text-amber-200'
-                        : 'border-white/10 bg-black/40 text-white/60 hover:border-white/25'
+                        ? 'border-amber-400 bg-amber-500/25 text-amber-200 font-bold shadow-[0_2px_0_#0b0e14]'
+                        : 'border-[#0b0e14] bg-black/40 text-white/60 hover:border-white/25 shadow-[0_1px_0_#0b0e14]'
                     }`}
                   >
                     {cap}
@@ -209,10 +209,10 @@ export default function CreateServerModal({
               <button
                 type="button"
                 onClick={() => setBotsEnabled(!botsEnabled)}
-                className={`w-full py-1.5 px-3 border text-xs font-display flex items-center justify-between transition-colors ${
+                className={`cut-control w-full py-1.5 px-3 border-2 text-xs font-display flex items-center justify-between transition-colors ${
                   botsEnabled
-                    ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300'
-                    : 'border-white/10 bg-black/40 text-white/50'
+                    ? 'border-emerald-500/70 bg-emerald-500/20 text-emerald-300 shadow-[0_2px_0_#0b0e14]'
+                    : 'border-[#0b0e14] bg-black/40 text-white/50 shadow-[0_2px_0_#0b0e14]'
                 }`}
               >
                 <span>Заполнять ботами:</span>
@@ -231,7 +231,7 @@ export default function CreateServerModal({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Оставьте пустым для открытого сервера..."
-              className="w-full px-3 py-2 bg-black/60 border border-white/20 focus:border-amber-400 focus:outline-none text-sm text-white placeholder-white/50"
+              className="cut-control w-full px-3 py-2 bg-black/60 border-2 border-[#0b0e14] focus:border-amber-400 focus:outline-none text-sm text-white placeholder-white/50 shadow-[0_2px_0_#0b0e14]"
             />
             <p className="mt-1 text-[10px] text-white/45">
               Если указать пароль, зайти смогут только те, кто знает его.

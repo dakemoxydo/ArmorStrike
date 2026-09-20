@@ -1232,13 +1232,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.55rem;
-  height: 1.55rem;
+  width: 1.65rem;
+  height: 1.65rem;
   border-radius: var(--radius-circle);
   font-family: 'Russo One', sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   letter-spacing: var(--track-tight);
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border: 2px solid #0b0e14;
+  box-shadow: 0 2px 0 #0b0e14;
   overflow: hidden;
 }
 .cp-point i {
@@ -1249,10 +1250,10 @@
   background: currentColor;
   opacity: 0.85;
 }
-.cp-neutral { color: #c0c8d0; border-color: rgba(160, 170, 180, 0.55); }
-.cp-alpha { color: var(--team-alpha); border-color: rgba(var(--team-alpha-rgb), 0.75); background: rgba(var(--team-alpha-rgb), 0.12); }
-.cp-bravo { color: var(--team-bravo); border-color: rgba(var(--team-bravo-rgb), 0.75); background: rgba(var(--team-bravo-rgb), 0.12); }
-.cp-contested { color: #ffd24a; border-color: rgba(255, 210, 74, 0.8); background: rgba(255, 210, 74, 0.12); }
+.cp-neutral { color: #c0c8d0; border-color: #0b0e14; background: rgba(160, 170, 180, 0.25); }
+.cp-alpha { color: #ffffff; border-color: #0b0e14; background: var(--team-alpha); text-shadow: 0 1px 0 #0b0e14; }
+.cp-bravo { color: #ffffff; border-color: #0b0e14; background: var(--team-bravo); text-shadow: 0 1px 0 #0b0e14; }
+.cp-contested { color: #0b0e14; border-color: #0b0e14; background: #ffd24a; }
 .scoreboard-table {
   width: 100%;
   border-collapse: collapse;
@@ -1264,7 +1265,7 @@
   text-align: left;
   padding: 6px 10px;
   font-weight: 600;
-  color: rgba(120, 200, 230, 0.7);
+  color: rgba(255, 255, 255, 0.65);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 0.62rem;
 }

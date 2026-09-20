@@ -42,12 +42,12 @@ html, body, #root {
   font-size: var(--fs-caption);
   font-weight: 600;
   letter-spacing: var(--track-tight);
-  color: #d6fff6;
-  background: linear-gradient(180deg, rgba(20, 44, 54, 0.95), rgba(8, 20, 28, 0.95));
-  border: 1px solid rgba(var(--glow), 0.35);
-  border-bottom-width: 2px;
+  color: #fef3c7;
+  background: linear-gradient(180deg, rgba(30, 22, 12, 0.96), rgba(14, 10, 5, 0.98));
+  border: 1px solid rgba(var(--glow), 0.45);
+  border-bottom: 2px solid #f59e0b;
   clip-path: polygon(var(--chip-cut) 0, 100% 0, calc(100% - var(--chip-cut)) 100%, 0 100%);
-  box-shadow: 0 0 var(--glow-r-sm) rgba(var(--glow), 0.18);
+  box-shadow: 0 2px 0 #0b0e14;
 }
 
 /* Единственное легальное скругление — круг (кольцо перезарядки, точки захвата). */

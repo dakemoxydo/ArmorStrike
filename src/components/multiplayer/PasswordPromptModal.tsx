@@ -28,7 +28,7 @@ export default function PasswordPromptModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md anim-fade"
+      className="scrim-over fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade"
       role="dialog"
       aria-modal="true"
       aria-label="Вход на защищённый сервер"
@@ -41,10 +41,10 @@ export default function PasswordPromptModal({
         <button
           type="button"
           onClick={onCancel}
-          className="absolute right-4 top-4 p-1.5 text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+          className="btn-game btn-ghost btn-icon absolute right-4 top-4"
           aria-label="Закрыть"
         >
-          <X size={18} aria-hidden />
+          <X size={18} className="bicon" aria-hidden />
         </button>
 
         <div className="flex items-center gap-3 mb-4">
@@ -78,7 +78,7 @@ export default function PasswordPromptModal({
                   setError(null);
                 }}
                 placeholder="Введите пароль..."
-                className="w-full pl-9 pr-3 py-2.5 bg-black/60 border border-white/20 focus:border-amber-400 focus:outline-none text-sm text-white placeholder-white/50"
+                className="cut-control w-full pl-9 pr-3 py-2.5 bg-black/60 border-2 border-[#0b0e14] focus:border-amber-400 focus:outline-none text-sm text-white placeholder-white/50 shadow-[0_2px_0_#0b0e14]"
               />
             </div>
             {error && (
@@ -98,7 +98,7 @@ export default function PasswordPromptModal({
             </button>
             <button
               type="submit"
-              className="btn-game btn-primary px-6 py-2 text-xs border-amber-500/50 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+              className="btn-game btn-primary px-6 py-2 text-xs"
             >
               ПОДКЛЮЧИТЬСЯ
             </button>

@@ -179,15 +179,20 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
             ? 'rgba(255,77,61,0.9)'
             : 'rgba(160,170,180,0.85)';
     ctx.save();
+    // Comic ink border around capture point
     ctx.beginPath();
-    ctx.arc(cx, cy, 5.5 * k, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(5,12,18,0.75)';
+    ctx.arc(cx, cy, 6 * k, 0, Math.PI * 2);
+    ctx.fillStyle = '#0b0e14';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5.2 * k, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(11,16,25,0.9)';
     ctx.fill();
     ctx.strokeStyle = col;
     ctx.lineWidth = 1.6 * k;
     ctx.stroke();
     ctx.fillStyle = col;
-    ctx.font = `bold ${8 * k}px sans-serif`;
+    ctx.font = `bold ${8.5 * k}px 'Russo One', sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(cp.id, cx, cy + 0.5 * k);
@@ -205,28 +210,47 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
       rel === 'self' ? '#f59e0b' : rel === 'ally' ? '#38bdf8' : '#f87171';
     const stroke =
       rel === 'self'
-        ? 'rgba(245,158,11,0.85)'
+        ? 'rgba(245,158,11,0.95)'
         : rel === 'ally'
-          ? 'rgba(56,189,248,0.75)'
-          : 'rgba(248,113,113,0.65)';
+          ? 'rgba(56,189,248,0.9)'
+          : 'rgba(248,113,113,0.85)';
     ctx.save();
     ctx.translate(x, y);
+
+    // Ink outline for turret line:
+    ctx.strokeStyle = '#0b0e14';
+    ctx.lineWidth = 2.4 * k;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.sin(d.turret) * 7.5 * k, -Math.cos(d.turret) * 7.5 * k);
+    ctx.stroke();
+
+    // Turret line in accent color:
     ctx.strokeStyle = stroke;
     ctx.lineWidth = 1.2 * k;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    // World forward (sin θ, cos θ) in XZ; +Z is −canvasY after toY flip.
-    ctx.lineTo(Math.sin(d.turret) * 7 * k, -Math.cos(d.turret) * 7 * k);
+    ctx.lineTo(Math.sin(d.turret) * 7.5 * k, -Math.cos(d.turret) * 7.5 * k);
     ctx.stroke();
+
     ctx.rotate(d.yaw);
-    ctx.fillStyle = fill;
-    ctx.shadowColor = fill;
-    ctx.shadowBlur = 6 * k;
+
+    // Comic ink outline for tank triangle (sharp ink rim, no fuzzy blur):
     ctx.beginPath();
-    ctx.moveTo(0, -4.5 * k);
-    ctx.lineTo(3.4 * k, 3.6 * k);
-    ctx.lineTo(-3.4 * k, 3.6 * k);
+    ctx.moveTo(0, -4.8 * k);
+    ctx.lineTo(3.8 * k, 3.8 * k);
+    ctx.lineTo(-3.8 * k, 3.8 * k);
     ctx.closePath();
+    ctx.fillStyle = '#0b0e14';
+    ctx.fill();
+
+    // Inner filled triangle:
+    ctx.beginPath();
+    ctx.moveTo(0, -3.8 * k);
+    ctx.lineTo(2.8 * k, 2.9 * k);
+    ctx.lineTo(-2.8 * k, 2.9 * k);
+    ctx.closePath();
+    ctx.fillStyle = fill;
     ctx.fill();
     ctx.restore();
   }

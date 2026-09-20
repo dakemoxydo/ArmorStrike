@@ -111,7 +111,7 @@ export default function ServerBrowserModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md anim-fade"
+      className="scrim-over fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade"
       role="dialog"
       aria-modal="true"
       aria-label="Список серверов мультиплеера"
@@ -164,10 +164,10 @@ export default function ServerBrowserModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-white/50 hover:text-white hover:bg-white/10 transition-colors ml-2"
+              className="btn-game btn-ghost btn-icon ml-2"
               aria-label="Закрыть список серверов"
             >
-              <X size={20} aria-hidden />
+              <X size={18} className="bicon" aria-hidden />
             </button>
           </div>
         </div>
@@ -183,19 +183,21 @@ export default function ServerBrowserModal({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Поиск по имени..."
-                className="w-full pl-8 pr-3 py-1.5 bg-black/50 border border-white/15 focus:border-amber-400 focus:outline-none text-xs text-white placeholder-white/50"
+                className="cut-control w-full pl-8 pr-3 py-1.5 bg-black/50 border-2 border-[#0b0e14] focus:border-amber-400 focus:outline-none text-xs text-white placeholder-white/50 shadow-[0_2px_0_#0b0e14]"
               />
             </div>
 
             {/* Mode filter buttons */}
-            <div className="flex items-center border border-white/10 bg-black/40 p-0.5 text-xs">
+            <div className="flex items-center gap-1 bg-black/40 p-1 border border-white/10">
               {(['all', 'deathmatch', 'team_deathmatch', 'capture_point'] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => setModeFilter(m)}
-                  className={`px-2.5 py-1 text-[11px] font-display transition-colors ${
-                    modeFilter === m ? 'bg-amber-500/25 text-amber-200 font-bold' : 'text-white/60 hover:text-white'
+                  className={`cut-chip px-2.5 py-1 text-[11px] font-display border transition-all ${
+                    modeFilter === m
+                      ? 'border-amber-400 bg-amber-500/25 text-amber-200 font-bold shadow-[0_2px_0_#0b0e14]'
+                      : 'border-transparent text-white/60 hover:text-white hover:border-white/20'
                   }`}
                 >
                   {m === 'all' ? 'ВСЕ РЕЖИМЫ' : modeLabel(m)}
@@ -204,14 +206,16 @@ export default function ServerBrowserModal({
             </div>
 
             {/* Map filter */}
-            <div className="flex items-center border border-white/10 bg-black/40 p-0.5 text-xs">
+            <div className="flex items-center gap-1 bg-black/40 p-1 border border-white/10">
               {(['all', 'factory', 'city', 'village'] as const).map((mp) => (
                 <button
                   key={mp}
                   type="button"
                   onClick={() => setMapFilter(mp)}
-                  className={`px-2.5 py-1 text-[11px] font-display transition-colors ${
-                    mapFilter === mp ? 'bg-amber-500/25 text-amber-200 font-bold' : 'text-white/60 hover:text-white'
+                  className={`cut-chip px-2.5 py-1 text-[11px] font-display border transition-all ${
+                    mapFilter === mp
+                      ? 'border-amber-400 bg-amber-500/25 text-amber-200 font-bold shadow-[0_2px_0_#0b0e14]'
+                      : 'border-transparent text-white/60 hover:text-white hover:border-white/20'
                   }`}
                 >
                   {mp === 'all' ? 'ВСЕ КАРТЫ' : mapLabel(mp)}
@@ -220,23 +224,27 @@ export default function ServerBrowserModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-white/70">
-            <label className="flex items-center gap-1.5 cursor-pointer hover:text-white">
+          <div className="flex items-center gap-3 text-xs text-white/70">
+            <label className={`cut-chip border px-2.5 py-1 flex items-center gap-1.5 cursor-pointer text-xs transition-all ${
+              hideFull ? 'border-amber-400 bg-amber-500/20 text-amber-200 shadow-[0_2px_0_#0b0e14]' : 'border-white/10 bg-black/30 text-white/60 hover:text-white'
+            }`}>
               <input
                 type="checkbox"
                 checked={hideFull}
                 onChange={(e) => setHideFull(e.target.checked)}
-                className="border-white/20 bg-black/40 text-amber-400 focus:ring-0"
+                className="accent-amber-400"
               />
               <span>Скрыть полные</span>
             </label>
 
-            <label className="flex items-center gap-1.5 cursor-pointer hover:text-white">
+            <label className={`cut-chip border px-2.5 py-1 flex items-center gap-1.5 cursor-pointer text-xs transition-all ${
+              hidePassword ? 'border-amber-400 bg-amber-500/20 text-amber-200 shadow-[0_2px_0_#0b0e14]' : 'border-white/10 bg-black/30 text-white/60 hover:text-white'
+            }`}>
               <input
                 type="checkbox"
                 checked={hidePassword}
                 onChange={(e) => setHidePassword(e.target.checked)}
-                className="border-white/20 bg-black/40 text-amber-400 focus:ring-0"
+                className="accent-amber-400"
               />
               <span>Без пароля</span>
             </label>
@@ -245,10 +253,11 @@ export default function ServerBrowserModal({
               type="button"
               onClick={() => void fetchRooms()}
               disabled={loading}
-              className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors disabled:opacity-50"
+              className="btn-game btn-ghost btn-icon p-1.5 text-amber-400 hover:text-amber-300 disabled:opacity-50"
               title="Обновить список серверов"
+              aria-label="Обновить список серверов"
             >
-              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} aria-hidden />
+              <RefreshCw size={15} className={`bicon ${loading ? 'animate-spin' : ''}`} aria-hidden />
             </button>
           </div>
         </div>

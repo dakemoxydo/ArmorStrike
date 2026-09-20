@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { Game } from './game/Game';
 import type { GameApi } from './game/GameApi';
 import type { HudSnapshot } from './game/types';
@@ -649,19 +650,21 @@ export default function App() {
 
       {isTouchOnly && uiMode === 'menu' && !hideChrome && (
         <div
-          className="absolute inset-x-0 top-3 z-50 mx-auto w-fit max-w-[min(26rem,calc(100vw-2rem))] px-4 py-2 text-center text-xs tracking-wider text-amber-300 hud-panel"
+          className="hud-panel cut-control absolute inset-x-0 top-3 z-50 mx-auto flex w-fit max-w-[min(26rem,calc(100vw-2rem))] items-center gap-2 border-2 border-[#0b0e14] bg-[#0c121e]/95 px-4 py-2 text-center text-xs tracking-wider text-amber-300 shadow-[0_4px_0_#0b0e14]"
           role="status"
         >
-          Внимание: игра рассчитана на ПК (клавиатура и мышь). Сенсорное управление не поддерживается.
+          <AlertTriangle size={15} className="shrink-0 text-amber-400" aria-hidden />
+          <span>Внимание: игра рассчитана на ПК (клавиатура и мышь). Сенсорное управление не поддерживается.</span>
         </div>
       )}
 
       {roundError && !roundLoading && (
         <div
-          className="absolute inset-x-0 top-5 z-50 mx-auto w-fit max-w-[min(20rem,calc(100vw-3rem))] px-4 py-2.5 text-center text-xs tracking-widest text-amber-200 hud-panel"
+          className="hud-panel cut-control absolute inset-x-0 top-5 z-50 mx-auto flex w-fit max-w-[min(20rem,calc(100vw-3rem))] items-center gap-2 border-2 border-[#0b0e14] bg-[#1a0808]/95 px-4 py-2.5 text-center text-xs tracking-widest text-rose-300 shadow-[0_4px_0_#0b0e14]"
           role="alert"
         >
-          {roundError}
+          <AlertTriangle size={15} className="shrink-0 text-rose-400" aria-hidden />
+          <span>{roundError}</span>
         </div>
       )}
 
