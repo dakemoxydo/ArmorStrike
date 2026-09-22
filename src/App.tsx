@@ -10,6 +10,7 @@ import MapSelect from './components/MapSelect';
 import ModeSelect from './components/ModeSelect';
 import StarterPackModal from './components/StarterPackModal';
 import QuestsModal from './components/QuestsModal';
+import LeaderboardModal from './components/LeaderboardModal';
 import SettingsModal from './components/SettingsModal';
 import AuthModal from './components/auth/AuthModal';
 import ServerBrowserModal from './components/multiplayer/ServerBrowserModal';
@@ -34,6 +35,7 @@ export default function App() {
     finalStats,
     starterClaimed,
     economyVersion,
+    leaderboardSubmit,
     setPaused,
     claimStarterPack,
   } = useGameBootstrap(canvasRef, round.setRoundError, dispatch);
@@ -65,6 +67,7 @@ export default function App() {
     modeSelectOpen: modals.modeSelectOpen,
     authModalOpen: modals.authModalOpen,
     questsOpen: modals.questsOpen,
+    leaderboardOpen: modals.leaderboardOpen,
     serverBrowserOpen: modals.serverBrowserOpen,
     goMenu,
     openModeSelect,
@@ -82,6 +85,8 @@ export default function App() {
 
   const openQuests = useCallback(() => dispatch({ type: 'openQuests' }), [dispatch]);
   const closeQuests = useCallback(() => dispatch({ type: 'closeQuests' }), [dispatch]);
+  const openLeaderboard = useCallback(() => dispatch({ type: 'openLeaderboard' }), [dispatch]);
+  const closeLeaderboard = useCallback(() => dispatch({ type: 'closeLeaderboard' }), [dispatch]);
   const openAuthLogin = useCallback(
     () => dispatch({ type: 'openAuth', tab: 'login' }),
     [dispatch],
@@ -170,6 +175,7 @@ export default function App() {
           onServerBrowser={openServerBrowser}
           onGarage={goGarage}
           onQuests={openQuests}
+          onLeaderboard={openLeaderboard}
           onSettings={openSettings}
           onOpenAuth={openAuthLogin}
         />
@@ -191,6 +197,8 @@ export default function App() {
           teamScore={finalStats.teamScore}
           rewards={finalStats.rewards}
           onQuests={openQuests}
+          leaderboardSubmit={leaderboardSubmit}
+          onLeaderboard={openLeaderboard}
           onRematch={rematch}
           onChangeMode={openModeSelect}
           onGarage={goGarage}
@@ -219,6 +227,8 @@ export default function App() {
       )}
 
       {modals.questsOpen && <QuestsModal game={game} onClose={closeQuests} />}
+
+      {modals.leaderboardOpen && <LeaderboardModal onClose={closeLeaderboard} />}
 
       {modals.authModalOpen && (
         <AuthModal

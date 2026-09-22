@@ -61,14 +61,60 @@ describe('H6: single mute source', () => {
 });
 
 describe('keyboard / rematch / network id wiring', () => {
-  it('Escape ignores Auth/Quests/server browser; M ignores text fields', () => {
-    expect(appHotkeys).toMatch(/authModalOpen \|\| questsOpen \|\| serverBrowserOpen/);
+  it('Escape ignores Auth/Quests/Leaderboard/server browser; M ignores text fields', () => {
+    expect(appHotkeys).toMatch(
+      /authModalOpen\s*\|\|\s*questsOpen\s*\|\|\s*leaderboardOpen\s*\|\|\s*serverBrowserOpen/,
+    );
     expect(appHotkeys).toMatch(/e\.code === 'KeyM'[\s\S]{0,120}isInteractiveKeyboardTarget/);
   });
 
   it('pause ЗАНОВО rematches; MP join uses a stable network id', () => {
     expect(app).toMatch(/onRestart=\{rematch\}/);
     expect(roundFlow).toMatch(/userId: game\.getNetworkId\(\)/);
+  });
+});
+
+describe('L3: global leaderboard wiring', () => {
+  it('gameOver auto-submits once per event with a mono token (StrictMode-safe)', () => {
+    const bootstrap = readFileSync(resolve(__dirname, '../hooks/useGameBootstrap.ts'), 'utf8');
+    expect(bootstrap).toMatch(/const token = \+\+leaderboardToken\.current;/);
+    expect(bootstrap).toMatch(
+      /if \(token === leaderboardToken\.current\) \{\s*setLeaderboardSubmit\(result\);/,
+    );
+    expect(bootstrap).toMatch(/void LeaderboardService\.submitMatchResult\(/);
+    expect(bootstrap).toMatch(/setLeaderboardSubmit\('pending'\);/);
+  });
+
+  it('App opens LeaderboardModal and passes submit status to GameOverScreen', () => {
+    expect(app).toMatch(/import LeaderboardModal from '\.\/components\/LeaderboardModal';/);
+    expect(app).toMatch(/modals\.leaderboardOpen && <LeaderboardModal/);
+    expect(app).toMatch(/leaderboardSubmit=\{leaderboardSubmit\}/);
+    expect(app).toMatch(/onLeaderboard=\{openLeaderboard\}/);
+  });
+
+  it('writes go only through submit_leaderboard_entry RPC (no direct table upsert)', () => {
+    const svc = readFileSync(
+      resolve(__dirname, '../game/leaderboard/leaderboardService.ts'),
+      'utf8',
+    );
+    expect(svc).toMatch(/supabase\.rpc\('submit_leaderboard_entry'/);
+    expect(svc).not.toMatch(/from\('leaderboard'\)[\s\S]{0,80}\.(insert|upsert|update)\(/);
+  });
+
+  it('migration enables RLS, grants only SELECT, and keeps write path in SECURITY DEFINER RPC', () => {
+    const sql = readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260922120000_create_leaderboard.sql'),
+      'utf8',
+    );
+    expect(sql).toMatch(/enable row level security/);
+    expect(sql).toMatch(/grant select on public\.leaderboard to anon, authenticated/);
+    expect(sql).toMatch(/revoke all on public\.leaderboard from anon, authenticated/);
+    expect(sql).not.toMatch(/grant (insert|update|delete|all) on public\.leaderboard/);
+    expect(sql).toMatch(/security definer/);
+    expect(sql).toMatch(/create or replace function public\.submit_leaderboard_entry/);
+    expect(sql).toMatch(/greatest\(public\.leaderboard\.best_score, excluded\.best_score\)/);
+    expect(sql).toMatch(/select auth\.uid\(\)/);
+    expect(sql).toMatch(/from public\.profiles/);
   });
 });
 

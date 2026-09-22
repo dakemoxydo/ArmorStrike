@@ -10,6 +10,7 @@ export interface HotkeyDeps {
   modeSelectOpen: boolean;
   authModalOpen: boolean;
   questsOpen: boolean;
+  leaderboardOpen: boolean;
   serverBrowserOpen: boolean;
   goMenu: () => void;
   openModeSelect: () => void;
@@ -29,6 +30,7 @@ export function useAppHotkeys(deps: HotkeyDeps): void {
     modeSelectOpen,
     authModalOpen,
     questsOpen,
+    leaderboardOpen,
     serverBrowserOpen,
     goMenu,
     openModeSelect,
@@ -39,7 +41,14 @@ export function useAppHotkeys(deps: HotkeyDeps): void {
     const onKey = (e: KeyboardEvent) => {
       if (!game) return;
       // Mode/map select own Escape / Enter while open.
-      if (mapSelectOpen || modeSelectOpen || authModalOpen || questsOpen || serverBrowserOpen) return;
+      if (
+        mapSelectOpen ||
+        modeSelectOpen ||
+        authModalOpen ||
+        questsOpen ||
+        leaderboardOpen ||
+        serverBrowserOpen
+      ) return;
       if (e.code === 'Escape') {
         if (uiMode === 'playing') game.togglePause();
         else if (uiMode === 'garage') goMenu();
@@ -55,5 +64,5 @@ export function useAppHotkeys(deps: HotkeyDeps): void {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, uiMode, goMenu, openModeSelect, onToggleMute, mapSelectOpen, modeSelectOpen, authModalOpen, questsOpen, serverBrowserOpen]);
+  }, [game, uiMode, goMenu, openModeSelect, onToggleMute, mapSelectOpen, modeSelectOpen, authModalOpen, questsOpen, leaderboardOpen, serverBrowserOpen]);
 }

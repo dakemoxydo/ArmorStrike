@@ -13,6 +13,10 @@ import type { GameMode, MatchEndReason, MatchModeId, TeamId } from '../game/type
 import type { MatchRewards } from '../game/economy/matchRewards';
 import type { HullId, TurretId } from '../core/catalog';
 import { AuthService } from '../game/auth/authService';
+import {
+  LeaderboardService,
+  type LeaderboardSubmitResult,
+} from '../game/leaderboard/leaderboardService';
 import type { UiModalsAction } from './useUiModals';
 
 export interface FinalStats {
@@ -40,6 +44,8 @@ export interface BootstrapResult {
   starterClaimed: boolean;
   /** Bump-счётчик garageChanged: держит derived-значения (кредиты/квесты) свежими. */
   economyVersion: number;
+  /** L3: статус авто-отправки рекорда в глобальный лидерборд (null — ещё не было). */
+  leaderboardSubmit: LeaderboardSubmitResult | 'pending' | null;
   setPaused: Dispatch<SetStateAction<boolean>>;
   claimStarterPack: (hullId: HullId, turretId: TurretId) => void;
 }
@@ -78,6 +84,11 @@ export function useGameBootstrap(
   const [finalStats, setFinalStats] = useState<FinalStats>(initialFinalStats);
   const [starterClaimed, setStarterClaimed] = useState(true);
   const [economyVersion, setEconomyVersion] = useState(0);
+  const [leaderboardSubmit, setLeaderboardSubmit] = useState<
+    LeaderboardSubmitResult | 'pending' | null
+  >(null);
+  /** Моно-токен: поздний ответ по прошлому матчу не перетирает свежий статус. */
+  const leaderboardToken = useRef(0);
   const roundErrorRef = useRef(setRoundError);
   roundErrorRef.current = setRoundError;
 
@@ -135,6 +146,22 @@ export function useGameBootstrap(
               rewards: e.rewards,
             });
             setPaused(false);
+            // L3: авто-запись рекорда один раз на gameOver-ивент (не на mount
+            // React — StrictMode не должен дублировать отправку).
+            const token = ++leaderboardToken.current;
+            setLeaderboardSubmit('pending');
+            void LeaderboardService.submitMatchResult({
+              score: e.score,
+              kills: e.kills,
+              deaths: e.deaths,
+              bestStreak: e.bestStreak,
+              mode: e.mode,
+              matchTimeSec: e.matchTimeSec,
+            }).then((result) => {
+              if (token === leaderboardToken.current) {
+                setLeaderboardSubmit(result);
+              }
+            });
           }
           if (e.type === 'pauseChanged') setPaused(e.value);
           if (e.type === 'garageChanged') {
@@ -216,6 +243,7 @@ export function useGameBootstrap(
     finalStats,
     starterClaimed,
     economyVersion,
+    leaderboardSubmit,
     setPaused,
     claimStarterPack,
   };

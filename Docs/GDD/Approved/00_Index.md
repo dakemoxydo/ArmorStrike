@@ -41,6 +41,7 @@
 | [[Starter_Crates_And_Progression]] | Стартовые контейнеры новобранца (Draft Pick 3 карт), закрытый арсенал | `RunState`, `GarageBinding`, `StarterPackModal` |
 | [[Economy_Currency_And_Quests]] | Экономика (Кредиты CR), боевые выплаты, система квестов и покупка контейнеров | `matchRewards`, `questCatalog`, `RunState`, `QuestsModal` |
 | [[Cloud_Profiles_And_Auth]] | Профили игроков, Supabase Auth (username/email), гостевой режим и облачные сохранения | `RunState`, `AuthService`, `CloudSaveService`, `AuthModal`, `UserBadge` |
+| [[Leaderboard]] | Глобальный лидерборд личных рекордов (авто-запись после матча, топ-50) | `LeaderboardService`, `LeaderboardModal`, `submit_leaderboard_entry`, `useGameBootstrap` |
 | [[Multiplayer_Lobby_And_Rooms]] | Сетевой мультиплеер, браузер серверов, создание комнат, быстрая игра и репликация танков | `multiplayerService`, `NetworkSession`, `RemotePlayerManager`, `NetworkSyncStage`, `ServerBrowserModal` |
 | [[Stylized_Art_Direction]] | Стилизованный Low-Poly / Cel-Shaded / Комикс арт-дирекшен: ступенчатый шейдинг, чернильная обводка танков и зданий, комиксный UI/HUD, дневное солнце | `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/arena/buildingInk.ts`, `src/styles/*.css`, `src/game/ArenaBuilder.ts` |
 

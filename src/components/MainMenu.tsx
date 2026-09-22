@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   ChevronsRight,
   Globe,
   Play,
@@ -22,6 +23,7 @@ interface MainMenuProps {
   onServerBrowser?: () => void;
   onGarage: () => void;
   onQuests?: () => void;
+  onLeaderboard?: () => void;
   onSettings?: () => void;
   onOpenAuth?: () => void;
 }
@@ -37,6 +39,7 @@ export default function MainMenu({
   onServerBrowser,
   onGarage,
   onQuests,
+  onLeaderboard,
   onSettings,
   onOpenAuth,
 }: MainMenuProps) {
@@ -194,13 +197,35 @@ export default function MainMenu({
           </button>
         )}
 
-        {/* 5. НАСТРОЙКИ */}
+        {/* 5. ЛИДЕРБОРД (L3) */}
+        {onLeaderboard && (
+          <button
+            type="button"
+            onClick={onLeaderboard}
+            className="anim-left lobby-nav-btn group"
+            style={{ '--d': '0.6s' } as React.CSSProperties}
+            aria-label="Глобальный лидерборд рекордов"
+          >
+            <BarChart3 size={18} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-sm tracking-wider text-white">ЛИДЕРБОРД</div>
+              <div className="text-[10px] text-amber-300/70 tracking-wider font-mono">
+                ГЛОБАЛЬНЫЙ РЕЙТИНГ
+              </div>
+            </div>
+            <span className="text-[10px] text-white/50 tracking-wider font-mono uppercase">
+              ТОП
+            </span>
+          </button>
+        )}
+
+        {/* 6. НАСТРОЙКИ */}
         {onSettings && (
           <button
             type="button"
             onClick={onSettings}
             className="anim-left lobby-nav-btn group"
-            style={{ '--d': '0.65s' } as React.CSSProperties}
+            style={{ '--d': '0.7s' } as React.CSSProperties}
             aria-label="Настройки звука, графики и управления"
           >
             <Settings size={18} className="text-slate-300 group-hover:rotate-45 transition-transform shrink-0" aria-hidden />

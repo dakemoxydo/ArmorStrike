@@ -10,6 +10,7 @@ describe('GameOverScreen rewards presentation', () => {
   it('renders match rewards breakdown banner and tasks button', async () => {
     const user = userEvent.setup();
     const onQuests = vi.fn();
+    const onLeaderboard = vi.fn();
     const rewards: MatchRewards = {
       base: 50,
       kills: 60,
@@ -35,6 +36,8 @@ describe('GameOverScreen rewards presentation', () => {
         teamScore={{ alpha: 3, bravo: 1 }}
         rewards={rewards}
         onQuests={onQuests}
+        leaderboardSubmit={{ status: 'improved', bestScore: 450, improved: true }}
+        onLeaderboard={onLeaderboard}
         onRematch={vi.fn()}
         onChangeMode={vi.fn()}
         onGarage={vi.fn()}
@@ -51,6 +54,12 @@ describe('GameOverScreen rewards presentation', () => {
     expect(screen.getByText('Победа')).toBeInTheDocument();
     expect(screen.getByText('+100')).toBeInTheDocument();
     expect(screen.getByText('+30')).toBeInTheDocument();
+
+    // L3: статус авто-отправки рекорда + кнопка лидерборда
+    expect(screen.getByRole('status')).toHaveTextContent(/НОВЫЙ РЕКОРД/);
+    const lbBtn = screen.getByRole('button', { name: /ЛИДЕРБОРД/ });
+    await user.click(lbBtn);
+    expect(onLeaderboard).toHaveBeenCalled();
 
     const tasksBtn = screen.getByRole('button', { name: /ЗАДАЧИ/ });
     await user.click(tasksBtn);

@@ -269,6 +269,7 @@ describe('hotkeys (behavioral)', () => {
     authModalOpen?: boolean;
     mapSelectOpen?: boolean;
     questsOpen?: boolean;
+    leaderboardOpen?: boolean;
     serverBrowserOpen?: boolean;
   } = {}): HotkeyResult {
     const game = makeGame();
@@ -283,6 +284,7 @@ describe('hotkeys (behavioral)', () => {
         modeSelectOpen: false,
         authModalOpen: opts.authModalOpen ?? false,
         questsOpen: opts.questsOpen ?? false,
+        leaderboardOpen: opts.leaderboardOpen ?? false,
         serverBrowserOpen: opts.serverBrowserOpen ?? false,
         goMenu,
         openModeSelect,
@@ -305,10 +307,11 @@ describe('hotkeys (behavioral)', () => {
     expect(goMenu).toHaveBeenCalledTimes(1);
   });
 
-  it('Escape/KeyM are ignored while a modal (auth/quests/browser/map) is open', () => {
+  it('Escape/KeyM are ignored while a modal (auth/quests/leaderboard/browser/map) is open', () => {
     for (const opts of [
       { authModalOpen: true },
       { questsOpen: true },
+      { leaderboardOpen: true },
       { serverBrowserOpen: true },
       { mapSelectOpen: true },
     ]) {

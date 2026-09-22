@@ -5,6 +5,7 @@ export interface UiModalsState {
   modeSelectOpen: boolean;
   mapSelectOpen: boolean;
   questsOpen: boolean;
+  leaderboardOpen: boolean;
   authModalOpen: boolean;
   authModalInitialTab: AuthTab;
   serverBrowserOpen: boolean;
@@ -18,6 +19,8 @@ export type UiModalsAction =
   | { type: 'closeMapSelect' }
   | { type: 'openQuests' }
   | { type: 'closeQuests' }
+  | { type: 'openLeaderboard' }
+  | { type: 'closeLeaderboard' }
   | { type: 'openAuth'; tab?: AuthTab }
   | { type: 'closeAuth' }
   | { type: 'openServerBrowser' }
@@ -29,6 +32,7 @@ const initialState: UiModalsState = {
   modeSelectOpen: false,
   mapSelectOpen: false,
   questsOpen: false,
+  leaderboardOpen: false,
   authModalOpen: false,
   authModalInitialTab: 'login',
   serverBrowserOpen: false,
@@ -49,6 +53,10 @@ function uiModalsReducer(state: UiModalsState, action: UiModalsAction): UiModals
       return { ...state, questsOpen: true };
     case 'closeQuests':
       return { ...state, questsOpen: false };
+    case 'openLeaderboard':
+      return { ...state, leaderboardOpen: true };
+    case 'closeLeaderboard':
+      return { ...state, leaderboardOpen: false };
     case 'openAuth':
       return { ...state, authModalOpen: true, authModalInitialTab: action.tab ?? 'login' };
     case 'closeAuth':

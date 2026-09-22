@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { ArrowLeft, Clock3, Coins, Flame, Layers, RefreshCcw, Skull, Target, Trophy, Users, Wrench } from 'lucide-react';
+import { ArrowLeft, BarChart3, Clock3, Coins, Flame, Layers, RefreshCcw, Skull, Target, Trophy, Users, Wrench } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { MatchEndReason, MatchModeId, TeamId } from '../game/types';
 import type { MatchRewards } from '../game/economy/matchRewards';
+import type { LeaderboardSubmitResult } from '../game/leaderboard/leaderboardService';
 import {
   formatKd,
   formatMatchClock,
@@ -26,12 +27,46 @@ interface GameOverScreenProps {
   teamScore: { alpha: number; bravo: number };
   rewards?: MatchRewards;
   onQuests?: () => void;
+  /** L3: статус авто-отправки рекорда в глобальный лидерборд. */
+  leaderboardSubmit?: LeaderboardSubmitResult | 'pending' | null;
+  onLeaderboard?: () => void;
   /** Same mode + last map, skip ModeSelect. */
   onRematch: () => void;
   /** Open ModeSelect (change mode / map). */
   onChangeMode: () => void;
   onGarage: () => void;
   onMenu: () => void;
+}
+
+function leaderboardStatusText(
+  status: LeaderboardSubmitResult | 'pending',
+): { text: string; tone: string } {
+  if (status === 'pending') {
+    return { text: 'ОТПРАВКА РЕКОРДА…', tone: 'text-sky-300 border-sky-500/30 bg-sky-950/40' };
+  }
+  switch (status.status) {
+    case 'improved':
+      return {
+        text: `НОВЫЙ РЕКОРД · ${status.bestScore ?? ''} · МЕСТО В РЕЙТИНГЕ ОБНОВЛЕНО`,
+        tone: 'text-amber-200 border-amber-500/40 bg-amber-950/40',
+      };
+    case 'saved':
+      return {
+        text: `РЕКОРД СОХРАНЁН · ЛУЧШИЙ: ${status.bestScore ?? '—'}`,
+        tone: 'text-emerald-300 border-emerald-500/30 bg-emerald-950/40',
+      };
+    case 'guest':
+      return {
+        text: 'ВОЙДИТЕ В АККАУНТ, ЧТОБЫ ПОПАСТЬ В РЕЙТИНГ',
+        tone: 'text-white/70 border-white/15 bg-white/5',
+      };
+    case 'error':
+    default:
+      return {
+        text: 'НЕ УДАЛОСЬ ОТПРАВИТЬ РЕКОРД',
+        tone: 'text-rose-300 border-rose-500/30 bg-rose-950/40',
+      };
+  }
 }
 
 function CountUp({ value, duration = 1300 }: { value: number; duration?: number }) {
@@ -61,7 +96,7 @@ function CountUp({ value, duration = 1300 }: { value: number; duration?: number 
 
 export default function GameOverScreen({
   score, kills, deaths, bestStreak, playerWon, winnerName, winnerTeam, reason, mode,
-  matchTimeSec, teamKills, teamScore, rewards, onQuests,
+  matchTimeSec, teamKills, teamScore, rewards, onQuests, leaderboardSubmit, onLeaderboard,
   onRematch, onChangeMode, onGarage, onMenu,
 }: GameOverScreenProps) {
   const trapRef = useFocusTrap(true);
@@ -76,6 +111,9 @@ export default function GameOverScreen({
   const teamLeft = isCp ? Math.floor(teamScore.alpha) : teamKills.alpha;
   const teamRight = isCp ? Math.floor(teamScore.bravo) : teamKills.bravo;
   const teamUnit = isCp ? 'очк.' : 'фраги';
+  const lbStatus = leaderboardSubmit
+    ? leaderboardStatusText(leaderboardSubmit)
+    : null;
 
   return (
     <div
@@ -184,6 +222,17 @@ export default function GameOverScreen({
           </div>
         )}
 
+        {lbStatus && (
+          <p
+            className={`anim-up mt-4 cut-chip border px-3 py-1.5 text-[11px] tracking-widest ${lbStatus.tone}`}
+            role="status"
+            aria-live="polite"
+            style={{ '--d': '0.4s' } as React.CSSProperties}
+          >
+            {lbStatus.text}
+          </p>
+        )}
+
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <button type="button" data-autofocus onClick={onRematch} className="btn-game btn-primary px-10 py-4 text-base">
             <RefreshCcw size={19} className="bicon-spin" aria-hidden />
@@ -197,6 +246,12 @@ export default function GameOverScreen({
             <button type="button" onClick={onQuests} className="btn-game btn-ghost px-7 py-3.5 text-sm">
               <Trophy size={17} className="bicon text-amber-400" aria-hidden />
               <span>ЗАДАЧИ</span>
+            </button>
+          )}
+          {onLeaderboard && (
+            <button type="button" onClick={onLeaderboard} className="btn-game btn-ghost px-7 py-3.5 text-sm">
+              <BarChart3 size={17} className="bicon text-amber-400" aria-hidden />
+              <span>ЛИДЕРБОРД</span>
             </button>
           )}
           <button type="button" onClick={onGarage} className="btn-game btn-ghost px-7 py-3.5 text-sm">

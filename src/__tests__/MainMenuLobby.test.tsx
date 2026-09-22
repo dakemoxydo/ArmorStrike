@@ -30,6 +30,7 @@ describe('MainMenu Game Lobby Framing', () => {
     const onGarage = vi.fn();
     const onServerBrowser = vi.fn();
     const onQuests = vi.fn();
+    const onLeaderboard = vi.fn();
     const onSettings = vi.fn();
 
     const user = userEvent.setup();
@@ -45,6 +46,7 @@ describe('MainMenu Game Lobby Framing', () => {
         onGarage={onGarage}
         onServerBrowser={onServerBrowser}
         onQuests={onQuests}
+        onLeaderboard={onLeaderboard}
         onSettings={onSettings}
       />,
     );
@@ -84,19 +86,25 @@ describe('MainMenu Game Lobby Framing', () => {
     await user.click(questsBtn);
     expect(onQuests).toHaveBeenCalledTimes(1);
 
-    // 7. НАСТРОЙКИ
+    // 7. ЛИДЕРБОРД (L3)
+    const lbBtn = screen.getByRole('button', { name: /Глобальный лидерборд/i });
+    expect(lbBtn).toBeInTheDocument();
+    await user.click(lbBtn);
+    expect(onLeaderboard).toHaveBeenCalledTimes(1);
+
+    // 8. НАСТРОЙКИ
     const settingsBtn = screen.getByRole('button', { name: /Настройки звука/i });
     expect(settingsBtn).toBeInTheDocument();
     await user.click(settingsBtn);
     expect(onSettings).toHaveBeenCalledTimes(1);
 
-    // 8. Живой угол статуса (HUD Header)
+    // 9. Живой угол статуса (HUD Header)
     expect(screen.getByText('Tankist_777')).toBeInTheDocument();
     expect(screen.getByText('СТАРШИНА')).toBeInTheDocument();
     expect(screen.getByText(/1[\s,.]?500/)).toBeInTheDocument();
     expect(screen.getByText('24ms')).toBeInTheDocument();
 
-    // 9. Маркетинговые лендинговые тексты удалены
+    // 10. Маркетинговые лендинговые тексты удалены
     expect(screen.queryByText(/Разрушаемые укрытия/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/3D ПРЕДПРОСМОТР/i)).not.toBeInTheDocument();
   });
