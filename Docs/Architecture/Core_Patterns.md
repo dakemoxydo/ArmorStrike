@@ -24,6 +24,13 @@ Domain core  (src/core/)
 
 Любой новый код обязан уважать направление зависимостей. Циклов `core` ↔ `game` быть не должно.
 
+**Автогейт (J18):** таблица выше закреплена в `eslint.config.js` плагином
+`eslint-plugin-boundaries` (правило `boundaries/dependencies`, политики —
+последнее совпавшее выигрывает): `core` ↛ `game`/`engine`/`components`/`hooks`/`ui`,
+`game` ↛ `components`/`hooks`, React-слой (`components`/`hooks`) ↛ `engine`,
+`components` ↛ класс `Game` (`game/Game.ts` — только через `GameApi`-проп),
+production ↛ `src/__tests__`. Нарушение — ошибка `npm run lint` (CI-гейт).
+
 ## 2. Bootstrap composition
 
 Единая сборка: `bootstrapGame` (`GameBootstrap.ts`).

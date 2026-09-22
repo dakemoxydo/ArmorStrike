@@ -3,9 +3,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { RefObject } from 'react';
-import { beforeEach, describe, expect, it } from 'vitest';
-import { render } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import HudCrosshair from '../components/hud/HudCrosshair';
+import PauseMenu from '../components/PauseMenu';
+import type { GameApi } from '../game/GameApi';
 import {
   CROSSHAIR_STYLES,
   DEFAULT_CROSSHAIR_STYLE,
@@ -15,7 +17,6 @@ import {
 
 const root = resolve(__dirname, '../..');
 const css = (name: string) => readFileSync(resolve(root, `src/styles/${name}`), 'utf8');
-const src = (rel: string) => readFileSync(resolve(root, rel), 'utf8');
 
 describe('crosshairStyle — persist (as2_crosshair)', () => {
   beforeEach(() => {
@@ -88,17 +89,72 @@ describe('hud.css — contract пресетов', () => {
   });
 });
 
-describe('PauseMenu — пикер в секции настроек', () => {
-  const pause = src('src/components/PauseMenu.tsx');
+describe('PauseMenu — пикер в секции настроек (behavioral)', () => {
+  const pauseGame = {
+    currentHull: 'hunter',
+    currentTurret: 'railgun',
+    getQuality: () => 'medium',
+    cycleQuality: () => 'high',
+    setMouseSettings: () => {},
+  } as unknown as GameApi;
 
-  it('три кнопки с превью и aria-pressed у активного', () => {
-    expect(pause).toMatch(/ch-picker/);
-    expect(pause).toMatch(/ch-prev-\$\{style\.id\}/);
-    expect(pause).toMatch(/aria-pressed=\{crosshair === style\.id\}/);
-    // Пикер живёт внутри существующей секции настроек: число pause-section не растёт (S5).
-    expect((pause.match(/pause-section/g) ?? []).length).toBe(3);
+  beforeEach(() => {
+    localStorage.clear();
+    // jsdom не считает layout: без offsetParent-стаба фокус-трап PauseMenu
+    // не видит focusables (тот же стаб, что в useFocusTrap.test.tsx).
+    Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
+      configurable: true,
+      get() {
+        return document.body;
+      },
+    });
   });
 
+  function renderPause(crosshair: 'dot' | 'cross' | 'ring' = 'cross') {
+    const onCrosshair = vi.fn();
+    const utils = render(
+      <PauseMenu
+        game={pauseGame}
+        muted={false}
+        stats={{ score: 0, kills: 0, timeSec: 0 }}
+        crosshair={crosshair}
+        onCrosshair={onCrosshair}
+        damageNumbers
+        onDamageNumbers={vi.fn()}
+        onResume={vi.fn()}
+        onRestart={vi.fn()}
+        onGarage={vi.fn()}
+        onMenu={vi.fn()}
+        onToggleMute={vi.fn()}
+      />,
+    );
+    return { ...utils, onCrosshair };
+  }
+
+  it('три кнопки с превью и aria-pressed у активного', () => {
+    const { container, onCrosshair } = renderPause('cross');
+
+    const group = screen.getByRole('group', { name: 'Настройка прицела' });
+    const buttons = within(group).getAllByRole('button');
+    expect(buttons).toHaveLength(3);
+    expect(CROSSHAIR_STYLES.map((s) => s.label)).toEqual(['ТОЧКА', 'КРЕСТ', 'ПОЛНЫЙ']);
+    expect(buttons.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false']);
+    for (const id of ['dot', 'cross', 'ring']) {
+      expect(container.querySelector(`.ch-prev-${id}`), id).not.toBeNull();
+    }
+
+    fireEvent.click(buttons[2]);
+    expect(onCrosshair).toHaveBeenCalledWith('ring');
+  });
+
+  it('число pause-section не растёт (S5): пикер живёт в существующей секции', () => {
+    const { container } = renderPause('dot');
+    expect(container.querySelectorAll('.pause-section')).toHaveLength(3);
+    expect(container.querySelector('.ch-picker')).not.toBeNull();
+  });
+});
+
+describe('overlays.css — стили превью пикера', () => {
   it('стили превью объявлены в overlays.css', () => {
     const overlays = css('overlays.css');
     for (const sel of ['.ch-picker', '.ch-pick', '.ch-prev-cross', '.ch-prev-ring']) {
