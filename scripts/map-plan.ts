@@ -142,6 +142,50 @@ const dist = Object.entries(quad)
   .map(([k, v]) => `${k}: ${v.hard} hard / ${v.soft} soft`)
   .join('  ·  ');
 
+// ---- spawn & CP fairness (I1 / I3) ----------------------------------------
+const centroidOf = (pts: readonly [number, number][]): [number, number] => {
+  let sx = 0;
+  let sz = 0;
+  for (const [x, z] of pts) {
+    sx += x;
+    sz += z;
+  }
+  return [sx / pts.length, sz / pts.length];
+};
+const [aCx, aCz] = centroidOf(ALPHA_SPAWN_POINTS);
+const [bCx, bCz] = centroidOf(BRAVO_SPAWN_POINTS);
+
+let minEnemySpawn = Infinity;
+for (const [ax, az] of ALPHA_SPAWN_POINTS) {
+  for (const [bx, bz] of BRAVO_SPAWN_POINTS) {
+    minEnemySpawn = Math.min(minEnemySpawn, Math.hypot(ax - bx, az - bz));
+  }
+}
+
+const ffaNN = FFA_SPAWN_POINTS.map(([x, z], i) =>
+  Math.min(
+    ...FFA_SPAWN_POINTS.filter((_, j) => j !== i).map(([ox, oz]) => Math.hypot(ox - x, oz - z)),
+  ),
+);
+const ffaNNMin = Math.min(...ffaNN);
+const ffaNNMax = Math.max(...ffaNN);
+
+const zoneAnchors = zonesForMap(mapId);
+const cpAccess = zoneAnchors
+  .map((z) => {
+    const dA = Math.hypot(z.x - aCx, z.z - aCz);
+    const dB = Math.hypot(z.x - bCx, z.z - bCz);
+    return `CP-${z.id}: α ${dA.toFixed(0)} · β ${dB.toFixed(0)} · Δ ${(dA - dB).toFixed(0)}`;
+  })
+  .join('  ·  ');
+const cpDeltaSum = zoneAnchors.reduce((s, z) => {
+  const dA = Math.hypot(z.x - aCx, z.z - aCz);
+  const dB = Math.hypot(z.x - bCx, z.z - bCz);
+  return s + (dA - dB);
+}, 0);
+
+const fairness = `min spawn↔enemy ${minEnemySpawn.toFixed(0)} m · FFA NN ${ffaNNMin.toFixed(0)}..${ffaNNMax.toFixed(0)} m · ΣCP Δ ${cpDeltaSum.toFixed(0)}`;
+
 const html = `<!doctype html>
 <html><head><meta charset="utf-8"><title>${mapId} plan</title>
 <style>
@@ -166,6 +210,8 @@ const html = `<!doctype html>
   <span><i style="background:#ff4d3d"></i>bravo</span>
 </div>
 <div class="sub">${dist}</div>
+<div class="sub">fairness: ${fairness}</div>
+<div class="sub">cp access: ${cpAccess}</div>
 <svg width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}" xmlns="http://www.w3.org/2000/svg">
   <rect x="${PAD}" y="${PAD}" width="${(HALF * 2 * S).toFixed(1)}" height="${(HALF * 2 * S).toFixed(1)}"
         fill="#111720" stroke="#33465c" stroke-width="2"/>
@@ -183,6 +229,8 @@ console.log(`=== ${mapId} plan ===`);
 console.log(`colliders: ${colliders.length}`);
 console.log(`  hard ${counts.hard} · medium ${counts.medium} · soft ${counts.soft} · ramps ${counts.ramp} · perimeter ${counts.perimeter}`);
 console.log(`quadrants: ${dist}`);
+console.log(`fairness: ${fairness}`);
+console.log(`cp access: ${cpAccess}`);
 console.log(`written: ${out}`);
 
 scene.remove(arena.group);

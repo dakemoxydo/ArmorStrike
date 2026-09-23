@@ -431,9 +431,9 @@
 
 .bot-dot {
   width: 9px; height: 9px;
-  background: #ff4d3d;
+  background: var(--team-bravo);
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  box-shadow: 0 0 var(--glow-r-xs) rgba(255, 77, 61, 0.8);
+  box-shadow: 0 0 var(--glow-r-xs) rgba(var(--team-bravo-rgb), 0.8);
 }
 
 /* --- подсказка управления (под панелью счёта, не поверх машины) ---

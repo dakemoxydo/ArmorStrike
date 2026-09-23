@@ -170,13 +170,15 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
   for (const cp of cps) {
     const cx = toX(cp.x);
     const cy = toY(cp.z);
+    // Кольца CP — токены --team-alpha/--team-bravo (та же палитра, что у блипов):
+    // один канвас — одна палитра; 3D-мир остаётся на COLORS.team* (core/constants).
     const col =
       cp.contested
         ? 'rgba(255,210,74,0.9)'
         : cp.owner === 'alpha'
-          ? 'rgba(59,158,255,0.9)'
+          ? 'rgba(56,189,248,0.9)'
           : cp.owner === 'bravo'
-            ? 'rgba(255,77,61,0.9)'
+            ? 'rgba(248,113,113,0.9)'
             : 'rgba(160,170,180,0.85)';
     ctx.save();
     // Comic ink border around capture point
@@ -205,7 +207,8 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
     const y = toY(d.z);
     const rel = d.relation ?? (d.isPlayer ? 'self' : 'enemy');
     // Цвета команд — токены из styles/variables.css (--team-alpha/--team-bravo),
-    // не локальные hex-дубли: дрейф #3b9eff/#38bdf8 и #ff4d3d/#f87171 закрыт.
+    // не локальные hex-дубли. Форма тоже несёт роль (K2, colorblind):
+    // self = ромб, ally = круг, enemy = треугольник — различие без опоры на цвет.
     const fill =
       rel === 'self' ? '#f59e0b' : rel === 'ally' ? '#38bdf8' : '#f87171';
     const stroke =
@@ -235,23 +238,53 @@ export function drawMinimap(game: GameApi, cv: HTMLCanvasElement | null, buf: Mi
 
     ctx.rotate(d.yaw);
 
-    // Comic ink outline for tank triangle (sharp ink rim, no fuzzy blur):
-    ctx.beginPath();
-    ctx.moveTo(0, -4.8 * k);
-    ctx.lineTo(3.8 * k, 3.8 * k);
-    ctx.lineTo(-3.8 * k, 3.8 * k);
-    ctx.closePath();
-    ctx.fillStyle = '#0b0e14';
-    ctx.fill();
+    if (rel === 'ally') {
+      // Круг — форма союзника (K2): читается и без цвета.
+      ctx.beginPath();
+      ctx.arc(0, 0, 4.2 * k, 0, Math.PI * 2);
+      ctx.fillStyle = '#0b0e14';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 0, 3.2 * k, 0, Math.PI * 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+    } else if (rel === 'self') {
+      // Ромб — уникальная форма игрока (K2), ink rim конвенцией треугольника.
+      ctx.beginPath();
+      ctx.moveTo(0, -4.8 * k);
+      ctx.lineTo(3.8 * k, 0);
+      ctx.lineTo(0, 4.8 * k);
+      ctx.lineTo(-3.8 * k, 0);
+      ctx.closePath();
+      ctx.fillStyle = '#0b0e14';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(0, -3.6 * k);
+      ctx.lineTo(2.8 * k, 0);
+      ctx.lineTo(0, 3.6 * k);
+      ctx.lineTo(-2.8 * k, 0);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+    } else {
+      // Comic ink outline for tank triangle (enemy; sharp ink rim, no fuzzy blur):
+      ctx.beginPath();
+      ctx.moveTo(0, -4.8 * k);
+      ctx.lineTo(3.8 * k, 3.8 * k);
+      ctx.lineTo(-3.8 * k, 3.8 * k);
+      ctx.closePath();
+      ctx.fillStyle = '#0b0e14';
+      ctx.fill();
 
-    // Inner filled triangle:
-    ctx.beginPath();
-    ctx.moveTo(0, -3.8 * k);
-    ctx.lineTo(2.8 * k, 2.9 * k);
-    ctx.lineTo(-2.8 * k, 2.9 * k);
-    ctx.closePath();
-    ctx.fillStyle = fill;
-    ctx.fill();
+      // Inner filled triangle:
+      ctx.beginPath();
+      ctx.moveTo(0, -3.8 * k);
+      ctx.lineTo(2.8 * k, 2.9 * k);
+      ctx.lineTo(-2.8 * k, 2.9 * k);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
     ctx.restore();
   }
 }

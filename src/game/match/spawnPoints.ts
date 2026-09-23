@@ -3,10 +3,12 @@
 /** Min planar distance from player so bots never drop on top of them. */
 export const MIN_BOT_SPAWN_DIST = 32;
 
-/** FFA / DM — shared edge points (player start z ≈ -120). */
+/** FFA / DM — shared edge points (player start z ≈ -120).
+ *  West/east mid-пары — 180°-зеркала ([134,0] ↔ [-134,0], I1-ребаланс):
+ *  nearest-neighbour у всех точек ≈128 м (раньше [-135,36] давал 93.6..164). */
 export const FFA_SPAWN_POINTS: [number, number][] = [
   [128, 128], [-128, 128], [128, -128], [-128, -128],
-  [0, 132], [134, 0], [-135, 36],
+  [0, 132], [134, 0], [-134, 0],
 ];
 
 /** Alpha base (south / negative Z) — player side. */

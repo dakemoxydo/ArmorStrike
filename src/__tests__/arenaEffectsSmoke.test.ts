@@ -145,6 +145,33 @@ describe('ArenaEffects smoke pool', () => {
     texDispose.mockRestore();
   });
 
+  it('low quality halves the pool cap to 22 (E3 parity pin)', () => {
+    fx.setQualitySource(() => 'low');
+    spawn(30);
+    expect(spritesIn(group)).toHaveLength(22); // не 44
+  });
+
+  it('low quality uses 0.26 s cadence (E3 parity pin)', () => {
+    fx.setQualitySource(() => 'low');
+    fx.smokeEmitters.push(new THREE.Vector3(0, 6, 0));
+    const rnd = vi.spyOn(Math, 'random').mockReturnValue(0.1); // gate: 0.1 < 0.5 → spawn
+    try {
+      fx.update(0.01, 0);
+      expect(spritesIn(group)).toHaveLength(1);
+
+      // До 0.26 с: два тика по 0.1 — второго спавна нет (на high здесь был бы)
+      fx.update(0.1, 0);
+      fx.update(0.1, 0);
+      expect(spritesIn(group)).toHaveLength(1);
+
+      // Пересечение 0.26 с → ровно один новый спавн
+      fx.update(0.1, 0);
+      expect(spritesIn(group)).toHaveLength(2);
+    } finally {
+      rnd.mockRestore();
+    }
+  });
+
   it('resetForRebuild detaches all smoke sprites, clears emitters, allows fresh respawn', () => {
     fx.smokeEmitters.push(new THREE.Vector3(0, 6, 0));
     spawn(5);

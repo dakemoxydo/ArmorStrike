@@ -39,8 +39,19 @@
 | HUD | `ALPHA n — m BRAVO` + personal K/D + elapsed/remaining time + win target |
 | HUD radar | «ЦЕЛИ» = живые противники (`enemiesAlive`); союзники Alpha не считаются |
 | Tab scoreboard | Two columns Alpha / Bravo |
-| Minimap | self cyan, ally blue (`#3b9eff`), enemy red |
+| Minimap | self amber diamond (`#f59e0b`), ally cyan circle (`#38bdf8`), enemy red triangle (`#f87171`); CP-кольца — те же --team-токены |
 | GameOver | team winner + mode label «КОМАНДНЫЙ БОЙ» |
+
+### Colorblind safety (K2, verdict 2026-09-23)
+
+**PASS** — цвет не единственный носитель команды:
+
+- Не-цветовые признаки: теги неймплейтов `А-`/`Б-`, явные слова ALPHA/BRAVO
+  (HUD, scoreboard, GameOver), формы блипов миникарты (self ромб / ally круг /
+  enemy треугольник), буквы A/B/C на точках захвата.
+- Палитра: blue `--team-alpha #38bdf8` / red `--team-bravo #f87171` + amber self —
+  три различимых hue-группы; world-кольца — `COLORS.teamAlpha/teamBravo`.
+- Пины: `minimapDraw.test.ts` (цвета + формы), `nameplate.test.ts` (А-/Б-).
 
 ## Classes
 

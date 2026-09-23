@@ -142,6 +142,9 @@ Generic-механизм «живых» узлов: `ArenaEffects.animNodes: Ani
   CP-якоря чисты (9 м / 20 м), спавны и aprons пусты, покрытие квадрантов, outer band,
   «внутри стен», рампы non-blocking, живые узлы + дым.
 - `npm run map-plan village` — top-down план по реальным коллайдерам.
+  Плотность (I2, 2026-09-23): 136 коллайдеров · hard/квадрант NW 12 / NE 13 / SW 22 / SE 11 ·
+  soft 15 / 10 / 11 / 12. Перевес SW — часовня + orchard по layout graph (намеренно);
+  «clear gaps» нет, патчи не нужны.
 - `npm run census` — village ≈ 800 draw calls (34 instanced группы).
 
 ## Success criteria

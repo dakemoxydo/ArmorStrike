@@ -86,7 +86,7 @@
 
 | System | Value |
 |--------|--------|
-| Bot spawns | `FFA_SPAWN_POINTS` corners ±128 + edges (~132–135) — `match/spawnPoints.ts` |
+| Bot spawns | `FFA_SPAWN_POINTS` corners ±128 + edges (~132–134, 180°-зеркала) — `match/spawnPoints.ts` |
 | Player start | `(0, 0, −120)` — `match/rosterSpawn.ts` |
 | Minimap half | `MAP_HALF = 156` — `minimapDraw.ts` |
 | Fog / camera | fog 130..440, camera far 900, shadow frustum ±170 — `RenderWorld` |
@@ -108,3 +108,11 @@
 - Soft cover denser mid-ring; linear jersey/planter rows.
 - Distinct neon-night look; district accents without unbalancing one camp zone.
 - Spawns and plaza exits free; no dead-end courtyards.
+
+## Verification
+
+- `cityMap.test.ts` — контракты авеню/спавнов/CP (I4/I5).
+- `npm run map-plan city` — плотность (I2, 2026-09-23): 214 коллайдеров ·
+  hard/квадрант NW 21 / NE 17 / SW 21 / SE 24 (разброс ±17% < заявленных ±20%) ·
+  soft 19 / 28 / 25 / 16 (вариация = district-флейвор: парковка NE гуще, SE жилой
+  гуще плантерами). «Clear gaps» нет, патчи не нужны.

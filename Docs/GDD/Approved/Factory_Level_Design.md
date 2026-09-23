@@ -91,7 +91,7 @@ Factory рендерится в режиме **Comic Industrial Sunset** — н�
 - **Расплав** — `moltenMats` (opacity pulse) в foundry-зоне и у плазы.
 - **Троллей крана** — `craneTrolley.position.x = sin(elapsed * 0.14) * 13`.
 - **Beacon'ы** — `beaconMats` (blink) на ногах крана и edge-мачтах.
-- **Дым** — `smokeEmitters` (общий пул `ArenaEffects`, ≤44 спрайта).
+- **Дым** — `smokeEmitters` (общий пул `ArenaEffects`, ≤44 спрайта; low: ≤22, cadence ×2, 50% skip — см. Graphics_Presets_Matrix).
 
 ## Shared scale (arena 300)
 
