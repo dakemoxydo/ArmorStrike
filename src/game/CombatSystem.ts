@@ -234,6 +234,8 @@ export class CombatSystem {
       target.position.clone(),
       target.yaw,
       target.isPlayer ? COLORS.player : 0xff7a3d,
+      target.hullId,
+      target.turretId,
     );
   }
 
@@ -289,8 +291,14 @@ export class CombatSystem {
       this.deps.audio.explosion(target.position);
     }
 
-    // Горящие обломки на месте гибели
-    this.deps.effects.spawnWreck(target.position.clone(), target.yaw, target.isPlayer ? COLORS.player : 0xff7a3d);
+    // Горящие обломки на месте гибели (силуэт «того же корпуса», п.13)
+    this.deps.effects.spawnWreck(
+      target.position.clone(),
+      target.yaw,
+      target.isPlayer ? COLORS.player : 0xff7a3d,
+      target.hullId,
+      target.turretId,
+    );
 
     // Hit-stop + slow-mo для драматичности убийства
     const byPlayer = owner?.isPlayer ?? false;

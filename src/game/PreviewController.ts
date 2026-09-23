@@ -5,12 +5,15 @@ import type { TankVisual } from './Tank';
 import { buildPlayerStyle } from '../core/TankCatalog';
 import { disposeObject3D } from './resources/disposeObject3D';
 import { PREVIEW_POS } from './CameraRig';
+import { MenuStage } from './menuStage';
 import type { HullId, TurretId } from '../core/catalog';
 
-/** Управляет группой предпросмотра: сборка, видимость, очистка. */
+/** Управляет группой предпросмотра: сборка, видимость, очистка + сцена-подиум. */
 export class PreviewController {
   private group: THREE.Group | null = null;
   private visual: TankVisual | null = null;
+  /** Сцена подиума (п.16): видима ровно вместе с танком предпросмотра. */
+  private stage: MenuStage;
   /**
    * Bumped on every rebuild/dispose. `buildTankMesh` асинхронен (GLB), поэтому
    * устаревшая сборка обязана выбросить свой результат, иначе быстрые клики в
@@ -21,7 +24,9 @@ export class PreviewController {
   constructor(
     private scene: THREE.Scene,
     private modeGetter: () => 'menu' | 'garage' | 'playing' | 'over',
-  ) {}
+  ) {
+    this.stage = new MenuStage(scene);
+  }
 
   /** Пересобрать модель предпросмотра под текущий выбор корпуса/башни. */
   async rebuild(hullId: HullId, turretId: TurretId) {
@@ -56,6 +61,7 @@ export class PreviewController {
 
   setVisible(visible: boolean) {
     if (this.group) this.group.visible = visible;
+    this.stage.setVisible(visible);
   }
 
   get previewVisual(): TankVisual | null { return this.visual; }
@@ -64,5 +70,6 @@ export class PreviewController {
     // Bump: in-flight rebuild must not re-add itself after teardown.
     this.buildSeq += 1;
     this.clearCurrent();
+    this.stage.dispose();
   }
 }

@@ -260,3 +260,28 @@ describe('city layout — instancing (B8)', () => {
     expect(totalInstances).toBeGreaterThanOrEqual(200);
   });
 });
+
+describe('city day comic (п.9 Visual_Coherence_Pass / OQ2)', () => {
+  it('has no emissive glow or additive mesh blending anywhere in the content', () => {
+    const { group } = build();
+    const glowMats: string[] = [];
+    const addMats: string[] = [];
+    group.traverse((o) => {
+      // Points (dust) — осознанно аддитивная дымка, не «неон контента».
+      if (!(o instanceof THREE.Mesh) && !(o instanceof THREE.InstancedMesh)) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) {
+        const std = m as THREE.MeshStandardMaterial;
+        if (std.isMeshStandardMaterial) {
+          const lit = std.emissive.getHex() !== 0 && std.emissiveIntensity > 0;
+          if (lit) glowMats.push(`${o.name || o.type} emissive=0x${std.emissive.getHex().toString(16)}`);
+        }
+        if (m.blending === THREE.AdditiveBlending) {
+          addMats.push(`${o.name || o.type} additive`);
+        }
+      }
+    });
+    expect(glowMats).toEqual([]);
+    expect(addMats).toEqual([]);
+  });
+});

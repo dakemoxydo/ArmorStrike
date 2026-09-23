@@ -43,7 +43,7 @@
 | [[Cloud_Profiles_And_Auth]] | Профили игроков, Supabase Auth (username/email), гостевой режим и облачные сохранения | `RunState`, `AuthService`, `CloudSaveService`, `AuthModal`, `UserBadge` |
 | [[Leaderboard]] | Глобальный лидерборд личных рекордов (авто-запись после матча, топ-50) | `LeaderboardService`, `LeaderboardModal`, `submit_leaderboard_entry`, `useGameBootstrap` |
 | [[Multiplayer_Lobby_And_Rooms]] | Сетевой мультиплеер, браузер серверов, создание комнат, быстрая игра и репликация танков | `multiplayerService`, `NetworkSession`, `RemotePlayerManager`, `NetworkSyncStage`, `ServerBrowserModal` |
-| [[Stylized_Art_Direction]] | Стилизованный Low-Poly / Cel-Shaded / Комикс арт-дирекшен: ступенчатый шейдинг, чернильная обводка танков и зданий, комиксный UI/HUD, дневное солнце | `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/arena/buildingInk.ts`, `src/styles/*.css`, `src/game/ArenaBuilder.ts` |
+| [[Stylized_Art_Direction]] | Стилизованный Low-Poly / Cel-Shaded / Комикс арт-дирекшен: ступенчатый шейдинг, чернильная обводка танков и зданий, комиксный UI/HUD, дневное солнце, графичное небо, дневной комикс-город, остовы, подиум меню/гаража | `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/arena/buildingInk.ts`, `src/game/arena/cityMap.ts`, `src/game/effects/WreckSystem.ts`, `src/game/menuStage.ts`, `src/styles/*.css`, `src/game/ArenaBuilder.ts` |
 
 **Removed-механики** (wave-era, удалены в P0) — надгробные доки в `../Archive/`: [[../Archive/Wave_System|Wave_System]], [[../Archive/Wave_Buffs|Wave_Buffs]]. Approved = только реализованное; история — в git.
 

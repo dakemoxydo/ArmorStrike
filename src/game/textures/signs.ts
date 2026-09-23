@@ -4,6 +4,55 @@ import { cachedTexture, noise } from './shared';
 /** Arena billboard styling: `tech` = neon industrial (factory/city), `rural` = painted wood. */
 export type SignStyle = 'tech' | 'rural';
 
+/**
+ * Painted comic poster for city billboards (OQ2, day comic metropolis):
+ * paper ground, flat color panel with Ben-Day dots, bold graphic shapes and an
+ * ink border — a drawn sign, not an emissive panel. Keyed by accent color.
+ */
+export function posterTexture(color: number): THREE.CanvasTexture {
+  const key = `poster:${color.toString(16)}`;
+  return cachedTexture(key, () => {
+    const W = 512, H = 264;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const ctx = c.getContext('2d')!;
+    // paper ground
+    ctx.fillStyle = '#f4f0e6';
+    ctx.fillRect(0, 0, W, H);
+    const hex = `#${color.toString(16).padStart(6, '0')}`;
+    // flat accent panel
+    ctx.fillStyle = hex;
+    ctx.fillRect(18, 18, W - 36, H - 36);
+    // Ben-Day dots over the panel
+    ctx.fillStyle = 'rgba(11,14,20,0.18)';
+    for (let y = 30; y < H - 24; y += 14) {
+      for (let x = 30; x < W - 24; x += 14) {
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    // bold graphic slash
+    ctx.fillStyle = '#f4f0e6';
+    ctx.beginPath();
+    ctx.moveTo(40, H - 50);
+    ctx.lineTo(W - 40, 52);
+    ctx.lineTo(W - 40, 86);
+    ctx.lineTo(40, H - 16);
+    ctx.closePath();
+    ctx.fill();
+    // ink border
+    ctx.strokeStyle = '#0b0e14';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(5, 5, W - 10, H - 10);
+    noise(ctx, H, 400, 0.04);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    return t;
+  });
+}
+
 /** Arena billboards are keyed by their text — same sign reuses one texture. */
 export function signTexture(main: string, sub: string, style: SignStyle = 'tech'): THREE.CanvasTexture {
   return cachedTexture(`sign:${style}:${main}:${sub}`, () => {

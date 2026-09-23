@@ -1,5 +1,6 @@
 // ===== Порт VFX: combat/weapons/systems не зависят от concrete Effects class =====
 import type * as THREE from 'three';
+import type { HullId, TurretId } from '../../core/catalog';
 
 /**
  * Публичный контракт фасада эффектов.
@@ -27,8 +28,18 @@ export interface EffectsPort {
   getFovBias(): number;
 
   setAmbientCenter(x: number, z: number): void;
-  /** Спавнит горящие обломки на месте гибели танка. */
-  spawnWreck(p: THREE.Vector3, yaw: number, color: number): void;
+  /**
+   * Спавнит горящие обломки на месте гибели танка.
+   * `hullId`/`turretId` — силуэт остова «того же корпуса» (п.13);
+   * без них деградирует до hunter/cannon.
+   */
+  spawnWreck(
+    p: THREE.Vector3,
+    yaw: number,
+    color: number,
+    hullId?: HullId,
+    turretId?: TurretId,
+  ): void;
   update(dt: number): void;
   /** Clear round transients (smoke/scorch/wrecks/shake/FOV) at round start. */
   clearTransients(): void;

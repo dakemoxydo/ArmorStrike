@@ -88,6 +88,7 @@ Cel-квантование читается только при плоском �
 - `scene.environment = null` (нет `RoomEnvironment` PMREM: IBL заливал тени и металлы как PBR).
 - Экспозиция и sun/hemi/rim по-прежнему из `atmospherePresets.ts`.
 - `UnrealBloomPass` не строится ни на одном пресете: полноэкранный bloom размывает inverted-hull контур. Поля composer/bloomPass остаются только чтобы `dispose()` снял leftover.
+- Меню/гараж: `RenderWorld.setFogEnabled(false)` уводит near/far тумана за пределы сцены (объект `Fog` остаётся — `applyAtmosphere` пишет в него как в `Fog`), на сцене только бумага `MenuStage`; пресет возвращается при rebuild раунда.
 
 ## 6. Бюджет и инварианты производительности
 

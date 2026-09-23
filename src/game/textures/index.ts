@@ -18,5 +18,6 @@ export {
 } from './village';
 export { glowTexture, smokeTexture, scorchTexture, hexTexture, trackMarkTexture } from './effects';
 export { trackTexture, camoTexture } from './tank';
-export { signTexture } from './signs';
+export { signTexture, posterTexture } from './signs';
 export type { SignStyle } from './signs';
+export { stagePaperTexture, podiumTexture } from './stage';

@@ -290,6 +290,11 @@ export async function bootstrapGame(canvas: HTMLCanvasElement): Promise<GameCont
 
   const previewController = new PreviewController(scene, () => sim.run.mode);
   await previewController.rebuild(sim.run.currentHull, sim.run.currentTurret);
+  // Первый кадр — сцена подиума (п.16): пока режим меню/гаража, живая арена
+  // и её туман скрыты; rebuild первого раунда вернёт и арену, и пресет тумана.
+  const stageOnBoot = sim.run.mode === 'menu' || sim.run.mode === 'garage';
+  arena.group.visible = !stageOnBoot;
+  renderWorld.setFogEnabled(!stageOnBoot);
   renderWorld.applyQuality(getQualityPreset(loadQuality()));
 
   const { onResize, onVisibility } = registerWindowHandlers(canvas, renderWorld, cameraRig, sim, input, emitEvent);

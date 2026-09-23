@@ -53,7 +53,7 @@ export class GameModeController {
   constructor(private d: GameModeControllerDeps) {}
 
   setMode(mode: GameMode) {
-    const { sim, cameraRig, previewController, canvas, emit } = this.d;
+    const { sim, cameraRig, previewController, canvas, emit, renderWorld } = this.d;
     const wasPlaying = sim.run.mode === 'playing' || sim.run.mode === 'over';
     if (mode === 'menu' || mode === 'garage') {
       // Invalidate any in-flight startRound so it cannot re-apply after leave.
@@ -72,6 +72,11 @@ export class GameModeController {
       cameraRig.resetFov();
     }
     sim.run.mode = mode;
+    // Подиум меню/гаража (п.16): без живой арены и тумана — только бумага
+    // сцены предпросмотра (tank + MenuStage гейтит тот же previewController).
+    const stage = mode === 'menu' || mode === 'garage';
+    sim.arena.group.visible = !stage;
+    renderWorld.setFogEnabled(!stage);
     sim.audio.click();
     if (mode === 'garage') {
       cameraRig.resetGarage();
@@ -129,6 +134,9 @@ export class GameModeController {
     previewController.setVisible(false);
 
     const id = isMapId(mapId) ? mapId : DEFAULT_MAP_ID;
+    // Возврат со сцены подиума (п.16): арена снова в кадре; туман пресета
+    // вернёт applyAtmosphere внутри rebuild.
+    sim.arena.group.visible = true;
     sim.arena.rebuild(id);
     onArenaRebuilt?.();
 

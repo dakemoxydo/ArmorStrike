@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as THREE from 'three';
 import { QUALITY_PRESETS, type QualityLevel } from '../game/graphicsQuality';
 import { RenderWorld } from '../game/RenderWorld';
+import { getAtmosphere } from '../game/atmospherePresets';
 
 /**
  * Bloom lifecycle coverage for RenderWorld.applyQuality / disposeBloom /
@@ -288,5 +290,26 @@ describe('RenderWorld.dispose full teardown', () => {
     expect(bloomPass.dispose).toHaveBeenCalledTimes(1);
     expect(composer.dispose).toHaveBeenCalledTimes(1);
     expect(renderer.dispose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('RenderWorld.setFogEnabled (п.16 — сцена подиума)', () => {
+  it('disables fog with out-of-range near/far and restores the current preset', () => {
+    const rw = Object.create(RenderWorld.prototype) as RenderWorld;
+    const fog = new THREE.Fog(0xffffff, 10, 500);
+    Reflect.set(rw, 'scene', { fog });
+    Reflect.set(rw, 'atmosphere', 'city');
+
+    rw.setFogEnabled(false);
+    // Fog-объект остаётся (applyAtmosphere пишет в него как в Fog), но
+    // near/far за пределом сцены дают factor ≈ 0 — туман визуально выключен.
+    expect(fog.near).toBeGreaterThan(1e5);
+    expect(fog.far).toBeGreaterThan(fog.near);
+
+    rw.setFogEnabled(true);
+    const p = getAtmosphere('city');
+    expect(fog.color.getHex()).toBe(new THREE.Color(p.fogColor).getHex());
+    expect(fog.near).toBe(p.fogNear);
+    expect(fog.far).toBe(p.fogFar);
   });
 });

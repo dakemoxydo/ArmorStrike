@@ -71,6 +71,9 @@ export class RenderWorld {
         vertexShader: `
           varying vec3 vPos;
           void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+        // Комикс-небо: 3 плоские полосы горизонта, жёсткие пятна облаков
+        // (step вместо smoothstep — без airbrush-растяжек), плоский диск
+        // солнца с твёрдым ореолом-кольцом. Шейдинг только ступени, не градиент.
         fragmentShader: `
           varying vec3 vPos;
           uniform vec3 uZen;
@@ -82,17 +85,17 @@ export class RenderWorld {
           void main() {
             vec3 n = normalize(vPos);
             float h = n.y;
-            vec3 col = mix(uHor, uZen, clamp(h * 1.6, 0.0, 1.0));
+            vec3 mid = mix(uHor, uZen, 0.55);
+            vec3 col = h < 0.18 ? uHor : (h < 0.48 ? mid : uZen);
+            float field = sin(n.x * 9.0 + n.z * 13.0) * cos(n.z * 11.0 - n.x * 6.0);
+            float patch = step(0.38, field) * step(0.08, h);
+            col = mix(col, uCloud, patch);
             vec3 sunDir = normalize(uSunDir);
-            float sunDot = max(0.0, dot(n, sunDir));
-            float sunDisc = smoothstep(0.9975, 0.999, sunDot);
-            col += uSunDisc * sunDisc * 2.0;
-            col += uSunGlow * pow(sunDot, 16.0) * 0.4;
-            float cloud = sin(n.x * 10.0 + n.z * 16.0) * cos(n.z * 12.0 - n.x * 7.0);
-            float puff = smoothstep(0.25, 0.7, cloud);
-            if (h > 0.04) {
-              col = mix(col, uCloud, puff * 0.25 * smoothstep(0.04, 0.2, h));
-            }
+            float sunDot = dot(n, sunDir);
+            float disc = step(0.998, sunDot);
+            float ring = step(0.99, sunDot) * (1.0 - disc);
+            col = mix(col, uSunDisc, disc);
+            col = mix(col, mix(uSunDisc, uSunGlow, 0.5), ring * 0.7);
             gl_FragColor = vec4(col, 1.0);
           }`,
       }),
@@ -160,6 +163,27 @@ export class RenderWorld {
     u.uSunDir.value.set(...p.skySunDir);
     u.uSunDisc.value.set(...p.skySunDisc);
     u.uSunGlow.value.set(...p.skySunGlow);
+  }
+
+  /**
+   * Меню/гараж-подиум (п.16 Visual_Coherence_Pass): туман живой арены
+   * выключен — на сцене только бумага MenuStage. Включение возвращает
+   * параметры текущего пресета; rebuild раунда вернёт их и так через
+   * applyAtmosphere.
+   */
+  setFogEnabled(enabled: boolean) {
+    const fog = this.scene.fog as THREE.Fog;
+    if (enabled) {
+      const p = getAtmosphere(this.atmosphere);
+      fog.color.set(p.fogColor);
+      fog.near = p.fogNear;
+      fog.far = p.fogFar;
+    } else {
+      // Не снимаем объект Fog (applyAtmosphere пишет в него как в Fog):
+      // near/far за пределом сцены дают fog factor ≈ 0.
+      fog.near = 1e6;
+      fog.far = 1e9;
+    }
   }
 
   /** Применить пресет (pixel ratio + shadow map). Antialias не меняется runtime. */

@@ -9,6 +9,7 @@ import { WreckSystem } from './effects/WreckSystem';
 import { LightRig } from './effects/LightRig';
 import { prefersReducedMotion } from '../lib/reducedMotion';
 import type { EffectsPort } from './ports/EffectsPort';
+import type { HullId, TurretId } from '../core/catalog';
 
 export class Effects implements EffectsPort {
   private particles: ParticleEffects;
@@ -89,9 +90,9 @@ export class Effects implements EffectsPort {
 
   setAmbientCenter(x: number, z: number) { this.dust.setCenter(x, z); }
 
-  /** Спавнит горящие обломки на месте гибели танка. */
-  spawnWreck(p: THREE.Vector3, yaw: number, color: number) {
-    this.wreck.spawn(p, yaw, color);
+  /** Спавнит горящие обломки на месте гибели танка (силуэт hullId/turretId). */
+  spawnWreck(p: THREE.Vector3, yaw: number, color: number, hullId?: HullId, turretId?: TurretId) {
+    this.wreck.spawn(p, yaw, color, hullId, turretId);
   }
 
   update(dt: number) {

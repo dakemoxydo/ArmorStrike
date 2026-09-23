@@ -1,7 +1,7 @@
 # GDD — Стилизованный Low-Poly / Cel-Shaded / Комикс арт-дирекшен
 
 **Статус:** Approved  
-**Код:** `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/tank/TankFactory.ts`, `src/game/atmospherePresets.ts`, `src/game/textures/tank.ts`, `src/game/textures/ground.ts`, `src/game/RenderWorld.ts`, `src/game/nameplate.ts`, `src/styles/hud.css`
+**Код:** `src/game/shaders/celShading.ts`, `src/game/tank/comicInkOutline.ts`, `src/game/tank/TankFactory.ts`, `src/game/atmospherePresets.ts`, `src/game/textures/tank.ts`, `src/game/textures/ground.ts`, `src/game/RenderWorld.ts`, `src/game/nameplate.ts`, `src/styles/hud.css`, `src/game/arena/cityMap.ts`, `src/game/effects/WreckSystem.ts`, `src/game/menuStage.ts`
 
 ---
 
@@ -92,6 +92,22 @@
 - До `≤2` шеллов на корпус (крупнейшие массы: тело + крыша), отсев субмешей по AABB (`min ≥ 1.5` м, `max ≥ 5` м — двери/окна/полосы мимо). Шеллы — дети исходных мешей: удаляются вместе с блоком, shared-ресурсы переживают dispose.
 - Бюджет: census factory 545→601 (+10.3%) / village 790→860 (+8.9%) / city 484→532 (+9.9%) — все в лимите +15% (Visual_Coherence_Pass п.10).
 
+### 14. Небо графичными пятнами (мир / свет)
+- **Файл:** `src/game/RenderWorld.ts` (fragment-шейдер sky-меша)
+- Три плоские полосы по высоте (`step`-ветвление zenith/mid/horizon), пятна облаков через жёсткий `step(0.38, field)` с нижней границей по высоте, плоский диск солнца `step(0.998)` с чернильным кольцом. Без smoothstep-градиентов, pow-свечений и атмосферного рассеяния — небо говорит на языке печатной краски, как и остальной мир.
+
+### 15. Дневной комикс-мегаполис (мир)
+- **Файлы:** `src/game/arena/cityMap.ts`, `src/game/textures/signs.ts` (`posterTexture`)
+- OQ2: город днём. Вывески — нарисованные плакаты (`MeshBasicMaterial` + `posterTexture`: бумага, цвет-панель, Ben-Day, ink-бордюр), не emissive-неон. `glass()` без emissive — графичная сетка окон; скайлайн — пастельные дневные тона `[0xd8ecff, 0xffe6b0, 0xbfe0f5]`. `NEON` — «плоская палитра краски» (cyan/magenta/lime как краска под солнцем), не источник света: столб/капитель плазы normal-blending, under-strip эстакады — чернильная тень `0x1a2230`, ramp/crate/dome — без emissive/additive, dust — дневной `0xdfe8f0`. Пин — `cityMap.test.ts` («no emissive glow or additive mesh blending»).
+
+### 16. Остов = тот же корпус (FX)
+- **Файл:** `src/game/effects/WreckSystem.ts` (`hullSilhouette`, `turretSilhouette`, `WreckSystem.spawn`)
+- Слитый силуэт слотов `hullGeometry(hullId)` + сбитая башня `turretGeometry(turretId)` (в покойном положении ствола) в графитном cel-материале `0x35353d` (`applyCelShading`), 2–3 ember-плашки `CircleGeometry` и столб дыма — язык танков, не «другой движок» с примитивным боксом. Процесс-кэш силуэтов помечен `markShared` (teardown пропускает), слоты преаллоцированы — ноль аллокаций геометрии в бою (см. шапку файла про releaseProgram). Проброс `hullId`/`turretId` через `EffectsPort.spawnWreck` → `CombatSystem`. Пины — `wreckSilhouette.test.ts`.
+
+### 17. Подиум меню/гаража, не пустота (мир / первый кадр)
+- **Файлы:** `src/game/menuStage.ts`, `src/game/textures/stage.ts`, `src/game/PreviewController.ts`, `src/game/GameModeController.ts`, `src/game/RenderWorld.ts` (`setFogEnabled`)
+- `MenuStage`: бумажный пол r=26 + подиум (верх ровно на `PREVIEW_POS`, Ben-Day cap + янтарное кольцо + чернильный рим) + цикл-стена BackSide — камера (menu r=16, garage ≤18) всегда внутри бумаги. В режимах menu/garage `GameModeController.setMode` скрывает `arena.group` и выключает туман (`setFogEnabled(false)` — near/far за пределом сцены, объект Fog остаётся); видимостью сцены гейтит `PreviewController.setVisible` (тот же гейт, что у танка). Старт раунда возвращает арену (`group.visible = true` перед rebuild), туман — `applyAtmosphere` пресета. Boot-синк — в `GameBootstrap`. Пины — `menuStage.test.ts`, `gameModeLifecycle.test.ts`, `renderWorldQuality.test.ts`.
+
 ---
 
 ## Тесты и инварианты
@@ -99,6 +115,11 @@
 - `src/__tests__/comicStyle.test.ts` — верификация `applyCelShading`, чернильного контура танков, текстур, применения cel-shading к геометрии уровней, дизайн-токенов чернильного UI, янтаря игрока, земли без `noise()`, LinearToneMapping без IBL/bloom.
 - `src/__tests__/arenaCelShading.test.ts` — пин покрытия: каждый `MeshStandardMaterial` `arena.group` на factory/city/village (включая rebuild) имеет флаг `isCelShaded`.
 - `src/__tests__/buildingInk.test.ts` — пин outline зданий: селектор `shouldOutlineBuilding`, отсев мелочи/InstancedMesh/Basic, лимит шеллов, идемпотентность, контур на всех 3 картах в бюджете (включая rebuild).
+- `src/__tests__/cityMap.test.ts` — геометрические контракты city + пин дневного комикса: ни одного emissive/additive-материала в контенте (п.15).
+- `src/__tests__/wreckSilhouette.test.ts` — силуэт остова: merge по всем hullId/turretId, процесс-кэш + markShared, spawn свапает слот на геометрию погибшего (п.16).
+- `src/__tests__/menuStage.test.ts` — состав сцены подиума, геометрия под `PREVIEW_POS`, цикл-стена внутри орбит камеры, memoization stage-текстур (п.17).
+- `src/__tests__/gameModeLifecycle.test.ts` — stage gating: арена и туман скрыты в menu/garage, возвращены к бою; арена видима к rebuild раунда.
+- `src/__tests__/renderWorldQuality.test.ts` — `setFogEnabled`: fog выключается out-of-range near/far и восстанавливается из пресета текущей карты.
 - `src/__tests__/nameplate.test.ts` — срез/Russo One, fade 48–110 м от наблюдателя.
 - `src/__tests__/atmospherePresets.test.ts` — пины экспозиции и параметров комиксных атмосфер.
 - `src/__tests__/uiUxPresentation.test.ts` — соблюдение дизайн-токенов свечений, срезов, шрифтовой разрядки и контрастности.

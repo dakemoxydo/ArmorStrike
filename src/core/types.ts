@@ -1,6 +1,6 @@
 // ===== Чистые доменные типы слоя core (без зависимости от game/) =====
 import type * as THREE from 'three';
-import type { CritTuning, DamageType } from './catalogTypes';
+import type { CritTuning, DamageType, HullId, TurretId } from './catalogTypes';
 
 /** Стиль окраски танка (чистые данные, без привязки к Three.js-объектам). */
 export interface TankStyle {
@@ -36,6 +36,9 @@ export interface TankLike {
   invulnT?: number;
   /** Тип урона этого танка (из каталога башни). Optional для стабов/без башни. */
   damageType?: DamageType;
+  /** Корпус/башня — для presentation-остова при гибели. Optional для стабов. */
+  hullId?: HullId;
+  turretId?: TurretId;
   /**
    * Сопротивления корпуса цели по типу урона (доля поглощённого, минус =
    * уязвимость). Ключи — `DamageType`; см. `HullDef.resist`.

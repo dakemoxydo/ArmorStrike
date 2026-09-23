@@ -32,7 +32,7 @@ function makeDeps() {
     audio: { ensure: vi.fn(() => order.push('audio.ensure')), stopEngine: vi.fn(), startEngine: vi.fn(), click: vi.fn() },
     clearTanks: vi.fn(() => order.push('clearTanks')),
     projectiles: { clear: vi.fn(), dispose: vi.fn() },
-    arena: { rebuild: vi.fn((_id: string) => order.push(`arena.rebuild:${_id}`)) },
+    arena: { rebuild: vi.fn((_id: string) => order.push(`arena.rebuild:${_id}`)), group: { visible: true } },
     run: {
       mode: 'over', paused: false, score: 42, kills: 7,
       currentHull: 'hunter', currentTurret: 'railgun',
@@ -65,6 +65,7 @@ function makeDeps() {
       warmUp: vi.fn(async () => {
         order.push('renderWorld.warmUp');
       }),
+      setFogEnabled: vi.fn(),
     } as never,
     previewController: { setVisible: vi.fn() },
     canvas: { style: {} } as unknown as HTMLCanvasElement,
@@ -91,6 +92,8 @@ describe('GameModeController round-start reset sequence', () => {
 
     expect(d.sim.clearTanks).toHaveBeenCalledWith(d.deps.scene);
     expect(d.sim.projectiles.clear).toHaveBeenCalled();
+    // Возврат со сцены подиума (п.16): арена обязана быть видимой к rebuild.
+    expect((d.sim.arena as unknown as { group: { visible: boolean } }).group.visible).toBe(true);
     expect(d.sim.arena.rebuild).toHaveBeenCalledWith('village');
     expect(d.deps.onArenaRebuilt).toHaveBeenCalledTimes(1);
     expect(d.sim.run.resetRun).toHaveBeenCalledTimes(1);
@@ -143,5 +146,34 @@ describe('GameModeController round-start reset sequence', () => {
     expect(d.sim.combat.resetStreaks).toHaveBeenCalledTimes(2);
     expect(d.sim.run.resetRun).toHaveBeenCalledTimes(2);
     expect(d.sim.arena.rebuild).toHaveBeenNthCalledWith(2, 'village');
+  });
+});
+
+describe('menu stage gating (п.16 Visual_Coherence_Pass)', () => {
+  let d: ReturnType<typeof makeDeps>;
+
+  beforeEach(() => {
+    d = makeDeps();
+  });
+
+  it('hides arena and fog in menu/garage, restores them in combat modes', () => {
+    const ctrl = new GameModeController(d.deps);
+    const group = (d.sim.arena as unknown as { group: { visible: boolean } }).group;
+    const setFogEnabled = (
+      d.deps.renderWorld as unknown as { setFogEnabled: ReturnType<typeof vi.fn> }
+    ).setFogEnabled;
+
+    d.sim.run.mode = 'over';
+    ctrl.setMode('menu');
+    expect(group.visible).toBe(false);
+    expect(setFogEnabled).toHaveBeenLastCalledWith(false);
+
+    ctrl.setMode('garage');
+    expect(group.visible).toBe(false);
+    expect(setFogEnabled).toHaveBeenLastCalledWith(false);
+
+    ctrl.setMode('playing');
+    expect(group.visible).toBe(true);
+    expect(setFogEnabled).toHaveBeenLastCalledWith(true);
   });
 });

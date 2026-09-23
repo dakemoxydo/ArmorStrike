@@ -12,11 +12,11 @@
 import * as THREE from 'three';
 import { ARENA } from '../constants';
 import { aabbForYaw, colliderFromCenter } from '../engine/physics';
-import { containerTexture, crateTexture, hexTexture } from '../textures';
+import { containerTexture, crateTexture, hexTexture, posterTexture } from '../textures';
 import type { ArenaBuildContext } from './context';
 import { buildTowerRing } from './skyline';
 
-/** City-themed interior: orthogonal grid, district accents, neon night. */
+/** City-themed interior: orthogonal grid, district accents, day comic paint. */
 export function buildCityContent(ctx: ArenaBuildContext) {
   buildCitySkyline(ctx);
   buildCityPlaza(ctx);
@@ -35,11 +35,12 @@ function concrete(color = 0x8a96a8) {
 }
 
 function glass(color = 0x1a4060) {
-  return new THREE.MeshStandardMaterial({
-    color, roughness: 0.2, metalness: 0.7, emissive: color, emissiveIntensity: 0.15,
-  });
+  // OQ2 (дневной комикс-мегаполис): без emissive — графичная сетка окон,
+  // светится только краской под солнцем, не glow.
+  return new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.4 });
 }
 
+/** Flat painted accent palette — no emissive, no glow (day comic city). */
 const NEON = {
   cyan: 0x5ec8ff,
   magenta: 0xff4d9a,
@@ -294,7 +295,8 @@ function deliveryCrate(ctx: ArenaBuildContext, x: number, z: number, w: number, 
     g.add(ctx.box(w, h, d, mat));
     const edge = new THREE.Mesh(
       new THREE.BoxGeometry(w * 1.01, 0.08, d * 1.01),
-      new THREE.MeshBasicMaterial({ color: NEON.cyan, transparent: true, opacity: 0.45 }),
+      // OQ2: плотная кромка-краска, не полупрозрачный неоновый градиент.
+      new THREE.MeshBasicMaterial({ color: 0x2a7ea8 }),
     );
     edge.position.y = h - 0.04;
     g.add(edge);
@@ -321,10 +323,9 @@ function billboard(
     pole.position.y = 2.25;
     g.add(pole);
     const board = new THREE.Mesh(
+      // OQ2: нарисованный плакат (posterTexture + ink-бордюр), не светящаяся панель.
       new THREE.BoxGeometry(5.5, 2.8, 0.25),
-      new THREE.MeshStandardMaterial({
-        color, roughness: 0.4, metalness: 0.3, emissive: color, emissiveIntensity: 0.4,
-      }),
+      new THREE.MeshBasicMaterial({ map: posterTexture(color) }),
     );
     board.position.y = 4.8;
     board.rotation.y = yaw;
@@ -360,15 +361,14 @@ function busStop(ctx: ArenaBuildContext, x: number, z: number, alongX = true) {
 // ── skyline (decorative, outside playable ring) ────────────────────────────
 
 function buildCitySkyline(ctx: ArenaBuildContext) {
-  const dark = new THREE.MeshStandardMaterial({
-    color: 0x0a1018, roughness: 1, emissive: 0x0a1828, emissiveIntensity: 0.4,
-  });
-  const neon = [
-    new THREE.MeshBasicMaterial({ color: NEON.cyan }),
-    new THREE.MeshBasicMaterial({ color: NEON.magenta }),
-    new THREE.MeshBasicMaterial({ color: NEON.lime }),
+  const dark = new THREE.MeshStandardMaterial({ color: 0x1a2430, roughness: 1 });
+  // OQ2: дневная графичная сетка окон (пастельные тона), не неоновая подсветка.
+  const windows = [
+    new THREE.MeshBasicMaterial({ color: 0xd8ecff }),
+    new THREE.MeshBasicMaterial({ color: 0xffe6b0 }),
+    new THREE.MeshBasicMaterial({ color: 0xbfe0f5 }),
   ];
-  // Denser neon towers ringing the 300-arena wall.
+  // Denser towers ringing the 300-arena wall.
   buildTowerRing(ctx, {
     material: dark,
     count: 60,
@@ -379,7 +379,7 @@ function buildCitySkyline(ctx: ArenaBuildContext) {
     depthRatio: 0.85,
     baseY: -0.3,
     rotMax: 0.35,
-    window: { material: neon, skip: 0.24, widthRatio: 0.55, heightRatio: 0.07, yMin: 0.3, yMax: 0.7 },
+    window: { material: windows, skip: 0.24, widthRatio: 0.55, heightRatio: 0.07, yMin: 0.3, yMax: 0.7 },
   });
 }
 
@@ -405,19 +405,17 @@ function buildCityPlaza(ctx: ArenaBuildContext) {
   g.add(basin);
   const pillar = new THREE.Mesh(
     new THREE.CylinderGeometry(1.9, 2.4, 7.2, 12),
+    // OQ2: полупрозрачная «краска», не аддитивный голо-неон.
     new THREE.MeshBasicMaterial({
-      color: NEON.cyan, transparent: true, opacity: 0.32,
-      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+      color: NEON.cyan, transparent: true, opacity: 0.4,
+      depthWrite: false, side: THREE.DoubleSide,
     }),
   );
   pillar.position.y = 5.2;
   g.add(pillar);
   const cap = new THREE.Mesh(
     new THREE.BoxGeometry(4.6, 0.7, 4.6),
-    new THREE.MeshStandardMaterial({
-      color: NEON.cyan, roughness: 0.3, metalness: 0.8,
-      emissive: 0x1a4060, emissiveIntensity: 0.65,
-    }),
+    new THREE.MeshStandardMaterial({ color: NEON.cyan, roughness: 0.4, metalness: 0.5 }),
   );
   cap.position.y = 9.1;
   g.add(cap);
@@ -433,8 +431,7 @@ function buildCityPlaza(ctx: ArenaBuildContext) {
   // сам торус симметричен, его вращение не читалось) и пар у чаши.
   const halo = new THREE.Group();
   const haloMat = new THREE.MeshBasicMaterial({
-    color: NEON.magenta, transparent: true, opacity: 0.85,
-    blending: THREE.AdditiveBlending, depthWrite: false,
+    color: NEON.magenta, transparent: true, opacity: 0.85, depthWrite: false,
   });
   for (const s of [-1, 1]) {
     const bead = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), haloMat);
@@ -635,7 +632,6 @@ function buildCityOverpass(ctx: ArenaBuildContext) {
   const pillarMat = concrete(0x5a6575);
   const deckMat = new THREE.MeshStandardMaterial({
     color: 0x3a4454, roughness: 0.65, metalness: 0.35,
-    emissive: 0x0a1520, emissiveIntensity: 0.25,
   });
   const railMat = new THREE.MeshBasicMaterial({ color: NEON.cyan });
 
@@ -686,10 +682,10 @@ function buildCityOverpass(ctx: ArenaBuildContext) {
     ctx.group.add(rail);
   }
 
-  // neon under-glow strip
+  // painted shadow line under the deck (day comic: no neon under-glow)
   const glow = new THREE.Mesh(
     new THREE.BoxGeometry(144, 0.2, 0.6),
-    new THREE.MeshBasicMaterial({ color: NEON.magenta }),
+    new THREE.MeshBasicMaterial({ color: 0x1a2230 }),
   );
   glow.position.set(0, deckY - 0.65, z);
   ctx.group.add(glow);
@@ -831,7 +827,6 @@ function buildCityStreetProps(ctx: ArenaBuildContext) {
 function addCityRamp(ctx: ArenaBuildContext, x: number, z: number, yaw: number) {
   const rampMat = new THREE.MeshStandardMaterial({
     color: 0x2a3648, roughness: 0.55, metalness: 0.5,
-    emissive: 0x0c2033, emissiveIntensity: 0.45,
   });
   const wdt = 5, len = 4.6, hgt = 1.35;
   const shape = new THREE.Shape();
@@ -877,14 +872,14 @@ function buildCityRamps(ctx: ArenaBuildContext) {
 
 function buildCityAtmosphere(ctx: ArenaBuildContext) {
   const domeGeo = new THREE.CylinderGeometry(ctx.half + 6, ctx.half + 6, 80, 48, 1, true);
+  // OQ2: дневная пастельная дымка горизонта (normal blending), не аддитивный hex-неон.
   const domeMat = new THREE.MeshBasicMaterial({
     map: hexTexture(),
     transparent: true,
     opacity: 0.04,
     side: THREE.BackSide,
     depthWrite: false,
-    color: 0x3a80b0,
-    blending: THREE.AdditiveBlending,
+    color: 0x9ec8e8,
   });
   const dome = new THREE.Mesh(domeGeo, domeMat);
   dome.position.y = 34;
@@ -901,7 +896,7 @@ function buildCityAtmosphere(ctx: ArenaBuildContext) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const mat = new THREE.PointsMaterial({
-    color: 0x6ad0ff,
+    color: 0xdfe8f0,
     size: 0.14,
     transparent: true,
     opacity: 0.42,
