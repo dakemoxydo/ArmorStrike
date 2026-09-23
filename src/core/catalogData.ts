@@ -57,6 +57,8 @@ export const WEAPON_TUNING = {
     energyMax: 100,
     consumptionRate: 28,
     rechargeRate: 22,
+    /** HUD «перезарядка»/тремор: порог низкого заряда баллона. */
+    lowEnergyThreshold: 10,
     knockback: 1.2,
     particleCount: 160,
     spawnRate: 40,
@@ -134,6 +136,8 @@ export const WEAPON_TUNING = {
     /** Зажатый спуск без цели: луч «в холостую» жрёт вдвое меньше боевого. */
     drainIdle: 12,
     rechargeRate: 24,
+    /** HUD «перезарядка»/тремор: порог низкого заряда баллона. */
+    lowEnergyThreshold: 10,
     knockback: 0,
     /** Микро-отдача при тике нано-луча (игрок). */
     fireShakePlayer: 0.014,

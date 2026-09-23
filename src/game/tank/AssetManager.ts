@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { markShared, unmarkShared } from '../resources/sharedResources';
+import { logError } from '../../lib/log';
 
 /**
  * Process-lifetime кэш GLTF-моделей.
@@ -42,7 +43,7 @@ class AssetManager {
         },
         undefined,
         (error) => {
-          console.error(`Failed to load model ${url}:`, error);
+          logError(`Failed to load model ${url}:`, error);
           reject(error);
         },
       );

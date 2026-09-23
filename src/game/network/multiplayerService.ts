@@ -11,6 +11,7 @@ import type {
   TankTransformPacket,
   WeaponFirePacket,
 } from './types';
+import { logError, logWarn } from '../../lib/log';
 
 export interface RoomFilterOptions {
   mode?: MatchModeId;
@@ -69,7 +70,7 @@ export class MultiplayerService {
 
       const { data, error } = await query;
       if (error || !data) {
-        console.error('[MultiplayerService] listRooms error:', error);
+        logError('listRooms error:', error);
         return [];
       }
 
@@ -85,7 +86,7 @@ export class MultiplayerService {
 
       return rooms;
     } catch (err) {
-      console.error('[MultiplayerService] listRooms failed:', err);
+      logError('listRooms failed:', err);
       return [];
     }
   }
@@ -238,7 +239,7 @@ export class MultiplayerService {
         p_user_id: userId,
       });
     } catch (err) {
-      console.warn('[MultiplayerService] leaveRoom RPC error:', err);
+      logWarn('leaveRoom RPC error:', err);
     }
   }
 
@@ -406,7 +407,7 @@ export class MultiplayerService {
       try {
         handler(event, payload);
       } catch (err) {
-        console.error('[MultiplayerService] handler error:', err);
+        logError('handler error:', err);
       }
     }
   }

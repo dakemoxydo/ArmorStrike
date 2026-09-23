@@ -6,10 +6,6 @@
 export const BOOST_JET_OFFSET = 2.4;
 /** Высота точки выхлопа нитро-струи. */
 export const BOOST_JET_HEIGHT = 0.75;
-/** Высота точки пыли из-под гусениц. */
-export const DUST_HEIGHT = 0.35;
-/** Случайный разброс позиции пыли вокруг точки. */
-export const DUST_SPREAD = 1.2;
 
 /** Коэффициенты демпфирования скорости (обычный / с нитро) — плавный разгон и осязаемый вес танка. */
 export const SPEED_DAMP = { normal: 2.8, boost: 4.2 };

@@ -147,7 +147,7 @@ export class FlamethrowerWeapon implements Weapon {
     return fillAmmoState(out, {
       ammo: Math.round(this.energy),
       magazine: Math.round(WEAPON_TUNING.flamethrower.energyMax),
-      reloading: this.energy < 10,
+      reloading: this.energy < WEAPON_TUNING.flamethrower.lowEnergyThreshold,
       reloadProgress: this.energyRatio,
     });
   }

@@ -13,6 +13,7 @@ import type { MatchModeId } from '../game/types';
 import { MultiplayerService } from '../game/network/multiplayerService';
 import type { CreateRoomOptions } from '../game/network/types';
 import type { UiModalsAction } from './useUiModals';
+import { logError } from '../lib/log';
 
 /**
  * Флаги загрузки/ошибки раунда живут отдельно от flow-callback'ов: boot-хуку
@@ -80,7 +81,7 @@ export function useRoundFlow(deps: RoundFlowDeps): RoundFlowResult {
     try {
       await g.startRound(mapId);
     } catch (err) {
-      console.error('[ArmorStrike] startRound failed', err);
+      logError('startRound failed', err);
       if (token === startToken.current) {
         setRoundError('Не удалось начать раунд. Попробуйте ещё раз.');
       }
@@ -164,7 +165,7 @@ export function useRoundFlow(deps: RoundFlowDeps): RoundFlowResult {
         }
       }
     } catch (err) {
-      console.error('[ArmorStrike] quickMatch failed:', err);
+      logError('quickMatch failed:', err);
       if (token === startToken.current) {
         setRoundError('Ошибка поиска сетевой игры');
       }
@@ -203,7 +204,7 @@ export function useRoundFlow(deps: RoundFlowDeps): RoundFlowResult {
         }
       }
     } catch (err) {
-      console.error('[ArmorStrike] joinRoom failed:', err);
+      logError('joinRoom failed:', err);
       if (token === startToken.current) {
         setRoundError('Не удалось подключиться к серверу');
       }
@@ -243,7 +244,7 @@ export function useRoundFlow(deps: RoundFlowDeps): RoundFlowResult {
         }
       }
     } catch (err) {
-      console.error('[ArmorStrike] createRoom failed:', err);
+      logError('createRoom failed:', err);
       if (token === startToken.current) {
         setRoundError('Не удалось создать игровой сервер');
       }

@@ -326,7 +326,7 @@ export class IsidaWeapon implements Weapon {
     }
     const base = this.mode === 'attack' ? 1.15 : this.mode === 'heal' ? 0.9 : 0.55;
     const pulse = 0.85 + 0.15 * Math.sin(this.pulseT * 9);
-    const low = this.energy < 10;
+    const low = this.energy < tune.lowEnergyThreshold;
     glow.emissiveIntensity = low
       ? base * (0.2 + 0.8 * Math.abs(Math.sin(this.pulseT * 18)))
       : base * pulse;
@@ -340,7 +340,7 @@ export class IsidaWeapon implements Weapon {
     return fillAmmoState(out, {
       ammo: Math.round(this.energy),
       magazine: Math.round(tune.energyMax),
-      reloading: this.energy < 10,
+      reloading: this.energy < tune.lowEnergyThreshold,
       reloadProgress: this.energyRatio,
     });
   }

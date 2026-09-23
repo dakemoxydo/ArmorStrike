@@ -2,7 +2,7 @@ import { supabase } from '../../lib/supabaseClient';
 import type { RunState } from '../RunState';
 import type { HullId, TurretId } from '../../core/catalog';
 import { HULLS, TURRETS } from '../../core/catalog';
-import type { QuestProgress } from '../economy/questCatalog';
+import { sanitizeQuestProgress, type QuestProgress } from '../economy/questCatalog';
 
 export interface CloudProfile {
   id: string;
@@ -24,13 +24,19 @@ export interface CloudProfile {
   updated_at?: string;
 }
 
+export interface LoadProfileResult {
+  profile: CloudProfile | null;
+  /** true = ошибка сети/запроса (данные неизвестны), false = профиля нет в БД */
+  failed: boolean;
+}
+
 export class CloudSaveService {
   private static saveTimeout: ReturnType<typeof setTimeout> | null = null;
   private static pendingData: Partial<CloudProfile> | null = null;
   private static pendingUserId: string | null = null;
 
   /** Загрузить профиль игрока из Supabase */
-  static async loadProfile(userId: string): Promise<CloudProfile | null> {
+  static async loadProfile(userId: string): Promise<LoadProfileResult> {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -38,13 +44,16 @@ export class CloudSaveService {
         .eq('id', userId)
         .maybeSingle();
 
-      if (error || !data) {
-        return null;
+      if (error) {
+        return { profile: null, failed: true };
+      }
+      if (!data) {
+        return { profile: null, failed: false };
       }
 
-      return data as CloudProfile;
+      return { profile: data as CloudProfile, failed: false };
     } catch {
-      return null;
+      return { profile: null, failed: true };
     }
   }
 
@@ -121,7 +130,9 @@ export class CloudSaveService {
   /** Применить данные облачного профиля к локальному экземпляру RunState */
   static applyProfileToRunState(profile: CloudProfile, runState: RunState) {
     runState.userId = profile.id;
-    runState.username = profile.username;
+    if (typeof profile.username === 'string' && profile.username.trim().length > 0) {
+      runState.username = profile.username.trim();
+    }
     runState.isGuest = false;
 
     if (typeof profile.credits === 'number' && Number.isFinite(profile.credits)) {
@@ -164,8 +175,9 @@ export class CloudSaveService {
 
     runState.starterPackClaimed = Boolean(profile.starter_pack_claimed);
 
-    if (Array.isArray(profile.quests) && profile.quests.length > 0) {
-      runState.quests = profile.quests;
+    const sanitizedQuests = sanitizeQuestProgress(profile.quests);
+    if (sanitizedQuests.length > 0) {
+      runState.quests = sanitizedQuests;
     }
 
     // Сохраняем актуализированный локальный кэш

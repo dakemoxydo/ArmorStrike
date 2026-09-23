@@ -77,8 +77,58 @@ describe('CloudSaveService', () => {
     const selectMock = vi.fn().mockReturnValue({ eq: eqMock });
     vi.mocked(supabase.from).mockReturnValue({ select: selectMock } as never);
 
-    const profile = await CloudSaveService.loadProfile('user_1');
+    const { profile, failed } = await CloudSaveService.loadProfile('user_1');
     expect(profile).toEqual(mockProfile);
+    expect(failed).toBe(false);
     expect(supabase.from).toHaveBeenCalledWith('profiles');
+  });
+
+  it('marks network error as failed (no overwrite of cloud)', async () => {
+    const maybeSingleMock = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: 'network down' },
+    });
+    const eqMock = vi.fn().mockReturnValue({ maybeSingle: maybeSingleMock });
+    const selectMock = vi.fn().mockReturnValue({ eq: eqMock });
+    vi.mocked(supabase.from).mockReturnValue({ select: selectMock } as never);
+
+    const { profile, failed } = await CloudSaveService.loadProfile('user_1');
+    expect(profile).toBeNull();
+    expect(failed).toBe(true);
+  });
+
+  it('missing row is not a failure', async () => {
+    const maybeSingleMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const eqMock = vi.fn().mockReturnValue({ maybeSingle: maybeSingleMock });
+    const selectMock = vi.fn().mockReturnValue({ eq: eqMock });
+    vi.mocked(supabase.from).mockReturnValue({ select: selectMock } as never);
+
+    const { profile, failed } = await CloudSaveService.loadProfile('user_new');
+    expect(profile).toBeNull();
+    expect(failed).toBe(false);
+  });
+
+  it('drops malformed quest entries on apply', () => {
+    const run = new RunState();
+    const profile = {
+      id: 'usr_9',
+      username: 'QGuard',
+      credits: 100,
+      current_hull: 'hunter',
+      current_turret: 'railgun',
+      unlocked_hulls: ['hunter'],
+      unlocked_turrets: ['railgun'],
+      starter_pack_claimed: false,
+      quests: [
+        { id: 'q_kills_5', current: 1, target: 5, claimed: false },
+        { id: 'bad', current: Number.NaN, target: 5, claimed: false },
+        null,
+        { id: 'nope', current: 'x', target: 5, claimed: false },
+      ],
+    } as unknown as CloudProfile;
+
+    CloudSaveService.applyProfileToRunState(profile, run);
+    expect(run.quests).toHaveLength(1);
+    expect(run.quests[0].id).toBe('q_kills_5');
   });
 });

@@ -18,19 +18,6 @@ export interface RoomData {
   last_heartbeat?: string;
 }
 
-export interface RoomPlayer {
-  id?: string;
-  room_id: string;
-  user_id: string;
-  username: string;
-  hull_id: HullId;
-  turret_id: TurretId;
-  team: TeamId;
-  is_host: boolean;
-  ping: number;
-  joined_at?: string;
-}
-
 export interface CreateRoomOptions {
   name: string;
   mode: MatchModeId;
@@ -111,23 +98,4 @@ export interface PeerDespawnPacket {
 
 export interface BlockDestroyPacket {
   blockId: number;
-}
-
-export interface RemoteTankState {
-  userId: string;
-  username: string;
-  hullId: HullId;
-  turretId: TurretId;
-  team: TeamId;
-  x: number;
-  z: number;
-  yaw: number;
-  aimYaw: number;
-  barrelPitch: number;
-  speed: number;
-  boosting: boolean;
-  health: number;
-  maxHealth: number;
-  alive: boolean;
-  lastPacketTime: number;
 }

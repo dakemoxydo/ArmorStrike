@@ -111,6 +111,27 @@ export function getQuestDef(id: string): QuestDef | undefined {
   return QUEST_MAP[id];
 }
 
+/**
+ * Каноническая валидация прогресса квестов из внешних источников
+ * (localStorage, облачный профиль). Оставляет только записи с корректной
+ * формой QuestProgress; мусор и NaN-прогресс отбрасываются.
+ */
+export function sanitizeQuestProgress(raw: unknown): QuestProgress[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((q): q is QuestProgress => {
+    if (!q || typeof q !== 'object') return false;
+    const p = q as QuestProgress;
+    return (
+      typeof p.id === 'string' &&
+      typeof p.current === 'number' &&
+      Number.isFinite(p.current) &&
+      typeof p.target === 'number' &&
+      Number.isFinite(p.target) &&
+      typeof p.claimed === 'boolean'
+    );
+  });
+}
+
 /** Создаёт начальный пул из 3 уникальных квестов. */
 export function createInitialQuests(): QuestProgress[] {
   return [

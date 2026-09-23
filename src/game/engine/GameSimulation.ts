@@ -23,6 +23,12 @@ import { calculateMatchRewards } from '../economy/matchRewards';
 export class GameSimulation {
   player: TankEntity | null = null;
   tanks: TankEntity[] = [];
+  /**
+   * Generation counter for async roster mutations (spawnHostBot): bumped by
+   * clearTanks; a spawn started under an older generation is discarded so a
+   * late await cannot re-insert a bot into a cleared roster.
+   */
+  rosterGen = 0;
   nameplates = new Map<number, { plate: Nameplate; color: number }>();
   readonly match: MatchRuntime;
   readonly networkSync: NetworkSyncStage;
@@ -167,11 +173,13 @@ export class GameSimulation {
   }
 
   clearTanks(scene: THREE.Scene) {
+    this.rosterGen++;
     this.remotePlayers?.clear();
     for (const np of this.nameplates.values()) np.plate.dispose(scene);
     this.nameplates.clear();
     for (const t of this.tanks) t.dispose(scene);
-    this.tanks = [];
+    // In-place: RemotePlayerManager holds this array reference (tanksList).
+    this.tanks.length = 0;
     this.bots.reset();
     this.player = null;
     for (const s of this.systems) s.onRosterCleared?.();

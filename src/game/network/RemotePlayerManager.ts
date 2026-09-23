@@ -9,6 +9,7 @@ import type { TankEntity } from '../Tank';
 import type { TeamId } from '../match/matchTypes';
 import { applyRespawnCombat, restoreRespawnVisuals } from '../match/respawn';
 import type { TankTransformPacket, WeaponFirePacket } from './types';
+import { logError } from '../../lib/log';
 import {
   parseHullId,
   parseTeamId,
@@ -126,7 +127,7 @@ export class RemotePlayerManager {
 
       return tank;
     } catch (err) {
-      console.error('[RemotePlayerManager] Failed to spawn peer:', err);
+      logError('[RemotePlayerManager] Failed to spawn peer:', err);
       return null;
     } finally {
       this.pendingSpawns.delete(userId);
@@ -210,6 +211,14 @@ export class RemotePlayerManager {
         this.fireTimeouts.delete(packet.userId);
         peer.tank.weapon?.setFire(false);
       }, 50);
+      this.fireTimeouts.set(packet.userId, id);
+    } else {
+      // Hold-timeout: continuous weapons keep firing only while hold packets
+      // (every ~50ms sync) arrive — a lost release packet no longer sticks.
+      const id = setTimeout(() => {
+        this.fireTimeouts.delete(packet.userId);
+        peer.tank.weapon?.setFire(false);
+      }, 250);
       this.fireTimeouts.set(packet.userId, id);
     }
   }

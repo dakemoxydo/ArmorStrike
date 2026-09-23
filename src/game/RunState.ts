@@ -6,6 +6,7 @@ import {
   createInitialQuests,
   getQuestDef,
   rollNextQuest,
+  sanitizeQuestProgress,
   type MatchSummaryForQuests,
   type QuestProgress,
 } from './economy/questCatalog';
@@ -195,20 +196,9 @@ export class RunState {
             this.userId = o.userId;
           }
 
-          if (Array.isArray(o.quests) && o.quests.length > 0) {
-            const valid = o.quests.filter((q: unknown): q is QuestProgress => {
-              return (
-                Boolean(q) &&
-                typeof q === 'object' &&
-                typeof (q as QuestProgress).id === 'string' &&
-                typeof (q as QuestProgress).current === 'number' &&
-                typeof (q as QuestProgress).target === 'number' &&
-                typeof (q as QuestProgress).claimed === 'boolean'
-              );
-            });
-            if (valid.length > 0) {
-              this.quests = valid;
-            }
+          const valid = sanitizeQuestProgress(o.quests);
+          if (valid.length > 0) {
+            this.quests = valid;
           }
         }
       }

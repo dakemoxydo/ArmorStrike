@@ -156,7 +156,11 @@ export class Game implements GameApi {
     const sim = this.requireSim();
     sim.run.userId = userId;
     sim.run.isGuest = false;
-    const profile = await CloudSaveService.loadProfile(userId);
+    const { profile, failed } = await CloudSaveService.loadProfile(userId);
+    if (failed) {
+      // Ошибка сети: не перезаписывать облако локальным состоянием (data-loss guard)
+      return false;
+    }
     if (!profile) {
       sim.run.save();
       return false;
@@ -358,8 +362,11 @@ export class Game implements GameApi {
     if (this.currentRoom && this.multiplayerService) {
       const sim = this.sim;
       const userId = sim?.run.getNetworkId() ?? 'unknown';
-      await MultiplayerService.leaveRoom(this.currentRoom.id, userId);
-      this.multiplayerService.disconnect();
+      const roomId = this.currentRoom.id;
+      const service = this.multiplayerService;
+      // Sync disconnect first: session/remotes must stop producing packets
+      // before the leave RPC round-trip finishes (leave-reorder guard).
+      service.disconnect();
       this.multiplayerService = null;
       sim?.networkSession?.dispose();
       if (sim) sim.networkSession = null;
@@ -372,6 +379,7 @@ export class Game implements GameApi {
       sim?.networkSync.setSession(null);
       this.currentRoom = null;
       this.isHostFlag = false;
+      await MultiplayerService.leaveRoom(roomId, userId);
     }
   }
 

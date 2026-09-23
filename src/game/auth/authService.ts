@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabaseClient';
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { logError } from '../../lib/log';
 
 export interface GuestMigrationData {
   credits?: number;
@@ -226,7 +227,8 @@ export class AuthService {
         data: { user },
       } = await supabase.auth.getUser();
       return user;
-    } catch {
+    } catch (e) {
+      logError('getCurrentUser failed:', e);
       return null;
     }
   }

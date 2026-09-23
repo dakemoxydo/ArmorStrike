@@ -166,12 +166,14 @@ export class NetworkSession {
     if (!ctx.player) return;
 
     this.syncTimer += ctx.dt;
+    let justSynced = false;
     if (this.syncTimer >= this.syncInterval) {
-      this.syncTimer = 0;
+      this.syncTimer -= this.syncInterval;
+      justSynced = true;
       this.sendOwnedTransforms(ctx.player);
     }
 
-    this.sendOwnedFire(ctx.player);
+    this.sendOwnedFire(ctx.player, justSynced);
 
     if (this.isHost) {
       this.matchTimer += ctx.dt;
@@ -233,10 +235,10 @@ export class NetworkSession {
     }, performance.now());
   }
 
-  private sendOwnedFire(player: TankEntity) {
+  private sendOwnedFire(player: TankEntity, justSynced: boolean) {
     this.sendFireEdge(player, this.localId, this.localWasFiring, (v) => {
       this.localWasFiring = v;
-    }, true);
+    }, true, justSynced);
     if (!this.isHost) return;
     for (const b of this.deps.sim.bots.bots) {
       const id = b.tank.networkId;
@@ -244,7 +246,7 @@ export class NetworkSession {
       const prev = this.botWasFiring.get(id) ?? false;
       this.sendFireEdge(b.tank, id, prev, (v) => {
         this.botWasFiring.set(id, v);
-      }, false);
+      }, false, justSynced);
     }
   }
 
@@ -254,6 +256,7 @@ export class NetworkSession {
     wasFiring: boolean,
     setWas: (v: boolean) => void,
     usePlayerInput: boolean,
+    justSynced: boolean,
   ) {
     const wants = usePlayerInput
       ? Boolean(tank.alive && this.deps.sim.input.wantsFire && this.deps.sim.input.enabled)
@@ -265,7 +268,7 @@ export class NetworkSession {
     const continuous = tank.turretId === 'flamethrower' || tank.turretId === 'isida'
       || tank.turretId === 'railgun' || tank.turretId === 'gauss';
     const edge = isFiring !== wasFiring;
-    const holdTick = isFiring && continuous && this.syncTimer === 0;
+    const holdTick = isFiring && continuous && justSynced;
     if ((edge || holdTick) && tank.turretId) {
       const cp = Math.cos(tank.barrelPitch);
       this.service.sendFire({
@@ -399,6 +402,7 @@ export class NetworkSession {
 
   private async spawnHostBot() {
     const sim = this.deps.sim;
+    const gen = sim.rosterGen;
     const team = this.pickFillTeam();
     const pool = team === 'bravo'
       ? BRAVO_SPAWN_POINTS
@@ -419,6 +423,11 @@ export class NetworkSession {
       hullId: sim.run.currentHull,
       turretId: sim.run.currentTurret,
     });
+    // Roster cleared/rebuilt while awaiting — discard the stale bot.
+    if (sim.rosterGen !== gen) {
+      entry.tank.dispose(this.deps.scene);
+      return;
+    }
     entry.tank.networkId = botNetworkId(slot);
     sim.bots.bots.push(entry);
   }

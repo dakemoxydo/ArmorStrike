@@ -9,6 +9,7 @@ import { HULL_CONFIG, TURRET_CONFIG, HULL_TURRET_Y, MODELS_ENABLED } from './Tan
 import { assetManager } from './AssetManager';
 import type { TankBuildContext } from './context';
 import { normalizeHullModel, prepareTexturedModel } from './modelUtils';
+import { logError } from '../../lib/log';
 
 export interface TankBuildResult {
   hull: THREE.Group;
@@ -176,7 +177,7 @@ export class TankFactory {
         hullGroup.add(model);
         turretY = Math.max(0.9, deckY * 0.82);
       } catch (e) {
-        console.error(`Failed to load hull model for ${hullId}. Falling back to procedural.`, e);
+        logError(`Failed to load hull model for ${hullId}. Falling back to procedural.`, e);
         buildHull(ctx, hullId);
         turretY = HULL_TURRET_Y[hullId];
       }
@@ -192,7 +193,7 @@ export class TankFactory {
         bodyMats.push(...modelMats);
         turretGroup.add(model);
       } catch (e) {
-        console.error(`Failed to load turret model for ${turretId}. Falling back to procedural.`, e);
+        logError(`Failed to load turret model for ${turretId}. Falling back to procedural.`, e);
         buildTurretProcedural(ctx, turretId);
       }
     } else {

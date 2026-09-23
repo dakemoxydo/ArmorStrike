@@ -8,6 +8,7 @@ import { HULLS, TURRETS, WEAPON_TUNING } from '../core/catalog';
 import type { HullDef, HullId, TurretDef, TurretId } from '../core/catalog';
 import type { GameApi } from '../game/GameApi';
 import type { GameEvent } from '../game/types';
+import { ECONOMY_PRICES } from '../game/economy/matchRewards';
 import HullCard from './HullCard';
 import TurretCard from './TurretCard';
 import CrateOpeningModal from './CrateOpeningModal';
@@ -144,7 +145,7 @@ export default function Garage({
   const hasLockedItems = activeTab === 'hulls' ? lockedHulls.length > 0 : lockedTurrets.length > 0;
 
   const openCrate = () => {
-    if (!game || credits < 600 || !hasLockedItems) return;
+    if (!game || credits < ECONOMY_PRICES.crate || !hasLockedItems) return;
     const pool = activeTab === 'hulls' ? lockedHulls : lockedTurrets;
     const shuffled = [...pool].sort(() => 0.5 - Math.random());
     const candidates = shuffled.slice(0, 3);
@@ -159,11 +160,17 @@ export default function Garage({
     const success = game.purchaseCrate(crateModalData.type, pickedId);
     if (success) {
       if (crateModalData.type === 'hull') {
+        const prev = selectedHullId;
         setSelectedHullId(pickedId as HullId);
-        game.setGarageSelection(pickedId as HullId, selectedTurretId).catch(() => {});
+        game.setGarageSelection(pickedId as HullId, selectedTurretId).catch(() => {
+          setSelectedHullId((cur) => (cur === pickedId ? prev : cur));
+        });
       } else {
+        const prev = selectedTurretId;
         setSelectedTurretId(pickedId as TurretId);
-        game.setGarageSelection(selectedHullId, pickedId as TurretId).catch(() => {});
+        game.setGarageSelection(selectedHullId, pickedId as TurretId).catch(() => {
+          setSelectedTurretId((cur) => (cur === pickedId ? prev : cur));
+        });
       }
       setCrateModalData(null);
     }
@@ -185,11 +192,17 @@ export default function Garage({
     const success = game.purchaseDirectUnlock(item.id);
     if (success) {
       if (activeTab === 'hulls') {
+        const prev = selectedHullId;
         setSelectedHullId(item.id as HullId);
-        game.setGarageSelection(item.id as HullId, selectedTurretId).catch(() => {});
+        game.setGarageSelection(item.id as HullId, selectedTurretId).catch(() => {
+          setSelectedHullId((cur) => (cur === item.id ? prev : cur));
+        });
       } else {
+        const prev = selectedTurretId;
         setSelectedTurretId(item.id as TurretId);
-        game.setGarageSelection(selectedHullId, item.id as TurretId).catch(() => {});
+        game.setGarageSelection(selectedHullId, item.id as TurretId).catch(() => {
+          setSelectedTurretId((cur) => (cur === item.id ? prev : cur));
+        });
       }
       setDirectUnlockItems(null);
     }
@@ -249,25 +262,25 @@ export default function Garage({
           <button
             type="button"
             onClick={openCrate}
-            disabled={!hasLockedItems || credits < 600}
+            disabled={!hasLockedItems || credits < ECONOMY_PRICES.crate}
             className="btn-game btn-ghost px-3 py-2 text-xs flex items-center gap-1.5 disabled:opacity-50"
-            title={!hasLockedItems ? 'Все предметы получены' : credits < 600 ? 'Недостаточно CR (600 CR)' : 'Открыть кейс'}
+            title={!hasLockedItems ? 'Все предметы получены' : credits < ECONOMY_PRICES.crate ? `Недостаточно CR (${ECONOMY_PRICES.crate} CR)` : 'Открыть кейс'}
           >
             <PackageOpen size={14} className="text-amber-400" aria-hidden />
             <span>КЕЙС</span>
-            <span className="text-amber-300 font-display text-[11px]">600 CR</span>
+            <span className="text-amber-300 font-display text-[11px]">{ECONOMY_PRICES.crate} CR</span>
           </button>
 
           <button
             type="button"
             onClick={openDirectUnlock}
-            disabled={!hasLockedItems || credits < 1200}
+            disabled={!hasLockedItems || credits < ECONOMY_PRICES.directUnlock}
             className="btn-game btn-ghost px-3 py-2 text-xs flex items-center gap-1.5 disabled:opacity-50"
-            title={!hasLockedItems ? 'Все предметы получены' : credits < 1200 ? 'Недостаточно CR (1200 CR)' : 'Выбрать и разблокировать'}
+            title={!hasLockedItems ? 'Все предметы получены' : credits < ECONOMY_PRICES.directUnlock ? `Недостаточно CR (${ECONOMY_PRICES.directUnlock} CR)` : 'Выбрать и разблокировать'}
           >
             <Lock size={14} className="text-amber-400" aria-hidden />
             <span>ВЫКУП</span>
-            <span className="text-amber-300 font-display text-[11px]">1200 CR</span>
+            <span className="text-amber-300 font-display text-[11px]">{ECONOMY_PRICES.directUnlock} CR</span>
           </button>
 
           {onOpenAuth && (
