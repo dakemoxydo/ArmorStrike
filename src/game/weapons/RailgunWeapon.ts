@@ -18,6 +18,7 @@ import { fillMuzzleAndAim } from './muzzle';
 import { RailgunBeamFx } from './RailgunBeamFx';
 import { RailgunChargeBalls } from './railgunChargeBalls';
 import { railgunShouldStartCharge } from './railgunFireLogic';
+import { isComicInkHelper } from '../tank/comicInkOutline';
 import { BeamSweep, type BeamSweepEvent } from './railgunBeamSweep';
 import { nearestShotBlockerDist } from './railgunBlockers';
 import { resolveWeaponDamage } from './weaponDamage';
@@ -382,7 +383,7 @@ export class RailgunWeapon implements Weapon {
       t.visual.group.updateMatrixWorld(true);
       t.visual.group.traverse((o) => {
         if (!('isMesh' in o && (o as THREE.Mesh).isMesh)) return;
-        if (o === t.visual.ring || o === t.visual.shield || o.name === 'comicInkMesh') return;
+        if (o === t.visual.ring || o === t.visual.shield || isComicInkHelper(o)) return;
         this._targetArr.push(o);
         this._tankMap.set(o, t);
       });

@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import * as THREE from 'three';
 import { applyCelShading } from '../game/shaders/celShading';
-import { attachComicInkOutline, COMIC_INK_KEY } from '../game/tank/comicInkOutline';
+import {
+  attachComicInkOutline,
+  isComicInkHelper,
+  COMIC_INK_KEY,
+  COMIC_INK_MASK_KEY,
+  COMIC_INK_MASK_NAME,
+} from '../game/tank/comicInkOutline';
 import { camoTexture, trackTexture } from '../game/textures/tank';
 
 function stubCanvas() {
@@ -135,6 +141,89 @@ describe('Comic / Cel-Shaded Art Direction', () => {
       const inkMat = inkMesh.material as THREE.MeshBasicMaterial;
       expect(inkMat.side).toBe(THREE.BackSide);
       expect(inkMat.name).toBe('comicInk');
+    });
+
+    it('обводит силуэт целиком: маска пишет stencil-бит, чернильный слой рисуется только где он пуст', () => {
+      const group = new THREE.Group();
+      const bodyMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 1, 3),
+        new THREE.MeshStandardMaterial({ color: 0x444444 }),
+      );
+      group.add(bodyMesh);
+
+      attachComicInkOutline(group);
+      const masks = group.userData[COMIC_INK_MASK_KEY] as THREE.Mesh[];
+      expect(masks).toHaveLength(1);
+      const mask = masks[0];
+      expect(mask.name).toBe(COMIC_INK_MASK_NAME);
+      expect(mask.castShadow).toBe(false);
+      expect(mask.receiveShadow).toBe(false);
+      // Раньше любой opaque-объект (маска подсветки цели — -12), но позже shell-ов (-1).
+      expect(mask.renderOrder).toBeLessThan(0);
+
+      const maskMat = mask.material as THREE.MeshBasicMaterial;
+      expect(maskMat.name).toBe('comicInkMask');
+      expect(maskMat.colorWrite).toBe(false);
+      expect(maskMat.depthWrite).toBe(false);
+      expect(maskMat.side).toBe(THREE.DoubleSide);
+      expect(maskMat.stencilWrite).toBe(true);
+      expect(maskMat.stencilFunc).toBe(THREE.AlwaysStencilFunc);
+      expect(maskMat.stencilRef).toBe(1);
+      expect(maskMat.stencilZPass).toBe(THREE.ReplaceStencilOp);
+      expect(maskMat.stencilFail).toBe(THREE.KeepStencilOp);
+
+      // Обводка — не новое железо: тени и мишени рейкаста её не видят.
+      const inkMat = (bodyMesh.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial;
+      expect(inkMat.stencilWrite).toBe(true);
+      expect(inkMat.stencilFunc).toBe(THREE.EqualStencilFunc);
+      expect(inkMat.stencilRef).toBe(0);
+      expect(inkMat.stencilFuncMask).toBe(1);
+      expect(inkMat.stencilWriteMask).toBe(0);
+      expect(isComicInkHelper(mask)).toBe(true);
+      expect(isComicInkHelper(bodyMesh.children[0])).toBe(true);
+      expect(isComicInkHelper(bodyMesh)).toBe(false);
+    });
+
+    it('сливает детали в одну маску на жёсткий кадр (корпус/башня/ствол), а не по мешу на деталь', () => {
+      const root = new THREE.Group();
+      const hull = new THREE.Group();
+      const turret = new THREE.Group();
+      const barrel = new THREE.Group();
+      root.add(hull);
+      hull.add(turret);
+      turret.add(barrel);
+
+      const solid = () => new THREE.MeshStandardMaterial({ color: 0x555555 });
+      const hullA = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 3), solid());
+      const hullB = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 3), solid());
+      // Смещение сестры в кадре (как у антенны/ствола) — маска обязана его учесть.
+      hullB.position.set(1.5, 0, 0);
+      hull.add(hullA, hullB);
+      const turretA = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 1.5), solid());
+      turret.add(turretA);
+      const barrelA = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3, 6), solid());
+      barrel.add(barrelA);
+
+      const shells = attachComicInkOutline(root);
+      expect(shells).toHaveLength(4);
+      const masks = root.userData[COMIC_INK_MASK_KEY] as THREE.Mesh[];
+      expect(masks).toHaveLength(3);
+
+      // Маска лежит в системе координат кадра ⇒ башня/ствол ведут её при повороте.
+      const maskIn = (frame: THREE.Object3D) => masks.find((m) => m.parent === frame)!;
+      const hullMask = maskIn(hull);
+      expect(hullMask).toBeDefined();
+      expect(maskIn(turret)).toBeDefined();
+      expect(maskIn(barrel)).toBeDefined();
+
+      // Слияние слотов корпуса: одна геометрия на оба меша, позиции деталей учтены.
+      const merged = hullMask.geometry.getAttribute('position');
+      expect(merged.count).toBe(
+        hullA.geometry.getAttribute('position').count + hullB.geometry.getAttribute('position').count,
+      );
+      const bounds = new THREE.Box3().setFromBufferAttribute(merged as THREE.BufferAttribute);
+      // 1.75, а не 1.0 (габарит hullA): смещение сестры в маску запечено.
+      expect(bounds.max.x).toBeCloseTo(1.75, 5);
     });
   });
 

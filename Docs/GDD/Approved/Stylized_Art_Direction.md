@@ -28,7 +28,8 @@
 
 ### 2. Чернильный контур силуэта (Comic Ink Outline)
 - **Файл:** `src/game/tank/comicInkOutline.ts` (`attachComicInkOutline`)
-- **Механизм:** Inverted-hull shell (`THREE.BackSide`) на геометриях корпуса, башни и ствола.
+- **Механизм:** Inverted-hull shell (`THREE.BackSide`) на геометриях корпуса, башни и ствола + **stencil-маска силуэта**: обводка одна на всю машину, стыки деталей (башня/корпус/ствол/гусеницы) и мелкие детали не обводятся.
+- **Слои:** маска (`comicInkMask`: `colorWrite:false`, `depthWrite:false`, `DoubleSide`, stencil `Always → Replace` бита 1, `renderOrder:-11`, одна на жёсткий кадр — корпус/башня/ствол, +3 DC на танк) → чернильный слой (`comicInk`, `BackSide`, stencil `Equal 0`, `stencilWriteMask:0`, `renderOrder:-1`). Тот же stencil-бит, что у подсветки цели (`modelOutline.ts`, маска `-12`), порядок не конфликтует. Требует stencil-буфера кадра (`RenderWorld`: `stencil: true`).
 - **Математика:** Выталкивание вершин вдоль нормали в вершинном шейдере:
   $$\text{push} = \text{width} \cdot \text{mix}\left(1.0, \frac{\text{dist}}{\text{refDist}}, \text{distMix}\right)$$
   Ширина контура: `0.012` м (аккуратный тонкий hairline-контур), `refDist = 45.0`, `distMix = 0.38`.

@@ -4,7 +4,7 @@ import type { TankStyle } from '../../core/types';
 import type { TankVisual } from './types';
 import { TankFactory } from './TankFactory';
 import { markShared } from '../resources/sharedResources';
-import { attachComicInkOutline } from './comicInkOutline';
+import { attachComicInkOutline, isComicInkHelper } from './comicInkOutline';
 
 /**
  * Купол респавн-неуязвимости (п.15). Геометрия не зависит от корпуса/башни →
@@ -79,7 +79,8 @@ export async function buildTankMesh(
   attachComicInkOutline(group);
 
   group.traverse((o) => {
-    if (o instanceof THREE.Mesh && o !== ring && o !== shield && o.name !== 'comicInkMesh') {
+    // Служебные меши обводки (чернильный shell + stencil-маска) железом не считаются.
+    if (o instanceof THREE.Mesh && o !== ring && o !== shield && !isComicInkHelper(o)) {
       o.castShadow = true;
       o.receiveShadow = true;
     }
