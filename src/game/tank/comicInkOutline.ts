@@ -19,7 +19,12 @@ export const COMIC_INK_MASK_KEY = 'comicInkSilhouetteMask';
 export const COMIC_INK_MASK_NAME = 'comicInkMaskMesh';
 
 const INK_COLOR = 0x181c26; // Deep slate graphite (softened from harsh jet-black)
-const INK_WIDTH = 0.012;    // Refined hairline contour (~0.5% of hull width, down from 0.024)
+/**
+ * Ширина чернильного контура танка (м). Читается как самостоятельная линия силуэта
+ * (~0.8% ширины корпуса): hairline 0.012 тонул в камуфляже и сливал детали.
+ * Экспорт нужен пину BUILDING_INK_WIDTH (arena/buildingInk.ts).
+ */
+export const TANK_INK_WIDTH = 0.02;
 const WIDTH_REF_DIST = 45.0;
 const WIDTH_DIST_MIX = 0.38;
 
@@ -57,7 +62,7 @@ function getSharedInkMaterial(): THREE.MeshBasicMaterial {
       '( uOutlineWidth * mix( 1.0, length( ( modelViewMatrix * vec4( transformed, 1.0 ) ).xyz ) / uWidthRefDist, uWidthDistMix ) );';
 
     mat.onBeforeCompile = (shader) => {
-      shader.uniforms.uOutlineWidth = { value: INK_WIDTH };
+      shader.uniforms.uOutlineWidth = { value: TANK_INK_WIDTH };
       shader.uniforms.uWidthRefDist = { value: WIDTH_REF_DIST };
       shader.uniforms.uWidthDistMix = { value: WIDTH_DIST_MIX };
       shader.vertexShader = shader.vertexShader

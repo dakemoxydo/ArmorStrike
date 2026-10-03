@@ -15,6 +15,7 @@ import {
   BUILDING_INK_MAX_SHELLS,
   BUILDING_INK_WIDTH,
 } from '../game/arena/buildingInk';
+import { TANK_INK_WIDTH } from '../game/tank/comicInkOutline';
 import { Arena } from '../game/Arena';
 import type { MapId } from '../game/maps/mapCatalog';
 
@@ -77,8 +78,8 @@ describe('shouldOutlineBuilding — селектор крупных wall-кор�
 });
 
 describe('BUILDING_INK_WIDTH — комикс-читаемая толщина', () => {
-  it('в sane-диапазоне: толще танкового hairline, без blob-эффекта', () => {
-    expect(BUILDING_INK_WIDTH).toBeGreaterThan(0.012); // танковый hairline
+  it('в sane-диапазоне: толще танкового контура, без blob-эффекта', () => {
+    expect(BUILDING_INK_WIDTH).toBeGreaterThan(TANK_INK_WIDTH);
     expect(BUILDING_INK_WIDTH).toBeLessThanOrEqual(0.2);
   });
 });
