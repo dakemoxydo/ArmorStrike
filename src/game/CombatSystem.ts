@@ -184,9 +184,20 @@ export class CombatSystem {
     attacker: TankEntity | null,
     packet: TankDamagePacket,
   ) {
-    if (packet.kind === 'heal' || packet.remainingHealth > target.health) {
+    // Повод поднять HP — только явный kind='heal' (тики Исиды,
+    // NetworkSession). Сверка «remainingHealth > health» была эвристикой:
+    // два бота-хоста, посчитавшие урон от одного старого HP, эмитят
+    // независимые снапшоты (например 70 и 65), и у получателя, у которого
+    // уже пришло 65, пакет 70 уезжал в хил и раздувал HP до 70. Сравнивать
+    // надо по kind, а не по величине.
+    if (packet.kind === 'heal') {
       if (!target.alive) return;
-      target.health = Math.min(target.maxHealth, packet.remainingHealth);
+      const healed = packet.remainingHealth;
+      // Мусорный остаток не лечит. Понижать HP heal-пакет может: снапшот
+      // автора авторитетен, а локальный хп вне боя чинится сам
+      // (TankCombatTimersSystem) — это норма, не повод подменять снапшот.
+      if (!Number.isFinite(healed) || healed < 0) return;
+      target.health = Math.min(target.maxHealth, healed);
       target.fx.healFlash = 1;
       return;
     }
@@ -208,11 +219,17 @@ export class CombatSystem {
     }
 
     if (!target.alive) return;
-    const dealt = Math.max(0, target.health - packet.remainingHealth);
-    target.health = packet.remainingHealth;
+    // Damage-снапшот умеет ТОЛЬКО понижать HP. Переупорядоченный или
+    // устаревший пакет (и любой нефинитный мусор) игнорируем целиком: ни
+    // hitFlash, ни сброса timeSinceDamaged, ни ре-эмита. Отдача (kx/kz)
+    // выше уже применена — она приходит с любым уроном и HP не двигает.
+    const next = packet.remainingHealth;
+    if (!Number.isFinite(next) || next >= target.health) return;
+    const dealt = target.health - next;
+    target.health = next;
     target.timeSinceDamaged = 0;
     target.fx.hitFlash = 1;
-    if (dealt > 0) this.onTankDamaged(target, dealt, attacker ?? target);
+    this.onTankDamaged(target, dealt, attacker ?? target);
   }
 
   /** Presentation-only wreck when a transform says a peer died (lost kill packet). */

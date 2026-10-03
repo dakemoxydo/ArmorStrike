@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Bot, Globe, Lock, Shield, Users, X } from 'lucide-react';
 import type { MatchModeId } from '../../game/match/matchTypes';
 import type { MapId } from '../../game/maps/mapCatalog';
@@ -40,6 +40,19 @@ export default function CreateServerModal({
   const [error, setError] = useState<string | null>(null);
 
   const trapRef = useFocusTrap(true);
+
+  // Пока идёт создание, Escape не закрывает форму — как и кнопки X/«ОТМЕНА»,
+  // которые на время промиса disabled (иначе игрок теряет и спиннер, и текст
+  // ошибки, ради которого форма и остаётся открытой).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (loading) return;
+      onCancel();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [loading, onCancel]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

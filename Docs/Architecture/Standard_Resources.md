@@ -20,7 +20,7 @@ const t = cachedTexture(`key:${parts}`, () => buildCanvasTexture());
 1. **Один ключ — один инстанс.** Фабрика вызывается один раз за процесс;
    повторный вызов возвращает ту же `THREE.CanvasTexture`.
 2. **`markShared` обязателен.** `cachedTexture` помечает текстуру общей —
-   поштучный teardown (`disposeObject3D`, `disposeArenaSubtree`,
+   поштучный teardown (`disposeObject3D` — единственная точка освобождения арены,
    `material.map?.dispose()`) обязан её пропустить (`isShared`). Владелец
    записи — кэш, живёт до конца процесса.
 3. **Ключи включают все параметры отрисовки** (`crate:${accent}:${dark}:${light}`,
@@ -84,6 +84,29 @@ release в `dispose()`, `geometry.dispose()` — только когда refs у
 текстурного `markShared` (§1): здесь владелец переживает инстанс, но может
 быть освобождён последним владельцем, а не живёт «до конца процесса».
 
+## 5. Teardown арены: одна точка освобождения
+
+**Где:** `src/game/resources/disposeObject3D.ts`, потребители — `src/game/Arena.ts`
+(`rebuild`, разрушение отдельного блока, полный `dispose`).
+
+`disposeObject3D(root)` — **единственная** утилита освобождения арены:
+`Arena.ts` вызывает её напрямую, дублирующей обёртки в арене больше нет
+(оставшийся дубликат `disposeArenaSubtree` удалён — упоминаний символа в `src` нет).
+
+Контракт:
+
+- **Дедуп через `Set`.** Общая, но не `markShared`-помеченная геометрия/материал
+  (один `wMat` на 4 стены, один `lampMat` на 14 фонарей) иначе диспозилась бы
+  N раз — лишние dispose-ивенты на общем инстансе.
+- **`markShared`-пропуск.** Shared-геометрия, материалы и текстуры не трогаются
+  (владелец — кэш, §1); per-instance ресурсы освобождаются.
+- **`InstancedMesh.dispose()` обязателен и не заменяется `geometry.dispose()`.**
+  Он снимает `instanceMatrix`/`instanceColor`; копия утилиты в `Arena.ts` этот вызов
+  теряла, из-за чего GPU-буферы инстансов утекали при каждом rebuild арены.
+  Меш при этом не shared (shared — только geometry/material/texture), поэтому
+  диспоз всегда безопасен. Регресс зафиксирован тестом `arenaInstancedDispose.test.ts`.
+
 ---
+
 *Паттерны извлечены из коммитов 6ad7740 (memoize texture factories) и
 257c23c (audit fixes F-1..H-5); обновляется автоматически после рефакторингов.*

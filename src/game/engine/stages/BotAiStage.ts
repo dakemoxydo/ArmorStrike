@@ -1,27 +1,27 @@
 // ===== Стадия: ИИ ботов + CP objective path =====
+// Контракт аллокаций: update() не создаёт объектов на бот на кадр — позиции,
+// ctx, ячейка фокуса и стаб «цели нет» живут в переиспользуемых полях ниже.
+// Единственный остаточный литерал на кадр — результат pickAiFocus (чистая
+// функция вне этой зоны ответственности).
 import * as THREE from 'three';
 import type { FrameContext, SimSystem } from './types';
 import type { TankEntity } from '../../Tank';
 import type { Arena } from '../../Arena';
 import type { BotRoster } from '../../BotRoster';
 import type { MatchRuntime } from '../../match/MatchRuntime';
-import type { AITarget } from '../../AI';
+import type { AICtx, AITarget } from '../../AI';
 import type { Collider } from '../physics';
 import type { TeamId } from '../../match/matchTypes';
 import { allyLineBlockers, pickAiFocus } from '../../match/aiFocus';
+import { objectiveFightRange } from '../../aiRoles';
 import { TANK } from '../../constants';
 import {
-  moveHintForZone,
   pickObjectiveZone,
   shouldFightNearObjective,
   type ObjectiveZoneView,
 } from '../../match/aiObjective';
 import { BOT_NORMAL } from '../../match/matchConfig';
 import { syncZoneViews } from './zoneViewCache';
-
-function deadStub(player: TankEntity): AITarget {
-  return { position: player.position, alive: false, vel: player.vel };
-}
 
 export class BotAiStage implements SimSystem {
   readonly name = 'botAi';
@@ -41,13 +41,45 @@ export class BotAiStage implements SimSystem {
   /**
    * Cached zone views for CP mode. Rebuilt by syncZoneViews when the zone set
    * changes (map switch / match reset); owner/contested are refreshed in place
-   * on stable ticks — no per-frame allocation.
+   * on stable ticks.
    */
   private _zoneViews: ObjectiveZoneView[] | null = null;
   /** Shared empty zone list for non-CP modes (no per-frame literal). */
   private readonly _emptyZones: ObjectiveZoneView[] = [];
   /** Точка прицела цели (центр корпуса) для вертикальной автонаводки бота. */
   private readonly _aimPoint = new THREE.Vector3();
+  /**
+   * Горячий путь ниже — без аллокаций на бот на кадр: стаб «цели нет»,
+   * ячейка фокуса, ctx для ai.update и позиционные литералы для чистых
+   * objective-хелперов. Раньше здесь было ~5 литералов + стаб на каждого
+   * бота на каждом кадре (~2.5k аллокаций/с на 7 ботах).
+   */
+  private readonly _deadStub: AITarget = {
+    position: new THREE.Vector3(), alive: false, vel: new THREE.Vector3(),
+  };
+  /** Ячейка {focus, canSee} из aiFocusForBot (вызывающий разбирает сразу). */
+  private readonly _focusCell = { focus: this._deadStub, canSee: false };
+  /** Один изменяемый ctx: AIController не хранит его после update. */
+  private readonly _ctx: AICtx = {
+    player: this._deadStub,
+    bots: [],
+    colliders: [],
+    bounds: 0,
+    moveHint: null,
+  };
+  /**
+   * Позиция бота (+команда) для чистых objective-хелперов. `teamId` всегда
+   * присваивается в ветке alpha/bravo до вызова — стартовое значение нужно
+   * только для типа ячейки.
+   */
+  private readonly _objSelf = {
+    x: 0, z: 0, teamId: 'alpha' as Exclude<TeamId, null>,
+  };
+  /** Позиция фокуса (врага) для shouldFightNearObjective (alive всегда true —
+   *  мёртвый фокус передаётся как null). */
+  private readonly _enemyPos = { x: 0, z: 0, alive: true };
+  /** Точка захвата — moveHint (moveHintForZone создаёт новый литерал). */
+  private readonly _hint = { x: 0, z: 0 };
 
   constructor(
     private bots: BotRoster,
@@ -66,6 +98,18 @@ export class BotAiStage implements SimSystem {
     this._tankById.clear();
     this._rosterSize = 0;
     this._firstBotId = -1;
+  }
+
+  /**
+   * Стаб «цели нет»: переиспользуемый, пересоздаётся при смене сущности
+   * игрока (ссылки на его position/vel живые — как в старом литерале).
+   */
+  private deadStub(player: TankEntity): AITarget {
+    if (this._deadStub.position !== player.position) {
+      this._deadStub.position = player.position;
+      this._deadStub.vel = player.vel;
+    }
+    return this._deadStub;
   }
 
   update(ctx: FrameContext): void {
@@ -92,6 +136,10 @@ export class BotAiStage implements SimSystem {
     this._tankById.clear();
     for (const t of ctx.tanks) this._tankById.set(t.id, t);
 
+    const opts = this._ctx;
+    opts.colliders = this.arena.colliders;
+    opts.bounds = bounds;
+
     for (const b of this.bots.bots) {
       if (!b.tank.alive) {
         this._aiSticky.delete(b.tank.id);
@@ -108,24 +156,34 @@ export class BotAiStage implements SimSystem {
         const teamId = b.tank.teamId as Exclude<TeamId, null> | null;
         if (teamId === 'alpha' || teamId === 'bravo') {
           const stickyZ = this._objSticky.get(b.tank.id) ?? null;
+          this._objSelf.x = b.tank.position.x;
+          this._objSelf.z = b.tank.position.z;
+          this._objSelf.teamId = teamId;
           const zone = pickObjectiveZone(
-            { x: b.tank.position.x, z: b.tank.position.z, teamId },
+            this._objSelf,
             zoneViews,
             stickyZ,
           );
           if (zone) {
             this._objSticky.set(b.tank.id, zone.id);
-            const enemyPos = focus.alive
-              ? { x: focus.position.x, z: focus.position.z, alive: true }
-              : null;
-            // Always set path; close fight clears moveHint so engage code runs fully.
+            // Полоса боя — от дальности оружия ЭТОГО бота (objectiveFightRange),
+            // не от обзора: раньше 55.25 м для всех, и огнемёт/изида бросали
+            // захват из-за врага, до которого не достают.
+            this._enemyPos.x = focus.position.x;
+            this._enemyPos.z = focus.position.z;
             const fight = shouldFightNearObjective(
-              { x: b.tank.position.x, z: b.tank.position.z },
-              enemyPos,
+              this._objSelf,
+              focus.alive ? this._enemyPos : null,
               zone,
-              BOT_NORMAL.sightRange * 0.85,
+              objectiveFightRange(b.tank.turretId, BOT_NORMAL.sightRange),
             );
-            moveHint = fight ? null : moveHintForZone(zone);
+            if (fight) {
+              moveHint = null;
+            } else {
+              this._hint.x = zone.x;
+              this._hint.z = zone.z;
+              moveHint = this._hint;
+            }
           }
         }
       } else {
@@ -139,13 +197,10 @@ export class BotAiStage implements SimSystem {
         this._blockerBufs.set(b.tank.id, blockers);
       }
       allyLineBlockers(b.tank, ctx.tanks, blockers);
-      b.ai.update(ctx.dt, {
-        player: focus,
-        bots: blockers,
-        colliders: this.arena.colliders,
-        bounds,
-        moveHint,
-      });
+      opts.player = focus;
+      opts.bots = blockers;
+      opts.moveHint = moveHint;
+      b.ai.update(ctx.dt, opts);
       // Вертикальная автонаводка бота: тот же фокус, в который ИИ наводит
       // башню. Тангаж считается только когда цель видима (canSee) и жива —
       // иначе ствол возвращается в горизонт (сканирование/погоня вслепую).
@@ -166,6 +221,8 @@ export class BotAiStage implements SimSystem {
   /**
    * Multi-target hostile focus (DM FFA + team modes).
    * Uses isEnemy; sticky target; LoS-preferred when in sight.
+   * Пишет в переиспользуемую ячейку — вызывающий разбирает {focus, canSee}
+   * сразу же.
    */
   private aiFocusForBot(
     bot: TankEntity,
@@ -183,13 +240,16 @@ export class BotAiStage implements SimSystem {
     });
     if (!target) {
       this._aiSticky.delete(bot.id);
-      return { focus: deadStub(player), canSee: false };
+      this._focusCell.focus = this.deadStub(player);
+      this._focusCell.canSee = false;
+      return this._focusCell;
     }
     this._aiSticky.set(bot.id, target.id);
     // Resolve live entity via pre-built map (O(1) instead of tanks.find).
     const ent = this._tankById.get(target.id);
-    if (!ent) return { focus: deadStub(player), canSee: false };
-    return { focus: ent, canSee };
+    this._focusCell.focus = ent ? ent : this.deadStub(player);
+    this._focusCell.canSee = ent ? canSee : false;
+    return this._focusCell;
   }
 
   private zonesAsView(): ObjectiveZoneView[] {

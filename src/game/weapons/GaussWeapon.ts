@@ -82,7 +82,6 @@ export class GaussWeapon implements Weapon {
   private lockTimer = 0;
   private reloadTimer = 0;
   private lastCooldownDuration = 0;
-  private needsTriggerRelease = false;
   private wantsArcadeRelease = false;
   private lockedTarget: CombatPeer | null = null;
   private beamFx: GaussBeamFx;
@@ -99,7 +98,6 @@ export class GaussWeapon implements Weapon {
     const wasActive = this.isTriggerActive;
     this.isTriggerActive = active;
     if (!active) {
-      this.needsTriggerRelease = false;
       if (wasActive && this.state === 'LOCKING') {
         this.wantsArcadeRelease = true;
       }
@@ -188,7 +186,7 @@ export class GaussWeapon implements Weapon {
       }
 
       case 'IDLE': {
-        if (this.isTriggerActive && !this.needsTriggerRelease && this.owner.fireTimer <= 0) {
+        if (this.isTriggerActive && this.owner.fireTimer <= 0) {
           fillMuzzleAndAim(this.owner, tmpMuzzle, tmpDir);
           const range = this.owner.params.range ?? WEAPON_TUNING.gauss.range;
           tmpGaussCone.x = this.owner.position.x;
@@ -315,6 +313,24 @@ export class GaussWeapon implements Weapon {
     return false;
   }
 
+  /**
+   * Импульс САМОМУ стрелку при снайперском залпе (`Tank.onFired(recoil)`).
+   * Отдельное поле, а НЕ `knockback` (16 → 2.91 м сдвига за выстрел: у ИИ нет
+   * компенсации отдачи, снайпер-бот вылетал из полосы). Сдвиг = значение / 5.5.
+   */
+  private selfRecoil(): number {
+    return this.owner.isPlayer
+      ? WEAPON_TUNING.gauss.selfRecoil
+      : WEAPON_TUNING.gauss.selfRecoilBot;
+  }
+
+  /** Самоотдача аркадного выстрела — лёгкий тычок (см. `selfRecoil`). */
+  private arcadeSelfRecoil(): number {
+    return this.owner.isPlayer
+      ? WEAPON_TUNING.gauss.arcadeSelfRecoil
+      : WEAPON_TUNING.gauss.arcadeSelfRecoilBot;
+  }
+
   private executeSniperFiring(target: CombatPeer, tanks?: CombatPeer[], colliders?: readonly Collider[]): void {
     fillMuzzleAndAim(this.owner, tmpMuzzle, tmpDir);
     tmpTargetPos.set(target.position.x, target.position.y + 0.8, target.position.z);
@@ -345,7 +361,7 @@ export class GaussWeapon implements Weapon {
         this.deps.effects.explosion(tmpTargetPos, 0xc084fc, 0.7);
         this.beamFx.fire(tmpMuzzle, tmpTargetPos, WEAPON_TUNING.gauss.beamDuration);
         this.deps.effects.muzzle(tmpMuzzle, 0xc084fc);
-        this.owner.onFired(WEAPON_TUNING.gauss.knockback);
+        this.owner.onFired(this.selfRecoil());
         if (this.owner.isPlayer) {
           this.deps.audio.shoot('gauss');
           this.deps.effects.addShake(WEAPON_TUNING.gauss.fireShakePlayer);
@@ -380,7 +396,7 @@ export class GaussWeapon implements Weapon {
 
     this.beamFx.fire(tmpMuzzle, tmpTargetPos, WEAPON_TUNING.gauss.beamDuration);
     this.deps.effects.muzzle(tmpMuzzle, 0xc084fc);
-    this.owner.onFired(WEAPON_TUNING.gauss.knockback);
+    this.owner.onFired(this.selfRecoil());
     if (this.owner.isPlayer) {
       this.deps.audio.shoot('gauss');
     } else {
@@ -474,7 +490,7 @@ export class GaussWeapon implements Weapon {
 
     this.beamFx.fire(tmpMuzzle, tmpTargetPos, WEAPON_TUNING.gauss.arcadeBeamDuration);
     this.deps.effects.muzzle(tmpMuzzle, 0xc084fc);
-    this.owner.onFired(WEAPON_TUNING.gauss.arcadeKnockback);
+    this.owner.onFired(this.arcadeSelfRecoil());
     if (this.owner.isPlayer) {
       this.deps.audio.shoot('gauss');
     } else {
@@ -504,7 +520,6 @@ export class GaussWeapon implements Weapon {
     this.state = 'IDLE';
     this.reloadTimer = 0;
     this.wantsArcadeRelease = false;
-    this.needsTriggerRelease = false;
     this.beamFx.hide();
   }
 
@@ -513,7 +528,6 @@ export class GaussWeapon implements Weapon {
     this.state = 'IDLE';
     this.reloadTimer = 0;
     this.wantsArcadeRelease = false;
-    this.needsTriggerRelease = false;
   }
 
   dispose(): void {

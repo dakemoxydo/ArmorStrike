@@ -31,6 +31,13 @@ export interface PlayerProfileInfo {
 
 export type NetworkEventHandler = (event: string, payload: unknown) => void;
 
+/**
+ * Синтетическое событие: подписка на канал комнаты не удалась
+ * (CHANNEL_ERROR / TIMED_OUT / CLOSED). Без него клиент остался бы в матче,
+ * который нечем закончить (см. NetworkSession.handleEvent).
+ */
+export const CHANNEL_ERROR_EVENT = 'channel_error';
+
 export class MultiplayerService {
   private currentChannel: RealtimeChannel | null = null;
   private currentRoomId: string | null = null;
@@ -295,7 +302,7 @@ export class MultiplayerService {
       this.dispatch('player_left', leftPresences);
     });
 
-    channel.subscribe((status) => {
+    channel.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
         void channel.track({
           userId: player.userId,
@@ -305,7 +312,13 @@ export class MultiplayerService {
           team: player.team ?? null,
           onlineAt: new Date().toISOString(),
         });
+        return;
       }
+      // Любой не-SUBSCRIBED статус (CHANNEL_ERROR / TIMED_OUT / CLOSED) означает,
+      // что канала не будет: broadcast'ы не ходят, presence не приходит. Молча
+      // ждать тут нельзя — сообщаем подписчику через тот же dispatch-канал.
+      logError('Realtime channel subscribe failed:', status, err ?? '');
+      this.dispatch(CHANNEL_ERROR_EVENT, status);
     });
 
     this.currentChannel = channel;
@@ -403,7 +416,9 @@ export class MultiplayerService {
   }
 
   private dispatch(event: string, payload: unknown) {
-    for (const handler of this.eventHandlers) {
+    // Снимок набора: обработчик может вызвать disconnect() (реакция на ошибку
+    // канала → выход из комнаты) и очистить этот же Set прямо посреди обхода.
+    for (const handler of Array.from(this.eventHandlers)) {
       try {
         handler(event, payload);
       } catch (err) {

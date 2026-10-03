@@ -68,15 +68,17 @@ export class CannonWeapon implements Weapon {
     if (this.ammo === 0) this.startFullReload();
   }
 
+  /** Есть ли ХОТЯ БЫ ОДИН живой игрок в радиусе (гейт bot-fire trauma).
+   *  Ранний `return` по первому же игроку делал ответ зависимым от порядка в
+   *  ростере: тряска выстрела бота гасилась, если ДРУГОЙ игрок стоял дальше. */
   private playerNear(maxRange: number): boolean {
     if (!this.lastTanks) return false;
     const r2 = maxRange * maxRange;
     for (const other of this.lastTanks) {
-      if (other.isPlayer && other.alive) {
-        const dx = other.position.x - this.owner.position.x;
-        const dz = other.position.z - this.owner.position.z;
-        return dx * dx + dz * dz <= r2;
-      }
+      if (!other.isPlayer || !other.alive) continue;
+      const dx = other.position.x - this.owner.position.x;
+      const dz = other.position.z - this.owner.position.z;
+      if (dx * dx + dz * dz <= r2) return true;
     }
     return false;
   }

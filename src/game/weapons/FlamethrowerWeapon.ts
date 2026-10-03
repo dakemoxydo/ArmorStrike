@@ -90,7 +90,14 @@ export class FlamethrowerWeapon implements Weapon {
         this.deps.effects.addShake(WEAPON_TUNING.flamethrower.fireShakePlayer);
       }
       this.tickTimer += dt;
-      if (this.tickTimer >= WEAPON_TUNING.flamethrower.tickRate) {
+      // Catch-up-цикл, а не одиночное вычитание (как у «Изиды»,
+      // IsidaWeapon.ts:157-161): одиночный `if` давал максимум ОДИН тик за
+      // кадр, и при dt ≥ 2 × tickRate накопленный урон просто терялся.
+      // dps = damagePerTick / tickRate не должен зависеть от частоты кадров.
+      // Бесконечным циклом быть не может: tickTimer на каждой итерации
+      // уменьшается на положительный tickRate, а GameLoop клампит dt до 0.05
+      // (тиков на кадр ≤ 1 — catch-up включается только при крупном dt).
+      while (this.tickTimer >= WEAPON_TUNING.flamethrower.tickRate) {
         this.tickTimer -= WEAPON_TUNING.flamethrower.tickRate;
         this.processOverlapDamage(ctx.tanks, ctx.colliders);
       }
@@ -109,8 +116,13 @@ export class FlamethrowerWeapon implements Weapon {
     );
     const dirX = tmpDir.x;
     const dirZ = tmpDir.z;
-    // C6: team-фильтр у источника, конвенцией RailgunWeapon (:352-355) —
-    // DamageSystem режет только HP, а knockback/дым в applyHit безусловны.
+    // C6: team-фильтр у источника, конвенцией RailgunWeapon (:372-378):
+    // applyDamage сам по себе режет только HP, а толчок и дым в applyHit идут
+    // уже за гейтом `combatAllowsImpulse` (applyHit.ts) — тот гасит и труп, и
+    // спавн-инвайн, и союзника. Дубль-гейт у источника остаётся: он снимает
+    // своих ДО геометрии конуса и LOS. Порядок в applyHit — «урон → толчок»,
+    // так что добивающий тик не даёт ни толчка, ни дыма (у луча «Изиды»
+    // наоборот, dmg=0 в applyHit, а полный урон идёт следом).
     const ownerTeam = this.owner.teamId ?? null;
 
     for (const t of tanks) {

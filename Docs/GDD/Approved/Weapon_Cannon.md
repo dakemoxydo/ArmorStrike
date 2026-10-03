@@ -66,7 +66,7 @@ setFire(true) ──canFire──► fire() ──ammo--
 
 `WEAPON_TUNING.cannon.speed = 54` — единственный источник истины: behavior
 стаставит её в `init()`, упреждение ИИ (`aiAimFire`) читает то же значение.
-Глобальный `PROJECTILE.speed` удалён (расходился: 58 против реальных 48/54).
+Глобальный `PROJECTILE.speed` удалён (расходился: 58 против реальных 54).
 
 ## Классы
 

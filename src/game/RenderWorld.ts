@@ -7,6 +7,9 @@ import { getAtmosphere } from './atmospherePresets';
 
 const NIGHT = getAtmosphere('factory');
 
+/** Полуразмер ортокамеры теней (м): ±170 накрывает арену 300 м с запасом. */
+const SHADOW_EXTENT = 170;
+
 export class RenderWorld {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
@@ -21,14 +24,16 @@ export class RenderWorld {
   private atmosphere: MapId = 'factory';
 
   /**
-   * Legacy bloom composer slot. UnrealBloom blurs ink outlines, so the comic
-   * pipeline never builds it; the field stays so dispose() can tear down a
-   * leftover injected in tests / old sessions.
+   * Legacy bloom composer slots. UnrealBloom blurs ink outlines, so the comic
+   * pipeline never builds it and nothing in production writes these fields
+   * (grep-verified: единственный писатель — Reflect.set в
+   * renderWorldQuality.test.ts). Оставлены как страховка: dispose()/applyQuality
+   * сносят подброшенный извне риг, а удаление полей требует правки того теста.
    */
   private composer: { setSize: (w: number, h: number) => void; dispose: () => void; render: () => void } | null = null;
   private bloomPass: { dispose: () => void } | null = null;
   private useComposer = false;
-  /** Always null — comic lighting has no RoomEnvironment IBL. */
+  /** Always null — comic lighting has no RoomEnvironment IBL (тест пишет через Reflect). */
   private envRT: THREE.WebGLRenderTarget | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -108,17 +113,31 @@ export class RenderWorld {
     this.scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(NIGHT.sunColor, NIGHT.sunIntensity);
     this.sun.position.set(...NIGHT.sunPosition);
-    this.sun.castShadow = true;
+    this.sun.castShadow = preset.shadows;
     this.sun.shadow.mapSize.set(preset.shadowMapSize, preset.shadowMapSize);
-    const sc = this.sun.shadow.camera;
-    sc.left = -170; sc.right = 170; sc.top = 170; sc.bottom = -170;
-    sc.near = 10; sc.far = 420;
+    this.applyShadowExtent();
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.add(this.sun);
     this.rim = new THREE.DirectionalLight(NIGHT.rimColor, NIGHT.rimIntensity);
     this.rim.position.set(-30, 20, -40);
     this.scene.add(this.rim);
+  }
+
+  /**
+   * Ортопроекция теневой камеры: ±SHADOW_EXTENT м покрывает арену 300 м
+   * (ARENA.size) с запасом. three.js пересчитывает `projectionMatrix` только
+   * здесь — присваивание left/right/top/bottom само по себе мёртвое, камера
+   * осталась бы на дефолтных ±5 м и карта писала бы пустоту (medium 1024²
+   * ≈ 0.33 м/тексель, high 2048² ≈ 0.17 — силуэт танка читается).
+   * Объём не зависит от пресета (меняется только размер карты), поэтому
+   * конфигурируется один раз в конструкторе.
+   */
+  private applyShadowExtent() {
+    const sc = this.sun.shadow.camera;
+    sc.left = -SHADOW_EXTENT; sc.right = SHADOW_EXTENT; sc.top = SHADOW_EXTENT; sc.bottom = -SHADOW_EXTENT;
+    sc.near = 10; sc.far = 420;
+    sc.updateProjectionMatrix();
   }
 
   getQuality(): QualityLevel {
@@ -193,9 +212,9 @@ export class RenderWorld {
 
     // three.js pitfall: `shadowMap.enabled` is baked into lit-material
     // programs; flipping it at runtime does NOT recompile already-compiled
-    // materials, so the toggle would silently no-op visually. Shipped presets
-    // keep shadows on at every tier by design (Graphics_Presets_Matrix.md),
-    // but if a preset ever disables them this forces the one-time recompile.
+    // materials, so the toggle would silently no-op visually. Preset `low`
+    // carries shadows: false (see graphicsQuality), so this branch is live —
+    // high→low forces the one-time recompile, low→medium flips it back.
     const shadowToggled = this.renderer.shadowMap.enabled !== preset.shadows;
     this.renderer.shadowMap.enabled = preset.shadows;
     this.sun.castShadow = preset.shadows;

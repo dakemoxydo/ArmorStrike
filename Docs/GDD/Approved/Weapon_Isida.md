@@ -38,7 +38,7 @@
 
 `turretSpeed: 7.5`. `TURRETS.isida`: `damage = round(damagePerSec × tickRate) = 11`
 (т.е. тиковый урон — source of truth в каталоге, инвариант в `catalog.test.ts`),
-`magazine = energyMax = 100`, `shotCooldown = 0`, `fullReload = 0`, `recoil = 0`,
+`magazine = energyMax = 100`, `shotCooldown = 0`, `fullReload = 0`,
 `range = 20`, badge `НАНОЛУЧ`. Мета: `WeaponCatalog.isida` — «ИЗИДА · НАНО-ДУГА ПОДДЕРЖКИ»,
 accent `#39e6a8`.
 

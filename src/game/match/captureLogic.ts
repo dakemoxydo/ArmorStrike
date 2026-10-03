@@ -46,8 +46,16 @@ export function countPresenceInZone(
   const r2 = zone.radius * zone.radius;
   for (const t of tanks) {
     if (!t.alive || t.teamId == null) continue;
-    const dx = t.position.x - zone.x;
-    const dz = t.position.z - zone.z;
+    const px = t.position.x;
+    const pz = t.position.z;
+    // Нефинитная поза (битый сетевой пакет пира, NaN в физике) обязана
+    // игнорироваться: сравнение с NaN даёт false, поэтому `continue` ниже
+    // не срабатывал и танк засчитывался как стоящий в зоне — один пир с
+    // испорченной позой навсегда оспаривал все три точки и замораживал
+    // прогресс. Тип `number` этого не исключает.
+    if (!Number.isFinite(px) || !Number.isFinite(pz)) continue;
+    const dx = px - zone.x;
+    const dz = pz - zone.z;
     if (dx * dx + dz * dz > r2) continue;
     if (t.teamId === 'alpha') alpha += 1;
     else if (t.teamId === 'bravo') bravo += 1;
@@ -91,6 +99,14 @@ export function stepCaptureZoneInto(
   dt: number,
   captureSec: number = CAPTURE.captureSec,
 ): CaptureZoneState {
+  // Шкала держит инвариант 0..1 даже на грязном входе: `progress` может
+  // прийти из сетевого снапшота, `dt` — из кадра. Иначе progress > 1 сразу
+  // роняет владельца (Math.min не спасает — он не чинит вход), а NaN даёт
+  // `progress < 1` === false и переворот владельца в том же тике.
+  if (!(target.progress >= 0)) target.progress = 0;
+  else if (target.progress > 1) target.progress = 1;
+  const stepSec = Number.isFinite(dt) && dt > 0 ? dt : 0;
+
   const { actor, contested } = resolveActor(target.owner, presence);
 
   if (contested || actor === null) {
@@ -108,7 +124,7 @@ export function stepCaptureZoneInto(
   if (target.actor !== actor) progress = 0;
 
   const rate = captureSec > 0 ? 1 / captureSec : 1;
-  progress = Math.min(1, progress + dt * rate);
+  progress = Math.min(1, progress + stepSec * rate);
 
   target.actor = actor;
   target.contested = false;

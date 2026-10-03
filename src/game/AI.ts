@@ -62,6 +62,15 @@ export interface AIPersona {
 
 const DEFAULT_PERSONA: AIPersona = { aggro: 0.5, react: 0.25, lead: 0.9 };
 
+/** Длительность выхода из трапа (с): столько бот едет задом с удержанным avoidDir. */
+const ESCAPE_T = 0.9;
+/**
+ * Газ выхода из трапа. Отрицательный = задний ход (TankMotionSystem:
+ * `throttle < 0 → throttle * reverseSpeed`). До этого газ нигде не был
+ * отрицательным, поэтому застрявший бот не мог откатиться от блока.
+ */
+const ESCAPE_THROTTLE = -0.8;
+
 type AIState = 'patrol' | 'engage';
 
 export class AIController {
@@ -74,6 +83,12 @@ export class AIController {
   /** Shared with aiObstacle.computeObstacleAvoidance (mutable bag). */
   private readonly avoid = { avoidT: 0, avoidDir: 1 };
   private stuckT = 0;
+  /**
+   * Выход из трапа: после `stuckT > 1.1` бот ~0.9 с едет задом, удерживая
+   * выбранный avoidDir. Персистентно: без него сброс avoidT обхода каждый
+   * раз перебрасывал руление на тот же блок (livelock в плотных кластерах).
+   */
+  private escapeT = 0;
   private strafeDir = 1;
   private strafeT = 0;
   private scanT = Math.random() * Math.PI * 2;
@@ -106,6 +121,14 @@ export class AIController {
   private readonly _aimState: AimFireState = {
     aimNoise: 0, aimNoiseT: 0, reactT: 0, scanT: 0, wantsFire: false,
   };
+  /**
+   * Переиспользуемые ячейки шага ИИ (было: литерал на каждый бот на каждый
+   * кадр — perceive/target/опции укрытия). Все вызывающие сразу разбирают
+   * значение, ссылок на них вне шага не остаётся.
+   */
+  private readonly _percept = { canSee: false, dist: 0, dx: 0, dz: 0 };
+  private readonly _target = { tx: 0, tz: 0, throttleBase: 0.85 };
+  private readonly _coverOpts = { arenaHalf: 0 };
 
   constructor(
     private tank: AIBody,
@@ -158,13 +181,18 @@ export class AIController {
     const dz = p.position.z - this.tank.position.z;
     const dist = Math.hypot(dx, dz);
     // Short-circuit: beyond sight range → no raycast needed.
+    const out = this._percept;
+    out.dx = dx;
+    out.dz = dz;
+    out.dist = dist;
     if (dist >= this.sight) {
       this._canSee = false;
     } else {
       this._canSee = p.alive &&
         losClear(this.tank.position.x, this.tank.position.z, p.position.x, p.position.z, ctx.colliders);
     }
-    return { canSee: this._canSee, dist, dx, dz };
+    out.canSee = this._canSee;
+    return out;
   }
 
   /** Шаг 2: конечный автомат смены состояния engage/patrol. */
@@ -184,9 +212,21 @@ export class AIController {
     if (this.reactT > 0) this.reactT -= dt;
   }
 
+  /**
+   * Обход по waypoint: фокус закрыт блоком, а линия к waypoint свободна.
+   * Единственный путь, при котором re-pick из `checkAntiStuck` реально меняет
+   * направление engaged-бота (иначе цель затиралась позицией фокуса).
+   */
+  private waypointDetourOpen(player: AITarget, colliders: Collider[]): boolean {
+    const x = this.tank.position.x;
+    const z = this.tank.position.z;
+    if (losClear(x, z, player.position.x, player.position.z, colliders)) return false;
+    return losClear(x, z, this.waypoint.x, this.waypoint.y, colliders);
+  }
+
   /** Шаг 3: расчёт целевой точки движения + базовая газ/рулёжка. */
   private computeTargetPoint(
-    state: AIState, dist: number, dx: number, dz: number,
+    state: AIState, canSee: boolean, dist: number, dx: number, dz: number,
     player: AITarget, pref: number, dt: number, t: AIBody,
     colliders: Collider[], bounds: number,
   ) {
@@ -202,11 +242,12 @@ export class AIController {
       if (hpFrac < coverFrac) {
         this.coverT -= dt;
         if (!this.hasCover || this.coverT <= 0) {
+          this._coverOpts.arenaHalf = bounds;
           const pt = findCoverPoint(
             t.position.x, t.position.z,
             player.position.x, player.position.z,
             colliders,
-            { arenaHalf: bounds },
+            this._coverOpts,
           );
           if (pt) {
             this.coverX = pt.x;
@@ -219,19 +260,16 @@ export class AIController {
           }
         }
         if (this.hasCover) {
-          return { tx: this.coverX, tz: this.coverZ, throttleBase: 1 };
+          return this.writeTarget(this.coverX, this.coverZ, 1);
         }
       } else {
         this.hasCover = false;
       }
 
-      // Assault: hard rush the player (close range pressure).
-      if (this.role === 'assault') {
-        return {
-          tx: player.position.x,
-          tz: player.position.z,
-          throttleBase: 1,
-        };
+      // Фокус за блоком, к waypoint путь открыт → идём в waypoint (обход),
+      // а не тараним стену. Раньше этот случай вёл в позицию фокуса.
+      if (!canSee && this.waypointDetourOpen(player, colliders)) {
+        return this.writeTarget(this.waypoint.x, this.waypoint.y, 1);
       }
 
       this.strafeT -= dt;
@@ -247,8 +285,11 @@ export class AIController {
       const perpX = -nz * this.strafeDir;
       const perpZ = nx * this.strafeDir;
       const strafeW = this.role === 'sniper' ? 4 : this.role === 'elite' ? 8 : 10;
-      const approachBand = this.role === 'sniper' ? 12 : 8;
-      const retreatBand = this.role === 'sniper' ? 4 : 5;
+      // Полосы подхода/отхода. Assault раньше вырождался в таран (цель =
+      // позиция игрока), поэтому у него собственные узкие полосы: подход до
+      // pref+6, откат при pref−4 — боевая дистанция flamer (7) / isida (8).
+      const approachBand = this.role === 'sniper' ? 12 : this.role === 'assault' ? 6 : 8;
+      const retreatBand = this.role === 'sniper' ? 4 : this.role === 'assault' ? 4 : 5;
 
       if (dist > pref + approachBand) {
         tx = player.position.x + perpX * (this.role === 'sniper' ? 3 : 6);
@@ -257,7 +298,7 @@ export class AIController {
       } else if (dist < pref - retreatBand) {
         tx = t.position.x - nx * (this.role === 'sniper' ? 14 : 10);
         tz = t.position.z - nz * (this.role === 'sniper' ? 14 : 10);
-        throttleBase = this.role === 'sniper' ? 0.85 : 0.7;
+        throttleBase = this.role === 'sniper' ? 0.85 : this.role === 'assault' ? 0.9 : 0.7;
       } else {
         // Sniper: minimal lateral drift at preferred range (hold angle).
         tx = t.position.x + perpX * strafeW;
@@ -266,7 +307,16 @@ export class AIController {
       }
     }
 
-    return { tx, tz, throttleBase };
+    return this.writeTarget(tx, tz, throttleBase);
+  }
+
+  /** Запись результата шага 3 в переиспользуемую ячейку (без аллокации). */
+  private writeTarget(tx: number, tz: number, throttleBase: number) {
+    const out = this._target;
+    out.tx = tx;
+    out.tz = tz;
+    out.throttleBase = throttleBase;
+    return out;
   }
 
   /** Шаг 8: антизастревание. */
@@ -280,7 +330,11 @@ export class AIController {
       if (this.stuckT > 1.1) {
         this.pickWaypoint(bounds, playerAlive ? playerPos : undefined);
         this.stuckT = 0;
-        this.avoid.avoidT = 0;
+        // Выход из трапа (ESCAPE_T с): газ назад при УДЕРЖАННОМ avoidDir.
+        // Раньше здесь обнулялся avoidT — обход заново пробивал оба ±60°,
+        // оба упирались в блок, руление возвращалось на него же (livelock).
+        this.escapeT = ESCAPE_T;
+        this.avoid.avoidT = Math.max(this.avoid.avoidT, ESCAPE_T);
       }
     } else {
       this.stuckT = Math.max(0, this.stuckT - dt * 2);
@@ -366,9 +420,12 @@ export class AIController {
 
     // Шаг 3-4: целевая точка + предпочтительная дистанция (+ low-HP cover)
     const pref = this.prefRange();
-    let { tx, tz, throttleBase } = this.computeTargetPoint(
-      this.state, dist, dx, dz, ctx.player, pref, dt, t, ctx.colliders, ctx.bounds,
+    const target = this.computeTargetPoint(
+      this.state, canSee, dist, dx, dz, ctx.player, pref, dt, t, ctx.colliders, ctx.bounds,
     );
+    let tx = target.tx;
+    let tz = target.tz;
+    let throttleBase = target.throttleBase;
 
     // CP objective path: drive to moveHint unless in close combat / cover flee.
     const hint = ctx.moveHint;
@@ -403,7 +460,7 @@ export class AIController {
     if (avoid.steerOverride !== null) steer = avoid.steerOverride;
     if (avoid.throttleOverride !== null) throttle = avoid.throttleOverride;
 
-    // Шаг 8: антизастревание
+    // Шаг 8: антизастревание (порог) + шаг 8b — сам выход из трапа
     this.checkAntiStuck(
       dt, throttle, t.speed, ctx.bounds, ctx.player.alive,
       onObjectivePath ? hint! : ctx.player.position,
@@ -417,6 +474,16 @@ export class AIController {
       dt, tx, tz, t.position, ctx.bounds, ctx.player.alive ? ctx.player.position : undefined,
     )) {
       throttle = 0;
+    }
+
+    // Шаг 8b: выход из трапа — применяется последним, чтобы обход/idle не
+    // затирали задний ход. Направление обхода УДЕРЖИВАЕТСЯ (avoidT держит
+    // avoidDir), газ отрицательный: бот откатывается от блока, в который
+    // упирался. Регрессия: раньше throttle всегда был ≥ 0.
+    if (this.escapeT > 0) {
+      this.escapeT -= dt;
+      steer = this.avoid.avoidDir;
+      throttle = ESCAPE_THROTTLE;
     }
 
     // Шаг 10: применение управления

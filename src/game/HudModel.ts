@@ -13,7 +13,17 @@ import type { CaptureHudPoint, HudSnapshot, MinimapDynamic, MinimapStatic, Score
 import type { BeamMode, WeaponAmmoState } from './weapons/types';
 import { getWeaponMeta } from '../core/WeaponCatalog';
 import { isAlly, isEnemy } from './match/teams';
-import type { TeamId } from './match/matchTypes';
+import { MATCH_MODE_IDS, configForMode } from './match/matchConfig';
+import type { MatchConfig, MatchModeId, TeamId } from './match/matchTypes';
+
+/**
+ * Снимок дефолтного конфига по режимам — единственный источник фолбэков ниже.
+ * Строится один раз на модуль, чтобы `getHud` не аллоцировал объект за кадр.
+ */
+const MODE_DEFAULTS = MATCH_MODE_IDS.reduce(
+  (acc, m) => { acc[m] = configForMode(m); return acc; },
+  {} as Record<MatchModeId, MatchConfig>,
+);
 
 export class HudModel {
   private _static: MinimapStatic[] = [];
@@ -137,10 +147,13 @@ export class HudModel {
 
     const wmeta = getWeaponMeta(run.currentTurret);
     const cfg = match?.config;
-    const mode = cfg?.mode ?? 'deathmatch';
-    let winTarget = cfg?.winKills ?? 25;
-    if (mode === 'team_deathmatch') winTarget = cfg?.winTeamKills ?? 50;
-    if (mode === 'capture_point') winTarget = cfg?.winTeamScore ?? 1000;
+    const mode: MatchModeId = cfg?.mode ?? 'deathmatch';
+    // Фолбэки — из matchConfig (configForMode), а не литералы: cfg ещё может
+    // быть null до старта матча (GameSimulation не собран).
+    const modeDefaults = MODE_DEFAULTS[mode];
+    let winTarget = cfg?.winKills ?? modeDefaults.winKills;
+    if (mode === 'team_deathmatch') winTarget = cfg?.winTeamKills ?? modeDefaults.winTeamKills;
+    if (mode === 'capture_point') winTarget = cfg?.winTeamScore ?? modeDefaults.winTeamScore;
 
     const target = out ?? ({} as HudSnapshot);
     target.mode = run.mode;
@@ -162,7 +175,7 @@ export class HudModel {
     target.alive = player?.alive ?? false;
     target.respawnInSec = target.alive || !player
       ? 0
-      : Math.max(0, (cfg?.respawnDelaySec ?? 4) - (player.deathT ?? 0));
+      : Math.max(0, (cfg?.respawnDelaySec ?? modeDefaults.respawnDelaySec) - (player.deathT ?? 0));
     target.timeSec = run.matchTime;
     target.muted = audio.muted;
     target.turretId = run.currentTurret;
@@ -173,7 +186,7 @@ export class HudModel {
     target.scoreboard = board;
     target.matchMode = mode;
     target.winTarget = winTarget;
-    target.timeLimitSec = cfg?.timeLimitSec ?? 720;
+    target.timeLimitSec = cfg?.timeLimitSec ?? modeDefaults.timeLimitSec;
     target.teamKillsAlpha = match?.teamKills.alpha ?? 0;
     target.teamKillsBravo = match?.teamKills.bravo ?? 0;
     target.teamScoreAlpha = match?.teamScore.alpha ?? 0;

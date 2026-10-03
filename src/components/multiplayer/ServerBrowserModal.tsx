@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bot,
   Globe,
@@ -13,10 +13,15 @@ import {
 import type { MatchModeId } from '../../game/match/matchTypes';
 import type { MapId } from '../../game/maps/mapCatalog';
 import type { CreateRoomOptions, RoomData } from '../../game/network/types';
-import { MultiplayerService, type RoomFilterOptions } from '../../game/network/multiplayerService';
+import { MultiplayerService } from '../../game/network/multiplayerService';
 import CreateServerModal from './CreateServerModal';
 import PasswordPromptModal from './PasswordPromptModal';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+
+/** Период фонового опроса списка комнат. */
+const ROOM_POLL_MS = 8000;
+/** Пауза перед применением строки поиска: ввод не должен дёргать ре-рендер списка на каждом символе. */
+const SEARCH_DEBOUNCE_MS = 250;
 
 interface ServerBrowserModalProps {
   username: string;
@@ -38,6 +43,7 @@ export default function ServerBrowserModal({
   const [error, setError] = useState<string | null>(null);
 
   // Filters
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [modeFilter, setModeFilter] = useState<MatchModeId | 'all'>('all');
   const [mapFilter, setMapFilter] = useState<MapId | 'all'>('all');
@@ -50,31 +56,86 @@ export default function ServerBrowserModal({
 
   const trapRef = useFocusTrap(true);
 
+  /** Моно-токен запросов: перекрывающиеся listRooms резолвятся не по порядку. */
+  const requestSeq = useRef(0);
+  /** Флаг жизни компонента: закрытый в полёте запрос не должен трогать state. */
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Дебаунс ввода: символ за символом список не перерисовываем.
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Фильтры применяются к уже загруженному списку, поэтому fetchRooms не
+  // зависит ни от одного из них: интервал опроса перестаёт рваться на каждый
+  // keystroke (было — 3 round-trip'а на символ при бесполезном клиентском
+  // поиске на стороне listRooms).
   const fetchRooms = useCallback(async () => {
+    const seq = ++requestSeq.current;
     setLoading(true);
     setError(null);
     try {
-      const opts: RoomFilterOptions = {
-        search: search.trim() || undefined,
-        mode: modeFilter === 'all' ? undefined : modeFilter,
-        mapId: mapFilter === 'all' ? undefined : mapFilter,
-        hideFull,
-        hidePassword,
-      };
-      const list = await MultiplayerService.listRooms(opts);
+      const list = await MultiplayerService.listRooms();
+      // Ответ вытеснен более свежим — молча игнорируем.
+      if (seq !== requestSeq.current || !mountedRef.current) return;
       setRooms(list);
     } catch (err) {
+      if (seq !== requestSeq.current || !mountedRef.current) return;
       setError(err instanceof Error ? err.message : 'Ошибка загрузки серверов');
     } finally {
-      setLoading(false);
+      // Старый запрос не имеет права гасить спиннер свежего.
+      if (seq === requestSeq.current && mountedRef.current) setLoading(false);
     }
-  }, [search, modeFilter, mapFilter, hideFull, hidePassword]);
+  }, []);
 
   useEffect(() => {
     void fetchRooms();
-    const interval = setInterval(fetchRooms, 8000);
+    const interval = setInterval(() => {
+      void fetchRooms();
+    }, ROOM_POLL_MS);
     return () => clearInterval(interval);
   }, [fetchRooms]);
+
+  // Клиентская фильтрация — эквивалент того, что listRooms делает на сервере
+  // (mode/mapId/hidePassword — равенство, hideFull — player_count < max_players,
+  // search — вхождение подстроки в name или host_name).
+  const visibleRooms = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return rooms.filter((room) => {
+      if (modeFilter !== 'all' && room.mode !== modeFilter) return false;
+      if (mapFilter !== 'all' && room.map_id !== mapFilter) return false;
+      if (hidePassword && room.has_password) return false;
+      if (hideFull && room.player_count >= room.max_players) return false;
+      if (
+        needle &&
+        !room.name.toLowerCase().includes(needle) &&
+        !room.host_name.toLowerCase().includes(needle)
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [rooms, search, modeFilter, mapFilter, hideFull, hidePassword]);
+
+  // Escape закрывает верхний диалог: пока открыт под-модал, он забирает
+  // клавишу себе, иначе один keydown закрыл бы и под-модал, и браузер сразу.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (createModalOpen || passwordTargetRoom) return;
+      onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [createModalOpen, passwordTargetRoom, onClose]);
 
   const handleJoinClick = (room: RoomData) => {
     if (room.has_password) {
@@ -132,7 +193,7 @@ export default function ServerBrowserModal({
                   СПИСОК СЕРВЕРОВ
                 </h2>
                 <span className="cut-chip bg-amber-500/20 text-amber-300 px-2 py-0.5 text-xs font-mono">
-                  {rooms.length} ОНЛАЙН
+                  {visibleRooms.length} ОНЛАЙН
                 </span>
               </div>
               <div className="text-xs text-white/60">
@@ -180,8 +241,8 @@ export default function ServerBrowserModal({
               <Search size={14} className="absolute left-2.5 text-white/50 pointer-events-none" aria-hidden />
               <input
                 type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Поиск по имени..."
                 className="cut-control w-full pl-8 pr-3 py-1.5 bg-black/50 border-2 border-[#0b0e14] focus:border-amber-400 focus:outline-none text-xs text-white placeholder-white/50 shadow-[0_2px_0_#0b0e14]"
               />
@@ -275,7 +336,7 @@ export default function ServerBrowserModal({
               <Loader2 size={28} className="animate-spin text-amber-400" aria-hidden />
               <div className="text-xs tracking-wider">ЗАГРУЗКА СПИСКА СЕРВЕРОВ...</div>
             </div>
-          ) : rooms.length === 0 ? (
+          ) : visibleRooms.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
               <div className="h-12 w-12 bg-white/5 flex items-center justify-center text-white/45">
                 <Globe size={26} aria-hidden />
@@ -322,7 +383,7 @@ export default function ServerBrowserModal({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 text-xs">
-                  {rooms.map((room) => {
+                  {visibleRooms.map((room) => {
                     const isFull = room.player_count >= room.max_players;
                     return (
                       <tr
@@ -421,8 +482,14 @@ export default function ServerBrowserModal({
         <CreateServerModal
           defaultUsername={username}
           onCreate={async (opts) => {
-            setCreateModalOpen(false);
+            // Порядок важен: сначала дожидаемся промиса, и только по успеху
+            // закрываем форму. Иначе React размонтирует модалку, пока
+            // handleSubmit ещё suspended, и setError бьёт в мёртвый компонент —
+            // блок role="alert" недостижим, а провал выглядит как исчезнувшая
+            // форма. Проброс reject (useRoundFlow.handleCreateRoom) держит
+            // модалку открытой с текстом ошибки.
             await onCreateRoom(opts);
+            setCreateModalOpen(false);
           }}
           onCancel={() => setCreateModalOpen(false)}
         />

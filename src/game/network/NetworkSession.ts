@@ -15,14 +15,13 @@ import {
   pickPointIndex,
 } from '../match/spawnPoints';
 import type {
-  BlockDestroyPacket,
   MatchSyncPacket,
-  PeerDespawnPacket,
   RoomData,
   TankDamagePacket,
   TankTransformPacket,
   WeaponFirePacket,
 } from './types';
+import { CHANNEL_ERROR_EVENT } from './multiplayerService';
 import type { MultiplayerService, PlayerProfileInfo } from './multiplayerService';
 import type { RemotePlayerManager } from './RemotePlayerManager';
 import {
@@ -35,8 +34,19 @@ import {
   parseTurretId,
 } from './replication';
 import type { HullId, TurretId } from '../../core/catalog';
+import { logError } from '../../lib/log';
 import type { GameEvent } from '../types';
 import type * as THREE from 'three';
+
+/**
+ * Непустой строковый id из недоверенного payload ('' — поле мусорное).
+ * Без него пакет сортируется на границе: findTank/spawnPeer искали бы по
+ * объектному «id» и завели фантомного пира.
+ */
+function packetUserId(data: Record<string, unknown>, key: string): string {
+  const raw = data[key];
+  return typeof raw === 'string' && raw.length > 0 ? raw : '';
+}
 
 export class NetworkSession {
   private service: MultiplayerService;
@@ -52,6 +62,22 @@ export class NetworkSession {
   private readonly botWasFiring = new Map<string, boolean>();
   private nextBotSlot = 0;
   private fillingBots = false;
+  /** Presence-синхов подряд без хоста, после которых разрыв считаем подтверждённым. */
+  private readonly hostMissStreakLimit = 3;
+  /** Непрерывная тишина по presence, которой достаточно для подтверждения разрыва. */
+  private readonly hostGoneConfirmMs = 5000;
+  /**
+   * Тишина по match_sync, которой достаточно для выхода клиента. Хост шлёт его
+   * раз в 0.5 с, поэтому 8 с — это 16 пропущенных пакетов. Нужна для случая,
+   * когда presence-событий нет вообще (канал не подписался, сокет умер молча):
+   * без неё латч checkHostGone ждёт пропуска, которого не будет никогда.
+   */
+  private readonly hostSyncSilenceMs = 8000;
+  /** Последний авторитетный match_sync (или момент старта сессии). */
+  private lastHostSyncAt = performance.now();
+  private hostMissStreak = 0;
+  private hostMissSince = 0;
+  private hostDisconnectFired = false;
 
   constructor(
     private readonly deps: {
@@ -133,28 +159,43 @@ export class NetworkSession {
   }
 
   handleEvent(event: string, payload: unknown) {
+    // Ошибка подписки несёт не пакет, а статус-строку: разбираем её до проверки
+    // формы payload. Канала не будет — broadcast'ы не ходят, матч нечем закончить.
+    if (event === CHANNEL_ERROR_EVENT) {
+      logError('[NetworkSession] room channel failed:', payload);
+      this.failSession();
+      return;
+    }
+    // Верхняя граница доверия: broadcast-payload приходит из сети без типизации.
+    // Не-объект (null / строка / число) уронил бы обработчик прямо на
+    // разыменовании в applyHostSync / findTank. Массив player_left — объект,
+    // поэтому проходит и разбирается ниже по Array.isArray.
+    if (typeof payload !== 'object' || payload === null) return;
+    const data = payload as Record<string, unknown>;
     if (event === 'tank_transform') {
-      this.remotes.handleTransform(payload as TankTransformPacket);
+      if (packetUserId(data, 'userId')) this.remotes.handleTransform(payload as TankTransformPacket);
     } else if (event === 'weapon_fire') {
-      this.remotes.handleFire(payload as WeaponFirePacket);
+      if (packetUserId(data, 'userId')) this.remotes.handleFire(payload as WeaponFirePacket);
     } else if (event === 'tank_damage') {
-      this.applyDamagePacket(payload as TankDamagePacket);
+      if (packetUserId(data, 'targetUserId')) this.applyDamagePacket(payload as TankDamagePacket);
     } else if (event === 'match_sync') {
       if (!this.isHost) {
+        // Живой авторитетный поток от хоста: сбрасывает watchdog тишины.
+        this.lastHostSyncAt = performance.now();
         this.deps.sim.match.applyHostSync(payload as MatchSyncPacket, this.deps.sim.player);
       }
     } else if (event === 'block_destroy') {
-      const blockId = (payload as BlockDestroyPacket | undefined)?.blockId;
+      const blockId = data.blockId;
       if (typeof blockId === 'number') this.deps.combat.applyReplicatedBlock(blockId);
     } else if (event === 'peer_despawn') {
-      const id = (payload as PeerDespawnPacket | undefined)?.userId;
+      const id = packetUserId(data, 'userId');
       if (id) this.remotes.removePeer(id);
     } else if (event === 'presence_sync') {
       this.handlePresence(payload);
     } else if (event === 'player_left') {
       if (Array.isArray(payload)) {
-        for (const p of payload as Array<{ userId?: string }>) {
-          if (p.userId) this.remotes.removePeer(p.userId);
+        for (const p of payload as Array<{ userId?: unknown }>) {
+          if (p && typeof p.userId === 'string' && p.userId) this.remotes.removePeer(p.userId);
         }
       }
       if (this.isHost) void this.reconcileBots();
@@ -163,6 +204,12 @@ export class NetworkSession {
 
   tick(ctx: FrameContext): void {
     this.remotes.update(ctx.dt);
+    // Проверка не зависит от потока presence-событий: если они прекратились,
+    // разрыв всё равно подтвердится по тишине.
+    this.checkHostGone();
+    // Сторож по авторитетному потоку: отсутствие presence не должно оставлять
+    // клиента в матче, который нечем закончить.
+    this.checkHostSilence();
     if (!ctx.player) return;
 
     this.syncTimer += ctx.dt;
@@ -331,12 +378,58 @@ export class NetworkSession {
       }
     }
 
-    // Если хост покинул комнату — уведомляем клиентов о разрыве соединения с хостом
+    // Если хост покинул комнату — уведомляем клиентов о разрыве соединения с хостом.
+    // Транзиентный разрыв (реконнект сокета хоста, leave-диффы phoenix при
+    // закрытии сокета) не выкидывает клиента в меню: сначала копится серия
+    // пропусков, а hostDisconnected ждёт подтверждения (checkHostGone).
     if (!this.isHost && this.room.host_id && !humanIds.has(this.room.host_id)) {
-      this.deps.emitEvent?.({ type: 'hostDisconnected' });
+      this.noteHostMissing();
+    } else {
+      this.hostMissStreak = 0;
+      this.hostMissSince = 0;
     }
+    this.checkHostGone();
 
     if (this.isHost) void this.reconcileBots(humanIds.size);
+  }
+
+  /** Один presence-синк без хоста: начинает серию пропусков. */
+  private noteHostMissing() {
+    if (this.hostMissStreak === 0) this.hostMissSince = performance.now();
+    this.hostMissStreak += 1;
+  }
+
+  /**
+   * Подтверждение разрыва: серия пропусков подряд (hostMissStreakLimit) либо
+   * тишина в presence дольше hostGoneConfirmMs. Срабатывание защёлкивается —
+   * повторный hostDisconnected клиенту ничего не даёт.
+   */
+  private checkHostGone() {
+    if (this.hostDisconnectFired || this.isHost) return;
+    if (this.hostMissStreak === 0 || !this.room.host_id) return;
+    const byStreak = this.hostMissStreak >= this.hostMissStreakLimit;
+    const bySilence = performance.now() - this.hostMissSince >= this.hostGoneConfirmMs;
+    if (!byStreak && !bySilence) return;
+    this.failSession();
+  }
+
+  /**
+   * Сторож тишины по match_sync. Ловит разрыв, который checkHostGone не видит:
+   * ни одного presence-события нет, поэтому серия пропусков не набирается, а
+   * матч без авторитетного времени/счёта всё равно невозможно закончить.
+   */
+  private checkHostSilence() {
+    if (this.hostDisconnectFired || this.isHost) return;
+    if (performance.now() - this.lastHostSyncAt < this.hostSyncSilenceMs) return;
+    logError('[NetworkSession] no match_sync from host for', this.hostSyncSilenceMs, 'ms');
+    this.failSession();
+  }
+
+  /** Разрыв сессии: единственный hostDisconnected, дальше — латч. */
+  private failSession() {
+    if (this.hostDisconnectFired) return;
+    this.hostDisconnectFired = true;
+    this.deps.emitEvent?.({ type: 'hostDisconnected' });
   }
 
   private fallbackPeerTeam(): TeamId {
@@ -372,16 +465,26 @@ export class NetworkSession {
     }
   }
 
+  /**
+   * Люди в комнате по реестру пиров, а не по sim.tanks: зарегистрированный пир
+   * без первой позы ещё не «родился» (hasPose) и слот не занимает — иначе хост
+   * считал бы его за игрока и недоберёт бота. В peers попадают только удалённые
+   * игроки; боты хоста живут в sim.bots.
+   */
   private countHumans(): number {
     let n = 1;
-    for (const t of this.deps.sim.tanks) {
-      if (t.isRemote && t.networkId && !t.networkId.startsWith('bot:')) n += 1;
+    for (const peer of this.remotes.getPeers()) {
+      if (peer.hasPose) n += 1;
     }
     return n;
   }
 
-  private despawnHostBot(tank: TankEntity) {
-    const id = tank.networkId;
+  /**
+   * Полная очистка танка из общего состояния: tanks, ростер ботов, неймплейт,
+   * сцена. Общий путь и для despawnHostBot, и для отброшенного спавна —
+   * иначе в sim.tanks остаётся alive-танк без меша (бот-призрак).
+   */
+  private removeTankFromScene(tank: TankEntity) {
     const sim = this.deps.sim;
     const idx = sim.tanks.indexOf(tank);
     if (idx !== -1) sim.tanks.splice(idx, 1);
@@ -394,6 +497,11 @@ export class NetworkSession {
     }
     this.deps.scene.remove(tank.visual.group);
     tank.dispose(this.deps.scene);
+  }
+
+  private despawnHostBot(tank: TankEntity) {
+    const id = tank.networkId;
+    this.removeTankFromScene(tank);
     if (id) {
       this.botWasFiring.delete(id);
       this.service.sendPeerDespawn(id);
@@ -424,8 +532,10 @@ export class NetworkSession {
       turretId: sim.run.currentTurret,
     });
     // Roster cleared/rebuilt while awaiting — discard the stale bot.
+    // makeBot уже закоммитил бота в tanks/nameplates/сцену (после clearTanks),
+    // поэтому откатываем всё, а не только меш.
     if (sim.rosterGen !== gen) {
-      entry.tank.dispose(this.deps.scene);
+      this.removeTankFromScene(entry.tank);
       return;
     }
     entry.tank.networkId = botNetworkId(slot);

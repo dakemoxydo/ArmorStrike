@@ -12,6 +12,15 @@ export interface HotkeyDeps {
   questsOpen: boolean;
   leaderboardOpen: boolean;
   serverBrowserOpen: boolean;
+  /**
+   * Стартовый комплект получен? `false` — модал непроходимый 3-шаговый флоу
+   * висит поверх всего и не имеет ни X, ни Escape, поэтому глобальные хоткеи
+   * (в т.ч. рекламируемый на «В БОЙ!» Enter) обязаны молчать, иначе поверх
+   * него открывается ModeSelect/MapSelect и игрок уходит в раунд под
+   * неубираемым скримом. Необязательное поле: `undefined` = комплект получен
+   * (прежнее поведение, чтобы существующие вызовы хука не ломались).
+   */
+  starterPackClaimed?: boolean;
   goMenu: () => void;
   openModeSelect: () => void;
   onToggleMute: () => void;
@@ -32,6 +41,7 @@ export function useAppHotkeys(deps: HotkeyDeps): void {
     questsOpen,
     leaderboardOpen,
     serverBrowserOpen,
+    starterPackClaimed,
     goMenu,
     openModeSelect,
     onToggleMute,
@@ -40,6 +50,10 @@ export function useAppHotkeys(deps: HotkeyDeps): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!game) return;
+      // Стартовый модал — неубираемый верхний слой: ни Enter, ни Escape
+      // не должны проскакивать сквозь него (иначе поверх скрима откроется
+      // ModeSelect → MapSelect, а игрок уйдёт в раунд).
+      if (starterPackClaimed === false) return;
       // Mode/map select own Escape / Enter while open.
       if (
         mapSelectOpen ||
@@ -64,5 +78,5 @@ export function useAppHotkeys(deps: HotkeyDeps): void {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, uiMode, goMenu, openModeSelect, onToggleMute, mapSelectOpen, modeSelectOpen, authModalOpen, questsOpen, leaderboardOpen, serverBrowserOpen]);
+  }, [game, uiMode, goMenu, openModeSelect, onToggleMute, mapSelectOpen, modeSelectOpen, authModalOpen, questsOpen, leaderboardOpen, serverBrowserOpen, starterPackClaimed]);
 }

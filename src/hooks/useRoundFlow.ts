@@ -53,6 +53,7 @@ export interface RoundFlowResult {
   rematch: () => void;
   handleQuickMatch: () => Promise<void>;
   handleJoinRoom: (roomId: string, password?: string) => Promise<void>;
+  /** Отклоняется, если комната не создана: ошибку показывает форма вызывающей стороны. */
   handleCreateRoom: (opts: CreateRoomOptions) => Promise<void>;
   goGarage: () => void;
   goMenu: () => void;
@@ -60,7 +61,9 @@ export interface RoundFlowResult {
 
 /**
  * Flow: ModeSelect → MapSelect → startRound. MP handlers, garage/menu
- * navigation; startToken race guard (H5) на всех стартах.
+ * navigation; startToken race guard (H5) на всех стартах. handleCreateRoom —
+ * единственный MP-хендлер, который пробрасывает провал наружу (у формы
+ * создания своя поверхность ошибки); join/quickMatch глотают ошибку в тост.
  */
 export function useRoundFlow(deps: RoundFlowDeps): RoundFlowResult {
   const { game, setPaused, dispatch } = deps;
@@ -216,11 +219,19 @@ export function useRoundFlow(deps: RoundFlowDeps): RoundFlowResult {
   }, [game, dispatch, setPaused, setRoundLoading, setRoundError]);
 
   /** Создание сервера */
+  // Провал creation пробрасывается вызывающей стороне (ServerBrowserModal →
+  // CreateServerModal): форма живёт весь промис и показывает текст ошибки в
+  // role="alert". Глотание reject обесценивало бы эту правку — модалка закрылась
+  // бы как при успехе, и игрок увидел бы только 4-секундный тост уровня App.
   const handleCreateRoom = useCallback(async (opts: CreateRoomOptions) => {
     if (!game) return;
     const token = ++startToken.current;
     setRoundLoading(true);
     setRoundError(null);
+    // Текст провала: гейт по токену прячет его от тоста (H5-гонка дабл-клика),
+    // но исход обязан быть известен вызывающему промису при любом раскладе —
+    // иначе вытесненная попытка выглядит как успешная и закрывает форму.
+    let failure: Error | null = null;
     try {
       const playerInfo = {
         userId: game.getNetworkId(),
@@ -239,20 +250,20 @@ export function useRoundFlow(deps: RoundFlowDeps): RoundFlowResult {
         const isTeam = opts.mode === 'team_deathmatch' || opts.mode === 'capture_point';
         await game.startMultiplayerRound(res.room, true, isTeam ? 'alpha' : null);
       } else {
-        if (token === startToken.current) {
-          setRoundError(res.error || 'Ошибка создания сервера');
-        }
+        failure = new Error(res.error || 'Ошибка создания сервера');
       }
     } catch (err) {
       logError('createRoom failed:', err);
-      if (token === startToken.current) {
-        setRoundError('Не удалось создать игровой сервер');
-      }
+      failure = new Error('Не удалось создать игровой сервер');
     } finally {
       if (token === startToken.current) {
         setRoundLoading(false);
+        if (failure) {
+          setRoundError(failure.message);
+        }
       }
     }
+    if (failure) throw failure;
   }, [game, dispatch, setPaused, setRoundLoading, setRoundError]);
 
   const goGarage = useCallback(() => {

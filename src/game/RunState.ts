@@ -266,7 +266,10 @@ export class RunState {
     this.credits = 0;
     this.unlockedHulls = [];
     this.unlockedTurrets = [];
-    this.starterPackClaimed = false;
+    // starterPackClaimed НЕ сбрасываем: это прогресс игрока («набор уже брал»),
+    // а не гостевой флаг. Сброс здесь заново открывал возвращающемуся игроку
+    // стартовый флоу и ронял HUD/паузу посреди активного раунда (hideChrome
+    // зависит от флага). Для нового игрока он и так false из load()/save().
     this.currentHull = 'hunter';
     this.currentTurret = 'railgun';
     this.quests = createInitialQuests();

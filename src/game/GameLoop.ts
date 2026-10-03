@@ -11,6 +11,7 @@ import type { TankVisual } from './Tank';
 import { TimeScale } from './effects/TimeScale';
 import { reticleImpactDistance } from './aimReticle';
 import type { DamageFloatQueue } from './damageFloats';
+import type { WeaponContext } from './weapons/types';
 import { clamp } from './engine/physics';
 
 export interface GameLoopDeps {
@@ -48,6 +49,12 @@ export class GameLoop {
   private readonly _lockTargetP = new THREE.Vector3();
   private readonly _floatP = new THREE.Vector3();
   private _lastLockWarningTime = 0;
+  /**
+   * Контекст догоняющих орудий вне боевого тика (экран итогов, меню, гараж) —
+   * переиспользуемый: литерал в tick создавался на каждом таком кадре.
+   * Ссылки досинхронизируются перед вызовом (roster/коллайдеры живые).
+   */
+  private readonly _wctx: WeaponContext = { tanks: [], colliders: [] };
 
   constructor(private deps: GameLoopDeps) {}
 
@@ -96,7 +103,9 @@ export class GameLoop {
       // A7: оружие гасит фейды лучей/заряда внутри weapon.update, которого в
       // 'over' больше нет — пропускаем им dt, иначе FX замерзают под экраном
       // итогов (спуск уже отпущен выше, новых выстрелов не будет).
-      const wctx = { tanks: sim.tanks, colliders: sim.arena.colliders };
+      const wctx = this._wctx;
+      wctx.tanks = sim.tanks;
+      wctx.colliders = sim.arena.colliders;
       for (const t of sim.tanks) t.weapon?.update(dt, wctx);
     }
 

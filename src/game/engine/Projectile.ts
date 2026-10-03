@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PROJECTILE } from '../constants';
 import type { Collider } from './physics';
-import { SHOT_HEIGHT_EPS, pointInCollider, segmentHitsCircleT, segmentHitsCollider } from './physics';
+import { SHOT_HEIGHT_EPS, pointInCollider, segmentHitT, segmentHitsCircleT } from './physics';
 import type { EffectsPort } from '../ports/EffectsPort';
 import type { DamageSystem, TankLike } from '../../core/types';
 import type { WeaponType } from '../../core/catalog';
@@ -59,9 +59,14 @@ function doSplash(hitPos: THREE.Vector3, ctx: HitContext, s: Shot, exclude?: Tan
     const falloff = 1 - dist / s.splashRadius;
     const dmg = Math.round(s.splashDmg * falloff);
     if (dmg > 0) {
-      ctx.onTankHit(t, dmg, s.owner);
+      // Порядок «толчок+эффект → урон» (как у прямого попадания, см. Projectile
+      // update): applySplashHit пропускает и толчок, и эффект через
+      // combatAllowsImpulse, а тот снимается `!target.alive`. С уроном первым
+      // сплаш, убивший цель, не давал ни отдачи, ни парка — результат зависел от
+      // 1 HP. applyDamage(0) внутри helper'а — no-op, HP вычитает onTankHit.
       applySplashHit(ctx.damageSystem, t, 0, s.owner, hitPos, WEAPON_TUNING.cannon.splashKnockback * falloff,
         (p) => ctx.effects.impact(p, 0xffcc44));
+      ctx.onTankHit(t, dmg, s.owner);
     }
   }
 }
@@ -160,6 +165,10 @@ export class ProjectileManager {
     s.traveled = 0;
     s.weaponType = weaponType;
     s.dir.copy(dir).normalize();
+    // B5: слот пула живёт между выстрелами. Без сброса первый же trailEffect
+    // писал в trailT = trailInterval(), а у пушки это Infinity → `Infinity - dt`
+    // остаётся Infinity, и весь блок трейла замирал навсегда на слоте.
+    s.trailT = 0;
 
     beh.init(s, owner, damage, customRange);
 
@@ -188,6 +197,16 @@ export class ProjectileManager {
       const pos = s.group.position;
       let dead = false;
 
+      // B6: гвард не-положительного сдвига. Слоты пула создаются со speed = 0
+      // (его ставит behaviour в init()), и любое поведение, забывшее это
+      // сделать, давало stepLen = 0 → traveled не растёт → снаряд не деспавнится
+      // и держит слот до вечности (42 утечки — пул мёртв). При dt < 0 снаряд
+      // уезжал бы назад тем же шагом. dt == 0 (hit-stop) — норма: только стоп.
+      if (!(speed > 0)) {
+        if (dt > 0) despawn(s);
+        continue;
+      }
+
       beh.onFlight(s, dt);
 
       for (let i = 0; i < steps && !dead; i++) {
@@ -196,32 +215,48 @@ export class ProjectileManager {
         pos.addScaledVector(s.dir, stepLen);
         s.traveled += stepLen;
 
+        // B3: broad-phase «снаряд ↔ коллайдеры». AABB свипа (px,pz)→(pos)
+        // считается один раз на субшаг, дальше — четыре дешёвых сравнения
+        // вместо точного свипа по каждому коллайдеру карты (124–201 на карту).
+        // Запас PROJECTILE.radius обязателен: ниже точечный тест бьёт и по
+        // надутому боксу, и без надува broad-phase отсёк бы валидные попадания.
+        const r = PROJECTILE.radius;
+        const sweepMinX = px < pos.x ? px : pos.x;
+        const sweepMaxX = px > pos.x ? px : pos.x;
+        const sweepMinZ = pz < pos.z ? pz : pos.z;
+        const sweepMaxZ = pz > pos.z ? pz : pos.z;
+
+        // B1/B4: ближайшая по свипу стена (не «первая в массиве» и не «любая»).
+        let wall: Collider | null = null;
+        let wallT = 0;
         for (const c of ctx.colliders) {
           if (!c.active || !c.blocksShots) continue;
           // Высотный гейт — единый SHOT_HEIGHT_EPS (канон с railgunBlockers).
           if (pos.y > c.height + SHOT_HEIGHT_EPS) continue;
+          if (
+            sweepMaxX < c.minX - r || sweepMinX > c.maxX + r
+            || sweepMaxZ < c.minZ - r || sweepMinZ > c.maxZ + r
+          ) continue;
           // F5: свип сегментом пред-шаг→шаг, а не только точка после шага.
           // Ловит и «привидельное» прохождение тонкой опоры (0.7 м city), и
           // снаряд, рождённый дулом внутри коллайдера (первый сэмпл i=0 стартует
           // из spawn-точки). Точка+радиус — как раньше (не сужаем до 0).
-          if (
-            !pointInCollider(pos.x, pos.z, c, PROJECTILE.radius)
-            && !segmentHitsCollider(px, pz, pos.x, pos.z, c)
-          ) continue;
-
-          hitPosA.set(px, pos.y, pz);
-          beh.onCollideWall(s, hitPosA, ctx);
-          if (s.splashRadius > 0) doSplash(hitPosA, ctx, s);
-
-          if (c.destructible && !s.owner?.isRemote) {
-            hitPosA.y = Math.min(c.height * 0.5, 2);
-            ctx.damageSystem.damageBlock(c.id, s.damage, hitPosA);
+          // Свип проверяем ПЕРВЫМ: конец почти всегда оказывается внутри
+          // надутого бокса, и проверка точкой первой давала бы t = 0 (старый баг).
+          let t = segmentHitT(px, pz, pos.x, pos.z, c);
+          if (t < 0) {
+            // Пересечения нет — остаётся дискретный тест «конец уже на грань
+            // или внутрь». Параметра у него нет, поэтому удар приписываем к
+            // началу субшага (t = 0): это и есть честная нижняя оценка, и
+            // ровно то поведение, что было до этого фикса.
+            if (!pointInCollider(pos.x, pos.z, c, r)) continue;
+            t = 0;
           }
-          despawn(s);
-          dead = true;
-          break;
+          if (!wall || t < wallT) {
+            wall = c;
+            wallT = t;
+          }
         }
-        if (dead) break;
 
         let bestTank: (typeof ctx.tanks)[number] | null = null;
         let bestT = Infinity;
@@ -236,6 +271,32 @@ export class ProjectileManager {
             bestTank = t;
           }
         }
+
+        // B4: стена не перебивает корпус, до которого снаряд не дошёл ещё.
+        // resolveCircle держит танк на ≥ radius от стены, а по нему снаряд
+        // «попадает» за 0.18 м до грани — оба события жили в одном субшаге, и
+        // прижатый к стене танк всегда проигрывал стене. При равных t приоритет
+        // у стены (сплошная геометрия важнее мягкого корпуса).
+        if (wall && wallT <= bestT) {
+          // B1: точка удара — пересечение с гранью, а не начало субшага: взрыв,
+          // сплаш и damageBlock уезжали назад к стрелку (до 0.6 м = stepLen).
+          hitPosA.set(
+            px + (pos.x - px) * wallT,
+            pos.y,
+            pz + (pos.z - pz) * wallT,
+          );
+          beh.onCollideWall(s, hitPosA, ctx);
+          if (s.splashRadius > 0) doSplash(hitPosA, ctx, s);
+
+          if (wall.destructible && !s.owner?.isRemote) {
+            hitPosA.y = Math.min(wall.height * 0.5, 2);
+            ctx.damageSystem.damageBlock(wall.id, s.damage, hitPosA);
+          }
+          despawn(s);
+          dead = true;
+          break;
+        }
+
         if (bestTank) {
           const sx = px + (pos.x - px) * bestT;
           const sz = pz + (pos.z - pz) * bestT;

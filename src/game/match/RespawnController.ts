@@ -18,7 +18,30 @@ export interface RespawnHooks {
   setDeathT: (v: number) => void;
 }
 
+/** Строка пула угроз для скоринга точки респауна (мутируется на месте). */
+interface ThreatPoint {
+  x: number;
+  z: number;
+}
+
 export class RespawnController {
+  /**
+   * Занятые в текущем прогоне точки респауна — пул на весь матч. Раньше новый
+   * `Set` создавался в каждом `update`, а `MatchRuntime.update` зовёт его
+   * безусловно каждый тик боя (60/с), даже когда никто не мёртв.
+   * Инвариант: `clear()` — первая операция `update` (ранних выходов нет), а
+   * читается множество только в цикле ниже, поэтому в следующий кадр мусор
+   * не попадает даже если в `update` добавят guard.
+   */
+  private readonly claimed = new Set<number>();
+  /**
+   * Точки угроз для скоринга спавна (только враги) — переиспользуемый буфер:
+   * раньше массив и по объекту на врага создавались при каждом респавне.
+   * Длина схлопывается под фактическое число врагов, строки мутируются
+   * на месте (тот же приём, что `MatchRuntime._personals`).
+   */
+  private readonly threats: ThreatPoint[] = [];
+
   constructor(private hooks: RespawnHooks) {}
 
   /**
@@ -27,7 +50,8 @@ export class RespawnController {
    * берёт пулем, исключая уже занятые в этом прогоне (dead-дедуп).
    */
   update(_dt: number, tanks: TankEntity[], respawnDelaySec: number, spawnInvulnSec: number) {
-    const claimed = new Set<number>();
+    const claimed = this.claimed;
+    claimed.clear();
     for (const t of tanks) {
       if (t.isRemote) continue;
       if (canRespawn(t, respawnDelaySec)) {
@@ -46,11 +70,16 @@ export class RespawnController {
     // а его заводские ±128 к тому же устарели после перестройки карт.
     const points = respawnPoolFor(tank.teamId as TeamId);
     // Threats for point scoring: enemies only (same threat model as before).
-    const threats: { x: number; z: number }[] = [];
+    const threats = this.threats;
+    let n = 0;
     for (const t of tanks) {
       if (!t.alive || t.id === tank.id || !isEnemy(tank, t)) continue;
-      threats.push({ x: t.position.x, z: t.position.z });
+      const row = threats[n] ?? (threats[n] = { x: 0, z: 0 });
+      row.x = t.position.x;
+      row.z = t.position.z;
+      n++;
     }
+    threats.length = n;
 
     const [x, z, pickedIdx] = pickRespawnPoint(points, threats, Math.random, claimed);
     claimed.add(pickedIdx);

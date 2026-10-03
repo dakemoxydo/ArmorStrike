@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import type { FrameContext, SimSystem, NameplateMap } from './types';
 import type { Arena } from '../../Arena';
 import type { EffectsPort } from '../../ports/EffectsPort';
-import type { ProjectileManager } from '../Projectile';
+import type { HitContext, ProjectileManager } from '../Projectile';
 import type { AudioPort } from '../../ports/AudioPort';
 import type { CombatSystem } from '../../CombatSystem';
 import type { BotRoster } from '../../BotRoster';
@@ -57,26 +57,46 @@ export class PhysicsSystemStage implements SimSystem {
 export class ProjectileStage implements SimSystem {
   readonly name = 'projectile';
 
+  /**
+   * Переиспользуемый HitContext: раньше объект + новое замыкание `onTankHit`
+   * создавались в каждом `update` (60/с) — чистый мусор в самом горячем
+   * стейдже плюс свежая функция в call site внутри внутреннего цикла снарядов
+   * (см. MatchRuntime._personals — тот же приём с пулом буферов).
+   *
+   * Состав контекста по жизни арены не меняется: `Arena.rebuild` чистит
+   * коллайдеры на месте (`colliders.length = 0`), ссылка та же — как и массив
+   * ростера (`GameSimulation.clearTanks` тоже in-place, на него же завязан
+   * RemotePlayerManager). Тем не менее поля досинхронизируются по ссылке
+   * перед вызовом: одно сравнение указателей дешевле аллокации на кадр.
+   */
+  private readonly hitCtx: HitContext;
+
   constructor(
     private projectiles: ProjectileManager,
     private arena: Arena,
-    private effects: EffectsPort,
+    effects: EffectsPort,
     private combat: CombatSystem,
-  ) {}
-
-  update(ctx: FrameContext): void {
-    this.projectiles.update(ctx.dt, {
-      colliders: this.arena.colliders,
-      tanks: ctx.tanks,
-      effects: this.effects,
-      damageSystem: this.combat.damageSystem,
+  ) {
+    this.hitCtx = {
+      colliders: arena.colliders,
+      tanks: [],
+      effects,
+      damageSystem: combat.damageSystem,
       // C2 root fix: real HP must go through applyDamage (takeDamage + hooks),
       // not onTankDamaged alone (presentation hook assumes damage already applied).
       onTankHit: (target, dmg, owner) => {
         // C2: real HP must go through applyDamage (takeDamage + hooks).
         this.combat.damageSystem.applyDamage(target, dmg, owner);
       },
-    });
+    };
+  }
+
+  update(ctx: FrameContext): void {
+    const hit = this.hitCtx;
+    if (hit.tanks !== ctx.tanks) hit.tanks = ctx.tanks;
+    const colliders = this.arena.colliders;
+    if (hit.colliders !== colliders) hit.colliders = colliders;
+    this.projectiles.update(ctx.dt, hit);
   }
 }
 

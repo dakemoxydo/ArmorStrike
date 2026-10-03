@@ -70,8 +70,10 @@ PlayerInputStage ──► NetworkSyncStage ──► TankMotion ──► Weapo
 
 ### 3.1 Жизненный цикл
 - При получении пакета `tank_transform` от неизвестного `userId` менеджер спавнит полноценную сущность `TankEntity` в `sim.tanks`, создавая процедурный меш корпуса, башни, оружие и неймплейт (`PlayerNameplate`).
+- **Старт позы:** пир появляется на спавн-точке своей команды (`ALPHA_SPAWN_POINTS` / `BRAVO_SPAWN_POINTS` / `FFA_SPAWN_POINTS`) и остаётся `alive = false` до первого `tank_transform` c `alive !== false`. Нулевая точка (дефолт THREE) лежит в зоне захвата CP, поэтому «живой» фантомный танк давал бы presence своей команде до первого пакета (RTT, либо все 15 секунд таймаута). Позы с нефинитными числами (`NaN` / `±Infinity` в `x`/`z`/`yaw`) отбрасываются целиком — вместе с обновлением `lastPacketTime`.
 - При получении `player_left` через Presence или при отсутствии пакетов свыше 15 секунд (`DISCONNECT_TIMEOUT`) танк удаляется из `sim.tanks` и сцены Three.js.
-- При выходе в меню / сбросе раунда `sim.remotePlayers.clear()` уничтожает все меши и освобождает ресурсы.
+- `removePeer` помечает уход **до** проверки наличия peer: «зависший» `await createTankEntity` утилизирует свежий танк вместо регистрации фантома (иначе он жил бы ещё 15 секунд и считался в humans), буферы `pendingFire` / `pendingTransform` чистятся, чтобы переподключившийся тот же `userId` не получил устаревшую позу/выстрел.
+- При выходе в меню / сбросе раунда `sim.remotePlayers.clear()` уничтожает все меши и освобождает ресурсы (включая висящие спавны).
 
 ### 3.2 Интерполяция координат и углов
 - **Позиция:** экспоненциальный Lerp со скоростью $14 \cdot dt$:
@@ -100,7 +102,9 @@ PlayerInputStage ──► NetworkSyncStage ──► TankMotion ──► Weapo
    - Потерянный kill-пакет восстанавливается полем `alive` в следующем `tank_transform`.
 
 3. **Матч (`match_sync`):**
-   - Хост шлёт время, очки, зоны CP и флаг `ended`. Клиент вызывает `MatchRuntime.applyHostSync`.
+   - Хост шлёт время, очки, зоны CP, флаг `ended`, авторитетные строки `players[]` (`networkId`, `name`, `kills`, `deaths`, `score`, `bestStreak`) и `winnerId` победителя DM. Клиент вызывает `MatchRuntime.applyHostSync`.
+   - Граница доверия — на приёме: `timeSec`/`teamScore`/`teamKills` проверяются на конечность и диапазон (`run.matchTime` не должен стать `NaN` навсегда), `captures[].progress` клампится в `0..1`, `players[]` проходит `sanitizeSyncPlayers`.
+   - Награды и итоги клиента берутся из авторитетной строки по своему `networkId` (`playerKills` / `playerDeaths` / `playerScore`), победа в DM определяется по `winnerId`, а не по display name. Нет поля `players` (старый хост) → откат на локальные значения.
 
 ---
 

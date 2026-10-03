@@ -56,7 +56,6 @@ export interface TurretDef {
   fullReload: number;
   /** Угловая скорость поворота башни в горизонте (рад/с). */
   turretSpeed: number;
-  recoil: number;
   range: number;
   /** Максимальный угол задирания ствола вверх (рад). Вертикальная автонаводка. */
   elevationAngle: number;

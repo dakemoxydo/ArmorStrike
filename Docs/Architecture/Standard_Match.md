@@ -111,6 +111,19 @@ ModeSelect → MapSelect → startRound(mapId)
 - Duty flag on `BotEntry.objectiveDuty` at roster spawn (~50%).
 - Path via `AICtx.moveHint` (zone center); aim/fire still use hostile focus.
 - Clear moveHint when `shouldFightNearObjective` (close threat or enemy on point).
+- Fight band comes from **weapon range, not sight range**: the stage passes
+  `objectiveFightRange(bot.turretId, BOT_NORMAL.sightRange)` =
+  `min(TURRETS[turretId].range, sightRange) × 1.05` (`src/game/aiRoles.ts`).
+  Same measure as the controller's own close-combat gate (`dist <= fireRange × 1.05`),
+  so objective duty and engage agree on what "too far to fight" means. Do not
+  reintroduce a flat multiple of `sightRange` — it made short-range turrets
+  abandon the point against enemies they cannot reach.
+- Allocation contract for `BotAiStage` (`src/game/engine/stages/BotAiStage.ts`):
+  **no allocation per bot per frame.** Positions, the `AICtx` passed to
+  `ai.update`, the focus cell and the "no target" stub are reusable fields; the
+  only remaining per-frame literal is `pickAiFocus`'s result (a pure function
+  outside this stage's responsibility). Same rule inside `AIController`: perceive
+  / target / cover-opts cells are reused, never re-created literals.
 - **Do not** hardcode zone coordinates in `AIController` — only consume hints from stage.
 
 ## 11. Results & balance (P6)

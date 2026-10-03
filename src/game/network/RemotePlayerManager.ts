@@ -8,9 +8,16 @@ import { createTankEntity, createWeapon, type WeaponFactoryDeps } from '../Playe
 import type { TankEntity } from '../Tank';
 import type { TeamId } from '../match/matchTypes';
 import { applyRespawnCombat, restoreRespawnVisuals } from '../match/respawn';
+import {
+  ALPHA_SPAWN_POINTS,
+  BRAVO_SPAWN_POINTS,
+  FFA_SPAWN_POINTS,
+  pickPointIndex,
+} from '../match/spawnPoints';
 import type { TankTransformPacket, WeaponFirePacket } from './types';
 import { logError } from '../../lib/log';
 import {
+  isFinitePosePacket,
   parseHullId,
   parseTeamId,
   parseTurretId,
@@ -27,11 +34,33 @@ interface RemotePeer {
   targetPitch: number;
   targetSpeed: number;
   lastPacketTime: number;
+  /** Позы от хоста ещё не было: танк «не родился» (alive = false). */
+  hasPose: boolean;
+}
+
+/**
+ * Стартовая точка пира из спавн-пула его команды. Ноль не годится: точка
+ * (0,0) лежит в зоне захвата на всех картах, и «живой» фантомный танк в ней
+ * сбивал бы прогресс захвата до первого tank_transform.
+ */
+function pickPeerSpawn(team: TeamId): [number, number] {
+  const pool = team === 'bravo'
+    ? BRAVO_SPAWN_POINTS
+    : team === 'alpha'
+      ? ALPHA_SPAWN_POINTS
+      : FFA_SPAWN_POINTS;
+  return pool[pickPointIndex(pool, new Set<number>(), 0, 0, 0)];
 }
 
 export class RemotePlayerManager {
   private peers = new Map<string, RemotePeer>();
   private pendingSpawns = new Set<string>();
+  /**
+   * Поколение спавна на userId. removePeer инкрементирует его, чтобы
+   * «зависший» spawnPeer (await createTankEntity) утилизировал свежий танк
+   * вместо регистрации фантома, который потом ещё 15 секунд жил бы по таймауту.
+   */
+  private readonly spawnGen = new Map<string, number>();
   private fireTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   private pendingFire = new Map<string, WeaponFirePacket>();
   private pendingTransform = new Map<string, TankTransformPacket>();
@@ -53,6 +82,10 @@ export class RemotePlayerManager {
     return Array.from(this.peers.values());
   }
 
+  private genOf(userId: string): number {
+    return this.spawnGen.get(userId) ?? 0;
+  }
+
   async spawnPeer(
     userId: string,
     username: string,
@@ -65,6 +98,7 @@ export class RemotePlayerManager {
     }
 
     this.pendingSpawns.add(userId);
+    const gen = this.genOf(userId);
     try {
       const teamColor = team === 'alpha'
         ? new THREE.Color(COLORS.teamAlpha)
@@ -80,11 +114,23 @@ export class RemotePlayerManager {
         style: buildBotStyle(teamColor),
       });
 
+      // Пир ушёл, пока мы спавнились (player_left / presence leave): сцена и
+      // tanksList ещё чисты — утилизируем танк и выходим, фантом не регистрируем.
+      if (this.genOf(userId) !== gen) {
+        tank.dispose(this.scene);
+        return null;
+      }
+
       tank.teamId = team;
       tank.isRemote = true;
       tank.networkId = userId;
       tank.kills = 0;
       tank.deaths = 0;
+      // Стартовая точка команды + alive = false до первой позы: иначе танк
+      // стоял бы в (0,0,0) внутри зоны захвата и числился живым (presence в CP).
+      const [sx, sz] = pickPeerSpawn(team);
+      tank.position.set(sx, 0, sz);
+      tank.alive = false;
 
       if (team) {
         const ringMat = tank.visual.ring.material as THREE.MeshBasicMaterial;
@@ -104,12 +150,13 @@ export class RemotePlayerManager {
         userId,
         username,
         tank,
-        targetPos: new THREE.Vector3(0, 0, 0),
+        targetPos: new THREE.Vector3(sx, 0, sz),
         targetYaw: 0,
         targetAimYaw: 0,
         targetPitch: 0,
         targetSpeed: 0,
         lastPacketTime: performance.now(),
+        hasPose: false,
       };
 
       this.peers.set(userId, peer);
@@ -135,6 +182,9 @@ export class RemotePlayerManager {
   }
 
   handleTransform(packet: TankTransformPacket) {
+    // Мусорная поза не должна ни спавнить пира, ни попасть в буфер: иначе
+    // битый пакет от Unknown-пира создал бы фантомный танк.
+    if (!isFinitePosePacket(packet)) return;
     const peer = this.peers.get(packet.userId);
     if (!peer) {
       this.pendingTransform.set(packet.userId, packet);
@@ -151,6 +201,11 @@ export class RemotePlayerManager {
   }
 
   private applyTransform(peer: RemotePeer, packet: TankTransformPacket) {
+    // Нефинитная поза (NaN/±Infinity) отравляет и интерполяцию, и CP-математику:
+    // пакет отбрасываем целиком, lastPacketTime не обновляем — иначе мусорными
+    // пакетами можно вечно продлевать жизнь пира.
+    if (!isFinitePosePacket(packet)) return;
+
     const y = packet.y ?? 0;
     peer.targetPos.set(packet.x, y, packet.z);
     peer.targetYaw = packet.yaw;
@@ -166,10 +221,14 @@ export class RemotePlayerManager {
     if (packet.team !== undefined) tank.teamId = parseTeamId(packet.team, tank.teamId);
     if (packet.invulnT !== undefined) tank.invulnT = packet.invulnT;
 
+    // Первая поза = «рождение» пира: до неё танк не считается живым.
+    // alive === undefined (старый хост) на первой позе тоже трактуем как alive.
+    const born = !peer.hasPose;
+    peer.hasPose = true;
     const alive = packet.alive;
     if (alive === false && tank.alive) {
       this.onSilentDeath?.(tank);
-    } else if (alive === true && !tank.alive) {
+    } else if (!tank.alive && (alive === true || (born && alive !== false))) {
       applyRespawnCombat(tank, packet.invulnT ?? 0);
       restoreRespawnVisuals(tank);
       tank.position.set(packet.x, y, packet.z);
@@ -229,6 +288,14 @@ export class RemotePlayerManager {
       clearTimeout(to);
       this.fireTimeouts.delete(userId);
     }
+    // Буферы не должны пережить пира: переподключившийся тот же userId иначе
+    // получил бы устаревшую позу/выстрел из очереди (телепорт + стрельба).
+    this.pendingFire.delete(userId);
+    this.pendingTransform.delete(userId);
+    // Помечаем уход ДО guard'а: пир может ещё спавниться (await createTankEntity),
+    // и тогда его продолжение обязано утилизировать танк, а не зарегистрировать peer.
+    this.spawnGen.set(userId, this.genOf(userId) + 1);
+
     const peer = this.peers.get(userId);
     if (!peer) return;
 
@@ -280,6 +347,11 @@ export class RemotePlayerManager {
   clear() {
     for (const userId of Array.from(this.peers.keys())) {
       this.removePeer(userId);
+    }
+    // Отменяем и «висящие» спавны: вызывающий (clearTanks) уже чистит tanksList,
+    // и доспавнившийся танк вернулся бы в очищенный ростер фантомом.
+    for (const userId of Array.from(this.pendingSpawns)) {
+      this.spawnGen.set(userId, this.genOf(userId) + 1);
     }
     this.peers.clear();
     this.pendingSpawns.clear();

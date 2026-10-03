@@ -218,7 +218,7 @@ export class IsidaWeapon implements Weapon {
    * пропуска DamageSystem ровно пять (!alive, self, invuln, FF, dmg<=0);
    * первые четыре уже исключены захватом/гейтами, кроме invulnT — его гасим
    * здесь (щит поглощает тик без возврата, луч при этом продолжает жечь).
-   * Кап добивающего тика — ПОСЛЕ DamageSystem: в applyHit уходит полный dmg,
+   * Урон идёт ПОСЛЕ толчка/эффекта отдельным вызовом applyDamage — полный dmg,
    * сопротивление/крит считает DamageSystem, а возврат — от снятых HP
    * (hpBefore − health), так что избыток сверх остатка HP цели не лечит.
    */
@@ -234,11 +234,18 @@ export class IsidaWeapon implements Weapon {
     const dist = Math.hypot(dx, dz) || 1;
     tmpKnock.set(dx / dist, 0, dz / dist);
     const hpBefore = t.health;
+    // Порядок «толчок+эффект → урон», как у снаряда (Projectile.update):
+    // applyHit пропускает эффект через combatAllowsImpulse, а гейт снимается
+    // `!target.alive` — с уроном в том же вызове добивающий тик не оставлял ни
+    // толчка, ни дыма. applyHit(0) — только толчок и эффект; урон ниже идёт
+    // полным dmg в applyDamage, где решаются сопротивление/крит (кап вампиризма
+    // остаётся по снятым HP: hpBefore − health).
     applyHit(
-      this.deps.damageSystem, t, dmg, this.owner, tmpKnock, tune.knockback,
+      this.deps.damageSystem, t, 0, this.owner, tmpKnock, tune.knockback,
       (p) => this.deps.effects.trailPuff(p, ATK_COLOR),
       impactPoint(t, tmpImpact),
     );
+    this.deps.damageSystem.applyDamage(t, dmg, this.owner);
     // Возврат считается от снятых HP, а не от заявленного урона: сопротивление
     // корпуса по типу урона и крит считает DamageSystem — вампиризм обязан
     // следовать за ними (щит/поглощение дают 0 возврата автоматически).

@@ -55,6 +55,13 @@ export class CameraRig {
   private peekCover = 1;
   /** Последний применённый оффсет — чтобы не пересобирать проекцию впустую. */
   private appliedOffset = { dx: NaN, dy: NaN, w: 0, h: 0 };
+  /**
+   * Ячейка результата avoidObstacles: обход зовётся каждый кадр из
+   * PlayingCameraMode, который сразу читает dx/dz/dy и ничего не хранит —
+   * значит объект можно переиспользовать (как scratch-векторы GameLoop).
+   * Ссылка стабильна между вызовами, значения обновляются на месте.
+   */
+  private readonly obsOut = { dx: 0, dz: 0, dy: 0 };
 
   private modes: Record<GameMode, CameraMode>;
 
@@ -210,7 +217,11 @@ export class CameraRig {
       const tt = Math.max(minT * 0.92, 0.18);
       dx *= tt; dz *= tt; dy *= Math.max(tt, 0.5);
     }
-    return { dx, dz, dy };
+    const out = this.obsOut;
+    out.dx = dx;
+    out.dz = dz;
+    out.dy = dy;
+    return out;
   }
 
   /** Плавный переход FOV с обновлением проекционной матрицы. */

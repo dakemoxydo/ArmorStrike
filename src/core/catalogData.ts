@@ -8,6 +8,17 @@ export const WEAPON_TUNING = {
     penetrationFactor: 0.65,
     range: Infinity,
     knockback: 18.0,
+    /**
+     * Самоотдача — импульс САМОМУ стрелку (`Tank.onFired(recoil)`: сдвиг корпуса,
+     * визуальный кик ствола, импульс подвески). Это НЕ knockback по цели.
+     * Сдвиг стрелка = значение / KNOCKBACK_DECAY (5.5): 3.0 → 0.55 м, ровно
+     * как у пушки «Смоки» (2.8 → 0.51 м). Раньше сюда уходил knockback 18
+     * → 3.27 м за выстрел: снайпер-бот вылетал из своей полосы, а у ИИ нет
+     * компенсации отдачи.
+     */
+    selfRecoil: 3.0,
+    /** Самоотдача бота — слабее (как botKnockback пушки): не «стоять на куске». */
+    selfRecoilBot: 2.0,
     emissiveIdle: 0.15,
     emissiveCharged: 4.5,
     /** Life of the visual beam — one arc layer, fade curve in RailgunBeamFx. */
@@ -99,12 +110,26 @@ export const WEAPON_TUNING = {
     arcadeDamage: 30,
     lockTime: 1.3,
     reloadTime: 2.2,
-    arcadeReloadTime: 1.05,
+    /**
+     * Аркадный кулдаун. DPS аркады = arcadeDamage / arcadeReloadTime = 30/2.1 =
+     * 14.3 — строго ниже снайперских 65 / (lockTime + reloadTime) = 65/3.5 = 18.6,
+     * и по dps на метр (0.163 против 0.169). При 1.05 аркада давала 28.6 DPS:
+     * «тап-спам» без захвата был выгоднее заголовочного режима, и механика
+     * захвата превращалась в ловушку. Цикл аркады всё ещё на 40 % короче
+     * снайперского (2.1 против 1.3 + 2.2 = 3.5) — это и остаётся её ценность.
+     */
+    arcadeReloadTime: 2.1,
     range: 110.0,
     arcadeRange: 85.0,
     lockConeAngle: 0.075,
     knockback: 16.0,
     arcadeKnockback: 6.0,
+    /** Самоотдача снайперского залпа (игрок): сдвиг = значение / 5.5 = 0.58 м. */
+    selfRecoil: 3.2,
+    selfRecoilBot: 2.2,
+    /** Аркадный выстрел — лёгкий тычок: самоотдача заметно меньше снайперской. */
+    arcadeSelfRecoil: 1.6,
+    arcadeSelfRecoilBot: 1.0,
     magazine: 1,
     fireShakePlayer: 0.52,
     fireShakeBot: 0.16,
@@ -231,7 +256,6 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     magazine: WEAPON_TUNING.railgun.magazine,
     fullReload: WEAPON_TUNING.railgun.reloadTime,
     turretSpeed: 7.5,
-    recoil: WEAPON_TUNING.railgun.knockback,
     range: WEAPON_TUNING.railgun.range,
     // УВН тяжёлой снайперской пары: умеренные углы, медленный довод ствола.
     elevationAngle: (22 * Math.PI) / 180, // ≈ +22°
@@ -250,7 +274,6 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     magazine: WEAPON_TUNING.flamethrower.energyMax,
     fullReload: 0,
     turretSpeed: 8.5,
-    recoil: WEAPON_TUNING.flamethrower.knockback,
     range: WEAPON_TUNING.flamethrower.range,
     // Огнемёт: ближний бой, широкий сектор, быстрый довод лёгких стволов-насадок.
     elevationAngle: (30 * Math.PI) / 180, // ≈ +30°
@@ -269,7 +292,6 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     magazine: WEAPON_TUNING.cannon.magazine,
     fullReload: WEAPON_TUNING.cannon.reloadTime,
     turretSpeed: 8.0,
-    recoil: WEAPON_TUNING.cannon.knockback,
     range: WEAPON_TUNING.cannon.range,
     // Автопушка: базовые углы из черновика (~+22°/−14°), бодрый довод ствола.
     elevationAngle: (22 * Math.PI) / 180, // ≈ +22°
@@ -288,7 +310,6 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     magazine: WEAPON_TUNING.gauss.magazine,
     fullReload: WEAPON_TUNING.gauss.reloadTime,
     turretSpeed: 6.5,
-    recoil: WEAPON_TUNING.gauss.knockback,
     range: WEAPON_TUNING.gauss.range,
     // Гаусс: самый тяжёлый ствол — узкий сектор, медленный довод (снайпер).
     elevationAngle: (18 * Math.PI) / 180, // ≈ +18°
@@ -309,7 +330,6 @@ export const TURRETS: Record<TurretId, TurretDef> = {
     magazine: WEAPON_TUNING.isida.energyMax,
     fullReload: 0,
     turretSpeed: 7.5,
-    recoil: WEAPON_TUNING.isida.knockback,
     range: WEAPON_TUNING.isida.range,
     // «Изида»: лёгкая нано-башня, самый широкий сектор и быстрый довод
     // (луч должен успевать за целью на ближней-средней дистанции).

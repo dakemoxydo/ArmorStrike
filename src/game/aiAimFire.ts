@@ -33,9 +33,11 @@ export function updateTurretAndFire(
   state.wantsFire = false;
   if (engage && player.alive) {
     const w = tank.params.weaponType as WeaponType | undefined;
-    // Lead time = flight time at the REAL shell speed. Reading the same
-    // tuning value the cannon behavior uses — a stale global constant (58 vs
-    // the actual 48) made bots under-lead moving targets by ~17%.
+    // Время упреждения = полёт на РЕАЛЬНОЙ скорости снаряда:
+    // WEAPON_TUNING.cannon.speed (catalogData.ts; применяется поведением пули
+    // в ProjectileBehavior.cannon.init) — тот же источник, что и у снаряда.
+    // Раньше здесь стоял протухший глобал 58 против реальных 54: боты
+    // недодавали упреждения движущимся целям примерно на 7 %.
     const lead = w === 'cannon'
       ? clamp(dist / WEAPON_TUNING.cannon.speed, 0, 1.4) * persona.lead
       : 0;

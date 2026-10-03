@@ -7,7 +7,7 @@ const cache = new Map<string, THREE.CanvasTexture>();
 /**
  * Мемоизация фабрики текстур по строковому ключу.
  * Возвращённая текстура помечена markShared — поштучный teardown
- * (disposeObject3D / disposeArenaSubtree / SpriteMaterial.map?.dispose)
+ * (disposeObject3D / SpriteMaterial.map?.dispose)
  * обязан её пропустить; владельцем остаётся этот кэш до конца процесса.
  */
 export function cachedTexture(key: string, build: () => THREE.CanvasTexture): THREE.CanvasTexture {

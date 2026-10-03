@@ -67,6 +67,91 @@ const initialFinalStats: FinalStats = {
 };
 
 /**
+ * Проба webgl2 на временном canvas. Живой контекст сразу отпускаем через
+ * WEBGL_lose_context: браузер держит не больше ~16 контекстов на документ,
+ * а каждый StrictMode-ремонт и HMR-перезагрузка иначе копили бы их.
+ */
+function probeWebgl2(): boolean {
+  const probeCanvas = document.createElement('canvas');
+  const probe = probeCanvas.getContext('webgl2');
+  if (!probe) return false;
+  try {
+    probe.getExtension('WEBGL_lose_context')?.loseContext();
+  } catch { /* проба одноразовая: терять нечего */ }
+  return true;
+}
+
+/** Один слот инстанса Game на canvas (см. canvasSlots). */
+interface CanvasSlot {
+  promise: Promise<Game>;
+  /** Разрешившийся инстанс (null — пока в полёте). */
+  game: Game | null;
+  /** Сколько прогонов boot-эффекта сейчас держат слот. */
+  refs: number;
+  /** Отложенный dispose после обнуления refs (окно переиспользования StrictMode). */
+  disposeTimer: ReturnType<typeof setTimeout> | null;
+}
+
+/**
+ * Реестр инстансов Game на canvas: bootstrap обязан быть идемпотентным.
+ *
+ * StrictMode монтирует эффект дважды (mount → cleanup → mount) синхронно, и
+ * второй прогон успевает вызвать `Game.create(canvas)`, пока первый висит
+ * внутри `bootstrapGame` (await на превью-танке). Два вызова — два
+ * `new THREE.WebGLRenderer({ canvas })` на одном webgl2-контексте плюс два
+ * `gameLoop.start()`, а teardown первого выбивает GL-ресурсы у второго. Флаг
+ * `cancelled` от этого не спасает: он подавляет только запись в состояние.
+ * Поэтому второй прогон ЗАБИРАЕТ тот же инстанс, а не создаёт второй.
+ *
+ * Владение — по счётчику refs: он уходит в ноль не сразу, а через макротаску
+ * (cleanup→mount StrictMode идут в одном синхронном тике, синхронный dispose
+ * убил бы инстанс, который тут же переиспользует второй прогон). Новый acquire
+ * отменяет отложенный dispose; если не пришёл (настоящий unmount) — слот
+ * удаляется из реестра и инстанс честно dispose'ится.
+ */
+const canvasSlots = new WeakMap<HTMLCanvasElement, CanvasSlot>();
+
+function acquireSlot(canvas: HTMLCanvasElement): CanvasSlot {
+  const existing = canvasSlots.get(canvas);
+  if (existing) {
+    if (existing.disposeTimer !== null) {
+      clearTimeout(existing.disposeTimer);
+      existing.disposeTimer = null;
+    }
+    existing.refs += 1;
+    return existing;
+  }
+
+  const created: Promise<Game> = Game.create(canvas);
+  const slot: CanvasSlot = { promise: created, game: null, refs: 1, disposeTimer: null };
+  canvasSlots.set(canvas, slot);
+  // Резолв доносит инстанс до слота (иначе отложенный dispose нечего гасить),
+  // а отказ снимает слот: следующий прогон должен начать бут заново, а не
+  // получать тот же reject (HMR/перезагрузка страницы).
+  void created.then(
+    (g) => {
+      slot.game = g;
+    },
+    () => {
+      if (canvasSlots.get(canvas) === slot) canvasSlots.delete(canvas);
+    },
+  );
+  return slot;
+}
+
+function releaseSlot(canvas: HTMLCanvasElement, slot: CanvasSlot) {
+  slot.refs -= 1;
+  if (slot.refs > 0 || slot.disposeTimer !== null) return;
+  slot.disposeTimer = setTimeout(() => {
+    slot.disposeTimer = null;
+    if (slot.refs > 0) return;
+    if (canvasSlots.get(canvas) === slot) canvasSlots.delete(canvas);
+    slot.game?.dispose();
+    slot.game = null;
+  }, 0);
+}
+
+/**
  * Boot: Game.create awaits async tank mesh / systems; listeners are safe pre/post ready.
  * Owns engine lifecycle, auth-cloud sync, and mode/pause/finalStats/starter state.
  * `setRoundError` и `dispatch` приходят снаружи: round-state живёт раньше
@@ -98,21 +183,32 @@ export function useGameBootstrap(
     if (!canvas) return;
     let g: GameApi | null = null;
     let cancelled = false;
+    let slot: CanvasSlot | null = null;
+    let released = false;
+
+    /** Отпуск доли владения инстансом (идемпотентно на прогон эффекта). */
+    const release = () => {
+      if (released || !slot) return;
+      released = true;
+      releaseSlot(canvas, slot);
+    };
 
     (async () => {
       try {
         // Fail-fast до Game.create: временный canvas, игровой не трогаем (W-1).
-        const probe = document.createElement('canvas').getContext('webgl2');
-        if (!probe) {
+        if (!probeWebgl2()) {
           setBootError({
             message: 'WebGL недоступен или не удалось создать графический контекст.',
             detail: 'webgl2 context probe failed',
           });
           return;
         }
-        const instance = await Game.create(canvas);
+        // Идемпотентный bootstrap: StrictMode-перемонтирование забирает тот же
+        // инстанс вместо второго Game.create на том же canvas.
+        slot = acquireSlot(canvas);
+        const instance = await slot.promise;
         if (cancelled) {
-          instance.dispose();
+          release();
           return;
         }
         g = instance;
@@ -178,6 +274,7 @@ export function useGameBootstrap(
         setStarterClaimed(instance.starterPackClaimed);
         setGame(g);
       } catch (err) {
+        release();
         if (cancelled) return;
         const e = err instanceof Error ? err : new Error(String(err));
         const webgl = /webgl|WebGL|context/i.test(e.message);
@@ -192,7 +289,10 @@ export function useGameBootstrap(
 
     return () => {
       cancelled = true;
-      g?.dispose();
+      // Если инстанс уже отдан в состояние — отпускаем слот сразу; если ещё
+      // в полёте, его отпустит async-ветка выше (см. release).
+      release();
+      g = null;
     };
   }, [canvasRef]);
 

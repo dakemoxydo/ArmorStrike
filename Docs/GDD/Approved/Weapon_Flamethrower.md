@@ -67,6 +67,21 @@ dmg = resolveWeaponDamage(params.damage, damagePerTick)
 applyHit(target, dmg, knockDir, knockback, ...)
 ```
 
+Тики идут **catch-up-циклом** (как у «Изиды»), а не одиночным срабатыванием
+за кадр:
+
+```
+tickTimer += dt
+while tickTimer >= tickRate:      # максимум один тик на кадр: GameLoop клампит dt до 0.05
+    tickTimer -= tickRate
+    processOverlapDamage(...)
+```
+
+Так `dps = damagePerTick / tickRate` не зависит от частоты кадров: при
+одиночном вычитании кадр с `dt ≥ 2 × tickRate` (hitch, catch-up-шаг симуляции)
+терял всё накопленное время тиков. Цикл не может зависнуть — `tickTimer`
+уменьшается на положительный `tickRate` на каждой итерации.
+
 DPS номинал: `5.2 / 0.1 = 52 HP/s` (без учёта движения/промахов).
 
 ## Визуал

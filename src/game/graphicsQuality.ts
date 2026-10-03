@@ -10,11 +10,14 @@ export interface QualityPreset {
   /** Размер shadow map (квадрат) */
   shadowMapSize: number;
   /**
-   * Scene-wide shadow toggle. Deliberately `true` at every tier (shadows scale
-   * by map size only — see Docs/Architecture/Graphics_Presets_Matrix.md);
-   * the flag stays so a future tier can disable them. The runtime toggle in
-   * RenderWorld.applyQuality forces a one-time material recompile (three.js
-   * does not recompile already-compiled materials on its own).
+   * Scene-wide shadow toggle. Disabled at `low`: the shadow camera covers the
+   * whole 300 m arena (±170 m, RenderWorld.applyShadowExtent), so a 512² map is
+   * ~0.66 m per texel — twice as coarse as medium (0.33) and a ~5-texel-wide
+   * blob for a 3.6 m tank, i.e. the extra scene pass (geometry + draw calls)
+   * buys a shadow no sharper than low's own pixel budget. medium and high
+   * resolve silhouettes properly and keep shadows.
+   * The runtime toggle in RenderWorld.applyQuality forces a one-time material
+   * recompile (three.js does not recompile already-compiled materials on its own).
    */
   shadows: boolean;
 }
@@ -25,7 +28,7 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualityPreset> = {
     label: 'НИЗК.',
     pixelRatioMax: 1,
     shadowMapSize: 512,
-    shadows: true,
+    shadows: false,
   },
   medium: {
     id: 'medium',

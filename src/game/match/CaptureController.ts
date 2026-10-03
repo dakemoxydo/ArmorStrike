@@ -103,7 +103,11 @@ export class CaptureController {
       const zone = this.zones.find((z) => z.id === snap.id);
       if (!zone) continue;
       zone.owner = snap.owner === 'alpha' || snap.owner === 'bravo' ? snap.owner : null;
-      zone.progress = snap.progress;
+      // Прогресс из сети — 0..1; NaN/±Infinity из битого пакета игнорируем,
+      // иначе шаг захвата и HUD получают мусор (scoreDelta/Math.min с NaN).
+      if (Number.isFinite(snap.progress)) {
+        zone.progress = Math.min(1, Math.max(0, snap.progress));
+      }
       if (snap.contested !== undefined) zone.contested = snap.contested;
       if (snap.actor !== undefined) {
         zone.actor = snap.actor === 'alpha' || snap.actor === 'bravo' ? snap.actor : null;

@@ -6,14 +6,22 @@ import { losClear, pointInCollider } from './engine/physics';
 
 /** Клиренс точки стояния танка до граней чужих коллайдеров (D5). */
 const COVER_CLEARANCE = 1.4;
+/**
+ * Радиус поиска укрытия от бота и отступ точки за гранью блока — константы
+ * класса, а НЕ опции поиска: единственный вызывающий (`AIController`) их не
+ * передавал, и дифференциация по ролям была недостижима. Класс-уместность
+ * возникает сама (см. докстринг ниже и GDD AI_Bots.md, D3).
+ */
+const COVER_SEARCH_DIST = 42;
+const COVER_STANDOFF = 3.4;
 
 /**
  * Точка за препятствием относительно угрозы: бот прячется «сзади» блока
  * (с дальней от угрозы стороны), предпочитая позиции, рвущие LOS.
  *
- * Поиск класс-нейтрален: default maxDist 42 / standOff 3.4 для всех ролей.
- * Класс-уместность возникает сама — бот дерётся на preferred range своего
- * оружия (flamer ~8 → ближние укрытия; railgun-снайпер ~46 → дальние),
+ * Поиск класс-нейтрален: COVER_SEARCH_DIST / COVER_STANDOFF одинаковы для всех
+ * ролей. Класс-уместность возникает сама — бот дерётся на preferred range своего
+ * оружия (flamer ~7 → ближние укрытия; railgun-снайпер ~44 → дальние),
  * а scoring сам-относительный (80 − distSelf − travel·0.35 + losBlocked·45).
  *
  * D5: кандидат отбрасывается, если попал ВНУТРЬ другого solid-коллайдера
@@ -27,10 +35,10 @@ export function findCoverPoint(
   threatX: number,
   threatZ: number,
   colliders: readonly Collider[],
-  opts: { maxDist?: number; standOff?: number; arenaHalf?: number } = {},
+  opts: { arenaHalf?: number } = {},
 ): { x: number; z: number } | null {
-  const maxDist = opts.maxDist ?? 42;
-  const standOff = opts.standOff ?? 3.4;
+  const maxDist = COVER_SEARCH_DIST;
+  const standOff = COVER_STANDOFF;
   const bound = opts.arenaHalf !== undefined ? opts.arenaHalf - 3 : Infinity;
 
   let best: { x: number; z: number; score: number } | null = null;

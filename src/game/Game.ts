@@ -47,6 +47,17 @@ export class Game implements GameApi {
   private disposed = false;
   private readonly ready: Promise<void>;
 
+  /**
+   * Промис применения облачного профиля (userId → результат).
+   * Вход дёргает `loadCloudProfile` из двух мест — из AuthModal и из подписки
+   * на `SIGNED_IN` (Supabase шлёт событие всем подписчикам), — и оба вызова
+   * прилетают для одного userId. Общий промис превращает второй вызов в
+   * джойн: один SELECT профиля, один `garageChanged`, без гонки за RunState.
+   */
+  private cloudLoad: { userId: string; promise: Promise<boolean> } | null = null;
+  /** Поколение загрузки: поздний ответ по прошлому аккаунту не применяется. */
+  private cloudLoadGen = 0;
+
   constructor(private canvas: HTMLCanvasElement) {
     this.ready = this.boot();
   }
@@ -147,17 +158,39 @@ export class Game implements GameApi {
       run.isGuest = false;
       run.save();
     } else {
+      // Выход стирает локальный профиль → кэш применённого облака больше не
+      // действителен, и поколение растёт, чтобы висящий SELECT не вернул
+      // данные ушедшего аккаунта в гостя.
+      this.cloudLoad = null;
+      this.cloudLoadGen += 1;
       run.resetToGuest();
     }
     this.ctx?.emitEvent({ type: 'garageChanged' });
   }
 
-  async loadCloudProfile(userId: string): Promise<boolean> {
+  loadCloudProfile(userId: string): Promise<boolean> {
+    const inFlight = this.cloudLoad;
+    // Повторный вызов для того же аккаунта (модалка + SIGNED_IN) — джойн к
+    // тому же промису: ни второго SELECT, ни второго garageChanged.
+    if (inFlight && inFlight.userId === userId) return inFlight.promise;
+
+    const gen = ++this.cloudLoadGen;
+    const promise = this.applyCloudProfile(userId, gen);
+    this.cloudLoad = { userId, promise };
+    return promise;
+  }
+
+  private async applyCloudProfile(userId: string, gen: number): Promise<boolean> {
     const sim = this.requireSim();
     sim.run.userId = userId;
     sim.run.isGuest = false;
     const { profile, failed } = await CloudSaveService.loadProfile(userId);
+    // Ответ по прошлому поколению (смена аккаунта / выход) не применяем: иначе
+    // данные одного пользователя лягут поверх состояния другого.
+    if (gen !== this.cloudLoadGen) return false;
     if (failed) {
+      // Неудачу не кэшируем: следующий вызов должен иметь право повторить SELECT.
+      if (this.cloudLoad?.userId === userId) this.cloudLoad = null;
       // Ошибка сети: не перезаписывать облако локальным состоянием (data-loss guard)
       return false;
     }

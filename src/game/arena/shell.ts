@@ -31,7 +31,7 @@ function sharedLampGeo(): THREE.BoxGeometry {
 
 /**
  * Локальные shared unit-геометрии shell'а (стены/стрипы/вывески через scale).
- * markShared → дедуп-dispose (disposeArenaSubtree/disposeObject3D) пропускает.
+ * markShared → дедуп-dispose (disposeObject3D) пропускает.
  * Живут здесь, а не в skyline.ts, чтобы shell не зависел от чужих хелперов.
  */
 let _shellBox: THREE.BoxGeometry | null = null;

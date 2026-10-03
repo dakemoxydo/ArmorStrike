@@ -192,7 +192,11 @@ describe('D6/B10: source pins', () => {
 
   it('F5: projectile wall test sweeps the pre-step→step segment (no ghost pass)', () => {
     const src = read('src/game/engine/Projectile.ts');
-    expect(src).toMatch(/segmentHitsCollider\(px, pz, pos\.x, pos\.z, c\)/);
+    // Свип обязан идти по отрезку px,pz → pos (начало субшага → конец), а не
+    // по конечной точке. Раньше это был булев segmentHitsCollider; теперь
+    // segmentHitT возвращает параметр пересечения, по которому точка удара
+    // интерполируется на грань коллайдера — инвариант тот же и строже.
+    expect(src).toMatch(/segmentHitT\(px, pz, pos\.x, pos\.z, c\)/);
   });
 
   it('B9: ParticleEffects disposes the shared geometries it owns', () => {

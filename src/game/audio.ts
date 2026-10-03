@@ -2,6 +2,22 @@
 import type { WeaponType } from '../core/catalog';
 import type { AudioPort, RailgunChargeHandle } from './ports/AudioPort';
 
+/**
+ * Живая пространственная шина (хвост цепочки gain → [lowpass] → [panner] → master).
+ * Существует ровно столько, сколько отработавших её источников ещё не
+ * отпустило (`pending`). Инвариант вызывающей стороны: `getSpatialBus` всегда
+ * немедленно подключает к `input` хотя бы один слой (все ветки `shoot` /
+ * `explosion` создают источник), поэтому шина без источников не остаётся.
+ */
+interface SpatialBus {
+  /** Узел, к которому подключаются слои звука — его и возвращает getSpatialBus. */
+  input: GainNode;
+  /** Последний узел цепочки (panner / lowpass / input) — он подключён к master. */
+  tail: AudioNode;
+  /** Сколько источников ещё не отпустило шину. */
+  pending: number;
+}
+
 /** Per-charge voice state — one session per RailgunWeapon, never shared. */
 interface ChargeSession {
   oscs: OscillatorNode[];
@@ -45,6 +61,13 @@ export class AudioFX implements AudioPort {
    */
   private chargeSessions = new Map<number, ChargeSession>();
   private nextChargeId = 1;
+  /**
+   * Живые пространственные шины, ключ — входной узел (то, что отдаёт
+   * getSpatialBus вызывающему). Шина снимается с master, когда отработали все её
+   * источники: без этого bus-узлы каждого позиционного звука навсегда оставались
+   * подвешенными к master (в файле не было ни одного disconnect()).
+   */
+  private spatialBuses = new Map<AudioNode, SpatialBus>();
   /**
    * Engine voice state. The oscillator is created once and NEVER stopped —
    * stop/start just ramps its gain, so rapid transitions can't spawn a second
@@ -155,6 +178,7 @@ export class AudioFX implements AudioPort {
       this.flameSource = null;
       this.flameGain = null;
       this.chargeSessions.clear();
+      this.releaseAllSpatialBuses();
       void ctx.close().catch(() => undefined);
     }
   }
@@ -164,6 +188,44 @@ export class AudioFX implements AudioPort {
     g.setValueAtTime(0.0001, t0);
     g.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t0 + attack);
     g.exponentialRampToValueAtTime(0.0001, t0 + attack + decay);
+  }
+
+  /**
+   * Подключить хвост слоя к шине и повесить отпуск шины на завершение источника
+   * (`onended` — единственное гарантированное событие конца AudioScheduledSourceNode,
+   * в том числе после stop()). Референс-каунт: пока жив хоть один источник шины,
+   * её хвост остаётся подключённым к master, поэтому одновременные выстрелы
+   * не отключают шину друг другу.
+   */
+  private connectLayer(tail: AudioNode, src: AudioScheduledSourceNode, dest: AudioNode) {
+    const bus = this.spatialBuses.get(dest);
+    if (bus) {
+      bus.pending += 1;
+      src.onended = () => this.releaseSpatialBus(bus);
+    }
+    tail.connect(dest);
+  }
+
+  /** Отпустить один источник шины; с master снимается только последний. */
+  private releaseSpatialBus(bus: SpatialBus) {
+    bus.pending -= 1;
+    if (bus.pending > 0) return;
+    this.spatialBuses.delete(bus.input);
+    try {
+      bus.input.disconnect();
+      bus.tail.disconnect();
+    } catch { /* уже отключена */ }
+  }
+
+  /** Снос всех живых шин (dispose): хвосты отключаются от master явно. */
+  private releaseAllSpatialBuses() {
+    for (const bus of this.spatialBuses.values()) {
+      try {
+        bus.input.disconnect();
+        bus.tail.disconnect();
+      } catch { /* уже отключена */ }
+    }
+    this.spatialBuses.clear();
   }
 
   private noise(t0: number, dur: number, filterType: BiquadFilterType, f0: number, f1: number, peak: number, dest?: AudioNode) {
@@ -177,7 +239,8 @@ export class AudioFX implements AudioPort {
     flt.frequency.exponentialRampToValueAtTime(Math.max(f1, 20), t0 + dur);
     const g = this.ctx.createGain();
     this.env(g, t0, peak, 0.005, dur);
-    src.connect(flt).connect(g).connect(dest ?? this.master);
+    src.connect(flt).connect(g);
+    this.connectLayer(g, src, dest ?? this.master);
     src.start(t0);
     src.stop(t0 + dur + 0.1);
   }
@@ -190,7 +253,8 @@ export class AudioFX implements AudioPort {
     o.frequency.exponentialRampToValueAtTime(Math.max(f1, 20), t0 + dur);
     const g = this.ctx.createGain();
     this.env(g, t0, peak, 0.004, dur);
-    o.connect(g).connect(dest ?? this.master);
+    o.connect(g);
+    this.connectLayer(g, o, dest ?? this.master);
     o.start(t0);
     o.stop(t0 + dur + 0.1);
   }
@@ -201,6 +265,11 @@ export class AudioFX implements AudioPort {
    * - Стерео-панорамирование через StereoPannerNode относительно курса слушателя (lookYaw)
    * - Заднее приглушение (head shadow / lowpass filter 3800 Гц), если источник за спиной
    * - Если pos не указан (выстрел игрока, UI) — возвращает master-шину без задержек и затухания
+   *
+   * Параметры зависят от позиции источника, поэтому шина строится на каждый
+   * позиционный звук; с master её снимает ПОСЛЕДНИЙ из отработавших источников
+   * (см. connectLayer / releaseSpatialBus), так что одновременные выстрелы
+   * не отключают шину друг другу.
    */
   private getSpatialBus(pos?: { x: number; z: number }): AudioNode | null {
     if (!this.ctx || !this.master) return null;
@@ -247,6 +316,7 @@ export class AudioFX implements AudioPort {
     }
 
     lastNode.connect(this.master);
+    this.spatialBuses.set(busGain, { input: busGain, tail: lastNode, pending: 0 });
     return busGain;
   }
 

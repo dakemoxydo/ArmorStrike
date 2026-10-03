@@ -264,7 +264,9 @@ export class RailgunWeapon implements Weapon {
     } else {
       this.deps.audio.shoot('railgun', this.owner.position);
     }
-    this.owner.onFired(rt.knockback);
+    // Импульс САМОМУ стрелку — selfRecoil, НЕ knockback по цели
+    // (18 → 3.27 м сдвига за выстрел, см. WEAPON_TUNING.railgun.selfRecoil).
+    this.owner.onFired(isPlayer ? rt.selfRecoil : rt.selfRecoilBot);
 
     // Muzzle / camera / FOV punch (instant — the crack precedes the beam)
     this.deps.effects.railgunMuzzle(tmpMuzzle);
@@ -370,8 +372,11 @@ export class RailgunWeapon implements Weapon {
     const ownerTeam = this.owner.teamId ?? null;
     for (const t of tanks) {
       if (t.id === this.owner.id || !t.alive) continue;
-      // Skip teammates to avoid pushing allies / wasting penetration.
-      // Mirrors DamageSystem.applyDamage team filter; knockback/VFX aren't gated there.
+      // Союзников режем здесь: тот же team-фильтр, что у `DamageSystem.applyDamage`
+      // и у `combatAllowsImpulse` (applyHit.ts) — толчок и VFX гейтятся им же
+      // (первым идёт `!target.alive`), так что дубликат не расходится с рантаймом.
+      // Оставляем его дубликатом: союзник отсекается ДО геометрии луча и ДО
+      // траты penetration.
       const targetTeam = t.teamId ?? null;
       if (ownerTeam !== null && targetTeam !== null && ownerTeam === targetTeam) continue;
       t.visual.group.updateMatrixWorld(true);
@@ -401,15 +406,18 @@ export class RailgunWeapon implements Weapon {
     return { dist: hit.dist, id: hit.id, point };
   }
 
-  /** Есть ли живой игрок в `range` по XZ от владельца (гейт bot-fire trauma). */
+  /** Есть ли ХОТЯ БЫ ОДИН живой игрок в `range` по XZ от владельца (гейт
+   *  bot-fire trauma). Сканируем ВСЕ танки: ранний `return` по первому же
+   *  игроке делал ответ зависимым от порядка в ростере — тряска от выстрела
+   *  бота гасилась, если ДРУГОЙ игрок стоял дальше. */
   private playerNear(tanks: CombatPeer[], range: number): boolean {
     const self = this.owner.position;
     const r2 = range * range;
     for (const t of tanks) {
-      if (!t.isPlayer) continue;
+      if (!t.isPlayer || !t.alive) continue;
       const dx = t.position.x - self.x;
       const dz = t.position.z - self.z;
-      return t.alive && dx * dx + dz * dz <= r2;
+      if (dx * dx + dz * dz <= r2) return true;
     }
     return false;
   }

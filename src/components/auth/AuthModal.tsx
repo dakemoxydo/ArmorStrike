@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
@@ -49,6 +49,8 @@ export default function AuthModal({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  /** Отложенный авто-переход на вкладку входа — гасится при размонтировании. */
+  const switchTabTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -57,6 +59,17 @@ export default function AuthModal({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  // Модалку могли закрыть (X/Escape) раньше таймера — без clearTimeout он
+  // срабатывает на размонтированном компоненте и дёргает setTab.
+  useEffect(() => {
+    return () => {
+      if (switchTabTimer.current !== null) {
+        clearTimeout(switchTabTimer.current);
+        switchTabTimer.current = null;
+      }
+    };
+  }, []);
 
   const switchTab = (nextTab: AuthTab) => {
     setTab(nextTab);
@@ -80,7 +93,10 @@ export default function AuthModal({
         return;
       }
 
-      // Загружаем облачный профиль в Game
+      // Загружаем облачный профиль в Game. Supabase в этом же тике шлёт
+      // SIGNED_IN подписке useGameBootstrap, но Game.loadCloudProfile отдаёт
+      // обоим один и тот же промис — ждём здесь завершения (гараж/ник готовы к
+      // показу), второй SELECT и второй garageChanged не случатся.
       if (game) {
         await game.loadCloudProfile(res.user.id);
       }
@@ -135,7 +151,8 @@ export default function AuthModal({
         return;
       }
 
-      // Обновляем состояние в игре
+      // Обновляем состояние в игре. loadCloudProfile — тот же общий промис,
+      // что и у SIGNED_IN-подписки (см. handleLogin): повторного SELECT нет.
       if (game) {
         game.setAuthUser({
           id: res.user.id,
@@ -202,7 +219,8 @@ export default function AuthModal({
       }
 
       setSuccessMsg('Пароль успешно обновлён! Теперь вы можете войти.');
-      setTimeout(() => switchTab('login'), 1500);
+      if (switchTabTimer.current !== null) clearTimeout(switchTabTimer.current);
+      switchTabTimer.current = setTimeout(() => switchTab('login'), 1500);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {

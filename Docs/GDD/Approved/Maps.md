@@ -78,7 +78,15 @@ Enter в главном меню открывает выбор карты (не 
 
 ## Known gaps / balance notes
 
-1. **Combat range vs map size** — `PROJECTILE.range=85`, AI `sightRange=46` not retuned; long repositioning on City/Village/Factory is expected.
+1. **Combat range vs map size** — боевые дистанции не перебалансированы под арену 300:
+   AI `BOT_NORMAL.sightRange = 65` (`src/game/match/matchConfig.ts`), снаряд пушки —
+   `WEAPON_TUNING.cannon.range = 75` (`src/core/catalogData.ts`, приходит в
+   `ProjectileManager.fire` как `customRange` из `CannonWeapon`).
+   `PROJECTILE.range = 85` (`src/game/constants.ts`) — **не боевая дальность**: это
+   инициализатор `Shot.maxRange` у слота пула (`Projectile.ts`), который
+   `BEHAVIORS.cannon.init()` перезаписывает на 75 (единственный зарегистрированный
+   behavior). Значение живёт только как фолбэк и на геймплей не влияет.
+   Длинные перестроения на City/Village/Factory ожидаемы.
 2. **Factory first-contact** — bots spawn at ±128 and drive inward to the district ring.
 
 > **Resolved 2026-09-11:** «Factory empty ring» (был #1) — контент пересобран на всю арену 300, legacy-модули удалены. См. [[Factory_Level_Design]].

@@ -157,7 +157,12 @@ export function segmentHitsCollider(
   return tmax >= tmin;
 }
 
-/** Возвращает параметр t∈[0,1] первого пересечения сегмента с AABB (с отступом) или -1. */
+/**
+ * Возвращает параметр t∈[0,1] первого пересечения сегмента с AABB (с отступом) или -1.
+ * Старт внутри AABB → t = 0 (вход в slab остался за началом сегмента).
+ * `tmin` инициализирован 0 и растёт только через Math.max, поэтому отрицательным
+ * быть не может — возвращаем как есть, без «защитного» сравнения.
+ */
 export function segmentHitT(
   ax: number, az: number, bx: number, bz: number,
   c: Collider, inflate = 0,
@@ -182,7 +187,7 @@ export function segmentHitT(
     tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2);
     if (tmin > tmax) return -1;
   }
-  return tmin < 0 ? 0 : tmin;
+  return tmin;
 }
 
 /** Прямая видимость между двумя точками (учитываются только коллайдеры blocksSight). */

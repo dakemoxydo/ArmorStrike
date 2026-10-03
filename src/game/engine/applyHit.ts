@@ -35,6 +35,13 @@ export function isFriendlyPair(a: TankLike, b: TankLike): boolean {
 
 /**
  * Применяет прямой удар по танку: урон + толчок + визуальный эффект.
+ *
+ * Порядок «урон → толчок/эффект» и `combatAllowsImpulse` означают, что
+ * добивающий удар не даёт ни толчка, ни эффекта (цель уже мертва). Для
+ * снарядов это не проявляется: там урон идёт отдельным вызовом ПОСЛЕ
+ * `applyHit(0)` (см. Projectile.update). Лучевым оружиям, где урон идёт
+ * одним вызовом, добивающий тик эффекта не даёт — такова текущая семантика.
+ *
  * @param knockDir  нормированное направление толчка (обычно полёт снаряда или к цели)
  * @param knockForce  сила толчка
  * @param effect  визуальный эффект в точке попадания (impact/spawnSmoke/explosion)
@@ -58,6 +65,12 @@ export function applyHit(
 /**
  * Площадной урон от эпицентра (splash): убывает с дистанцией,
  * толчок направлен от центра к танку.
+ *
+ * Про `dmg`: единственный вызов (`Projectile.doSplash`) передаёт 0 — реальный
+ * урон идёт через `onTankHit` → `DamageSystem.applyDamage` (единый засчёт
+ * сопротивления/крита/события), а `applyDamage` выходит на `dmg <= 0`. Параметр
+ * оставлен как канон «VFX-only попадание» (тот же путь у `applyHit` от
+ * `ProjectileBehavior.onHitTank`) — см. Damage_System.md и DamageSystem.ts.
  */
 export function applySplashHit(
   damageSystem: DamageSystem,

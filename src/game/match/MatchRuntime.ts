@@ -8,11 +8,17 @@ import type { TankEntity } from '../Tank';
 import type { GameEvent } from '../types';
 import type { MapId } from '../maps/mapCatalog';
 import { applyPlayerKillScore } from '../scoring';
+import { SCORE } from '../constants';
 import type { BotRoster } from '../BotRoster';
 import { configForMode, DEFAULT_MATCH_MODE } from './matchConfig';
 import type { MatchConfig, MatchModeId, MatchResult } from './matchTypes';
-import type { MatchSyncPacket } from '../network/types';
-import { localPlayerWonFromSync } from '../network/replication';
+import type { MatchPlayerSync, MatchSyncPacket } from '../network/types';
+import {
+  findSyncPlayer,
+  localPlayerWonFromSync,
+  reconcilePlayerScore,
+  sanitizeSyncPlayers,
+} from '../network/replication';
 import { isEnemy } from './teams';
 import { evaluateMatchEnd } from './winConditions';
 import type { CaptureZoneState } from './captureLogic';
@@ -42,6 +48,14 @@ export interface MatchResetOpts {
 
 export type MatchReplication = 'local' | 'host' | 'client';
 
+/** Санитайзер верхней границы времени матча (сутки) для недоверенного пакета. */
+const MAX_MATCH_TIME_SEC = 24 * 60 * 60;
+
+/** Конечное число из пакета хоста (null — значение битое, поле игнорируем). */
+function numOrNull(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
 export class MatchRuntime {
   config: MatchConfig = configForMode(DEFAULT_MATCH_MODE);
   ended = false;
@@ -62,6 +76,14 @@ export class MatchRuntime {
    * (was: fresh array of N objects allocated every simulation step).
    */
   private readonly _personals: PersonalStanding[] = [];
+  /**
+   * Пул авторитетных строк игроков для `match_sync` (хост заполняет в update,
+   * toSyncPacket отдаёт снимок). Клиент берёт отсюда фраги/очки — локальные
+   * счётчики игрока можно накрутить.
+   */
+  private readonly _netRows: MatchPlayerSync[] = [];
+  /** networkId победителя DM (имя — свободно меняемый label). */
+  private winnerNetworkId: string | null = null;
 
   constructor(private hooks: MatchRuntimeHooks) {
     this.respawn = new RespawnController({
@@ -96,6 +118,8 @@ export class MatchRuntime {
     this.teamKills = { alpha: 0, bravo: 0 };
     this.teamScore = { alpha: 0, bravo: 0 };
     this.lastResult = null;
+    this.winnerNetworkId = null;
+    this._netRows.length = 0;
 
     if (mode === 'capture_point' && opts.mapId && opts.scene) {
       this.capture.reset(opts.mapId, opts.scene);
@@ -174,6 +198,7 @@ export class MatchRuntime {
     // Reuse the standings buffer: pooled row objects mutated in place instead
     // of allocating a fresh array of N objects on every simulation tick.
     const personals = this._personals;
+    const netRows = this._netRows;
     for (let i = 0; i < tanks.length; i++) {
       const t = tanks[i];
       const row = personals[i] ?? (personals[i] = {
@@ -183,8 +208,25 @@ export class MatchRuntime {
       row.name = t.name;
       row.kills = t.kills;
       row.isPlayer = t.isPlayer;
+
+      const net = netRows[i] ?? (netRows[i] = {
+        networkId: '', name: '', kills: 0, deaths: 0,
+      });
+      net.networkId = t.networkId ?? '';
+      net.name = t.name;
+      net.kills = t.kills;
+      net.deaths = t.deaths;
+      if (t.isPlayer) {
+        net.score = this.hooks.run.score;
+        net.bestStreak = this.hooks.getBestStreak?.() ?? 0;
+      } else {
+        // Support-очки (лечение «Изидой») хост не видит — отдаём киловую часть.
+        net.score = t.kills * SCORE.kill;
+        net.bestStreak = 0;
+      }
     }
     personals.length = tanks.length;
+    netRows.length = tanks.length;
 
     const win = evaluateMatchEnd({
       config: this.config,
@@ -197,6 +239,10 @@ export class MatchRuntime {
 
     if (win) {
       const p = tanks.find((t) => t.isPlayer);
+      // DM: победителя опознаём по networkId строки, а не по display name.
+      this.winnerNetworkId = win.winnerName
+        ? (netRows.find((r) => r.name === win.winnerName)?.networkId ?? null)
+        : null;
       const result: MatchResult = {
         reason: win.reason,
         mode: this.config.mode,
@@ -219,33 +265,62 @@ export class MatchRuntime {
 
   /** Client: replace scores / CP / clock from the host snapshot. */
   applyHostSync(packet: MatchSyncPacket, player: TankEntity | null) {
-    this.hooks.run.matchTime = packet.timeSec;
-    if (packet.teamScore) {
-      this.teamScore.alpha = packet.teamScore.alpha;
-      this.teamScore.bravo = packet.teamScore.bravo;
+    // Нефинитный timeSec навсегда испортил бы run.matchTime (из NaN не выходит
+    // `+= dt`), а с ним — лимит матча, окна серий (KillStreakTracker) и часы.
+    const timeSec = numOrNull(packet.timeSec);
+    if (timeSec !== null && timeSec >= 0 && timeSec <= MAX_MATCH_TIME_SEC) {
+      this.hooks.run.matchTime = timeSec;
     }
-    if (packet.teamKills) {
-      this.teamKills.alpha = packet.teamKills.alpha;
-      this.teamKills.bravo = packet.teamKills.bravo;
+    const ts = packet.teamScore;
+    const tsA = numOrNull(ts?.alpha);
+    const tsB = numOrNull(ts?.bravo);
+    if (tsA !== null && tsB !== null) {
+      this.teamScore.alpha = tsA;
+      this.teamScore.bravo = tsB;
     }
-    if (packet.captures) this.capture.applyNetworkState(packet.captures);
+    const tk = packet.teamKills;
+    const tkA = numOrNull(tk?.alpha);
+    const tkB = numOrNull(tk?.bravo);
+    if (tkA !== null && tkB !== null) {
+      this.teamKills.alpha = tkA;
+      this.teamKills.bravo = tkB;
+    }
+    if (Array.isArray(packet.captures)) this.capture.applyNetworkState(packet.captures);
 
     if (packet.ended && !this.ended) {
+      // Фраги/очки — от хоста: локальные счётчики игрока накручиваются.
+      // Нет players (старый хост) → фолбэк на локальные значения.
+      const row = findSyncPlayer(sanitizeSyncPlayers(packet.players), player?.networkId ?? null);
+      const localKills = player?.kills ?? this.hooks.run.kills;
+      const playerKills = row ? row.kills : player?.kills ?? this.hooks.run.kills;
+      const playerDeaths = row ? row.deaths : player?.deaths ?? 0;
+      const playerScore = row
+        ? reconcilePlayerScore(row.score, this.hooks.run.score, localKills)
+        : this.hooks.run.score;
+      // Серии клиент считает локально, хост их не знает → не затираем честную.
+      const playerBestStreak = Math.max(row?.bestStreak ?? 0, this.hooks.getBestStreak?.() ?? 0);
+      // HUD/gameOver читают run.kills — синхронизируем с авторитетными.
+      if (row) this.hooks.run.kills = playerKills;
+
       const result: MatchResult = {
         reason: packet.reason === 'time' ? 'time' : 'score',
         mode: this.config.mode,
         winnerName: packet.winnerName ?? null,
         winnerTeam: packet.winnerTeam ?? null,
         playerWon: player
-          ? localPlayerWonFromSync(packet, { teamId: player.teamId, name: player.name })
+          ? localPlayerWonFromSync(packet, {
+            teamId: player.teamId,
+            name: player.name,
+            networkId: player.networkId,
+          })
           : false,
-        playerKills: player?.kills ?? this.hooks.run.kills,
-        playerDeaths: player?.deaths ?? 0,
-        playerScore: this.hooks.run.score,
-        playerBestStreak: this.hooks.getBestStreak?.() ?? 0,
+        playerKills,
+        playerDeaths,
+        playerScore,
+        playerBestStreak,
         teamKills: { ...(packet.teamKills ?? this.teamKills) },
         teamScore: { ...(packet.teamScore ?? this.teamScore) },
-        matchTimeSec: packet.timeSec,
+        matchTimeSec: this.hooks.run.matchTime,
       };
       this.ended = true;
       this.lastResult = result;
@@ -272,6 +347,9 @@ export class MatchRuntime {
       reason: this.lastResult?.reason,
       winnerName: this.lastResult?.winnerName ?? null,
       winnerTeam: this.lastResult?.winnerTeam ?? null,
+      winnerId: this.winnerNetworkId,
+      // Снимок пула: 2 Гц × N танков — копия строк дёшева и безопасна.
+      players: this._netRows.map((r) => ({ ...r })),
     };
   }
 }

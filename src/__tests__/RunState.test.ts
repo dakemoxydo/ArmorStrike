@@ -163,6 +163,9 @@ describe('RunState', () => {
     expect(r.username).toBe('Гость');
     expect(r.credits).toBe(0);
     expect(r.unlockedHulls).toEqual([]);
-    expect(r.starterPackClaimed).toBe(false);
+    // starterPackClaimed — прогресс игрока, а не гостевой флаг: выход из
+    // аккаунта не должен заново открывать стартовый флоу (он бы погасил
+    // HUD/паузу посреди раунда через hideChrome).
+    expect(r.starterPackClaimed).toBe(true);
   });
 });

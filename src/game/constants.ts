@@ -27,7 +27,14 @@ export const PROJECTILE = {
   // No `speed` here on purpose: the flight speed lives in
   // WEAPON_TUNING.<weapon>.speed (catalogData) and is applied by each
   // ProjectileBehavior in init(). A legacy global `speed: 58` diverged from
-  // the real cannon shell speed (48) and leaked into the AI lead math.
+  // the real cannon shell speed (54) and leaked into the AI lead math.
+  //
+  // `range` — мёртвый инициализатор слота пула, а НЕ боевая дальность:
+  // единственный зарегистрированный behavior (cannon) перезаписывает
+  // `Shot.maxRange` в init() на `customRange ?? WEAPON_TUNING.cannon.range`
+  // (75), а `Projectile.update` читает maxRange только у живых слотов — то
+  // есть уже перезаписанных. Пока Projectile.ts инициализирует им пул, число
+  // обязано быть, но на геймплей не влияет; синхронизировать с 75 смысла нет.
   range: 85,
   radius: 0.18,
 };

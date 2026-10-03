@@ -9,7 +9,8 @@ import { isShared } from './sharedResources';
 
 /** Освобождает геометрию и материалы всех мешей в поддереве (без удаления из родителя). */
 export function disposeObject3D(root: THREE.Object3D): void {
-  // Дедуп через Set (конвенция disposeArenaSubtree в Arena.ts): shared-но-не-markShared
+  // Дедуп через Set (та же конвенция, что в teardown'е арены — Arena.ts зовёт
+  // disposeObject3D напрямую, дублирующей обёртки нет): shared-но-не-markShared
   // геометрия/материал (один wMat на 4 стены, один lampMat на 14 фонарей) иначе
   // диспозились бы N раз — лишние dispose-ивенты на общем инстансе.
   const geos = new Set<THREE.BufferGeometry>();

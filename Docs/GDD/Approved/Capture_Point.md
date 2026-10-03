@@ -14,6 +14,8 @@
 | Захват | **8 с** exclusive control | `CAPTURE.captureSec` |
 | Contest | progress **freeze** (без decay); тот же актор продолжает с замороженного значения, смена актора → рестарт шкалы | `resolveActor` + `stepCaptureZoneInto` |
 | Empty zone | прогресс **не decay'ится** (v1): freeze до возвращения того же актора | `stepCaptureZoneInto` |
+| Progress scale | инвариант **0..1** даже на грязном входе: `progress` из снапшота клампится, `dt ≤ 0` / нефинитный → шаг 0 | `stepCaptureZoneInto` |
+| Грязная поза | танк с нефинитной позицией **не засчитывается** в точке (иначе один битый пакет пира навсегда оспаривал все три точки) | `countPresenceInZone` |
 | Ownership | **neutral-first**: capture → neutral → enemy | `stepCaptureZone` |
 | Score | **+1 / s** за каждую owned point | `scoreDeltaFromZones` |
 | Win | teamScore ≥ **1000** | `evaluateMatchEnd` |
@@ -49,8 +51,22 @@
 | Zone pick order | contested → neutral → enemy → own |
 | Sticky zone | `_objSticky` + slack in `pickObjectiveZone` |
 | Pathing | `AICtx.moveHint` → zone center |
-| Fight interrupt | `shouldFightNearObjective` clears moveHint (close / on-point threat) |
+| Fight interrupt | `shouldFightNearObjective` clears moveHint (enemy on point / within band) |
+| Fight band | `objectiveFightRange(bot.turretId, BOT_NORMAL.sightRange)` = `min(дальность оружия, обзор) × 1.05` |
 | Rest of bots | normal multi-target hunt (no moveHint) |
+
+**Полоса боя у точки считается от дальности оружия бота, а не от дальности
+обзора.** `objectiveFightRange` (`src/game/aiRoles.ts`, вызывается из
+`BotAiStage`) = `min(TURRETS[turretId].range, BOT_NORMAL.sightRange) × 1.05`.
+При обзоре 65 это: flamethrower **23.1 м**, isida **21 м**, cannon/gauss
+**68.25 м** (дальность 75 / 110 выше обзора), railgun **68.25 м**
+(`range: Infinity` → ограничивает обзор). Та же формула гейтит ближний бой
+внутри `AIController` (`dist <= fireRange × 1.05`), поэтому «бросить захват» и
+«есть ли бой» решаются одной мерой.
+
+Раньше полоса была `BOT_NORMAL.sightRange × 0.85` = 55.25 м для всех: огнемёт
+(22 м) и изида (20 м) считали «угрозой» врага в 55 м, которого не достают, и
+бросали точку. Пин: `src/__tests__/aiEngageFixes.test.ts`.
 
 ## Classes
 
@@ -71,4 +87,4 @@
 - [x] Contest freezes; neutralize before flip
 - [x] +1/s per owned point; 1000 → end
 - [x] World markers + minimap + HUD chips
-- [x] Objective AI (~50% path to A/B/C; fight when threatened)
+- [x] Objective AI (~50% path to A/B/C; fight when threatened — полоса от дальности оружия бота)

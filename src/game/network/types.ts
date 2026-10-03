@@ -75,6 +75,20 @@ export interface TankDamagePacket {
   kz?: number;
 }
 
+/**
+ * Авторитетная строка игрока от хоста. Клиент берёт отсюда фраги/счёт для
+ * экрана итогов и наград — локальные счётчики игрока можно накрутить.
+ */
+export interface MatchPlayerSync {
+  networkId: string;
+  name: string;
+  kills: number;
+  deaths: number;
+  /** Отсутствует, если хост значения не знает (support-очки клиента). */
+  score?: number;
+  bestStreak?: number;
+}
+
 export interface MatchSyncPacket {
   timeSec: number;
   teamScore?: { alpha: number; bravo: number };
@@ -88,8 +102,16 @@ export interface MatchSyncPacket {
   }[];
   ended?: boolean;
   reason?: 'score' | 'time';
+  /** DM: имя победителя — только label (имя игрока можно сменить). */
   winnerName?: string | null;
   winnerTeam?: TeamId;
+  /** DM: networkId победителя — авторитетный признак победы. */
+  winnerId?: string | null;
+  /**
+   * Авторитетные строки игроков. Поле опционально: старый хост шлёт пакет без
+   * него, и клиент корректно откатывается на локальные значения.
+   */
+  players?: MatchPlayerSync[];
 }
 
 export interface PeerDespawnPacket {

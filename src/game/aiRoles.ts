@@ -1,4 +1,5 @@
 // ===== Роли ИИ ботов: sniper / assault / elite / standard =====
+import { TURRETS } from '../core/catalog';
 import type { TurretId } from '../core/catalog';
 import type { AIPersona } from './AI';
 
@@ -25,6 +26,22 @@ export function roleForBot(wave: number, index: number, turretId: TurretId): AIR
   // «Изида» у ботов v1 — вампир-драчун: приоритет врага в конусе даёт роль assault.
   if (turretId === 'flamethrower' || turretId === 'isida') return 'assault';
   return 'standard';
+}
+
+/**
+ * Полоса боя у точки захвата (CP): от РЕАЛЬНОЙ дальности оружия бота, не
+ * дальше его обзора. Раньше полоса была `sightRange × 0.85` = 55.25 м для всех:
+ * огнемёт (22 м) и изида (20 м) бросали захват из-за ЛЮБОГО врага в 55 м, а
+ * потом шли таранить точку. Теперь полоса = `min(дальность оружия, обзор) × 1.05`
+ * — ровно та же формула, что гейтит ближний бой в `AIController`
+ * (`dist <= fireRange × 1.05`), поэтому moveHint и engage согласованы.
+ *
+ * Числа при обзоре 65: flamethrower 23.1 / isida 21 / cannon 68.25 /
+ * gauss 68.25 / railgun (Infinity → обзор) 68.25.
+ */
+export function objectiveFightRange(turretId: TurretId | undefined, sightRange: number): number {
+  const weaponRange = turretId ? TURRETS[turretId].range : Infinity;
+  return Math.min(weaponRange, sightRange) * 1.05;
 }
 
 /** Persona под роль (элит/снайпер точнее и злее, штурм — max aggro). */
@@ -65,7 +82,8 @@ export function coverHpFracForRole(role: AIRole): number {
  * Пад каденции бота по роли: >1 = медленнее игрока.
  * Единый источник чисел (iter 15; ранее 1.2/1.15/1.35 жили разрозненно):
  * - standard — применяется к межвыстрелу пушки (`shotCooldownScale` в rosterSpawn,
- *   0.28 → 0.336 с; полная перезарядка магазина не падаётся);
+ *   `TURRETS.cannon.shotCooldown` 0.38 × firePad 1.2 = 0.456 с; полная
+ *   перезарядка магазина не падаётся);
  * - sniper / assault — их `TURRET.shotCooldown = 0` (каденция weapon-internal),
  *   поэтому пад идёт через `reloadSpeedMul = 1/firePad`: заряд+перезарядка
  *   рельсы (1.0→1.35 с / 2.6→3.51 с) и восстановление батареи огнемёта

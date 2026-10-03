@@ -69,6 +69,7 @@ export default function App() {
     questsOpen: modals.questsOpen,
     leaderboardOpen: modals.leaderboardOpen,
     serverBrowserOpen: modals.serverBrowserOpen,
+    starterPackClaimed: starterClaimed,
     goMenu,
     openModeSelect,
     onToggleMute: toggleMute,
@@ -108,7 +109,11 @@ export default function App() {
   }
 
   // Во время загрузки раунда режим ещё прежний — прячем меню под оверлей.
-  const hideChrome = modals.mapSelectOpen || modals.modeSelectOpen || roundLoading;
+  // Стартовый комплект — тоже модальный экран поверх всего: пока он не
+  // получен, HUD/пауза/меню/оверлей загрузки рисуются И ПОД ним, иначе под
+  // неубираемым скримом оказывается живой интерфейс (и два aria-modal сразу).
+  const hideChrome =
+    modals.mapSelectOpen || modals.modeSelectOpen || roundLoading || !starterClaimed;
 
   return (
     <div className={`relative h-screen w-screen overflow-hidden bg-[#04060b] text-white ${uiMode === 'playing' && !paused && !hideChrome ? 'ingame' : ''}`}>

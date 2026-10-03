@@ -9,7 +9,6 @@ import type { BlockInfo } from './arena/types';
 import type { MapId } from './maps/mapCatalog';
 import { DEFAULT_MAP_ID } from './maps/mapCatalog';
 import { invalidateSolidColliderCache } from './engine/solidColliderCache';
-import { isShared } from './resources/sharedResources';
 import type { RenderWorld } from './RenderWorld';
 import { applyCelShading } from './shaders/celShading';
 import { attachBuildingInkOutline, shouldOutlineBuilding } from './arena/buildingInk';
@@ -52,7 +51,7 @@ export class Arena {
     this.effects.resetForRebuild();
 
     // Deduped dispose: walls/props often share materials and maps.
-    disposeArenaSubtree(this.group);
+    disposeObject3D(this.group);
     while (this.group.children.length > 0) {
       this.group.remove(this.group.children[0]);
     }
@@ -172,7 +171,7 @@ export class Arena {
   /** Full teardown for game dispose (not used between map rebuilds). */
   dispose(scene: THREE.Scene) {
     this.effects.resetForRebuild();
-    disposeArenaSubtree(this.group);
+    disposeObject3D(this.group);
     while (this.group.children.length > 0) {
       this.group.remove(this.group.children[0]);
     }
@@ -180,42 +179,5 @@ export class Arena {
     this.blocks.clear();
     invalidateSolidColliderCache();
     scene.remove(this.group);
-  }
-}
-
-/** Dispose geometries/materials/textures once each (shared refs are common in arena shell). */
-function disposeArenaSubtree(root: THREE.Object3D) {
-  const geos = new Set<THREE.BufferGeometry>();
-  const mats = new Set<THREE.Material>();
-  const maps = new Set<THREE.Texture>();
-
-  root.traverse((o) => {
-    if (o instanceof THREE.Mesh || o instanceof THREE.InstancedMesh || o instanceof THREE.Points) {
-      if (o.geometry) geos.add(o.geometry);
-      const list = Array.isArray(o.material) ? o.material : [o.material];
-      for (const m of list) {
-        if (!m) continue;
-        mats.add(m);
-        const anyMat = m as unknown as { map?: THREE.Texture | null };
-        if (anyMat.map) maps.add(anyMat.map);
-      }
-    } else if (o instanceof THREE.Sprite) {
-      mats.add(o.material);
-      if (o.material.map) maps.add(o.material.map);
-    }
-  });
-
-  for (const g of geos) {
-    if (!isShared(g)) g.dispose();
-  }
-  for (const m of mats) {
-    if (isShared(m)) continue;
-    m.dispose();
-  }
-  for (const t of maps) {
-    // Texture-cache singletons (smoke/scorch/glow/wall/...) are marked shared
-    // and owned by textures/shared.ts until process end — never disposed here.
-    if (isShared(t)) continue;
-    t.dispose();
   }
 }

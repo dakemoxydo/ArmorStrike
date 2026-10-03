@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { KeyRound, Lock, X } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 
@@ -16,6 +16,16 @@ export default function PasswordPromptModal({
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const trapRef = useFocusTrap(true);
+
+  // Глобальный обработчик Escape: без него под-диалог не закрывается клавишей
+  // (useAppHotkeys при открытом браузере серверов молчит).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

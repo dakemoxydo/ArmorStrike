@@ -46,6 +46,17 @@ function placeTank(tank: TankEntity, x: number, z: number, yaw: number) {
   tank.turretYaw = 0;
 }
 
+/**
+ * Yaw «лицом в арену» из точки спавна. Конвенция движения: forward =
+ * (sin(yaw), 0, cos(yaw)), поэтому взгляд в центр арены (0, 0) — это
+ * yaw = atan2(-x, -z). Тот же yaw, что у ботов (makeBot) и на респавне
+ * (RespawnController): у базы bravo z > 0, и yaw = 0 (= forward +Z) разворачивал
+ * танк и камеру игрока в северную стену вместо арены.
+ */
+function faceArenaYaw(x: number, z: number): number {
+  return Math.atan2(-x, -z);
+}
+
 /** Palette for FFA bots; team modes tint Alpha blue / Bravo red. */
 function botStyleColor(index: number, teamId: TeamId): THREE.Color {
   if (teamId === 'alpha') return new THREE.Color(COLORS.teamAlpha);
@@ -116,7 +127,7 @@ export async function makeBot(
   if (role !== 'standard') bot.reloadSpeedMul = 1 / firePad;
   applyTeamRing(bot, teamId);
 
-  const yaw = Math.atan2(-x, -z);
+  const yaw = faceArenaYaw(x, z);
   placeTank(bot, x, z, yaw);
 
   const plate = new Nameplate(bot.name, c.getHex());
@@ -179,9 +190,9 @@ export async function spawnMatchRoster(cfg: MatchConfig, ctx: RosterSpawnCtx): P
     const idx = pickPointIndex(spawnPool, used, 0, 0, 0);
     used.add(idx);
     const [px, pz] = spawnPool[idx];
-    placeTank(player, px, pz, 0);
+    placeTank(player, px, pz, faceArenaYaw(px, pz));
   } else {
-    placeTank(player, 0, -120, 0);
+    placeTank(player, 0, -120, faceArenaYaw(0, -120));
   }
 
   player.weapon = createWeapon(player, TURRETS[ctx.turretId].weaponType, ctx.weaponDeps);
