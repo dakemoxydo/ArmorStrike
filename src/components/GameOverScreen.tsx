@@ -138,13 +138,17 @@ export default function GameOverScreen({
           {modeLabelRu(mode)}
           {reason === 'time' ? ' · ЛИМИТ ВРЕМЕНИ' : ' · ПОРОГ'}
         </p>
-        <h2
-          id="gameover-title"
-          className={`anim-up font-display text-4xl tracking-wider md:text-6xl title-glitch ${titleColor}`}
-          style={{ '--d': '0.15s' } as React.CSSProperties}
-        >
-          {headline}
-        </h2>
+        {/* U29: та же коллизия, что была в логотипе меню, — `title-glitch` на том же
+            узле, что и вход, затирал `enter-up` шорткатом и оставлял заголовок
+            при `opacity: 0`. Вход живёт на обёртке. */}
+        <div className="anim-up" style={{ '--d': '0.15s' } as React.CSSProperties}>
+          <h2
+            id="gameover-title"
+            className={`font-display text-4xl tracking-wider md:text-6xl title-glitch ${titleColor}`}
+          >
+            {headline}
+          </h2>
+        </div>
         <p className="anim-up mt-3 flex items-center gap-2 text-sm tracking-hero text-white/60" style={{ '--d': '0.25s' } as React.CSSProperties}>
           <Clock3 size={14} aria-hidden />
           {formatMatchClock(matchTimeSec)}

@@ -63,13 +63,16 @@ html, body, #root {
 }
 
 /* Единое фокус-кольцо (U14): одна толщина, один отступ, один цвет во всех ролях.
-   Живёт здесь одним правилом — в ролях кольцо больше не дублируется. */
+   Живёт здесь одним правилом — в ролях кольцо больше не дублируется.
+   U29: в список добавлены строки разделов лобби — раньше четыре из пяти не
+   показывали кольцо вообще (класс `build-chip` был только на гараже). */
 .btn-game:focus-visible,
 .garage-card:focus-visible,
 .garage-tab:focus-visible,
 .map-card:focus-visible,
 .mode-card:focus-visible,
-.build-chip:focus-visible {
+.build-chip:focus-visible,
+.lobby-nav-btn:focus-visible {
   outline: 2px solid rgba(var(--glow), 0.85);
   outline-offset: 3px;
 }

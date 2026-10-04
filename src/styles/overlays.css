@@ -40,6 +40,22 @@
   animation: title-comic-pulse 4s ease-in-out infinite;
   transform: skewX(-4deg);
 }
+/* U29: логотип лобби печатается по «бумаге» витрины. Экран меню — это
+   светлый циклорамный фон, и янтарный градиент на нём не читался: тон
+   заливки совпадал с тоном бумаги. Строка «STRIKE» при этом брала градиент
+   через `background-clip: text`, а восемь смещений тени рисовались по глифу
+   и заливали буквы целиком — строка выглядела чёрной и обещала цвет, которого
+   не было. Здесь логотип чернильный, а акцент переехал на линейку под ним. */
+.title-ink {
+  color: #0b0e14;
+  text-shadow: none;
+}
+.title-rule {
+  display: block;
+  height: 3px;
+  margin-top: 0.55rem;
+  background: linear-gradient(90deg, var(--accent, #f59e0b), rgba(245, 158, 11, 0));
+}
 @keyframes title-comic-pulse {
   0%, 100% { transform: skewX(-4deg) scale(1); }
   50% { transform: skewX(-4deg) scale(1.015); }

@@ -631,17 +631,28 @@ describe('UI polish invariants (layout per scenario, S1–S5)', () => {
     expect(readSrc('src/components/hud/HudRadar.tsx')).toMatch(/radar-panel/);
   });
 
-  it('entry animations never sit on a .btn-primary element', () => {
-    // `.btn-primary` задаёт `animation: gradient-drift` шорткатом и перебивает
-    // `anim-up`/`anim-left`: элемент остаётся с `opacity: 0` навсегда, потому что
-    // шорткат затирает и `enter-up`, и его `forwards`. Вход анимирует обёртка.
+  it('entry animations never sit on a self-animating element', () => {
+    // Любой класс, который задаёт `animation` шорткатом, перебивает
+    // `anim-up`/`anim-left`/`anim-pop`: элемент остаётся с `opacity: 0`
+    // навсегда, потому что шорткат затирает и `enter-*`, и его `forwards`.
+    // Вход анимирует обёртка.
+    //
+    // Список классов, которые анимируют сами себя. `btn-primary` был первым
+    // (gradient-drift); `title-glitch` — вторым, и из-за него заголовок лобби
+    // и заголовок экрана итогов были невидимы (U29).
+    const SELF_ANIMATING = ['btn-primary', 'title-glitch'];
     const classStrings = (rel: string) =>
       [...readSrc(rel).matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)]
         .map((m) => m[1] ?? m[2] ?? '');
     for (const rel of [...componentFiles(), 'src/App.tsx']) {
       for (const cls of classStrings(rel)) {
-        if (cls.includes('btn-primary')) {
-          expect(cls, `${rel} animates a primary button directly`).not.toMatch(/\banim-(up|left|pop)\b/);
+        for (const self of SELF_ANIMATING) {
+          if (cls.includes(self)) {
+            expect(
+              cls,
+              `${rel} animates .${self} directly — вход должен жить на обёртке`,
+            ).not.toMatch(/\banim-(up|left|pop)\b/);
+          }
         }
       }
     }

@@ -382,9 +382,12 @@ export default function Garage({
             <div className="space-y-2">
               {/* Эхо выбора одной строкой: цвета несут таксономию (циан — корпус,
                   янтарь — башня), как в чипе сборки главного меню. */}
-              <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-white/10">
-                <span className="text-[10px] tracking-widest text-white/60 whitespace-nowrap">КОРПУС · БАШНЯ</span>
-                <span className="font-display text-sm whitespace-nowrap">
+              <div className="flex justify-between items-start gap-2 pb-1.5 border-b border-white/10">
+                <span className="text-[10px] tracking-widest text-white/60 whitespace-nowrap shrink-0 pt-0.5">КОРПУС · БАШНЯ</span>
+                {/* U29: имена больше не в одну строку. Паспорт — 280px, и
+                    «Speedy · Пушка «Гаусс»» в него не влезало: строка обрезалась
+                    прямо по слову. Теперь переносится, а не уезжает за панель. */}
+                <span className="font-display text-sm text-right min-w-0">
                   <span className="text-amber-300">{currHull.name}</span>
                   <span className="text-white/45"> · </span>
                   <span className="text-amber-300">{currTurret.name}</span>
@@ -392,19 +395,23 @@ export default function Garage({
               </div>
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div className="cut-chip bg-white/5 px-2 py-1.5 border border-white/10">
-                  <div className="text-[10px] tracking-widest text-white/55 mb-0.5">ПРОЧНОСТЬ</div>
+                  <div className="text-[10px] tracking-wide text-white/55 mb-0.5 whitespace-nowrap">ПРОЧНОСТЬ</div>
                   <div className="font-display text-lg text-emerald-400">{currHull.maxHealth}</div>
                 </div>
                 <div className="cut-chip bg-white/5 px-2 py-1.5 border border-white/10">
-                  <div className="text-[10px] tracking-widest text-white/55 mb-0.5">СКОРОСТЬ</div>
+                  <div className="text-[10px] tracking-wide text-white/55 mb-0.5 whitespace-nowrap">СКОРОСТЬ</div>
                   <div className="font-display text-lg text-amber-300">{currHull.speed}</div>
                 </div>
+                {/* U29: подписи на 0.08em вместо 0.2em. «УРОН / ВЫСТРЕЛ» не
+                    помещался в половину паспорта и переносился на две строки —
+                    из-за него значение уезжало выше соседней ячейки, и ряд
+                    читался рваным. */}
                 <div className="cut-chip bg-white/5 px-2 py-1.5 border border-white/10">
-                  <div className="text-[10px] tracking-widest text-white/55 mb-0.5">УРОН / ВЫСТРЕЛ</div>
+                  <div className="text-[10px] tracking-wide text-white/55 mb-0.5 whitespace-nowrap">УРОН / ВЫСТРЕЛ</div>
                   <div className="font-display text-lg text-amber-300">{currTurret.damage}</div>
                 </div>
                 <div className="cut-chip bg-white/5 px-2 py-1.5 border border-white/10">
-                  <div className="text-[10px] tracking-widest text-white/55 mb-0.5">МАГАЗИН</div>
+                  <div className="text-[10px] tracking-wide text-white/55 mb-0.5 whitespace-nowrap">МАГАЗИН</div>
                   <div className="font-display text-lg text-white">{currTurret.magazine}</div>
                 </div>
               </div>

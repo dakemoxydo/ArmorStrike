@@ -1,18 +1,58 @@
-/* --- панели HUD ---------------------------------------------------------
-   Хром панели: градиентная «плита» + лёгкая диагональная штриховка + двойной
-   контур (внешняя рамка и внутренняя hairline). Угловые скобки и верхний рейл
-   рисуются псевдоэлементами: это нулевая стоимость по DOM и по layout — только
-   слои background-image, которые браузер запекает один раз.
+/* --- оправа поля зрения (U29) -------------------------------------------
+   Самый заметный элемент этого прохода. Четыре панели HUD стоят в углах экрана
+   на одном отступе (`--hud-inset`), но читались как четыре отдельные плашки,
+   каждая со своим хромом. Теперь их связывает одна рамка по краю экрана с
+   четырьмя подсвеченными угловыми сегментами — визир прицела.
 
-   Скобки стоят с отступом 9px по каждой оси. Срез угла — 12px, линия среза
-   описывается как x + y = 12, поэтому точка (9, 9) уже внутри панели
-   (9 + 9 = 18 > 12) и скобку не срезает clip-path родителя. */
+   Почему это не украшение, а структура: HUD — это поле зрения, и рамка говорит
+   об этом буквально, читается периферийным зрением и держит взгляд внутри
+   экрана. Раньше ту же работу делали 16 уголков (4 панели × 4), которые не
+   различали панели между собой, поэтому и выглядели шумом.
+
+   Рисуется псевдоэлементом: ноль DOM-узлов, ноль layout, один background-image,
+   который браузер запекает один раз. */
+.hud-optic {
+  position: absolute;
+  inset: var(--optic-inset);
+  pointer-events: none;
+  border: 1px solid var(--optic-line);
+}
+.hud-optic::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background-image:
+    linear-gradient(var(--optic-corner), var(--optic-corner)),
+    linear-gradient(var(--optic-corner), var(--optic-corner)),
+    linear-gradient(var(--optic-corner), var(--optic-corner)),
+    linear-gradient(var(--optic-corner), var(--optic-corner)),
+    linear-gradient(var(--optic-corner), var(--optic-corner)),
+    linear-gradient(var(--optic-corner), var(--optic-corner)),
+    linear-gradient(var(--optic-corner), var(--optic-corner)),
+    linear-gradient(var(--optic-corner), var(--optic-corner));
+  background-repeat: no-repeat;
+  /* Каждый угол — две полосы: горизонтальная и вертикальная. */
+  background-size:
+    var(--optic-corner-len) var(--optic-corner-w), var(--optic-corner-w) var(--optic-corner-len),
+    var(--optic-corner-len) var(--optic-corner-w), var(--optic-corner-w) var(--optic-corner-len),
+    var(--optic-corner-len) var(--optic-corner-w), var(--optic-corner-w) var(--optic-corner-len),
+    var(--optic-corner-len) var(--optic-corner-w), var(--optic-corner-w) var(--optic-corner-len);
+  background-position:
+    left top, left top,
+    right top, right top,
+    left bottom, left bottom,
+    right bottom, right bottom;
+}
+
+/* --- панели HUD ---------------------------------------------------------
+   Хром панели после U29: градиентная «плита» + чернильный контур + одна
+   гравированная линия (верхний рейл). Диагональная штриховка и восемь
+   градиентных уголков убраны — они не кодировали ничего, но стоили лишнего
+   слоя перерисовки на каждой панели. */
 .hud-panel {
   position: relative;
   background-color: rgba(7, 13, 21, 0.94);
-  background-image:
-    linear-gradient(135deg, var(--panel-bg-top), var(--panel-bg-bottom)),
-    repeating-linear-gradient(45deg, var(--panel-hatch) 0 2px, transparent 2px 7px);
+  background-image: linear-gradient(135deg, var(--panel-bg-top), var(--panel-bg-bottom));
   border: 2px solid var(--panel-line);
   backdrop-filter: blur(6px);
   clip-path: polygon(
@@ -25,33 +65,8 @@
   );
   box-shadow:
     var(--panel-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 0 var(--glow-r-md) rgba(var(--glow), 0.05);
-}
-
-/* Угловые скобки: 4 «Г»-образных уголка из восьми градиентных полос. */
-.hud-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  --bc: var(--panel-bracket);
-  background-image:
-    linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc)),
-    linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc)),
-    linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc)),
-    linear-gradient(var(--bc), var(--bc)), linear-gradient(var(--bc), var(--bc));
-  background-repeat: no-repeat;
-  background-size:
-    14px 2px, 2px 14px,
-    14px 2px, 2px 14px,
-    14px 2px, 2px 14px,
-    14px 2px, 2px 14px;
-  background-position:
-    left 9px top 9px, left 9px top 9px,
-    right 9px top 9px, right 9px top 9px,
-    left 9px bottom 9px, left 9px bottom 9px,
-    right 9px bottom 9px, right 9px bottom 9px;
 }
 
 /* Верхний рейл — световая линия, гаснущая к краям. Даёт панели «источник света». */
@@ -71,12 +86,12 @@
   opacity: 0.75;
 }
 
-/* Внутренняя hairline-рамка: второй контур, читается как «стекло в оправе».
-   Срез на 3px меньше внешнего — иначе внутренняя рамка легла бы ровно на срез
-   панели и «двойного контура» не читалось бы. */
+/* Внутренняя гравированная линия: светлая фаска сразу за чернильным контуром.
+   Смещение 3px, а не 4px: при 2px-контуре линия в 4px от края читалась как
+   «второй контур» и на срезе угла расходилась с внешней рамкой. */
 .hud-panel > .panel-inset {
   position: absolute;
-  inset: 4px;
+  inset: 3px;
   pointer-events: none;
   border: 1px solid var(--panel-line-soft);
   clip-path: polygon(
@@ -111,10 +126,15 @@
 /* Метки без маркера (заголовки секций, служебные подписи). */
 .hud-label.is-plain::before { content: none; }
 
-/* --- здоровье --- */
+/* --- броня: гравированная шкала (U29) -----------------------------------
+   Было 19 узких сегментов сплошного зелёного: самое яркое пятно на экране
+   при минимуме информации — считать сегменты бесполезно, а помехи от
+   высокочастотных краёв спорили с полем боя. Теперь плита с десятью
+   делениями: деления читаются как гравировка, а не как конфетная полоса,
+   и по яркости броня уступает тому, что происходит на карте. */
 .hp-shell {
   position: relative;
-  height: 20px;
+  height: 18px;
   background: #0b0e14;
   clip-path: polygon(var(--bar-cut) 0, 100% 0, calc(100% - var(--bar-cut)) 100%, 0 100%);
   overflow: hidden;
@@ -125,15 +145,15 @@
   position: absolute;
   inset: 0;
   height: 100%;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.7));
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.55));
   transition: width 0.6s ease-out 0.35s; /* задержка перед началом движения */
 }
 .hp-fill {
   position: relative;
   height: 100%;
-  background: linear-gradient(180deg, #34d399, #10b981 60%, #059669);
+  background: linear-gradient(180deg, #46c98d, #17a06a 55%, #0d7a4e);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
     inset 0 -2px 0 rgba(0, 0, 0, 0.25);
   transition: width 0.18s ease-out;
   z-index: 1;
@@ -150,39 +170,31 @@
   box-shadow: 0 0 2px #0b0e14;
 }
 .hp-fill.danger {
-  background: linear-gradient(180deg, #f87171, #ef4444 60%, #b91c1c);
+  background: linear-gradient(180deg, #f2776b, #d63f34 55%, #a02a20);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
     inset 0 -2px 0 rgba(0, 0, 0, 0.25);
   animation: hp-blink 0.7s infinite;
 }
 @keyframes hp-blink { 50% { opacity: 0.55; } }
+/* Десять делений: шаг задан в процентах, поэтому шкала не зависит от ширины
+   панели и не «плывёт» вместе с ней. Поверх `.hp-fill` (z-index 1), иначе
+   заливка закрыла бы гравировку. */
 .hp-segments {
   position: absolute; inset: 0;
-  /* Above .hp-fill (z-index 1): otherwise the fill paints over the dividers and
-     the segmented bar look is lost. */
   z-index: 2;
   pointer-events: none;
-  background: repeating-linear-gradient(90deg, transparent 0 15px, rgba(4, 10, 14, 0.85) 15px 17px);
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(10% - 2px),
+    rgba(4, 10, 14, 0.9) calc(10% - 2px) 10%
+  );
 }
-/* Риски четвертей: 25 / 50 / 75 %. Тоньше сегментов, поверх них. */
-.hp-ticks {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-  display: flex;
-}
-.hp-ticks i {
-  flex: 1 1 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.35);
-}
-.hp-ticks i:last-child { border-right: none; }
 
-/* --- буст --- */
+/* --- буст: тонкий резерв под бронёй --- */
 .boost-shell {
   position: relative;
-  height: 10px;
+  height: 8px;
   background: #0b0e14;
   clip-path: polygon(var(--bar-cut) 0, 100% 0, calc(100% - var(--bar-cut)) 100%, 0 100%);
   overflow: hidden;
@@ -190,20 +202,25 @@
 }
 .boost-fill {
   height: 100%;
-  background: linear-gradient(180deg, #60a5fa, #3b82f6 60%, #1d4ed8);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  background: linear-gradient(180deg, #7cc4f5, #2f7fd0 60%, #1d4f8f);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
   transition: width 0.1s linear;
 }
 .boost-fill.low {
   background: linear-gradient(180deg, #fde047, #f59e0b 60%, #d97706);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
-/* Штриховка «делений» буста — тот же язык, что у брони, но мельче. */
+/* Тот же шаг гравировки, что у брони, — шкалы читаются как приборы одного
+   корпуса, а не как два разных компонента. */
 .boost-segments {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(90deg, transparent 0 9px, rgba(4, 10, 14, 0.7) 9px 10px);
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(10% - 2px),
+    rgba(4, 10, 14, 0.75) calc(10% - 2px) 10%
+  );
 }
 
 /* --- шапка/подвал карточки состояния --- */
@@ -246,8 +263,10 @@
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  /* reserve width for longest status label (ПЕРЕЗАРЯДКА / ⚡ ЗАРЯДКА / ПУСТО · R) */
-  min-width: 7.5rem;
+  /* Резерв под самую длинную подпись статуса (▼ ПОГЛОЩЕНИЕ — 11 символов
+     при 10px/0.2em ≈ 80px). Раньше стояло 7.5rem, и панель держала справа от
+     кольца ~40px пустоты — читалось как «сломанная вёрстка». */
+  min-width: 5.25rem;
 }
 .weapon-status {
   display: block;
@@ -412,16 +431,26 @@
 .weapon-status.is-beam-idle { color: rgba(46, 230, 192, 0.75); }
 .weapon-status.is-beam-acq { color: var(--warn, #ffd24a); }
 
+/* U29: имя оружия ведёт, тип отступает. Раньше «НАНО-ДУГА ПОДДЕРЖКИ · ИЗИДА»
+   шли одной строкой одного кегля и разрядки, и длинный тип оказывался важнее
+   собственно имени. Теперь имя — display-кроем, тип — подпись. */
 .weapon-title {
   display: inline-flex;
   align-items: baseline;
   gap: 0.4rem;
-  font-size: var(--fs-label);
-  letter-spacing: var(--track-wide);
   margin-bottom: 0.45rem;
 }
+.weapon-kind {
+  font-size: var(--fs-caption);
+  letter-spacing: var(--track-wide);
+  color: rgba(255, 255, 255, 0.55);
+}
 .weapon-title .weapon-sep { color: rgba(255, 255, 255, 0.45); }
-.weapon-title .weapon-name { letter-spacing: var(--track-base); }
+.weapon-title .weapon-name {
+  font-family: 'Russo One', sans-serif;
+  font-size: var(--fs-title);
+  letter-spacing: var(--track-tight);
+}
 .weapon-head {
   display: flex;
   align-items: center;
@@ -429,11 +458,37 @@
   gap: 0.6rem;
 }
 
-.bot-dot {
-  width: 9px; height: 9px;
+/* Лента угроз (U29). Слот — примитив «магазин», тот же, что у патронов:
+   тёмная ниша, патрон в полную. Число слотов равно ёмкости матча, поэтому
+   лента не переносится на вторую строку (раньше восьмая точка ложилась на
+   угловую скобку панели) и не меняет ширину по ходу боя. */
+.radar-targets {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  justify-content: flex-end;
+  gap: var(--chip-cut);
+}
+.bot-pip {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 9px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  clip-path: polygon(0 var(--chip-cut), 100% 0, 100% 100%, 0 100%);
+}
+.bot-pip.is-live {
   background: var(--team-bravo);
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   box-shadow: 0 0 var(--glow-r-xs) rgba(var(--team-bravo-rgb), 0.8);
+}
+/* Счётчик рядом с подписью: лента читается боковым зрением, а точное число
+   нужно eyes-on — раньше его приходилось вычислять по точкам. */
+.threat-count {
+  font-family: 'Russo One', sans-serif;
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-tight);
+  color: var(--team-bravo);
 }
 
 /* --- подсказка управления (под панелью счёта, не поверх машины) ---
@@ -490,17 +545,39 @@
   letter-spacing: var(--track-hero);
   color: rgba(251, 191, 36, 0.95);
 }
+/* U29: строка ведущего значения — число и его имя на одной базовой линии.
+   Подпись «СЧЁТ» стоит под числом, а не над ним: иначе панель растёт вниз
+   лишней строкой, а имя визуально спорит с режимом матча. */
+.score-hero {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.15rem;
+}
+/* min-width в ch: значение меняется в ходе боя, а ширина панели — не должна.
+   tabular-nums держит цифры на одной ширине, 3ch — запас на «999». */
 .score-num {
   font-family: 'Russo One', sans-serif;
-  font-size: 2.15rem;
+  font-size: 2.05rem;
   letter-spacing: var(--track-base);
   color: #ffffff;
   text-shadow: 0 2px 0 #0b0e14;
   line-height: 1.05;
   font-variant-numeric: tabular-nums;
 }
+/* Нижняя строка панели: прогресс-«фраги» и таймер в один ряд. Раньше таймер
+   стоял отдельным блоком под всем, из-за чего панель была выше на строку. */
+.score-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.45rem;
+}
 /* Полоса прогресса до порога победы: у DM — личный счёт, у командных режимов
-   двухцветная «перетяжка» Alpha ↔ Bravo. */
+   двухцветная «перетяжка» Alpha ↔ Bravo. Дорожка поднята до 0.14: на 0.08 при
+   нулевом прогрессе её не было видно, и шкала молчала до первого фрага. */
 .score-progress {
   position: relative;
   display: flex;
@@ -509,7 +586,7 @@
   width: 100%;
   max-width: 15rem;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.14);
   clip-path: polygon(var(--chip-cut) 0, 100% 0, calc(100% - var(--chip-cut)) 100%, 0 100%);
 }
 .score-progress i {
@@ -545,10 +622,10 @@
 }
 @media (max-width: 1100px), (max-height: 800px) {
   .radar-panel { --radar-size: 120px; }
-  /* Полоса целей обязана остаться одной строкой: на 120 px девять точек по
-     9 px с шагом 4 px не влезали и панель росла в высоту. */
-  .radar-panel .bot-dot { width: 7px; height: 7px; }
-  .radar-targets { gap: 2px; }
+  /* Лента угроз обязана остаться одной строкой. Слоты тянутся (`flex: 1 1 0`
+     с потолком), поэтому на суженной панели они просто сжимаются, и брейкпоинту
+     не нужно подгонять ни размер, ни число слотов. */
+  .bot-pip { max-width: 6px; height: 12px; }
 }
 
 .minimap-frame {
@@ -584,14 +661,6 @@
   text-shadow: 0 1px 0 #0b0e14;
   pointer-events: none;
 }
-.minimap-frame .corner {
-  position: absolute; width: 12px; height: 12px;
-  border-color: #0b0e14; border-style: solid;
-}
-.corner.tl { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
-.corner.tr { top: -2px; right: -2px; border-width: 2px 2px 0 0; }
-.corner.bl { bottom: -2px; left: -2px; border-width: 0 0 2px 2px; }
-.corner.br { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
 
 /* --- лента убийств --- */
 .feed-item {
@@ -1361,16 +1430,18 @@
   color: var(--text-muted, rgba(255, 255, 255, 0.62));
 }
 
-/* --- лимит времени матча (панель счёта) --- */
+/* --- лимит времени матча (панель счёта) ---
+   U29: чипы времени больше нет — в нижней строке панели счёта таймер стоит
+   рядом с прогрессом, поэтому подпись «ДО КОНЦА» (она дублировала то, что
+   видно по часам) убрана, а `aria-label` на самом чипе остался. */
 .hud-timer {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 0.35rem;
-  padding: 2px 9px 2px 7px;
+  gap: 5px;
+  padding: 1px 8px 1px 6px;
   font-family: 'Russo One', sans-serif;
   font-size: 0.78rem;
-  letter-spacing: var(--track-wide);
+  letter-spacing: var(--track-tight);
   color: rgba(255, 255, 255, 0.75);
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1412,9 +1483,9 @@
     0 0 var(--glow-r-lg) rgba(255, 40, 30, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
-.death-panel::before { --bc: rgba(255, 77, 61, 0.6); }
 /* Рейл панели смерти — красный, а не бирюзовый: панель обязана читаться как
-   «опасность» даже боковым зрением. */
+   «опасность» даже боковым зрением. Это единственный красный акцент на экране
+   в момент смерти, поэтому он не разбавляется ничем. */
 .death-panel::after {
   background: linear-gradient(
       90deg,

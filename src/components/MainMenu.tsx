@@ -53,20 +53,24 @@ export default function MainMenu({
       <header className="relative z-10 flex flex-col sm:flex-row items-start justify-between gap-4 w-full">
         {/* Логотип ARMOR STRIKE */}
         <div className="pointer-events-auto flex flex-col items-start">
-          <div className="anim-left flex items-center gap-2 text-[10px] tracking-widest text-amber-400 font-mono">
-            <span className="h-1.5 w-1.5 bg-amber-400 cut-chip animate-pulse" aria-hidden />
+          <div className="anim-left flex items-center gap-2 text-[10px] tracking-widest text-[#0b0e14] font-mono">
+            <span className="h-1.5 w-1.5 bg-amber-500 cut-chip animate-pulse" aria-hidden />
             <span>ARMOR STRIKE // ИГРОВОЕ ЛОББИ</span>
           </div>
 
-          <h1
-            className="anim-left title-glitch font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-none tracking-wider text-white"
-            style={{ '--d': '0.1s' } as React.CSSProperties}
-          >
-            ARMOR
-            <span className="block bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-400 bg-clip-text text-transparent">
-              STRIKE
-            </span>
-          </h1>
+          {/* U29: вход и «дрожание» заголовка разнесены по двум узлам.
+              Раньше `anim-left` и `title-glitch` стояли на одном <h1>, и
+              шорткат `animation` из title-glitch затирал `enter-left` вместе с
+              его `forwards` — база `.anim-left { opacity: 0 }` оставалась, а
+              `title-comic-pulse` анимирует только transform. Логотип был
+              невидим всё это время (opacity 0), а не «белым по светлому». */}
+          <div className="anim-left" style={{ '--d': '0.1s' } as React.CSSProperties}>
+            <h1 className="title-glitch title-ink font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-none tracking-wider">
+              ARMOR
+              <span className="block">STRIKE</span>
+              <span className="title-rule" aria-hidden />
+            </h1>
+          </div>
         </div>
 
         {/* Живой угол статуса: армейский жетон / пропуск */}
@@ -127,116 +131,118 @@ export default function MainMenu({
           </button>
         </div>
 
-        {/* 2. ГАРАЖ */}
-        <button
-          type="button"
-          onClick={onGarage}
-          className="anim-left lobby-nav-btn build-chip group"
-          style={{ '--d': '0.35s' } as React.CSSProperties}
-          aria-label={`Гараж: сборка ${hull.name} и ${turret.name}`}
-        >
-          <Wrench size={18} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
-          <div className="min-w-0 flex-1">
-            <div className="font-display text-sm tracking-wider text-white">ГАРАЖ</div>
-            <div className="text-[10px] text-amber-300/80 tracking-wider font-mono truncate">
-              {hull.name} + {turret.name}
-            </div>
-          </div>
-          <span className="text-[10px] text-white/50 tracking-wider font-mono uppercase">
-            НАСТРОИТЬ
-          </span>
-        </button>
-
-        {/* 3. СПИСОК СЕРВЕРОВ */}
-        {onServerBrowser && (
+        {/* U29: пять разделов — одна панель с волосяными разделителями, а не
+            пять одинаковых плит. Разделы идут ниже CTA, но принадлежат к
+            разным категориям, поэтому рамка каждого делала экран лестницей
+            из одинаковых блоков: заголовок, подпись и иконка у всех были
+            свои, а информации это не добавляло. */}
+        <div className="lobby-stack anim-left" style={{ '--d': '0.35s' } as React.CSSProperties}>
+          {/* ГАРАЖ */}
           <button
             type="button"
-            onClick={onServerBrowser}
-            className="anim-left lobby-nav-btn group"
-            style={{ '--d': '0.45s' } as React.CSSProperties}
-            aria-label="Список серверов и комнат мультиплеера"
+            onClick={onGarage}
+            className="lobby-nav-btn build-chip group"
+            aria-label={`Гараж: сборка ${hull.name} и ${turret.name}`}
           >
-            <Globe size={18} className="text-sky-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
+            <Wrench size={18} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
             <div className="min-w-0 flex-1">
-              <div className="font-display text-sm tracking-wider text-white">СПИСОК СЕРВЕРОВ</div>
-              <div className="text-[10px] text-sky-300/70 tracking-wider font-mono">
-                МУЛЬТИПЛЕЕР И КОМНАТЫ
-              </div>
-            </div>
-            <span className="text-[10px] text-emerald-400 tracking-wider font-mono font-bold">
-              ОНЛАЙН
-            </span>
-          </button>
-        )}
-
-        {/* 4. ЗАДАЧИ */}
-        {onQuests && (
-          <button
-            type="button"
-            onClick={onQuests}
-            className="anim-left lobby-nav-btn group"
-            style={{ '--d': '0.55s' } as React.CSSProperties}
-            aria-label="Боевые задачи и награды"
-          >
-            <Trophy size={18} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <div className="font-display text-sm tracking-wider text-white">ЗАДАЧИ</div>
-              <div className="text-[10px] text-amber-300/70 tracking-wider font-mono">
-                БОЕВЫЕ ВЫПЛАТЫ И КВЕСТЫ
-              </div>
-            </div>
-            {claimableQuestsCount > 0 ? (
-              <span className="cut-chip bg-emerald-500 text-slate-950 font-bold px-2 py-0.5 text-[10px]">
-                +{claimableQuestsCount}
-              </span>
-            ) : (
-              <span className="text-[10px] text-white/50 tracking-wider font-mono">
-                3 СЛОТА
-              </span>
-            )}
-          </button>
-        )}
-
-        {/* 5. ЛИДЕРБОРД (L3) */}
-        {onLeaderboard && (
-          <button
-            type="button"
-            onClick={onLeaderboard}
-            className="anim-left lobby-nav-btn group"
-            style={{ '--d': '0.6s' } as React.CSSProperties}
-            aria-label="Глобальный лидерборд рекордов"
-          >
-            <BarChart3 size={18} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <div className="font-display text-sm tracking-wider text-white">ЛИДЕРБОРД</div>
-              <div className="text-[10px] text-amber-300/70 tracking-wider font-mono">
-                ГЛОБАЛЬНЫЙ РЕЙТИНГ
+              <div className="font-display text-sm tracking-wider text-white">ГАРАЖ</div>
+              <div className="text-[10px] text-amber-300/80 tracking-wider font-mono truncate">
+                {hull.name} + {turret.name}
               </div>
             </div>
             <span className="text-[10px] text-white/50 tracking-wider font-mono uppercase">
-              ТОП
+              НАСТРОИТЬ
             </span>
           </button>
-        )}
 
-        {/* 6. НАСТРОЙКИ */}
-        {onSettings && (
-          <button
-            type="button"
-            onClick={onSettings}
-            className="anim-left lobby-nav-btn group"
-            style={{ '--d': '0.7s' } as React.CSSProperties}
-            aria-label="Настройки звука, графики и управления"
-          >
-            <Settings size={18} className="text-slate-300 group-hover:rotate-45 transition-transform shrink-0" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <div className="font-display text-sm tracking-wider text-white">НАСТРОЙКИ</div>
-              <div className="text-[10px] text-white/50 tracking-wider font-mono">
-                ЗВУК, ГРАФИКА, МЫШЬ
+          {/* СПИСОК СЕРВЕРОВ */}
+          {onServerBrowser && (
+            <button
+              type="button"
+              onClick={onServerBrowser}
+              className="lobby-nav-btn group"
+              aria-label="Список серверов и комнат мультиплеера"
+            >
+              <Globe size={18} className="text-sky-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <div className="font-display text-sm tracking-wider text-white">СПИСОК СЕРВЕРОВ</div>
+                <div className="text-[10px] text-sky-300/70 tracking-wider font-mono">
+                  МУЛЬТИПЛЕЕР И КОМНАТЫ
+                </div>
               </div>
-            </div>
-          </button>
-        )}
+              <span className="text-[10px] text-emerald-400 tracking-wider font-mono font-bold">
+                ОНЛАЙН
+              </span>
+            </button>
+          )}
+
+          {/* ЗАДАЧИ */}
+          {onQuests && (
+            <button
+              type="button"
+              onClick={onQuests}
+              className="lobby-nav-btn group"
+              aria-label="Боевые задачи и награды"
+            >
+              <Trophy size={18} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <div className="font-display text-sm tracking-wider text-white">ЗАДАЧИ</div>
+                <div className="text-[10px] text-amber-300/70 tracking-wider font-mono">
+                  БОЕВЫЕ ВЫПЛАТЫ И КВЕСТЫ
+                </div>
+              </div>
+              {claimableQuestsCount > 0 ? (
+                <span className="cut-chip bg-emerald-500 text-slate-950 font-bold px-2 py-0.5 text-[10px]">
+                  +{claimableQuestsCount}
+                </span>
+              ) : (
+                <span className="text-[10px] text-white/50 tracking-wider font-mono">
+                  3 СЛОТА
+                </span>
+              )}
+            </button>
+          )}
+
+          {/* ЛИДЕРБОРД (L3) */}
+          {onLeaderboard && (
+            <button
+              type="button"
+              onClick={onLeaderboard}
+              className="lobby-nav-btn group"
+              aria-label="Глобальный лидерборд рекордов"
+            >
+              <BarChart3 size={18} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <div className="font-display text-sm tracking-wider text-white">ЛИДЕРБОРД</div>
+                <div className="text-[10px] text-amber-300/70 tracking-wider font-mono">
+                  ГЛОБАЛЬНЫЙ РЕЙТИНГ
+                </div>
+              </div>
+              <span className="text-[10px] text-white/50 tracking-wider font-mono uppercase">
+                ТОП
+              </span>
+            </button>
+          )}
+
+          {/* НАСТРОЙКИ */}
+          {onSettings && (
+            <button
+              type="button"
+              onClick={onSettings}
+              className="lobby-nav-btn group"
+              aria-label="Настройки звука, графики и управления"
+            >
+              <Settings size={18} className="text-slate-300 group-hover:rotate-45 transition-transform shrink-0" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <div className="font-display text-sm tracking-wider text-white">НАСТРОЙКИ</div>
+                <div className="text-[10px] text-white/50 tracking-wider font-mono">
+                  ЗВУК, ГРАФИКА, МЫШЬ
+                </div>
+              </div>
+            </button>
+          )}
+        </div>
       </nav>
     </div>
   );

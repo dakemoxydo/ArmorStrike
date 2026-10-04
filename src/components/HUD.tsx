@@ -72,6 +72,13 @@ export default function HUD({ game, active, crosshair, damageNumbers, onToggleMu
   const cpMode = st.matchMode === 'capture_point';
   const teamLeft = Math.floor(cpMode ? st.teamScoreAlpha : st.teamKillsAlpha);
   const teamRight = Math.floor(cpMode ? st.teamScoreBravo : st.teamKillsBravo);
+  /** Сколько противников может быть живо в этом режиме: в лобби-смерти ботов
+      всех, в командных — команда минус игрок (союзники не считаются). Лента
+      угроз рисует ровно столько слотов, сколько вмещает матч. */
+  const threatCapacity =
+    st.matchMode === 'deathmatch'
+      ? configForMode(st.matchMode).dmBotCount
+      : configForMode(st.matchMode).teamSize - 1;
   const scoreLabel =
     st.matchMode === 'deathmatch'
       ? `Счёт ${st.score}`
@@ -88,6 +95,11 @@ export default function HUD({ game, active, crosshair, damageNumbers, onToggleMu
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 select-none overflow-hidden">
+      {/* Оправа поля зрения (U29): единственный акцент на весь боевой HUD.
+          Связывает четыре угловые панели в один прибор и держит взгляд внутри
+          экрана. Нарисована псевдоэлементом — ноль DOM-узлов. */}
+      <div className="hud-optic" aria-hidden />
+
       {/* Assistive threshold announcements for ref-driven vitals/ammo (M15) */}
       <div
         ref={liveRef}
@@ -148,7 +160,7 @@ export default function HUD({ game, active, crosshair, damageNumbers, onToggleMu
 
       {inGame && (
         <>
-          <MemoRadar mapRef={mapRef} enemiesAlive={st.enemiesAlive} />
+          <MemoRadar mapRef={mapRef} enemiesAlive={st.enemiesAlive} capacity={threatCapacity} />
 
           {/* Слой чисел урона/лечения (п.1): React рисует только пустой контейнер,
               содержимое создаёт императивный пул из ui/damageFloatLayer — иначе
@@ -161,15 +173,34 @@ export default function HUD({ game, active, crosshair, damageNumbers, onToggleMu
               {st.matchMode === 'deathmatch' ? (
                 <>
                   <div className="score-mode justify-center">
-                    <Trophy size={11} aria-hidden /> СЧЁТ
+                    <Trophy size={11} aria-hidden /> БОЙ НАСМЕРТЬ
                   </div>
-                  <div className="score-num">{String(st.score).padStart(6, '0')}</div>
+                  {/* U29: ведущим стал сам счёт. Раньше панель открывал
+                      `padStart(6,'0')` — шесть нулей на старте матча, то есть
+                      самое громкое место экрана занимал вывод, который ничего
+                      не сообщал, а настоящий прогресс («ФРАГИ n/25») уезжал в
+                      мелкую серую подпись. */}
+                  <div className="score-hero">
+                    <span className="score-num">{st.score}</span>
+                    <span className="hud-label is-plain">СЧЁТ</span>
+                  </div>
                   {/* Прогресс до порога победы: видно, сколько осталось, без чтения цифр. */}
                   <div className="score-progress" aria-hidden>
                     <i className="sp-fill" style={{ width: `${dmProgress}%` }} />
                   </div>
-                  <div className="hud-meta mt-1">
-                    ФРАГИ {st.kills}/{st.winTarget}
+                  <div className="score-foot">
+                    <span className="hud-meta">
+                      ФРАГИ {st.kills}/{st.winTarget}
+                    </span>
+                    {/* Единственная шкала времени в панели: раньше рядом стояли
+                        двое часов разного смысла (прошедшее 00:00 и остаток
+                        11:59) без подписи — читалось как дубль (U3). */}
+                    <span
+                      className={`hud-timer${lowTime ? ' is-low' : ''}`}
+                      aria-label={`До конца матча ${clock(remainSec)}`}
+                    >
+                      <Timer size={11} aria-hidden /> {clock(remainSec)}
+                    </span>
                   </div>
                 </>
               ) : (
@@ -215,20 +246,19 @@ export default function HUD({ game, active, crosshair, damageNumbers, onToggleMu
                       ))}
                     </div>
                   )}
-                  <div className="hud-meta mt-1">
-                    вы {st.kills}/{st.deaths} · цель {st.winTarget}
+                  <div className="score-foot">
+                    <span className="hud-meta">
+                      ВЫ {st.kills}/{st.deaths} · ЦЕЛЬ {st.winTarget}
+                    </span>
+                    <span
+                      className={`hud-timer${lowTime ? ' is-low' : ''}`}
+                      aria-label={`До конца матча ${clock(remainSec)}`}
+                    >
+                      <Timer size={11} aria-hidden /> {clock(remainSec)}
+                    </span>
                   </div>
                 </>
               )}
-              {/* Единственная шкала времени в панели: раньше рядом стояли двое
-                  часов разного смысла (прошедшее 00:00 и остаток 11:59) без
-                  подписи — читалось как дубль (U3). */}
-              <div
-                className={`hud-timer${lowTime ? ' is-low' : ''}`}
-                aria-label={`До конца матча ${clock(remainSec)}`}
-              >
-                <Timer size={11} aria-hidden /> ДО КОНЦА {clock(remainSec)}
-              </div>
             </div>
           </div>
 

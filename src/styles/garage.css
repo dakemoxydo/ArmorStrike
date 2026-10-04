@@ -10,10 +10,15 @@
   width: 100%;
   align-items: stretch;
   padding: 0.65rem 0.75rem 0.5rem;
+  /* U29: док перестал просвечивать. На 0.72/0.92 сквозь карточки корпусов
+     был виден турникет и пунктирный диск 3D-сцены — панель читалась как
+     наклейка поверх витрины. Мягкий вход сохранён (первые 8 % — градиент),
+     непрозрачность начинается выше линии контента. */
   background: linear-gradient(
     180deg,
-    rgba(4, 10, 16, 0.72) 0%,
-    rgba(4, 10, 16, 0.92) 45%
+    rgba(4, 10, 16, 0) 0%,
+    rgba(4, 10, 16, 0.97) 8%,
+    rgba(4, 10, 16, 0.99) 45%
   );
   border-top: 1px solid rgba(var(--glow), 0.14);
   box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.35);
@@ -118,10 +123,15 @@
   cursor: not-allowed;
   transform: none;
 }
+/* U29: выделение — янтарное везде. Корпус был циановым, и циан в продукте
+   значил сразу три вещи: «выбрано» (вкладка и карточка корпуса), «заблокировано»
+   (замок на карточке) и «чужой игрок / сеть» (список серверов, пинг, команда
+   Alpha). Теперь выбранное — янтарь на всех поверхностях (режим, карта, г��раж),
+   а циан остался только у сети и своей команды. */
 .garage-card.hull-selected {
-  border-color: #38bdf8;
-  box-shadow: 0 4px 0 #0b0e14, inset 0 0 0 2px #38bdf8;
-  background: linear-gradient(180deg, rgba(14, 30, 48, 0.95), rgba(9, 18, 30, 0.9));
+  border-color: #f59e0b;
+  box-shadow: 0 4px 0 #0b0e14, inset 0 0 0 2px #f59e0b;
+  background: linear-gradient(180deg, rgba(38, 28, 12, 0.95), rgba(22, 16, 8, 0.9));
 }
 .garage-card.turret-selected {
   border-color: #f59e0b;
@@ -165,9 +175,11 @@
 .garage-tab:focus {
   outline: none;
 }
+/* Активный таб — янтарь в обоих состояниях (U29): вкладка говорит «что сейчас
+   открыто», а не «какая это категория». Категория уже написана на табе. */
 .garage-tab.is-active.tab-hull {
   color: #0b0e14;
-  background: linear-gradient(180deg, #38bdf8, #0284c7);
+  background: linear-gradient(180deg, #fbbf24, #f59e0b);
   border-color: #0b0e14;
   box-shadow: 0 3px 0 #0b0e14;
 }

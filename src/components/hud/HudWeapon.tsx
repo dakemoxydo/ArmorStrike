@@ -102,7 +102,7 @@ export default function HudWeapon({
         </div>
         <div>
           <div className={`weapon-title ${weaponAccentClass}`}>
-            <span>{weaponLabel}</span>
+            <span className="weapon-kind">{weaponLabel}</span>
             <span className="weapon-sep" aria-hidden>·</span>
             <span className="weapon-name">{weaponName}</span>
           </div>

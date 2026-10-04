@@ -172,32 +172,73 @@
   animation: chevron-pulse 1.3s ease-in-out infinite;
 }
 
-/* Строгий тактический пункт вертикального стека лобби */
+/* --- Секция разделов лобби (U29) ---
+   Пять разделов — одна панель с волосяными разделителями, а не пять отдельных
+   плит. Свой хром (контур, срез, тень) несёт панель; строка несёт только
+   разделитель и подсветку при наведении. Разделитель — это данные, а не
+   декор: он говорит «здесь начинается следующий раздел». */
+.lobby-stack {
+  border: 2px solid #0b0e14;
+  background-color: rgba(9, 14, 23, 0.94);
+  background-image: linear-gradient(180deg, rgba(20, 29, 43, 0.92), rgba(9, 14, 23, 0.96));
+  clip-path: polygon(
+    var(--panel-cut) 0,
+    100% 0,
+    100% calc(100% - var(--panel-cut)),
+    calc(100% - var(--panel-cut)) 100%,
+    0 100%,
+    0 var(--panel-cut)
+  );
+  box-shadow: var(--panel-shadow);
+  /* Без `overflow: hidden`: срез `clip-path` и так обрезает всё, включая
+     подсветку строк, а `overflow` срезал бы наружное кольцо фокуса у первой
+     и последней строки (U14/U29). */
+}
+
+/* Строка раздела. Хром не рисует: только разделитель и подсветка. */
 .lobby-nav-btn {
   position: relative;
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 0.8rem 1.15rem;
+  padding: 0.7rem 1rem;
   gap: 0.85rem;
-  background: linear-gradient(135deg, rgba(16, 24, 39, 0.92) 0%, rgba(8, 13, 22, 0.96) 100%);
-  border: 1px solid rgba(245, 158, 11, 0.25);
-  clip-path: polygon(var(--control-cut) 0, 100% 0, 100% calc(100% - var(--control-cut)), calc(100% - var(--control-cut)) 100%, 0 100%, 0 var(--control-cut));
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.7), 0 3px 6px rgba(0, 0, 0, 0.4);
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.4, 1);
+  background: transparent;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  transition: background var(--ease-fast), color var(--ease-fast);
   color: #e2e8f0;
   cursor: pointer;
   text-align: left;
 }
+/* Первая строка идёт сразу под верхней границей панели — свой разделитель ей
+   не нужен, иначе между рамкой и первой строкой появляется двойная линия. */
+.lobby-stack > .lobby-nav-btn:first-child {
+  border-top: 0;
+}
 .lobby-nav-btn:hover {
-  background: linear-gradient(135deg, rgba(28, 41, 64, 0.96) 0%, rgba(15, 23, 38, 0.98) 100%);
-  border-color: rgba(245, 158, 11, 0.65);
-  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35), 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 var(--glow-r-lg) rgba(245, 158, 11, 0.18);
-  transform: translateX(4px);
+  background: rgba(245, 158, 11, 0.1);
   color: #ffffff;
 }
+/* Акцентная кромка слева: тот же приём, что у выбранной карты режима, —
+   выбор/наведение помечается краем, а не заливкой всей плиты. */
+.lobby-nav-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent, #f59e0b);
+  opacity: 0;
+  transition: opacity var(--ease-fast);
+}
+.lobby-nav-btn:hover::before,
+.lobby-nav-btn:focus-visible::before {
+  opacity: 1;
+}
 .lobby-nav-btn:active {
-  transform: translateX(1px);
+  background: rgba(245, 158, 11, 0.16);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -224,9 +265,8 @@
   .lobby-nav-btn {
     transition: none;
   }
-  .lobby-nav-btn:hover,
-  .lobby-nav-btn:active {
-    transform: none;
+  .lobby-nav-btn::before {
+    transition: none;
   }
   .btn-game:hover .bicon,
   .btn-game:hover .bicon-spin {

@@ -29,9 +29,9 @@ export default function HudVitals({ healthRef, healthNumRef, boostRef, ghostRef,
           <div ref={healthRef} className="hp-fill" style={{ width: '100%' }}>
             <i className="hp-edge" aria-hidden />
           </div>
-          <div className="hp-segments" />
-          {/* Риски четвертей: 25 / 50 / 75 % */}
-          <div className="hp-ticks" aria-hidden><i /><i /><i /><i /></div>
+          {/* Гравировка: шаг 10 % (U29). Делений ровно столько, сколько нужно,
+              чтобы глаз считал остаток брон�� с одного взгляда. */}
+          <div className="hp-segments" aria-hidden />
         </div>
         <div className="vitals-foot">
           <span className="hud-label flex items-center gap-1.5"><Gauge size={12} aria-hidden /> НИТРО</span>
